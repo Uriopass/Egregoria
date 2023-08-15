@@ -1,6 +1,6 @@
 use crate::gui::inspect::inspect_train::inspect_train;
 use crate::gui::windows::debug::DebugState;
-use crate::gui::{InspectedBuilding, InspectedEntity};
+use crate::gui::{FollowEntity, InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;
 use egregoria::map::BuildingID;
 use egregoria::{AnyEntity, Egregoria};
@@ -90,8 +90,8 @@ fn entity_link_inner(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: A
 
     if ui.link(linkname).clicked() {
         uiworld.write::<InspectedEntity>().e = Some(e);
-        if let Some(pos) = goria.pos_any(e) {
-            uiworld.camera_mut().targetpos = pos
+        if goria.pos_any(e).is_some() {
+            uiworld.write::<FollowEntity>().0 = Some(e);
         }
     }
 }
