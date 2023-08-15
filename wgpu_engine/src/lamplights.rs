@@ -1,4 +1,4 @@
-use crate::{Texture, TextureBuilder};
+use crate::{GfxContext, Texture, TextureBuilder};
 use geom::Vec3;
 use ordered_float::OrderedFloat;
 use wgpu::TextureFormat;
@@ -74,6 +74,10 @@ impl LampLights {
             pending_changes: Vec::new(),
             pending_changes2: vec![],
         }
+    }
+
+    pub fn reset(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+        *self = Self::new(device, queue);
     }
 
     pub fn chunk_id(pos: Vec3) -> LightChunkID {

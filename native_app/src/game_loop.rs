@@ -155,8 +155,10 @@ impl State {
     }
 
     pub fn reset(&mut self, ctx: &mut Context) {
+        ctx.gfx.lamplights.reset(&ctx.gfx.device, &ctx.gfx.queue);
         self.map_renderer = MapRenderer::new(&mut ctx.gfx, &self.goria.read().unwrap());
         self.goria.write().unwrap().map().dispatch_all();
+        ctx.gfx.update_simplelit_bg();
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext<'_>) {

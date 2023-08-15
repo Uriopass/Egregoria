@@ -696,6 +696,7 @@ impl Gui {
 
                 if ui.add_enabled(enabled, egui::Button::new(name)).clicked() {
                     slstate.please_save = true;
+                    self.last_save = Instant::now();
                     uiworld.save_to_disk();
                 }
 
