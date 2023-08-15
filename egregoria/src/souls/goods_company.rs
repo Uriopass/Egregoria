@@ -337,39 +337,33 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             }
         }
 
-        if let Some(trade) = c.sold.0.drain(..1.min(c.sold.0.len())).next() {
-            if let Some(driver) = c.comp.driver {
-                if let Some(ref mut w) = world.humans.get(driver).and_then(|h| h.work) {
-                    if matches!(
-                        w.kind,
-                        WorkKind::Driver {
-                            deliver_order: None,
-                            ..
-                        }
-                    ) {
-                        if let Some(owner_build) =
-                            find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
-                        {
-                            cbuf.exec_ent(me, move |goria| {
-                                if let Some(ref mut w) =
-                                    goria.world.humans.get(driver).and_then(|h| h.work)
-                                {
-                                    if let WorkKind::Driver {
-                                        ref mut deliver_order,
-                                        ..
-                                    } = w.kind
-                                    {
-                                        *deliver_order = Some(owner_build)
-                                    }
-                                }
-                            })
-                        } else {
-                            log::warn!("driver can't find the place to deliver for {:?}", &trade);
-                        }
-                    }
+        (|| {
+            let Some(trade) = c.sold.0.pop() else {return;};
+            let Some(driver) = c.comp.driver else { return; };
+            let Some(w) = world.humans.get(driver).and_then(|h| h.work.as_ref()) else { return; };
+            if !matches!(
+                w.kind,
+                WorkKind::Driver {
+                    deliver_order: None,
+                    ..
                 }
+            ) {
+                return;
             }
-        }
+            let Some(owner_build) = find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map) else {
+                log::warn!("driver can't find the place to deliver for {:?}", &trade);
+                return;
+            };
+            cbuf.exec_ent(me, move |goria| {
+                let Some(h) = goria.world.humans.get_mut(driver) else { return; };
+                let Some(w) = h.work.as_mut() else { return; };
+                let WorkKind::Driver {
+                    deliver_order,
+                    ..
+                } = &mut w.kind else { return; };
+                *deliver_order = Some(owner_build)
+            });
+        })();
 
         for &worker in c.workers.0.iter() {
             let Some(w) = world.humans.get(worker) else { continue; };

@@ -17,7 +17,7 @@ pub enum WorkKind {
 }
 debug_inspect_impl!(WorkKind);
 
-#[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Inspect, Debug, Clone, Serialize, Deserialize)]
 pub struct Work {
     pub workplace: BuildingID,
     pub work_inter: RecTimeInterval,

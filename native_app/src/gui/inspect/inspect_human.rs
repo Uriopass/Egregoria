@@ -60,7 +60,7 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
 
             ui.label(format!("Last ate: {}", human.food.last_ate));
 
-            if let Some(x) = human.work {
+            if let Some(ref x) = human.work {
                 ui.horizontal(|ui| {
                     ui.label("Working at");
                     building_link(uiworld, goria, ui, x.workplace);
