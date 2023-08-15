@@ -1,4 +1,4 @@
-use crate::{GfxContext, Texture, TextureBuilder};
+use crate::{Texture, TextureBuilder};
 use geom::Vec3;
 use ordered_float::OrderedFloat;
 use wgpu::TextureFormat;

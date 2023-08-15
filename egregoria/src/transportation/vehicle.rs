@@ -34,6 +34,7 @@ pub enum VehicleKind {
 pub struct Vehicle {
     pub ang_velocity: f32,
     pub wait_time: f32,
+    pub max_speed_multiplier: f32,
 
     pub state: VehicleState,
     pub kind: VehicleKind,
@@ -150,13 +151,9 @@ pub fn spawn_parked_vehicle_with_spot(
         _ => Color::WHITE,
     };
 
-    Some(make_vehicle_entity(
-        goria,
-        pos,
-        Vehicle::new(kind, spot_id, tint),
-        it,
-        false,
-    ))
+    let vehicle = Vehicle::new(kind, spot_id, tint, &mut goria.write::<RandProvider>());
+
+    Some(make_vehicle_entity(goria, pos, vehicle, it, false))
 }
 
 pub fn make_vehicle_entity(
@@ -208,10 +205,16 @@ pub fn get_random_car_color(r: &mut RandProvider) -> Color {
 }
 
 impl Vehicle {
-    pub fn new(kind: VehicleKind, spot: SpotReservation, tint: Color) -> Vehicle {
+    pub fn new(
+        kind: VehicleKind,
+        spot: SpotReservation,
+        tint: Color,
+        rng: &mut RandProvider,
+    ) -> Vehicle {
         Self {
             ang_velocity: 0.0,
             wait_time: 0.0,
+            max_speed_multiplier: 0.95 + 0.1 * rng.next_f32(),
             state: VehicleState::Parked(spot),
             kind,
             tint,

@@ -54,7 +54,7 @@ impl Segment3 {
     }
 
     pub fn scale(&mut self, scale: f32) -> &mut Self {
-        self.resize(self.vec().magn() * scale)
+        self.resize(self.vec().mag() * scale)
     }
 
     pub fn vec(&self) -> Vec3 {

@@ -440,7 +440,7 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn magn(self) -> f32 {
+    pub fn mag(self) -> f32 {
         self.mag2().sqrt()
     }
 
@@ -529,7 +529,7 @@ impl Vec3 {
 
     #[inline]
     pub fn distance(self, rhs: Self) -> f32 {
-        (self - rhs).magn()
+        (self - rhs).mag()
     }
 
     #[inline]
@@ -549,7 +549,7 @@ impl Vec3 {
 
     #[inline]
     pub fn try_normalize(self) -> Option<Vec3> {
-        let m = self.magn();
+        let m = self.mag();
         if m > 0.0 {
             Some(self / m)
         } else {
@@ -559,13 +559,13 @@ impl Vec3 {
 
     #[inline]
     pub fn normalize(self) -> Vec3 {
-        let m = self.magn();
+        let m = self.mag();
         self / m
     }
 
     #[inline]
     pub fn try_normalize_to(self, v: f32) -> Option<Vec3> {
-        let m = self.magn();
+        let m = self.mag();
         if m > 0.0 {
             Some(self * (v / m))
         } else {
@@ -575,13 +575,13 @@ impl Vec3 {
 
     #[inline]
     pub fn normalize_to(self, v: f32) -> Vec3 {
-        let m = self.magn();
+        let m = self.mag();
         self * (v / m)
     }
 
     #[inline]
     pub fn dir_dist(self) -> Option<(Vec3, f32)> {
-        let m = self.magn();
+        let m = self.mag();
         if m > 0.0 {
             Some((self / m, m))
         } else {
@@ -609,7 +609,7 @@ impl Vec3 {
 
     #[inline]
     pub fn cap_magnitude(self, max: f32) -> Vec3 {
-        let m = self.magn();
+        let m = self.mag();
         if m > max {
             self * max / m
         } else {

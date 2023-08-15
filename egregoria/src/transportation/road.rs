@@ -299,7 +299,10 @@ pub fn calc_decision<'a>(
         return (6.0, dir_to_pos);
     }
 
-    (vehicle.kind.speed_factor() * speed, dir_to_pos)
+    (
+        vehicle.kind.speed_factor() * vehicle.max_speed_multiplier * speed,
+        dir_to_pos,
+    )
 }
 
 /// Calculates the distance to the closest problematic object in front of the car.

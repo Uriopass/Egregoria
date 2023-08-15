@@ -699,7 +699,7 @@ unsafe fn AvgTSpace(mut pTS0: *const STSpace, mut pTS1: *const STSpace) -> STSpa
 }
 
 unsafe fn Normalize(v: Vec3) -> Vec3 {
-    return (1.0 / v.magn()) * v;
+    return (1.0 / v.mag()) * v;
 }
 
 unsafe fn VNotZero(v: Vec3) -> bool {
@@ -1088,8 +1088,8 @@ unsafe fn InitTriInfo<I: MikktGeometry>(
         };
         if NotZero(fSignedAreaSTx2) {
             let fAbsArea: f32 = fSignedAreaSTx2.abs();
-            let fLenOs: f32 = vOs.magn();
-            let fLenOt: f32 = vOt.magn();
+            let fLenOs: f32 = vOs.mag();
+            let fLenOt: f32 = vOt.mag();
             let fS: f32 = if (*pTriInfos.offset(f as isize)).iFlag & 8i32 == 0i32 {
                 -1.0f32
             } else {

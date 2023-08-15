@@ -310,7 +310,17 @@ impl Road {
                 to_derivative: (diff * 0.3).xy().z0(),
             },
             RoadSegmentKind::Straight => {
-                return PolyLine3::new(vec![from, to]);
+                let distance = diff.mag();
+                let in_between = (distance / 200.0) as usize; // gen points every 200 meters to avoid fp precision errors even for straight roads
+
+                let mut points = Vec::with_capacity(in_between + 2);
+                points.push(from);
+                for i in 1..=in_between {
+                    points.push(from + diff * (i as f32) / (1.0 + in_between as f32));
+                }
+                points.push(to);
+
+                return PolyLine3::new(points);
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => Spline3 {
                 from,
