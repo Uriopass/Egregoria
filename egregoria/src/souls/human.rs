@@ -190,6 +190,7 @@ pub fn update_decision(
 
     if let Some(home) = home {
         let score = home.score();
+        home.last_score = score;
 
         if score > max_score {
             max_score = score;
@@ -199,6 +200,7 @@ pub fn update_decision(
 
     if let Some(work) = work {
         let score = work.score(time);
+        work.last_score = score;
 
         if score > max_score {
             max_score = score;
@@ -208,6 +210,7 @@ pub fn update_decision(
 
     if let Some(food) = food {
         let score = food.score(time, loc, bought);
+        food.last_score = score;
 
         #[allow(unused_assignments)]
         if score > max_score {

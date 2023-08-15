@@ -1,4 +1,4 @@
-use egui::Context;
+use egui::{Context, Widget};
 
 use egregoria::economy::{ItemRegistry, Market};
 use egregoria::map_dynamic::Destination;
@@ -74,6 +74,24 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
                     }
                 });
             }
+
+            ui.add_space(10.0);
+            ui.label("Desires");
+            ui.horizontal(|ui| {
+                let mut score = human.food.last_score;
+                egui::DragValue::new(&mut score).ui(ui);
+                ui.label("Food");
+            });
+            ui.horizontal(|ui| {
+                let mut score = human.home.last_score;
+                egui::DragValue::new(&mut score).ui(ui);
+                ui.label("Home");
+            });
+            ui.horizontal(|ui| {
+                let mut score = human.work.as_ref().map(|x| x.last_score).unwrap_or(0.0);
+                egui::DragValue::new(&mut score).ui(ui);
+                ui.label("Work");
+            });
 
             let market = goria.read::<Market>();
             let itemregistry = goria.read::<ItemRegistry>();

@@ -24,6 +24,7 @@ pub struct BuyFood {
     pub last_ate: GameInstant,
     state: BuyFoodState,
     bread: ItemID,
+    pub last_score: f32,
 }
 
 impl BuyFood {
@@ -32,6 +33,7 @@ impl BuyFood {
             last_ate: start,
             state: BuyFoodState::Empty,
             bread: registry.id("bread"),
+            last_score: 0.0,
         }
     }
 

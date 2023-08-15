@@ -129,6 +129,12 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b:
         .text(format!("workers: {}/{}", workers.0.len(), max_workers))
         .desired_width(200.0)
         .ui(ui);
+    if let Some(driver) = goods.driver {
+        ui.horizontal(|ui| {
+            ui.label("Driver is");
+            entity_link(uiworld, goria, ui, driver);
+        });
+    }
     let productivity = goods.productivity(workers.0.len(), b.zone.as_ref());
     let productivity = (productivity * 100.0).round();
     if productivity < 100.0 {

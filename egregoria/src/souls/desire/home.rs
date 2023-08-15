@@ -7,11 +7,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Inspect, Clone, Serialize, Deserialize, Debug)]
 pub struct Home {
     pub house: BuildingID,
+    pub last_score: f32,
 }
 
 impl Home {
     pub fn new(house: BuildingID) -> Self {
-        Home { house }
+        Home {
+            house,
+            last_score: 0.0,
+        }
     }
 
     pub fn apply(&mut self) -> HumanDecisionKind {

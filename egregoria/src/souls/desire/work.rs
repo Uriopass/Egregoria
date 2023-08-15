@@ -22,6 +22,7 @@ pub struct Work {
     pub workplace: BuildingID,
     pub work_inter: RecTimeInterval,
     pub kind: WorkKind,
+    pub last_score: f32,
 }
 
 impl Work {
@@ -33,6 +34,7 @@ impl Work {
                 (18, (offset * SECONDS_PER_HOUR as f32) as i32),
             ),
             kind,
+            last_score: 0.0,
         }
     }
 
