@@ -17,7 +17,7 @@ log       = "0.4.11"
 raw-window-handle = "0.5.0"
 gltf      = { version = "1.2.0", default-features=false, features=["import", "utils", "names"] }
 itertools = { version = "0.10.0", default-features = false }
-profiling = "1.0.1"
+profiling = { version = "1.0.1", default-features = false  }
 rayon     = "1.6"
 beul      = "1.0.0"
 slotmapd   = "1.0"

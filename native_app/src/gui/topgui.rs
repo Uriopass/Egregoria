@@ -84,8 +84,8 @@ impl Gui {
         self.tooltip(ui, uiworld, goria);
     }
 
-    #[profiling::function]
     pub fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("gui::tooltip");
         let tooltip = std::mem::take(&mut *uiworld.write::<ErrorTooltip>());
         if let Some(msg) = tooltip.msg {
             if !(tooltip.isworld && ui.is_pointer_over_area()) {
@@ -121,7 +121,6 @@ impl Gui {
         });
     }
 
-    #[profiling::function]
     pub fn auto_save(&mut self, uiworld: &mut UiWorld) {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {

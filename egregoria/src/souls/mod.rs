@@ -16,8 +16,8 @@ pub mod goods_company;
 pub mod human;
 
 /// Adds souls to empty buildings
-#[profiling::function]
 pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
+    profiling::scope!("souls::add_souls_to_empty_buildings");
     let map = goria.map();
     let infos = goria.read::<BuildingInfos>();
     let mut empty_buildings: BTreeMap<BuildingKind, Vec<(BuildingID, Vec3)>> = BTreeMap::default();

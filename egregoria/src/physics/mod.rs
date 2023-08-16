@@ -70,8 +70,8 @@ impl Collider {
     }
 }
 
-#[profiling::function]
 pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("physics::coworld_synchronize");
     let mut coworld = resources.write::<CollisionWorld>();
 
     world.query_trans_speed_coll_vehicle().for_each(

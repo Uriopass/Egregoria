@@ -412,8 +412,8 @@ impl Inspect<ItineraryKind> for ItineraryKind {
     }
 }
 
-#[profiling::function]
 pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("map_dynamic::itinerary_update");
     let time = &*resources.read::<GameTime>();
     let map = &*resources.read::<Map>();
     let tick = *resources.read::<Tick>();

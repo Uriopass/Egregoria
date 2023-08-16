@@ -11,8 +11,8 @@ use crate::World;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
 use slotmapd::Key;
 
-#[profiling::function]
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("transportation::vehicle_decision_system");
     let ra = &*resources.read();
     let rb = &*resources.read();
     let rc = &*resources.read();
@@ -76,8 +76,8 @@ pub fn vehicle_decision(
     );
 }
 
-#[profiling::function]
 pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("transportation::vehicle_state_update_system");
     let ra = &*resources.read();
     let rb = &*resources.read();
     let rc = &*resources.read();

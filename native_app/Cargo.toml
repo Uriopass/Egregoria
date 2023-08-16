@@ -23,7 +23,7 @@ slotmapd       = { version = "1.0", default-features = false }
 winit = { version = "0.28.1" }
 atomic_refcell = "0.1.6"
 rayon         = "1.6"
-profiling     = { version = "1.0.8" }
+profiling     = { version = "1.0.8", default-features = false }
 include_dir   = "0.7.2"
 egui-inspect = { path = "../egui-inspect" }
 egui = { workspace = true }

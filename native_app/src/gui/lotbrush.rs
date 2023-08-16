@@ -14,8 +14,8 @@ pub struct LotBrushResource {
 
 /// Lot brush tool
 /// Allows to build houses on lots
-#[profiling::function]
 pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
+    profiling::scope!("gui::lotbrush");
     let res = uiworld.read::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();

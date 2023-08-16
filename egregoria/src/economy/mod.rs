@@ -192,8 +192,8 @@ pub fn init_market(_: &mut World, res: &mut Resources) {
     res.insert(stats);
 }
 
-#[profiling::function]
 pub fn market_update(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("economy::market_update");
     let n_workers = world.humans.len();
 
     let mut m = resources.write::<Market>();

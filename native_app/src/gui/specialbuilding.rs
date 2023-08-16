@@ -33,8 +33,8 @@ pub struct SpecialBuildingResource {
 
 /// SpecialBuilding tool
 /// Allows to build special buildings like farms, factories, etc.
-#[profiling::function]
 pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
+    profiling::scope!("gui::specialbuilding");
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();

@@ -89,8 +89,8 @@ impl GUIWindows {
         }
     }
 
-    #[profiling::function]
     pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("windows::render");
         if uiworld
             .write::<InputMap>()
             .just_act

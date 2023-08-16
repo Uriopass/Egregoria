@@ -60,8 +60,8 @@ pub fn random_pedestrian_shirt_color(r: &mut RandProvider) -> Color {
     unreachable!();
 }
 
-#[profiling::function]
 pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("transportation::pedestrian_decision_system");
     let ra = &*resources.read();
     world.humans
         .values_mut()

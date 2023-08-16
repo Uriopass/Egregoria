@@ -232,12 +232,12 @@ impl Egregoria {
         true
     }
 
-    #[profiling::function]
     pub fn tick<'a>(
         &mut self,
         game_schedule: &mut SeqSchedule,
         commands: impl IntoIterator<Item = &'a WorldCommand>,
     ) -> Duration {
+        profiling::scope!("egregoria::tick");
         let t = Instant::now();
         // It is very important that the first thing being done is applying commands
         // so that instant commands work on single player but the game is still deterministic

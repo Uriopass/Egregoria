@@ -22,8 +22,8 @@ pub struct RoadEditorResource {
 
 /// RoadEditor tool
 /// Allows to edit intersections properties like turns and signals
-#[profiling::function]
 pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
+    profiling::scope!("gui::roadeditor");
     let tool = uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();
     let mut state = uiworld.write::<RoadEditorResource>();

@@ -47,8 +47,8 @@ impl<E: GoriaDrop> ParCommandBuffer<E> {
         })
     }
 
-    #[profiling::function]
     pub fn apply(goria: &mut Egregoria) {
+        profiling::scope!("par_command_buffer::apply");
         let mut deleted: Vec<E::ID> = std::mem::take(
             &mut *goria
                 .write::<ParCommandBuffer<E>>()

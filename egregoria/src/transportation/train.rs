@@ -193,8 +193,8 @@ pub fn traverse_forward<'a>(
         .take_while(move |(_, acc, _, acc_l)| *acc < dist || *acc_l <= until_length)
 }
 
-#[profiling::function]
 pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("transportation::train_reservations_update");
     let map = &*resources.read::<Map>();
     let reservations = &mut *resources.write::<TrainReservations>();
     let lanes = map.lanes();
@@ -301,8 +301,8 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
     });
 }
 
-#[profiling::function]
 pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("transportation::locomotive_system");
     let map: &Map = &resources.read();
     let time: &GameTime = &resources.read();
     let reservs: &TrainReservations = &resources.read();

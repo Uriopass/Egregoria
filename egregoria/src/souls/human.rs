@@ -130,8 +130,8 @@ enum NextDesire<'a> {
     Food(&'a mut BuyFood),
 }
 
-#[profiling::function]
 pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("souls::update_decision_system");
     let ra = &*resources.read();
     let rb = &*resources.read();
     let rc = &*resources.read();

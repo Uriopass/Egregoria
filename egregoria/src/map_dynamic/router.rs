@@ -52,8 +52,8 @@ pub enum RoutingStep {
 
 debug_inspect_impl!(RoutingStep);
 
-#[profiling::function]
 pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("map_dynamic::routing_changed_system");
     let map: &Map = &resources.read();
     let parking: &mut ParkingManagement = &mut resources.write();
 
@@ -109,8 +109,8 @@ pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
     });
 }
 
-#[profiling::function]
 pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("map_dynamic::routing_update_system");
     let map: &Map = &resources.read();
     let cbuf_human: &ParCommandBuffer<HumanEnt> = &resources.read();
     let cbuf_vehicle: &ParCommandBuffer<VehicleEnt> = &resources.read();

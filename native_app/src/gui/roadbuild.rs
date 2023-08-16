@@ -31,8 +31,8 @@ pub struct RoadBuildResource {
 
 /// Road building tool
 /// Allows to build roads and intersections
-#[profiling::function]
 pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
+    profiling::scope!("gui::roadbuild");
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();

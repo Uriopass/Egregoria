@@ -284,8 +284,8 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     Some(soul)
 }
 
-#[profiling::function]
 pub fn company_system(world: &mut World, res: &mut Resources) {
+    profiling::scope!("souls::company_system");
     let delta = res.read::<GameTime>().realdelta;
     let cbuf: &ParCommandBuffer<CompanyEnt> = &res.read();
     let cbuf_human: &ParCommandBuffer<HumanEnt> = &res.read();

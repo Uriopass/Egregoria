@@ -37,8 +37,8 @@ impl InstancedRender {
         }
     }
 
-    #[profiling::function]
     pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
+        profiling::scope!("entity_render::render");
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();

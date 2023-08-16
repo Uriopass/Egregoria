@@ -7,8 +7,8 @@ use egregoria::{AnyEntity, Egregoria};
 use geom::Color;
 
 /// InspectedAura shows the circle around the inspected entity
-#[profiling::function]
 pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
+    profiling::scope!("gui::inspected_aura");
     let inspected = uiworld.write::<InspectedEntity>();
     let inspected_b = uiworld.write::<InspectedBuilding>();
     let map = goria.map();

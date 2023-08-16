@@ -28,8 +28,8 @@ pub mod zoneedit;
 pub use follow::FollowEntity;
 pub use topgui::*;
 
-#[profiling::function]
 pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
+    profiling::scope!("gui::run_ui_systems");
     bulldozer::bulldozer(goria, uiworld);
     inspected_aura::inspected_aura(goria, uiworld);
     lotbrush::lotbrush(goria, uiworld);

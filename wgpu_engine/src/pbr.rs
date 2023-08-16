@@ -149,8 +149,8 @@ impl PBR {
         self.write_specular_prefilter(gfx, enc);
     }
 
-    #[profiling::function]
     fn write_environment_cubemap(&self, gfx: &GfxContext, sun_pos: Vec3, enc: &mut CommandEncoder) {
+        profiling::scope!("gfx::write_environment_cubemap");
         self.environment_uniform
             .write_direct(&gfx.queue, &sun_pos.normalize().w(0.0));
         let pipe = gfx.get_pipeline(PBRPipeline::Environment);
@@ -172,8 +172,8 @@ impl PBR {
         }
     }
 
-    #[profiling::function]
     pub fn write_diffuse_irradiance(&self, gfx: &GfxContext, enc: &mut CommandEncoder) {
+        profiling::scope!("gfx::write_diffuse_irradiance");
         let pipe = gfx.get_pipeline(PBRPipeline::DiffuseIrradiance);
         self.diffuse_uniform.write_direct(
             &gfx.queue,
@@ -202,8 +202,8 @@ impl PBR {
         }
     }
 
-    #[profiling::function]
     pub fn write_specular_prefilter(&self, gfx: &GfxContext, enc: &mut CommandEncoder) {
+        profiling::scope!("gfx::write_specular_prefilter");
         let pipe = gfx.get_pipeline(PBRPipeline::SpecularPrefilter);
         for mip in 0..self.specular_prefilter_cube.n_mips() {
             let roughness = mip as f32 / (self.specular_prefilter_cube.n_mips() - 1) as f32;

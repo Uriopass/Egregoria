@@ -149,13 +149,13 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         true
     }
 
-    #[profiling::function]
     pub fn draw_terrain(
         &mut self,
         cam: &Camera,
         frustrum: &InfiniteFrustrum,
         fctx: &mut FrameContext<'_>,
     ) {
+        profiling::scope!("terrain::draw_terrain");
         for b in self.borders.iter() {
             fctx.objs.push(Box::new(b.clone()));
         }

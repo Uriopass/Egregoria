@@ -450,13 +450,13 @@ impl GfxContext {
         )
     }
 
-    #[profiling::function]
     pub fn render_objs(
         &mut self,
         encs: &mut Encoders,
         frame: &TextureView,
         mut prepare: impl FnMut(&mut FrameContext<'_>),
     ) {
+        profiling::scope!("gfx::render_objs");
         let mut objs = vec![];
         let mut fc = FrameContext {
             objs: &mut objs,
@@ -612,13 +612,13 @@ impl GfxContext {
         render_background(self, encs, &frame);
     }
 
-    #[profiling::function]
     pub fn render_gui(
         &mut self,
         encoders: &mut Encoders,
         frame: &TextureView,
         mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
     ) {
+        profiling::scope!("gfx::render_gui");
         render_gui(GuiRenderContext {
             encoder: &mut encoders.end,
             view: frame,
