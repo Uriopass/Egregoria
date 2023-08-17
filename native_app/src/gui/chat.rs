@@ -102,16 +102,15 @@ pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
                             let msg = state.cur_msg.take();
 
                             if msg.len() > 0 && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                                let rng = common::rand::randu64(common::hash_u64(msg.as_bytes()));
-
-                                let color = Color::hsv(rng * 360.0, 0.8, 1.0, 1.0);
+                                // let rng = common::rand::randu64(common::hash_u64(msg.as_bytes()));
+                                // let color = Color::hsv(rng * 360.0, 0.8, 1.0, 1.0);
 
                                 uiw.commands().push(WorldCommand::SendMessage {
                                     message: Message {
                                         name: "player".to_string(),
                                         text: msg,
                                         sent_at: goria.read::<GameTime>().instant(),
-                                        color,
+                                        color: Color::WHITE,
                                         kind: MessageKind::PlayerChat,
                                     },
                                 })
