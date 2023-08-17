@@ -40,6 +40,7 @@ pub mod engine_interaction;
 pub mod init;
 pub mod map;
 pub mod map_dynamic;
+pub mod multiplayer;
 pub mod physics;
 pub mod souls;
 #[cfg(test)]

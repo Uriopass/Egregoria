@@ -1,4 +1,5 @@
 use crate::gui::bulldozer::BulldozerState;
+use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
@@ -74,6 +75,8 @@ impl Gui {
         self.menu_bar(ui, uiworld, goria);
 
         inspector(ui, uiworld, goria);
+
+        chat(ui, uiworld, goria);
 
         self.windows.render(ui, uiworld, goria);
 

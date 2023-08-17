@@ -38,6 +38,7 @@ pub enum InputAction {
     DownElevation,
     OpenEconomyMenu,
     PausePlay,
+    OpenChat,
 }
 
 // All unit inputs need to match
@@ -88,6 +89,7 @@ const DEFAULT_BINDINGS: &[(InputAction, &[&[UnitInput]])] = &[
     (DownElevation,   &[&[Key(K::LControl), WheelDown]]),
     (OpenEconomyMenu, &[&[Key(K::E)]]),
     (PausePlay,       &[&[Key(K::Space)]]),
+    (OpenChat, &[&[Key(K::T)]]),
 ];
 
 impl Default for Bindings {
@@ -303,23 +305,24 @@ impl Display for InputAction {
             f,
             "{}",
             match self {
-                InputAction::GoLeft => "Go Left",
-                InputAction::GoRight => "Go Right",
-                InputAction::GoForward => "Go Forward",
-                InputAction::GoBackward => "Go Backward",
-                InputAction::CameraMove => "Camera Move",
-                InputAction::CameraRotate => "Camera Rotate",
-                InputAction::Zoom => "Zoom",
-                InputAction::Dezoom => "Dezoom",
-                InputAction::Rotate => "Rotate",
-                InputAction::Close => "Close",
-                InputAction::Select => "Select",
-                InputAction::HideInterface => "Hide interface",
-                InputAction::NoSnapping => "No Snapping",
-                InputAction::UpElevation => "Up Elevation",
-                InputAction::DownElevation => "Down Elevation",
-                InputAction::OpenEconomyMenu => "Economy Menu",
-                InputAction::PausePlay => "Pause/Play",
+                GoLeft => "Go Left",
+                GoRight => "Go Right",
+                GoForward => "Go Forward",
+                GoBackward => "Go Backward",
+                CameraMove => "Camera Move",
+                CameraRotate => "Camera Rotate",
+                Zoom => "Zoom",
+                Dezoom => "Dezoom",
+                Rotate => "Rotate",
+                Close => "Close",
+                Select => "Select",
+                HideInterface => "Hide interface",
+                NoSnapping => "No Snapping",
+                UpElevation => "Up Elevation",
+                DownElevation => "Down Elevation",
+                OpenEconomyMenu => "Economy Menu",
+                PausePlay => "Pause/Play",
+                OpenChat => "Interact with Chat",
             }
         )
     }

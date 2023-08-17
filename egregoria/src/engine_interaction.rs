@@ -1,3 +1,11 @@
+use std::collections::BTreeMap;
+use std::time::Instant;
+
+use serde::{Deserialize, Serialize};
+
+use geom::{vec3, Vec2, OBB};
+use WorldCommand::*;
+
 use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
@@ -5,18 +13,14 @@ use crate::map::{
     LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
 };
 use crate::map_dynamic::{BuildingInfos, ParkingManagement};
+use crate::multiplayer::chat::Message;
+use crate::multiplayer::MultiplayerState;
 use crate::transportation::testing_vehicles::RandomVehicles;
 use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::transportation::{spawn_parked_vehicle_with_spot, unpark, VehicleKind};
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, EgregoriaOptions, Replay};
-use geom::{vec3, Vec2, OBB};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::time::Instant;
-
-use WorldCommand::*;
 
 #[derive(Clone, Default)]
 pub struct WorldCommands {
@@ -32,6 +36,9 @@ pub enum WorldCommand {
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
+    SendMessage {
+        message: Message,
+    },
     SpawnRandomCars {
         n_cars: usize,
     },
@@ -317,6 +324,12 @@ impl WorldCommand {
 
                     goria.write::<RandomVehicles>().vehicles.insert(v_id);
                 }
+            }
+            SendMessage { ref message } => {
+                goria
+                    .write::<MultiplayerState>()
+                    .chat
+                    .add_message(message.clone());
             }
         }
     }

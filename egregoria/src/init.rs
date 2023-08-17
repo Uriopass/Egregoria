@@ -4,6 +4,7 @@ use crate::map_dynamic::{
     dispatch_system, itinerary_update, routing_changed_system, routing_update_system,
     BuildingInfos, Dispatcher, ParkingManagement,
 };
+use crate::multiplayer::MultiplayerState;
 use crate::physics::coworld_synchronize;
 use crate::souls::freight_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
@@ -60,6 +61,7 @@ pub fn init() {
 
     register_init(init_market);
 
+    register_resource_default::<MultiplayerState, Bincode>("multiplayer_state");
     register_resource_default::<RandomVehicles, Bincode>("random_vehicles");
     register_resource_default::<Tick, Bincode>("tick");
     register_resource_default::<Map, Bincode>("map");

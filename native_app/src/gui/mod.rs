@@ -13,6 +13,7 @@ use roadbuild::RoadBuildResource;
 
 pub mod addtrain;
 pub mod bulldozer;
+pub mod chat;
 pub mod follow;
 pub mod inspect;
 pub mod inspected_aura;

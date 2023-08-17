@@ -14,7 +14,7 @@ pub const TICKS_PER_SECOND: u32 = 50;
 pub struct Tick(pub u32);
 
 /// An in-game instant used to measure time differences
-#[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Inspect, PartialEq, PartialOrd, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameInstant {
     /// Time in seconds elapsed since the start of the game
     pub timestamp: f64,

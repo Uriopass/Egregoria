@@ -1,5 +1,6 @@
 use crate::game_loop::Timings;
 use crate::gui::bulldozer::BulldozerState;
+use crate::gui::chat::GUIChatState;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadbuild::RoadBuildResource;
 use crate::gui::roadeditor::RoadEditorResource;
@@ -38,6 +39,7 @@ pub fn init() {
     register_resource_noserialize::<ErrorTooltip>();
     register_resource_noserialize::<ExitState>();
     register_resource_noserialize::<FollowEntity>();
+    register_resource_noserialize::<GUIChatState>();
     register_resource_noserialize::<ImmediateDraw>();
     register_resource_noserialize::<ImmediateSound>();
     register_resource_noserialize::<InputMap>();
