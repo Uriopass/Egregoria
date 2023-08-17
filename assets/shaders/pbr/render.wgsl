@@ -158,10 +158,12 @@ fn render(sun: vec3<f32>,
     var dkD: vec3<f32> = 1.0 - dkS;
     dkD *= 1.0 - vec3(metallic);
 
-    let ambient: vec3<f32> = (0.2 * dkD * (0.15 + irradiance_diffuse) * albedo + specular) * ssao;
-    var color: vec3<f32>   = ambient + Lo * 4.0;
+    let ambient: vec3<f32> = (0.2 * dkD * (0.04 + irradiance_diffuse) * albedo + specular) * ssao;
+    var color: vec3<f32>   = ambient + Lo;
 
-    color = tonemap(color);
+    let autoexposure = 1.0 + smoothstep(0.0, 0.1, -sun.z) * 5.0;
+
+    color = tonemap(autoexposure * color);
 
     color += dither(position);
 

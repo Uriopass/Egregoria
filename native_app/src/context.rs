@@ -134,7 +134,7 @@ impl Context {
 
                         let params = self.gfx.render_params.value_mut();
                         params.time_always = (params.time_always + self.delta) % 3600.0;
-                        params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
+                        params.sun_col = 4.0 * sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
                         let camera = state.uiw.read::<CameraHandler3D>();
                         params.cam_pos = camera.camera.eye();
                         params.cam_dir = -camera.camera.dir();

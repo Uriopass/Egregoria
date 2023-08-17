@@ -113,6 +113,12 @@ fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {
         iTime += iStepSize;
     }
 
+    let backgroundLight: vec3<f32> = mix(vec3(0.0116, 0.027, 0.0423), // light blue (horizon)
+                                         vec3(0.0036, 0.013, 0.0194), // dark blue
+                                         saturate(2.0 * sqrt(r.z)))   // gradient
+                                          * 0.4                       // power
+                                          * smoothstep(-0.3, 0.1, r.z); // black at bottom
+
     // Calculate and return the final color.
-    return iSun * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
+    return backgroundLight + iSun * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
 }
