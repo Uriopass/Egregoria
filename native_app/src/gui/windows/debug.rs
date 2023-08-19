@@ -15,8 +15,8 @@ use egregoria::map::{
 };
 use egregoria::transportation::train::TrainReservations;
 use egui::Widget;
+use engine::Tesselator;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
-use wgpu_engine::Tesselator;
 
 #[derive(Default)]
 pub struct DebugState {

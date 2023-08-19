@@ -154,7 +154,7 @@ impl UiTextures {
         }) {
             let name = prefix.to_string() + path.file_stem().unwrap().to_str().unwrap();
 
-            let (img, width, height) = wgpu_engine::Texture::read_image(&path)
+            let (img, width, height) = engine::Texture::read_image(&path)
                 .unwrap_or_else(|| panic!("Couldn't load gui texture {:?}", &path));
 
             let h = ctx.load_texture(

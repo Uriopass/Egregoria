@@ -67,7 +67,7 @@ This is where companies decide to employ people, and where people decide to buy 
 
 This module handles vehicles, it contains all the complex rules around traffic and how to handle intersections.  
 
-## `wgpu_engine`
+## `engine`
 
 This crate contains almost all of the wgpu related code. That is, all the low-level graphics stuff like connecting to the gpu, setting up pipelines, sending textures and render meshes.  
 All the shaders are in the assets/shaders folder.
@@ -138,7 +138,7 @@ Try to keep the different aspects of the simulation decoupled so that it is easi
 
 ## 3D Graphics
 
-Most of the 3D graphics code is in the `wgpu_engine` crate. It uses a basic forward renderer.  
+Most of the 3D graphics code is in the `engine` crate. It uses a basic forward renderer.  
 Some notable features you could add would be cascaded shadow maps, PBR and clustered lighting.
 
 As the name hints, it uses wgpu as the rendering backend which is multi-backend (vulkan, dx12 and metal).

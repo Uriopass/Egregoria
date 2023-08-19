@@ -7,15 +7,15 @@ use egregoria::map::{
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
-use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
-use std::ops::{Mul, Neg};
-use std::rc::Rc;
-use wgpu_engine::earcut::earcut;
-use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{
+use engine::earcut::earcut;
+use engine::meshload::load_mesh;
+use engine::{
     Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, Mesh, MeshBuilder,
     MeshInstance, MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
+use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
+use std::ops::{Mul, Neg};
+use std::rc::Rc;
 
 /// This is the main struct that handles the map rendering.
 /// It is responsible for generating the meshes and sprites for the map

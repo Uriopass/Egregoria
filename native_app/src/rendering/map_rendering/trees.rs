@@ -1,12 +1,12 @@
 use common::FastMap;
 use egregoria::map::{ChunkID, Map, MapSubscriber, UpdateType, CHUNK_SIZE};
-use geom::{vec3, vec4, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
-use std::ops::Mul;
-use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::wgpu::RenderPass;
-use wgpu_engine::{
+use engine::meshload::load_mesh;
+use engine::wgpu::RenderPass;
+use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
+use geom::{vec3, vec4, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
+use std::ops::Mul;
 
 pub struct TreesRender {
     tree_builder: InstancedMeshBuilder<false>,
@@ -74,7 +74,7 @@ impl TreesRender {
                 gfx: &'a GfxContext,
                 rp: &mut RenderPass<'a>,
                 shadow_cascade: Option<&Matrix4>,
-                proj: &'a wgpu_engine::wgpu::BindGroup,
+                proj: &'a engine::wgpu::BindGroup,
             ) {
                 if let Some(v) = shadow_cascade {
                     let pos = v.mul(self.1.w(1.0));

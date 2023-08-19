@@ -1,11 +1,9 @@
 use egregoria::transportation::train::RailWagonKind;
 use egregoria::transportation::{Location, VehicleKind};
 use egregoria::Egregoria;
+use engine::meshload::load_mesh;
+use engine::{FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder};
 use geom::{LinearColor, Vec3, V3};
-use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{
-    FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
-};
 
 /// Render all entities using instanced rendering for performance
 pub struct InstancedRender {

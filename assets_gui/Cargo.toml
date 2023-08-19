@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 common      = { path = "../common" }
 geom        = { path = "../geom" }
-wgpu_engine = { path = "../wgpu_engine" }
+engine = { path = "../engine" }
 log         = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
 beul        = "1.0"
 inline_tweak = "1.0.8"

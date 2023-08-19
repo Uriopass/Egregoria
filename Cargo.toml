@@ -5,12 +5,12 @@ members = [
     "egregoria",
     "egui-inspect",
     "egui-inspect-derive",
+    "engine",
+    "engine_demo",
     "geom",
     "headless",
     "native_app",
     "networking",
-    "wgpu_engine",
-    "wgpu_engine_demo",
 ]
 
 resolver = "2"

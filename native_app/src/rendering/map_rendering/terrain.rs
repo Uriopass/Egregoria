@@ -1,8 +1,8 @@
 use egregoria::map::{Map, MapSubscriber, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE};
 use egregoria::Egregoria;
+use engine::terrain::TerrainRender as EngineTerrainRender;
+use engine::{Context, FrameContext, GfxContext};
 use geom::{Camera, InfiniteFrustrum};
-use wgpu_engine::terrain::TerrainRender as EngineTerrainRender;
-use wgpu_engine::{Context, FrameContext, GfxContext};
 
 const CSIZE: usize = CHUNK_SIZE as usize;
 const CRESO: usize = CHUNK_RESOLUTION;

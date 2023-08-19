@@ -1,5 +1,5 @@
 [package]
-name = "wgpu_engine"
+name = "engine"
 version = "0.1.0"
 authors = ["Paris DOUADY <paris.douady@hotmail.fr>"]
 edition = "2021"

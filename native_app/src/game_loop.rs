@@ -9,8 +9,8 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
+use engine::{Context, FrameContext, GfxContext, Tesselator};
 use geom::{vec2, vec3, Camera, LinearColor};
-use wgpu_engine::{Context, FrameContext, GfxContext, Tesselator};
 
 use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
@@ -38,7 +38,7 @@ pub struct State {
     all_audio: GameAudio,
 }
 
-impl wgpu_engine::framework::State for State {
+impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 

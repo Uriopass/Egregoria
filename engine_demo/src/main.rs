@@ -1,9 +1,9 @@
-use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3};
-use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{
+use engine::meshload::load_mesh;
+use engine::{
     Context, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, KeyCode, Material,
     MeshInstance, MetallicRoughness, MouseButton,
 };
+use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3};
 
 struct State {
     meshes: Vec<InstancedMesh>,
@@ -13,7 +13,7 @@ struct State {
     camera: Camera,
 }
 
-impl wgpu_engine::framework::State for State {
+impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
@@ -77,25 +77,19 @@ impl wgpu_engine::framework::State for State {
 
     fn update(&mut self, ctx: &mut Context) {
         if ctx.input.mouse.pressed.contains(&MouseButton::Left) {
-            let _ = ctx
-                .window
-                .set_cursor_grab(wgpu_engine::CursorGrabMode::Confined);
+            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::Confined);
             ctx.window.set_cursor_visible(false);
             self.is_captured = true;
         }
 
         if ctx.input.cursor_left {
-            let _ = ctx
-                .window
-                .set_cursor_grab(wgpu_engine::CursorGrabMode::None);
+            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::None);
             ctx.window.set_cursor_visible(true);
             self.is_captured = false;
         }
 
         if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
-            let _ = ctx
-                .window
-                .set_cursor_grab(wgpu_engine::CursorGrabMode::None);
+            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::None);
             ctx.window.set_cursor_visible(true);
             self.is_captured = false;
         }
@@ -203,5 +197,5 @@ impl wgpu_engine::framework::State for State {
 fn main() {
     common::logger::MyLog::init();
 
-    wgpu_engine::framework::start::<State>();
+    engine::framework::start::<State>();
 }

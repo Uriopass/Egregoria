@@ -1,12 +1,10 @@
 #![allow(dead_code)]
 
 use common::{AudioKind, FastMap};
+use engine::meshload::load_mesh;
+use engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder, Tesselator};
 use geom::{LinearColor, Polygon, Vec2, Vec3, AABB, OBB};
 use std::borrow::Cow;
-use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{
-    FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder, Tesselator,
-};
 
 #[derive(Default)]
 pub struct ImmediateSound {

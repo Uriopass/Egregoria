@@ -27,5 +27,5 @@ fn main() {
     profiling::register_thread!("Main Thread");
 
     init::init();
-    wgpu_engine::framework::start::<game_loop::State>();
+    engine::framework::start::<game_loop::State>();
 }
