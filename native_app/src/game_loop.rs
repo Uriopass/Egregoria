@@ -17,7 +17,7 @@ use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{ExitState, FollowEntity, Gui, Tool, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
-use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
+use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
 use egregoria::utils::scheduler::SeqSchedule;
@@ -40,7 +40,7 @@ pub struct State {
 
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
-        let camera = CameraHandler3D::load(ctx.gfx.size);
+        let camera = OrbitCamera::load(ctx.gfx.size);
 
         Gui::set_style(&ctx.egui.egui);
         log::info!("loaded egui_render");
@@ -118,7 +118,7 @@ impl engine::framework::State for State {
             let map = goria.map();
             let unproj = self
                 .uiw
-                .read::<CameraHandler3D>()
+                .read::<OrbitCamera>()
                 .unproject(ctx.input.mouse.screen, |p| {
                     map.terrain.height(p).map(|x| x + 0.01)
                 });
@@ -167,7 +167,7 @@ impl engine::framework::State for State {
         let goria = self.goria.read().unwrap();
 
         self.immtess.meshbuilder.clear();
-        let camera = self.uiw.read::<CameraHandler3D>();
+        let camera = self.uiw.read::<OrbitCamera>();
         camera.cull_tess(&mut self.immtess);
 
         let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
@@ -238,7 +238,7 @@ impl engine::framework::State for State {
 
     fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {
         self.uiw
-            .write::<CameraHandler3D>()
+            .write::<OrbitCamera>()
             .resize(ctx, size.0 as f32, size.1 as f32);
     }
 
@@ -285,7 +285,7 @@ impl State {
         params.sun_col = 4.0
             * sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-        let camera = self.uiw.read::<CameraHandler3D>();
+        let camera = self.uiw.read::<OrbitCamera>();
         params.cam_pos = camera.camera.eye();
         params.cam_dir = -camera.camera.dir();
         params.sun = sun;
@@ -350,7 +350,7 @@ impl State {
             &self.uiw.read::<Settings>(),
             |p| map.terrain.height(p),
         );
-        *self.uiw.write::<Camera>() = self.uiw.read::<CameraHandler3D>().camera;
+        *self.uiw.write::<Camera>() = self.uiw.read::<OrbitCamera>().camera;
 
         drop(map);
     }

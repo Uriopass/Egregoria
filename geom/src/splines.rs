@@ -216,7 +216,12 @@ impl Spline {
             .map(move |t| self.get(t))
     }
 
-    fn smart_points_t(&self, detail: f32, start: f32, end: f32) -> impl Iterator<Item = f32> + '_ {
+    pub fn smart_points_t(
+        &self,
+        detail: f32,
+        start: f32,
+        end: f32,
+    ) -> impl Iterator<Item = f32> + '_ {
         let detail = detail.abs();
 
         std::iter::once(start)
