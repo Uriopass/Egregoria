@@ -11,38 +11,24 @@ geom          = { path = "../geom" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
 networking    = { path = "../networking", optional=true }
+egui-inspect  = { path = "../egui-inspect" }
+egui          = { workspace = true }
+egui_extras   = { workspace = true }
 flat_spatial  = { workspace = true }
+ordered-float = { workspace = true }
+winit         = { workspace = true }
+oddio         = { workspace = true }
 log           = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
-ordered-float = { workspace = true }
 serde         = "1.0"
-oddio         = "0.6.2"
-cpal          = "0.15.0"
-lewton        = "0.10.2"
-slotmapd       = { version = "1.0", default-features = false }
-winit = { version = "0.28.1" }
+slotmapd      = { version = "1.0", default-features = false }
 atomic_refcell = "0.1.6"
 rayon         = "1.6"
 profiling     = { version = "1.0.8", default-features = false }
 include_dir   = "0.7.2"
-egui-inspect = { path = "../egui-inspect" }
-egui = { workspace = true }
-egui-wgpu = { workspace = true }
-egui_extras = { workspace = true }
 
 [features]
 default = []
 profile = ["profiling/profile-with-tracy"]
 multiplayer = ["networking"]
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-egui-winit = { workspace = true, default-features = false }
-beul = "1.0.0"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-egui-winit = { workspace = true }
-getrandom = { version = "0.2", features = ["js"] } # used by ahash used by egui
-console_error_panic_hook = "0.1"
-console_log = "1.0"
-web-sys = "0.3"
-wasm-bindgen-futures = "0.4"

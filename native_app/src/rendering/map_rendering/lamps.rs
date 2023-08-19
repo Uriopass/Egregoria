@@ -1,11 +1,10 @@
-use crate::context::Context;
 use common::{FastMap, FastSet};
 use egregoria::map::{
     chunk_id, Chunk, ChunkID, Map, MapSubscriber, ProjectFilter, ProjectKind, UpdateType,
 };
 use flat_spatial::AABBGrid;
 use geom::{Vec3, AABB3, V3};
-use wgpu_engine::{LampLights, LightChunkID};
+use wgpu_engine::{Context, LampLights, LightChunkID};
 
 pub struct LampsRender {
     lamp_memory: FastMap<LightChunkID, Vec<Vec3>>,

@@ -1,9 +1,9 @@
-use crate::input::{InputContext, KeyCode, MouseButton};
 use common::{FastMap, FastSet};
 use geom::{Vec2, Vec3};
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
+use wgpu_engine::{InputContext, KeyCode, MouseButton};
 use winit::event::ScanCode;
 
 // Either combinations can work

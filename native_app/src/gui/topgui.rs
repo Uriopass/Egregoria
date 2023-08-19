@@ -70,6 +70,12 @@ impl Gui {
     /// Root GUI entrypoint
     pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         profiling::scope!("topgui::render");
+        self.auto_save(uiworld);
+
+        if self.hidden {
+            return;
+        }
+
         self.time_controls(ui, uiworld, goria);
 
         self.menu_bar(ui, uiworld, goria);
@@ -81,8 +87,6 @@ impl Gui {
         self.windows.render(ui, uiworld, goria);
 
         Self::toolbox(ui, uiworld, goria);
-
-        self.auto_save(uiworld);
 
         self.tooltip(ui, uiworld, goria);
     }

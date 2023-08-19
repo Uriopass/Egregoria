@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::CompiledModule;
-use image::{DynamicImage, GenericImageView, Rgba32FImage};
+use image::{DynamicImage, GenericImageView};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -329,6 +329,7 @@ impl<'a> TextureBuilder<'a> {
     }
 
     pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        /*
         if bytes.starts_with(b"#?RADIANCE") {
             let irradiance = radiant::load(bytes).ok()?;
 
@@ -344,7 +345,7 @@ impl<'a> TextureBuilder<'a> {
                 bytemuck::cast_vec(data_mapped),
             )?);
             return Some(Self::from_img(image_irradiance));
-        }
+        }*/
 
         let img = image::load_from_memory(bytes).ok()?;
         Some(Self::from_img(img))

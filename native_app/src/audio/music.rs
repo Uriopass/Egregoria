@@ -1,7 +1,7 @@
-use crate::audio::{AudioContext, BaseSignal, ControlHandle, FadeIn};
 use common::AudioKind;
 use oddio::{FramesSignal, Stop};
 use std::time::{Duration, Instant};
+use wgpu_engine::{AudioContext, BaseSignal, ControlHandle, FadeIn};
 
 const TRACKS: &[&str] = &["music2", "music1"];
 

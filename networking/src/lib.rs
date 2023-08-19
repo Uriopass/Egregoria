@@ -84,7 +84,7 @@ unsafe impl<T> Sync for PhantomSendSync<T> {}
 
 impl<T> Default for PhantomSendSync<T> {
     fn default() -> Self {
-        Self(PhantomData::default())
+        Self(PhantomData)
     }
 }
 

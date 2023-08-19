@@ -2,24 +2,21 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
-use winit::dpi::PhysicalSize;
 use winit::event_loop::ControlFlow;
-use winit::window::{Fullscreen, Window};
+use winit::window::Fullscreen;
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use geom::{Camera, LinearColor};
-use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
+use geom::{vec2, vec3, Camera, LinearColor};
+use wgpu_engine::{Context, FrameContext, GfxContext, Tesselator};
 
 use crate::audio::GameAudio;
-use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{ExitState, FollowEntity, Gui, Tool, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
-use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
@@ -30,12 +27,8 @@ pub const VERSION: &str = include_str!("../../VERSION");
 /// State is the main struct that contains all the state of the game and game UI.
 pub struct State {
     pub goria: Arc<RwLock<Egregoria>>,
-
     pub uiw: UiWorld,
-
     pub game_schedule: SeqSchedule,
-
-    egui_render: EguiWrapper,
 
     instanced_renderer: InstancedRender,
     map_renderer: MapRenderer,
@@ -45,12 +38,11 @@ pub struct State {
     all_audio: GameAudio,
 }
 
-impl State {
-    pub fn new(ctx: &mut Context) -> Self {
+impl wgpu_engine::framework::State for State {
+    fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
-        let mut egui_render = EguiWrapper::new(&mut ctx.gfx, ctx.el.as_ref().unwrap());
-        Gui::set_style(&egui_render.egui);
+        Gui::set_style(&ctx.egui.egui);
         log::info!("loaded egui_render");
 
         let goria: Egregoria =
@@ -69,7 +61,7 @@ impl State {
         uiworld.write::<InputMap>().build_input_tree(&mut bindings);
         drop(bindings);
 
-        uiworld.insert(UiTextures::new(&mut egui_render.egui));
+        uiworld.insert(UiTextures::new(&mut ctx.egui.egui));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
@@ -87,7 +79,6 @@ impl State {
         let me = Self {
             uiw: uiworld,
             game_schedule,
-            egui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             map_renderer: MapRenderer::new(&mut ctx.gfx, &goria),
             gui,
@@ -99,15 +90,30 @@ impl State {
         me
     }
 
-    pub fn update(&mut self, ctx: &mut Context) {
+    fn update(&mut self, ctx: &mut Context) {
         profiling::scope!("game_loop::update");
+
+        let mut slstate = self.uiw.write::<SaveLoadState>();
+        if slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
+            slstate.please_save = false;
+            let cpy = self.goria.clone();
+            slstate.saving_status.store(true, Ordering::SeqCst);
+            let status = slstate.saving_status.clone();
+            std::thread::spawn(move || {
+                profiling::scope!("game_loop::update::save");
+                cpy.read().unwrap().save_to_disk("world");
+                status.store(false, Ordering::SeqCst);
+            });
+        }
+        drop(slstate);
+
         crate::network::goria_update(self);
 
         if std::mem::take(&mut self.uiw.write::<SaveLoadState>().render_reset) {
             self.reset(ctx);
         }
 
-        if !self.egui_render.last_mouse_captured {
+        if !ctx.egui.last_mouse_captured {
             let goria = self.goria.read().unwrap();
             let map = goria.map();
             let unproj = self
@@ -122,8 +128,8 @@ impl State {
 
         self.uiw.write::<InputMap>().prepare_frame(
             &ctx.input,
-            !self.egui_render.last_kb_captured,
-            !self.egui_render.last_mouse_captured,
+            !ctx.egui.last_kb_captured,
+            !ctx.egui.last_mouse_captured,
         );
         crate::gui::run_ui_systems(&self.goria.read().unwrap(), &mut self.uiw);
 
@@ -152,16 +158,10 @@ impl State {
 
         FollowEntity::update_camera(self);
         self.uiw.camera_mut().update(ctx);
+        self.manage_gfx_params(ctx);
     }
 
-    pub fn reset(&mut self, ctx: &mut Context) {
-        ctx.gfx.lamplights.reset(&ctx.gfx.device, &ctx.gfx.queue);
-        self.map_renderer = MapRenderer::new(&mut ctx.gfx, &self.goria.read().unwrap());
-        self.goria.write().unwrap().map().dispatch_all();
-        ctx.gfx.update_simplelit_bg();
-    }
-
-    pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
+    fn render(&mut self, ctx: &mut FrameContext<'_>) {
         profiling::scope!("game_loop::render");
         let start = Instant::now();
         let goria = self.goria.read().unwrap();
@@ -236,34 +236,13 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
-        profiling::scope!("game_loop::render_gui");
-        let gui = &mut self.gui;
-        let uiworld = &mut self.uiw;
-        let pixels_per_point = uiworld.read::<Settings>().gui_scale;
-
-        {
-            let goria = self.goria.read().unwrap();
-            self.egui_render
-                .render(ctx, window, gui.hidden, pixels_per_point, |ui| {
-                    gui.render(ui, uiworld, &goria);
-                });
-        }
-
-        let mut slstate = uiworld.write::<SaveLoadState>();
-        if slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
-            slstate.please_save = false;
-            let cpy = self.goria.clone();
-            slstate.saving_status.store(true, Ordering::SeqCst);
-            let status = slstate.saving_status.clone();
-            std::thread::spawn(move || {
-                cpy.read().unwrap().save_to_disk("world");
-                status.store(false, Ordering::SeqCst);
-            });
-        }
+    fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {
+        self.uiw
+            .write::<CameraHandler3D>()
+            .resize(ctx, size.0 as f32, size.1 as f32);
     }
 
-    pub fn exit(&mut self, control_flow: &mut ControlFlow) {
+    fn exit(&mut self, control_flow: &mut ControlFlow) {
         if self.gui.last_save.elapsed() < Duration::from_secs(30) {
             *control_flow = ControlFlow::Exit;
             return;
@@ -278,6 +257,54 @@ impl State {
             }
             ExitState::Saving => {}
         }
+    }
+
+    fn render_gui(&mut self, ui: &egui::Context) {
+        let goria = self.goria.read().unwrap();
+        self.gui.render(ui, &mut self.uiw, &goria);
+    }
+}
+
+impl State {
+    fn reset(&mut self, ctx: &mut Context) {
+        ctx.gfx.lamplights.reset(&ctx.gfx.device, &ctx.gfx.queue);
+        self.map_renderer = MapRenderer::new(&mut ctx.gfx, &self.goria.read().unwrap());
+        self.goria.write().unwrap().map().dispatch_all();
+        ctx.gfx.update_simplelit_bg();
+    }
+
+    fn manage_gfx_params(&self, ctx: &mut Context) {
+        let t = std::f32::consts::TAU
+            * (ctx.gfx.render_params.value().time - 8.0 * GameTime::HOUR as f32)
+            / GameTime::DAY as f32;
+
+        let sun = vec3(t.cos(), t.sin() * 0.5, t.sin() + 0.5).normalize();
+
+        let params = ctx.gfx.render_params.value_mut();
+        params.time_always = (params.time_always + ctx.delta) % 3600.0;
+        params.sun_col = 4.0
+            * sun.z.max(0.0).sqrt().sqrt()
+            * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
+        let camera = self.uiw.read::<CameraHandler3D>();
+        params.cam_pos = camera.camera.eye();
+        params.cam_dir = -camera.camera.dir();
+        params.sun = sun;
+        params.viewport = vec2(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32);
+        params.sun_shadow_proj = camera
+            .camera
+            .build_sun_shadowmap_matrix(
+                sun,
+                params.shadow_mapping_resolution as f32,
+                &camera.frustrum,
+            )
+            .try_into()
+            .unwrap();
+        drop(camera);
+        let c = egregoria::config();
+        params.grass_col = c.grass_col.into();
+        params.sand_col = c.sand_col.into();
+        params.sea_col = c.sea_col.into();
+        drop(c);
     }
 
     fn manage_settings(ctx: &mut Context, settings: &Settings) {
@@ -302,7 +329,14 @@ impl State {
             }
         }
 
-        ctx.audio.set_settings(settings);
+        ctx.egui.pixels_per_point = settings.gui_scale;
+
+        ctx.audio.set_settings(
+            settings.master_volume_percent,
+            settings.ui_volume_percent,
+            settings.music_volume_percent,
+            settings.effects_volume_percent,
+        );
     }
 
     fn manage_io(&mut self, ctx: &mut Context) {
@@ -319,16 +353,6 @@ impl State {
         *self.uiw.write::<Camera>() = self.uiw.read::<CameraHandler3D>().camera;
 
         drop(map);
-    }
-
-    pub fn event(&mut self, event: &winit::event::WindowEvent<'_>) {
-        self.egui_render.handle_event(event);
-    }
-
-    pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
-        self.uiw
-            .write::<CameraHandler3D>()
-            .resize(ctx, size.width as f32, size.height as f32);
     }
 }
 

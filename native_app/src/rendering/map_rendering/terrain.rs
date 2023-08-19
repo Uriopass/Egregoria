@@ -1,9 +1,8 @@
-use crate::context::Context;
 use egregoria::map::{Map, MapSubscriber, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE};
 use egregoria::Egregoria;
 use geom::{Camera, InfiniteFrustrum};
 use wgpu_engine::terrain::TerrainRender as EngineTerrainRender;
-use wgpu_engine::{FrameContext, GfxContext};
+use wgpu_engine::{Context, FrameContext, GfxContext};
 
 const CSIZE: usize = CHUNK_SIZE as usize;
 const CRESO: usize = CHUNK_RESOLUTION;

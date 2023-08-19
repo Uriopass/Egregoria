@@ -5,12 +5,11 @@ use egregoria::Egregoria;
 use geom::{Camera, Circle, InfiniteFrustrum, Intersect3};
 use map_mesh::MapMeshHandler;
 use terrain::TerrainRender;
-use wgpu_engine::{FrameContext, GfxContext, Water};
+use wgpu_engine::{Context, FrameContext, GfxContext, Water};
 
 use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::map_rendering::lamps::LampsRender;
 use crate::rendering::map_rendering::trees::TreesRender;
-use crate::Context;
 
 mod lamps;
 mod map_mesh;

@@ -1,5 +1,6 @@
 use common::FastSet;
 use geom::{vec2, Vec2};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use winit::event::{
     ElementState, KeyboardInput, MouseScrollDelta, ScanCode, VirtualKeyCode, WindowEvent,
@@ -9,18 +10,35 @@ use winit::event::{
 pub struct InputContext {
     pub mouse: MouseInfo,
     pub keyboard: KeyboardInfo,
+    pub cursor_left: bool,
 }
 
 impl InputContext {
     pub fn end_frame(&mut self) {
         self.keyboard.last_characters.clear();
         self.mouse.wheel_delta = 0.0;
+        self.mouse.screen_delta = Vec2::ZERO;
+        self.cursor_left = false;
+    }
+
+    pub fn handle_device(&mut self, event: &winit::event::DeviceEvent) {
+        #[allow(clippy::single_match)]
+        match event {
+            winit::event::DeviceEvent::MouseMotion { delta } => {
+                self.mouse.screen_delta += vec2(delta.0 as f32, delta.1 as f32);
+            }
+            _ => {}
+        }
     }
 
     pub fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
         match event {
             WindowEvent::ReceivedCharacter(c) => {
                 self.keyboard.last_characters.push(*c);
+                true
+            }
+            WindowEvent::CursorLeft { .. } => {
+                self.cursor_left = true;
                 true
             }
             WindowEvent::KeyboardInput {
@@ -85,6 +103,7 @@ impl InputContext {
 pub struct MouseInfo {
     pub wheel_delta: f32,
     pub screen: Vec2,
+    pub screen_delta: Vec2,
     pub pressed: FastSet<MouseButton>,
 }
 

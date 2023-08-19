@@ -1,13 +1,7 @@
 use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3};
-use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{
-    Context, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, KeyCode, Material,
-    MeshInstance, MetallicRoughness, MouseButton,
-};
+use wgpu_engine::{Context, FrameContext, GfxContext, KeyCode, MouseButton};
 
 struct State {
-    meshes: Vec<InstancedMesh>,
-
     is_captured: bool,
 
     camera: Camera,
@@ -21,48 +15,6 @@ impl wgpu_engine::framework::State for State {
         gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
         gfx.update_simplelit_bg();
 
-        let mesh = load_mesh(gfx, "sphere.glb").unwrap();
-        let alb = gfx.material(mesh.materials[0].0).albedo.clone();
-
-        let mut meshes = vec![];
-
-        if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb") {
-            let mut i = InstancedMeshBuilder::<true>::new(m);
-            i.instances.push(MeshInstance {
-                pos: vec3(50.0, 00.0, 0.0),
-                dir: Vec3::X,
-                tint: LinearColor::WHITE,
-            });
-            meshes.push(i.build(gfx).unwrap());
-        }
-
-        const N_MET: i32 = 5;
-        const N_ROUGH: i32 = 10;
-        for x in 0..N_ROUGH {
-            for z in 0..N_MET {
-                let mut c = mesh.clone();
-
-                c.materials[0].0 = gfx.register_material(Material::new_raw(
-                    &gfx.device,
-                    alb.clone(),
-                    MetallicRoughness {
-                        metallic: z as f32 / (N_MET as f32 - 1.0),
-                        roughness: x as f32 / (N_ROUGH as f32 - 1.0),
-                        tex: None,
-                    },
-                    None,
-                    &gfx.palette(),
-                ));
-                let mut i = InstancedMeshBuilder::<true>::new(c);
-                i.instances.push(MeshInstance {
-                    pos: 2.3 * vec3(x as f32, 0.0, z as f32),
-                    dir: Vec3::X,
-                    tint: LinearColor::WHITE,
-                });
-                meshes.push(i.build(gfx).unwrap());
-            }
-        }
-
         let mut camera = Camera::new(vec3(9.0, -30.0, 13.0), 1000.0, 1000.0);
         camera.dist = 0.0;
         camera.pitch = Radians(0.0);
@@ -70,7 +22,6 @@ impl wgpu_engine::framework::State for State {
 
         Self {
             camera,
-            meshes,
             is_captured: false,
         }
     }
@@ -191,11 +142,9 @@ impl wgpu_engine::framework::State for State {
         params.shadow_mapping_resolution = 2048;
     }
 
-    fn render(&mut self, fc: &mut FrameContext) {
-        fc.draw(self.meshes.clone());
-    }
+    fn render(&mut self, _fc: &mut FrameContext) {}
 
-    fn resized(&mut self, _: &mut Context, size: (u32, u32)) {
+    fn resized(&mut self, _ctx: &mut Context, size: (u32, u32)) {
         self.camera.set_viewport(size.0 as f32, size.1 as f32);
     }
 }

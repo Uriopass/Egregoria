@@ -1,7 +1,7 @@
+use crate::{GfxContext, GuiRenderContext};
 use egui::TextureId;
 use egui_wgpu::renderer;
 use egui_wgpu::renderer::ScreenDescriptor;
-use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
 
@@ -14,10 +14,11 @@ pub struct EguiWrapper {
     pub last_mouse_captured: bool,
     pub last_kb_captured: bool,
     pub to_remove: Vec<TextureId>,
+    pub pixels_per_point: f32,
 }
 
 impl EguiWrapper {
-    pub fn new(gfx: &mut GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
+    pub fn new(gfx: &GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
         let egui = egui::Context::default();
 
         let platform = egui_winit::State::new(el);
@@ -31,6 +32,7 @@ impl EguiWrapper {
             last_kb_captured: false,
             platform,
             to_remove: vec![],
+            pixels_per_point: 1.0,
         }
     }
 
@@ -38,8 +40,6 @@ impl EguiWrapper {
         &mut self,
         gfx: GuiRenderContext<'_, '_>,
         window: &Window,
-        hidden: bool,
-        pixels_per_point: f32,
         ui_render: impl for<'ui> FnOnce(&'ui egui::Context),
     ) {
         for id in self.to_remove.drain(..) {
@@ -50,11 +50,11 @@ impl EguiWrapper {
         rinput.screen_rect = Some(egui::Rect::from_min_size(
             Default::default(),
             egui::vec2(
-                gfx.size.0 as f32 / pixels_per_point,
-                gfx.size.1 as f32 / pixels_per_point,
+                gfx.size.0 as f32 / self.pixels_per_point,
+                gfx.size.1 as f32 / self.pixels_per_point,
             ),
         ));
-        rinput.pixels_per_point = Some(pixels_per_point);
+        rinput.pixels_per_point = Some(self.pixels_per_point);
 
         let output = self.egui.run(rinput, |ctx| {
             ui_render(ctx);
@@ -68,7 +68,7 @@ impl EguiWrapper {
         }
         let desc = ScreenDescriptor {
             size_in_pixels: [gfx.size.0, gfx.size.1],
-            pixels_per_point,
+            pixels_per_point: self.pixels_per_point,
         };
         self.renderer.update_buffers(
             gfx.device,
@@ -80,25 +80,23 @@ impl EguiWrapper {
 
         self.to_remove = output.textures_delta.free;
 
-        if !hidden {
-            let mut render_pass =
-                gfx.encoder
-                    .begin_render_pass(&wgpu_engine::wgpu::RenderPassDescriptor {
-                        color_attachments: &[Some(wgpu_engine::wgpu::RenderPassColorAttachment {
-                            view: gfx.view,
-                            resolve_target: None,
-                            ops: wgpu_engine::wgpu::Operations {
-                                load: wgpu_engine::wgpu::LoadOp::Load,
-                                store: true,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        label: Some("egui_render"),
-                    });
+        //if !hidden {
+        let mut render_pass = gfx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: gfx.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                },
+            })],
+            depth_stencil_attachment: None,
+            label: Some("egui_render"),
+        });
 
-            self.renderer
-                .render(&mut render_pass, &clipped_primitives, &desc);
-        }
+        self.renderer
+            .render(&mut render_pass, &clipped_primitives, &desc);
+        //}
 
         self.platform
             .handle_platform_output(window, &self.egui, output.platform_output);

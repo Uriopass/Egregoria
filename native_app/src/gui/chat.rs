@@ -42,7 +42,7 @@ pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
         .take(MAX_MESSAGES)
         .collect();
 
-    if !state.chat_bar_showed && msgs.len() == 0 {
+    if !state.chat_bar_showed && msgs.is_empty() {
         return;
     }
 
@@ -101,7 +101,7 @@ pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
                         if response.lost_focus() {
                             let msg = state.cur_msg.take();
 
-                            if msg.len() > 0 && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                            if !msg.is_empty() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                                 // let rng = common::rand::randu64(common::hash_u64(msg.as_bytes()));
                                 // let color = Color::hsv(rng * 360.0, 0.8, 1.0, 1.0);
 
