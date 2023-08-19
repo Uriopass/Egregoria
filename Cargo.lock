@@ -159,7 +159,6 @@ dependencies = [
 name = "assets_gui"
 version = "0.1.0"
 dependencies = [
- "beul",
  "common",
  "engine",
  "geom",
@@ -744,7 +743,6 @@ name = "egregoria"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
- "atomic_refcell",
  "common",
  "derive_more",
  "easybench",
@@ -1636,7 +1634,6 @@ dependencies = [
 name = "native_app"
 version = "0.4.3"
 dependencies = [
- "atomic_refcell",
  "bytemuck",
  "common",
  "egregoria",

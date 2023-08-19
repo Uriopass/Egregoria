@@ -16,7 +16,6 @@ geom          = { path = "../geom" }
 common        = { path = "../common" }
 slotmapd       = { version = "1.0", default-features = false, features = ["serde", "unstable"] }
 rayon         = "1.6"
-atomic_refcell = "0.1.6"
 profiling = { version = "1.0.5", default-features = false }
 inline_tweak = { version = "1.0.9", features = ["release_tweak"] }
 pathfinding   = "4.2.1"
