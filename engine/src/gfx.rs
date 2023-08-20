@@ -57,6 +57,7 @@ pub struct GfxContext {
     pub sun_shadowmap: Texture,
     pub pbr: PBR,
     pub lamplights: LampLights,
+    pub defines: FastMap<String, String>,
 
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
@@ -270,6 +271,7 @@ impl GfxContext {
             device,
             queue,
             pbr,
+            defines: Default::default(),
         };
 
         me.update_simplelit_bg();
@@ -302,6 +304,17 @@ impl GfxContext {
 
     pub fn material_mut(&mut self, id: MaterialID) -> Option<(&mut Material, &Queue)> {
         self.materials.get_mut(id).zip(Some(&self.queue))
+    }
+
+    pub fn set_define_flag(&mut self, name: &str, inserted: bool) {
+        if self.defines.contains_key(name) == inserted {
+            return;
+        }
+        if inserted {
+            self.defines.insert(name.to_string(), String::new());
+        } else {
+            self.defines.remove(name);
+        }
     }
 
     pub fn mk_shadowmap(device: &Device, res: u32) -> Texture {
@@ -452,6 +465,7 @@ impl GfxContext {
             &mut p.shader_watcher,
             &self.device,
             name,
+            &self.defines,
         )
     }
 
@@ -648,7 +662,7 @@ impl GfxContext {
             self.pipelines
                 .try_borrow_mut()
                 .unwrap()
-                .check_shader_updates(&self.device);
+                .check_shader_updates(&self.defines, &self.device);
         }
         self.tick += 1;
     }

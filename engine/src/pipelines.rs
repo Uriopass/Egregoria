@@ -29,7 +29,10 @@ pub struct Pipelines {
 impl Pipelines {
     pub fn new(device: &Device) -> Pipelines {
         let mut shader_cache = FastMap::default();
-        shader_cache.insert("mipmap".to_string(), compile_shader(device, "mipmap"));
+        shader_cache.insert(
+            "mipmap".to_string(),
+            compile_shader(device, "mipmap", &FastMap::default()),
+        );
 
         Pipelines {
             shader_cache,
@@ -44,6 +47,7 @@ impl Pipelines {
         shader_watcher: &mut FastMap<ShaderPath, (Vec<ShaderPath>, Option<SystemTime>)>,
         device: &Device,
         name: &str,
+        defines: &FastMap<String, String>,
     ) -> CompiledModule {
         if let Some(v) = shader_cache.get(name) {
             return v.clone();
@@ -51,7 +55,7 @@ impl Pipelines {
         shader_cache
             .entry(name.to_string())
             .or_insert_with_key(move |key| {
-                let module = compile_shader(device, key);
+                let module = compile_shader(device, key, defines);
 
                 for dep in module.get_deps() {
                     shader_watcher
@@ -89,6 +93,7 @@ impl Pipelines {
                         &mut self.shader_watcher,
                         device,
                         name,
+                        &gfx.defines,
                     )
                 });
                 for dep in deps {
@@ -100,10 +105,15 @@ impl Pipelines {
         }
     }
 
-    pub fn invalidate(&mut self, device: &Device, shader_name: &str) {
+    pub fn invalidate(
+        &mut self,
+        defines: &FastMap<String, String>,
+        device: &Device,
+        shader_name: &str,
+    ) {
         if let Some(x) = self.shader_cache.get_mut(shader_name) {
             device.push_error_scope(ErrorFilter::Validation);
-            let new_shader = compile_shader(device, shader_name);
+            let new_shader = compile_shader(device, shader_name, defines);
             let scope = beul::execute(device.pop_error_scope());
             if scope.is_some() {
                 log::error!("failed to compile shader for invalidation {}", shader_name);
@@ -123,7 +133,7 @@ impl Pipelines {
         }
     }
 
-    pub fn check_shader_updates(&mut self, device: &Device) {
+    pub fn check_shader_updates(&mut self, defines: &FastMap<String, String>, device: &Device) {
         let mut to_invalidate = HashSet::new();
         for (sname, (parents, entry)) in &mut self.shader_watcher {
             let meta = unwrap_cont!(std::fs::metadata(Path::new(&format!(
@@ -146,7 +156,7 @@ impl Pipelines {
         }
         for sname in to_invalidate {
             log::info!("invalidating shader {}", sname);
-            self.invalidate(device, &sname);
+            self.invalidate(defines, device, &sname);
         }
     }
 }

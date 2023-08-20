@@ -2,6 +2,7 @@ use crate::{
     compile_shader, CompiledModule, GfxContext, PipelineBuilder, Texture, TextureBuilder, Uniform,
     TL,
 };
+use common::FastMap;
 use geom::{Vec3, Vec4};
 use wgpu::{
     BindGroup, BlendState, CommandEncoder, CommandEncoderDescriptor, Device, FragmentState, LoadOp,
@@ -255,7 +256,8 @@ impl PBR {
             push_constant_ranges: &[],
         });
 
-        let brdf_convolution_module = compile_shader(device, "pbr/brdf_convolution");
+        let brdf_convolution_module =
+            compile_shader(device, "pbr/brdf_convolution", &FastMap::default());
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
