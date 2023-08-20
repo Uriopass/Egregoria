@@ -159,9 +159,12 @@ fn render(sun: vec3<f32>,
     dkD *= 1.0 - vec3(metallic);
 
     let ambient: vec3<f32> = (0.2 * dkD * (0.04 + irradiance_diffuse) * albedo + specular) * ssao;
-    let atmo: vec3<f32> = atmosphere(-V, sun, depth * 0.2);
+    var color: vec3<f32>   = ambient + Lo;
 
-    var color: vec3<f32>   = ambient + Lo + atmo;
+    #ifdef FOG
+    let atmo: vec3<f32> = atmosphere(-V, sun, depth * 0.2);
+    color += atmo;
+    #endif
 
     let autoexposure = 1.0 + smoothstep(0.0, 0.1, -sun.z) * 5.0;
 

@@ -5,7 +5,9 @@ use common::saveload::Encoder;
 use egregoria::Egregoria;
 use egui::{Align2, Context, Widget};
 use egui_extras::Column;
+use engine::GfxContext;
 use std::time::{Duration, Instant};
+use winit::window::Fullscreen;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
 
@@ -68,6 +70,7 @@ pub struct Settings {
     pub ssao: bool,
     pub shadows: ShadowQuality,
     pub terrain_grid: bool,
+    pub fog: bool,
 
     pub gui_scale: f32,
 
@@ -99,6 +102,7 @@ impl Default for Settings {
             camera_smooth_tightness: 1.0,
             camera_fov: 60.0,
             terrain_grid: true,
+            fog: true,
             gui_scale: 1.0,
         }
     }
@@ -210,6 +214,7 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
 
             ui.checkbox(&mut settings.fullscreen, "Fullscreen");
             ui.checkbox(&mut settings.terrain_grid, "Terrain Grid");
+            ui.checkbox(&mut settings.fog, "Fog");
             ui.checkbox(&mut settings.ssao, "Ambient Occlusion (SSAO)");
 
             // shadow quality combobox
@@ -345,4 +350,39 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                 common::saveload::JSONPretty::save_silent(&*settings, SETTINGS_SAVE_NAME);
             }
         });
+}
+
+pub fn manage_settings(ctx: &mut engine::Context, settings: &Settings) {
+    if settings.fullscreen && ctx.window.fullscreen().is_none() {
+        ctx.window
+            .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))
+    }
+    if !settings.fullscreen && ctx.window.fullscreen().is_some() {
+        ctx.window.set_fullscreen(None);
+    }
+
+    ctx.gfx.set_vsync(settings.vsync);
+    let params = ctx.gfx.render_params.value_mut();
+    params.shadow_mapping_resolution = settings.shadows.size().unwrap_or(0) as i32;
+
+    if let Some(v) = settings.shadows.size() {
+        if ctx.gfx.sun_shadowmap.extent.width != v {
+            ctx.gfx.sun_shadowmap = GfxContext::mk_shadowmap(&ctx.gfx.device, v);
+            ctx.gfx.update_simplelit_bg();
+        }
+    }
+
+    ctx.gfx.set_define_flag("FOG", settings.fog);
+    ctx.gfx.set_define_flag("SSAO", settings.ssao);
+    ctx.gfx
+        .set_define_flag("TERRAIN_GRID", settings.terrain_grid);
+
+    ctx.egui.pixels_per_point = settings.gui_scale;
+
+    ctx.audio.set_settings(
+        settings.master_volume_percent,
+        settings.ui_volume_percent,
+        settings.music_volume_percent,
+        settings.effects_volume_percent,
+    );
 }

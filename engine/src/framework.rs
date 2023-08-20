@@ -33,6 +33,7 @@ pub trait State: 'static {
 async fn run<S: State>(el: EventLoop<()>, window: Window) {
     let mut ctx = Context::new(window, &el).await;
     let mut state = S::new(&mut ctx);
+    ctx.gfx.defines_changed = false;
 
     let mut frame: Option<_> = None;
     let mut new_size: Option<PhysicalSize<u32>> = None;

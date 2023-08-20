@@ -56,9 +56,9 @@ fn frag(@location(0) in_tint: vec4<f32>,
 
     let albedo: vec4<f32> = textureSample(t_albedo, s_albedo, in_uv);
     var ssao = 1.0;
-    if (params.ssao_enabled != 0) {
-       ssao = textureSample(t_ssao, s_ssao, position.xy / params.viewport).r;
-    }
+    #ifdef SSAO
+    ssao = textureSample(t_ssao, s_ssao, position.xy / params.viewport).r;
+    #endif
 
     var shadow_v: f32 = 1.0;
     if (params.shadow_mapping_resolution != 0) {

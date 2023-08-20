@@ -58,6 +58,7 @@ pub struct GfxContext {
     pub pbr: PBR,
     pub lamplights: LampLights,
     pub defines: FastMap<String, String>,
+    pub defines_changed: bool,
 
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
@@ -93,9 +94,7 @@ pub struct RenderParams {
     pub viewport: Vec2,
     pub time: f32,
     pub time_always: f32,
-    pub ssao_enabled: i32,
     pub shadow_mapping_resolution: i32,
-    pub grid_enabled: i32,
     pub _pad5: [f32; 3],
 }
 
@@ -114,9 +113,7 @@ impl Default for RenderParams {
             viewport: vec2(1000.0, 1000.0),
             time: 0.0,
             time_always: 0.0,
-            ssao_enabled: 1,
             shadow_mapping_resolution: 2048,
-            grid_enabled: 1,
             _pad: 0.0,
             _pad2: 0.0,
             _pad4: 0.0,
@@ -272,6 +269,7 @@ impl GfxContext {
             queue,
             pbr,
             defines: Default::default(),
+            defines_changed: false,
         };
 
         me.update_simplelit_bg();
@@ -310,6 +308,7 @@ impl GfxContext {
         if self.defines.contains_key(name) == inserted {
             return;
         }
+        self.defines_changed = true;
         if inserted {
             self.defines.insert(name.to_string(), String::new());
         } else {
@@ -565,7 +564,7 @@ impl GfxContext {
             *enc_smap_ext = Some(smap_enc.finish());
         }
 
-        if self.render_params.value().ssao_enabled != 0 {
+        if self.defines.contains_key("SSAO") {
             profiling::scope!("ssao");
             let pipeline = self.get_pipeline(SSAOPipeline);
             let bg = self
@@ -657,6 +656,13 @@ impl GfxContext {
                 .chain(encoder.smap)
                 .chain(Some(encoder.end.finish())),
         );
+        if self.defines_changed {
+            self.defines_changed = false;
+            self.pipelines
+                .try_borrow_mut()
+                .unwrap()
+                .invalidate_all(&self.defines, &self.device);
+        }
         if self.tick % 30 == 0 {
             #[cfg(debug_assertions)]
             self.pipelines

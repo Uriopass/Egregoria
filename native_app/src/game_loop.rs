@@ -3,18 +3,17 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 use winit::event_loop::ControlFlow;
-use winit::window::Fullscreen;
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use engine::{Context, FrameContext, GfxContext, Tesselator};
+use engine::{Context, FrameContext, Tesselator};
 use geom::{vec2, vec3, Camera, LinearColor};
 
 use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::windows::settings::Settings;
+use crate::gui::windows::settings::{manage_settings, Settings};
 use crate::gui::{ExitState, FollowEntity, Gui, Tool, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
@@ -71,7 +70,7 @@ impl engine::framework::State for State {
 
         {
             let s = uiworld.read::<Settings>();
-            Self::manage_settings(ctx, &s);
+            manage_settings(ctx, &s);
         }
 
         defer!(log::info!("finished init of game loop"));
@@ -142,7 +141,7 @@ impl engine::framework::State for State {
             .just_act
             .contains(&InputAction::HideInterface);
 
-        Self::manage_settings(ctx, &self.uiw.read::<Settings>());
+        manage_settings(ctx, &self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
         self.map_renderer.update(&self.goria.read().unwrap(), ctx);
@@ -303,38 +302,6 @@ impl State {
         params.sand_col = c.sand_col.into();
         params.sea_col = c.sea_col.into();
         drop(c);
-    }
-
-    fn manage_settings(ctx: &mut Context, settings: &Settings) {
-        if settings.fullscreen && ctx.window.fullscreen().is_none() {
-            ctx.window
-                .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))
-        }
-        if !settings.fullscreen && ctx.window.fullscreen().is_some() {
-            ctx.window.set_fullscreen(None);
-        }
-
-        ctx.gfx.set_vsync(settings.vsync);
-        let params = ctx.gfx.render_params.value_mut();
-        params.ssao_enabled = settings.ssao as i32;
-        params.grid_enabled = settings.terrain_grid as i32;
-        params.shadow_mapping_resolution = settings.shadows.size().unwrap_or(0) as i32;
-
-        if let Some(v) = settings.shadows.size() {
-            if ctx.gfx.sun_shadowmap.extent.width != v {
-                ctx.gfx.sun_shadowmap = GfxContext::mk_shadowmap(&ctx.gfx.device, v);
-                ctx.gfx.update_simplelit_bg();
-            }
-        }
-
-        ctx.egui.pixels_per_point = settings.gui_scale;
-
-        ctx.audio.set_settings(
-            settings.master_volume_percent,
-            settings.ui_volume_percent,
-            settings.music_volume_percent,
-            settings.effects_volume_percent,
-        );
     }
 
     fn manage_io(&mut self, ctx: &mut Context) {

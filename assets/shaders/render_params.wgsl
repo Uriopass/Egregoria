@@ -13,7 +13,5 @@ struct RenderParams {
     viewport: vec2<f32>,
     time: f32,
     time_always: f32,
-    ssao_enabled: i32,
     shadow_mapping_resolution: i32,
-    grid_enabled: i32,
 }

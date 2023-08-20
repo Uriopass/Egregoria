@@ -79,14 +79,21 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     let reflected: vec3<f32> = reflect(-V, normal);
 
     let reflected_atmo = atmosphere(reflected, sun, 1e38);
-    let view_atmo = atmosphere(-V, sun, depth * 0.2);
+
 
     let sun_contrib: f32 = clamp(dot(normal, sun), 0.0, 1.0);
 
     let base_color: vec3<f32> = 0.03 * vec3<f32>(0.262, 0.396, 0.508);
     let sunpower: f32 = 0.1 * reflect_coeff;
 
-    var final_rgb: vec3<f32> = tonemap(base_color + view_atmo + sunpower * reflected_atmo);
+    var final_rgb: vec3<f32> = base_color + sunpower * reflected_atmo;
+
+    #ifdef FOG
+    let view_atmo = atmosphere(-V, sun, depth * 0.2);
+    final_rgb += view_atmo;
+    #endif
+
+    final_rgb = tonemap(final_rgb);
 
     return FragmentOutput(
         vec4<f32>(final_rgb, 0.9 + reflect_coeff * 0.1),

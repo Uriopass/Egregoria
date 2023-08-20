@@ -105,6 +105,13 @@ impl Pipelines {
         }
     }
 
+    pub fn invalidate_all(&mut self, defines: &FastMap<String, String>, device: &Device) {
+        let shader_names = self.shader_watcher.keys().cloned().collect::<Vec<_>>();
+        for shader_name in shader_names {
+            self.invalidate(defines, device, &shader_name);
+        }
+    }
+
     pub fn invalidate(
         &mut self,
         defines: &FastMap<String, String>,

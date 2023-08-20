@@ -30,6 +30,7 @@ struct FragmentOutput {
 @group(3) @binding(14) var t_lightdata2: texture_2d<u32>;
 @group(3) @binding(15) var s_lightdata2: sampler;
 
+#ifdef TERRAIN_GRID
 fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
     let level: f32 = wpos_fwidth_x * 20.0;
 
@@ -60,6 +61,7 @@ fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
 
     return isIn;
 }
+#endif
 
 fn hash4(p: vec2<f32>) -> vec4<f32> { return fract(sin(vec4( 1.0+dot(p,vec2(37.0,17.0)),
                                               2.0+dot(p,vec2(11.0,47.0)),
@@ -110,9 +112,9 @@ fn frag(@location(0) in_normal: vec3<f32>,
         @location(1) in_wpos: vec3<f32>,
         @builtin(position) position: vec4<f32>) -> FragmentOutput {
     var ssao = 1.0;
-    if (params.ssao_enabled != 0) {
-       ssao = textureSample(t_ssao, s_ssao, position.xy / params.viewport).r;
-    }
+    #ifdef SSAO
+    ssao = textureSample(t_ssao, s_ssao, position.xy / params.viewport).r;
+    #endif
 
     var shadow_v: f32 = 1.0;
     if (params.shadow_mapping_resolution != 0) {
@@ -120,9 +122,9 @@ fn frag(@location(0) in_normal: vec3<f32>,
     }
 
     var c: vec3<f32> = params.grass_col.rgb;
-    if (params.grid_enabled != 0) {
-        c.g += grid(in_wpos, fwidth(in_wpos.x)) * 0.015;
-    }
+    #ifdef TERRAIN_GRID
+    c.g += grid(in_wpos, fwidth(in_wpos.x)) * 0.015;
+    #endif
 
     let grass = (textureNoTile(t_grass, s_grass, in_wpos.xy / 100.0).rgb * 0.3 - c) * 0.5;
     c = mix(c + grass, c, smoothstep(0.0, 0.1, in_wpos.z));
