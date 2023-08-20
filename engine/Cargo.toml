@@ -10,6 +10,11 @@ edition = "2021"
 geom          = { path = "../geom" }
 common        = { path = "../common" }
 ordered-float = { workspace = true }
+egui-winit    = { workspace = true, default-features = false }
+egui          = { workspace = true }
+winit         = { workspace = true }
+oddio         = { workspace = true }
+derive_more   = { workspace = true }
 wgpu          = { version = "0.16.0", default-features = false, features=["wgsl"] }
 bytemuck      = "1.7.2"
 image         = { version = "0.24.3", default-features = false, features = ["png"] }
@@ -24,14 +29,6 @@ slotmapd      = "1.0"
 smallvec      = "1.10.0"
 inline_tweak  = "1.0.8"
 egui-wgpu     = { version = "0.22.0" }
-egui-winit    = { workspace = true, default-features = false }
-egui          = { workspace = true }
-winit         = { workspace = true }
-oddio         = { workspace = true }
 cpal          = "0.15.0"
 lewton        = "0.10.2"
 serde         = { version = "1.0.183", features = ["derive"] }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
-version = "0.16.0"
-features = ["webgl"]

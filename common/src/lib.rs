@@ -200,6 +200,7 @@ where
 {
 }
 
+pub mod descriptions;
 pub mod history;
 pub mod logger;
 pub mod rand;

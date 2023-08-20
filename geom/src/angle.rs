@@ -1,7 +1,7 @@
 use crate::Vec2;
 use serde::{Deserialize, Serialize};
 use std::f32::consts::{PI, TAU};
-use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialOrd, PartialEq, Default)]
 #[serde(from = "f32", into = "f32")]
@@ -150,6 +150,14 @@ impl Mul<f32> for Radians {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Self(self.0 * rhs)
+    }
+}
+
+impl Neg for Radians {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
     }
 }
 

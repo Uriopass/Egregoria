@@ -1,7 +1,8 @@
 use crate::pbr::PBR;
 use crate::{
     bg_layout_litmesh, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
-    MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuilder, Uniform, UvVertex, TL,
+    MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError, TextureBuilder, Uniform,
+    UvVertex, TL,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
@@ -348,13 +349,17 @@ impl GfxContext {
         &mut self,
         path: impl Into<PathBuf>,
         label: &'static str,
-    ) -> Option<Arc<Texture>> {
+    ) -> Result<Arc<Texture>, TextureBuildError> {
         self.texture_inner(path.into(), label)
     }
 
-    fn texture_inner(&mut self, p: PathBuf, label: &'static str) -> Option<Arc<Texture>> {
+    fn texture_inner(
+        &mut self,
+        p: PathBuf,
+        label: &'static str,
+    ) -> Result<Arc<Texture>, TextureBuildError> {
         if let Some(tex) = self.texture_cache_paths.get(&p) {
-            return Some(tex.clone());
+            return Ok(tex.clone());
         }
 
         let tex = Arc::new(
@@ -364,7 +369,7 @@ impl GfxContext {
                 .build(&self.device, &self.queue),
         );
         self.texture_cache_paths.insert(p, tex.clone());
-        Some(tex)
+        Ok(tex)
     }
 
     pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Arc<Texture>> {

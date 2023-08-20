@@ -90,7 +90,7 @@ fn register_resource<T: 'static + Default + Send + Sync + Serialize + Deserializ
                 <common::saveload::JSONPretty as Encoder>::save(&*uiworld.read::<T>(), name);
             }),
             load: Box::new(move |uiworld| {
-                if let Some(res) = <common::saveload::JSON as Encoder>::load::<T>(name) {
+                if let Ok(res) = <common::saveload::JSON as Encoder>::load::<T>(name) {
                     uiworld.insert(res);
                 }
             }),

@@ -228,13 +228,30 @@ impl From<ImageLoadError> for LoadMeshError {
     }
 }
 
+#[derive(Copy, Clone, Default)]
+pub struct MeshProperties {
+    pub n_vertices: usize,
+    pub n_triangles: usize,
+    pub n_materials: usize,
+    pub n_textures: usize,
+    pub n_draw_calls: usize,
+}
+
 pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshError> {
+    load_mesh_with_properties(gfx, asset_name).map(|x| x.0)
+}
+
+pub fn load_mesh_with_properties(
+    gfx: &mut GfxContext,
+    asset_name: &str,
+) -> Result<(Mesh, MeshProperties), LoadMeshError> {
     let mut path = PathBuf::new();
     path.push("assets/models/");
     path.push(asset_name);
 
     let t = Instant::now();
 
+    let mut props = MeshProperties::default();
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
     let mut materials_idx = SmallVec::new();
@@ -251,20 +268,25 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
 
     let (mats, needs_tangents) = load_materials(gfx, &doc, &images)?;
 
+    props.n_materials = mats.len();
+    props.n_textures = images.len();
+
     for node in nodes {
         let mesh = unwrap_cont!(node.mesh());
         let transform = node.transform();
         let rot_qat = Quaternion::from(transform.clone().decomposed().1);
         let transform_mat = Matrix4::from(transform.matrix());
 
-        for primitive in mesh.primitives() {
+        let mut primitives = mesh.primitives().collect::<Vec<_>>();
+        primitives.sort_unstable_by_key(|x| x.material().index());
+
+        let mut last_mat = None;
+        for primitive in primitives {
             let reader = primitive.reader(|b| Some(&data.get(b.index())?.0[..b.length()]));
             let matid = primitive
                 .material()
                 .index()
                 .ok_or(LoadMeshError::NoMaterial)?;
-
-            materials_idx.push((mats[matid], indices.len() as u32));
 
             let positions = unwrap_cont!(reader.read_positions()).map(Vec3::from);
             let normals = unwrap_cont!(reader.read_normals()).map(Vec3::from);
@@ -272,7 +294,6 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
                 .into_f32()
                 .map(Vec2::from);
             let read_indices: Vec<u32> = unwrap_cont!(reader.read_indices()).into_u32().collect();
-
             let raw: Vec<_> = positions
                 .zip(normals)
                 .zip(uv)
@@ -287,51 +308,30 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
                 continue;
             }
 
-            let shade_smooth = true;
+            if last_mat != Some(matid) {
+                materials_idx.push((mats[matid], indices.len() as u32));
+            }
+            last_mat = Some(matid);
+
+            props.n_draw_calls += 1;
+            props.n_triangles += read_indices.len() / 3;
+            props.n_vertices += raw.len();
 
             let vtx_offset = flat_vertices.len() as IndexType;
-            if shade_smooth {
-                for (pos, normal, uv) in &raw {
-                    flat_vertices.push(MeshVertex {
-                        position: pos.into(),
-                        normal: *normal,
-                        uv: (*uv).into(),
-                        color: [1.0, 1.0, 1.0, 1.0],
-                        tangent: [0.0; 4],
-                    })
-                }
+            for (pos, normal, uv) in &raw {
+                flat_vertices.push(MeshVertex {
+                    position: pos.into(),
+                    normal: *normal,
+                    uv: (*uv).into(),
+                    color: [1.0, 1.0, 1.0, 1.0],
+                    tangent: [0.0; 4],
+                })
             }
 
             for &[a, b, c] in bytemuck::cast_slice::<u32, [u32; 3]>(&read_indices) {
-                if shade_smooth {
-                    indices.push(vtx_offset + a as IndexType);
-                    indices.push(vtx_offset + b as IndexType);
-                    indices.push(vtx_offset + c as IndexType);
-                    continue;
-                }
-
-                let a = raw[a as usize];
-                let b = raw[b as usize];
-                let c = raw[c as usize];
-
-                let t_normal = (a.1 + b.1 + c.1) / 3.0;
-
-                let mk_v = |p: Vec3, u: Vec2| MeshVertex {
-                    position: p.into(),
-                    normal: t_normal,
-                    uv: u.into(),
-                    color: [1.0, 1.0, 1.0, 1.0],
-                    tangent: [0.0; 4],
-                };
-
-                indices.push(flat_vertices.len() as IndexType);
-                flat_vertices.push(mk_v(a.0, a.2));
-
-                indices.push(flat_vertices.len() as IndexType);
-                flat_vertices.push(mk_v(b.0, b.2));
-
-                indices.push(flat_vertices.len() as IndexType);
-                flat_vertices.push(mk_v(c.0, c.2));
+                indices.push(vtx_offset + a as IndexType);
+                indices.push(vtx_offset + b as IndexType);
+                indices.push(vtx_offset + c as IndexType);
             }
         }
     }
@@ -357,5 +357,5 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
         if needs_tangents { " (tangents)" } else { "" }
     );
 
-    Ok(m)
+    Ok((m, props))
 }

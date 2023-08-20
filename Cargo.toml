@@ -24,6 +24,7 @@ egui-winit    = { version = "0.22.0", default-features = false }
 ordered-float = { version = "3.4.0", default-features = false }
 winit         = "0.28.6"
 oddio         = "0.6.2"
+derive_more   = "0.99.17"
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]

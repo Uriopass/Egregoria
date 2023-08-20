@@ -31,6 +31,10 @@ impl OrbitCamera {
 
         ctx.gfx.set_proj(viewproj);
         ctx.gfx.set_inv_proj(inv_viewproj);
+
+        let params = ctx.gfx.render_params.value_mut();
+        params.cam_pos = self.camera.eye();
+        params.cam_dir = -self.camera.dir();
     }
 
     pub fn height(&self) -> f32 {
@@ -89,7 +93,7 @@ impl OrbitCamera {
     }
 
     pub fn load(viewport: (u32, u32)) -> Self {
-        let camera = common::saveload::JSON::load("camera3D").unwrap_or_else(|| {
+        let camera = common::saveload::JSON::load("camera3D").unwrap_or_else(|_| {
             Camera::new(
                 Vec3::new(6511.0, 9590.0, 0.0),
                 viewport.0 as f32,

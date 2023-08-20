@@ -285,12 +285,12 @@ impl Egregoria {
 
     pub fn load_replay_from_disk(save_name: &str) -> Option<Replay> {
         let path = format!("{save_name}_replay");
-        let replay: Replay = common::saveload::JSON::load(&path)?;
+        let replay: Replay = common::saveload::JSON::load(&path).ok()?;
         Some(replay)
     }
 
     pub fn load_from_disk(save_name: &str) -> Option<Self> {
-        let goria: Egregoria = common::saveload::CompressedBincode::load(save_name)?;
+        let goria: Egregoria = common::saveload::CompressedBincode::load(save_name).ok()?;
         Some(goria)
     }
 

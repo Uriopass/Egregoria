@@ -286,8 +286,6 @@ impl State {
             * sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
         let camera = self.uiw.read::<OrbitCamera>();
-        params.cam_pos = camera.camera.eye();
-        params.cam_dir = -camera.camera.dir();
         params.sun = sun;
         params.viewport = vec2(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32);
         params.sun_shadow_proj = camera

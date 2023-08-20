@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
 use crate::CompiledModule;
+use derive_more::{Display, From};
 use image::{DynamicImage, GenericImageView};
 use std::fs::File;
+use std::io;
 use std::io::Read;
 use std::path::Path;
 use wgpu::{
@@ -264,6 +266,12 @@ impl Texture {
     }
 }
 
+#[derive(Debug, Display, From)]
+pub enum TextureBuildError {
+    Io(io::Error),
+    Image(image::ImageError),
+}
+
 pub struct TextureBuilder<'a> {
     img: Option<DynamicImage>,
     dimensions: (u32, u32, u32),
@@ -309,26 +317,28 @@ impl<'a> TextureBuilder<'a> {
 
     pub(crate) fn from_path(p: impl AsRef<Path>) -> Self {
         let r = p.as_ref();
-        if let Some(x) = Self::try_from_path(r) {
-            x
-        } else {
-            panic!(
-                "texture not found at path: {} (in dir: {:?})",
-                r.display(),
-                std::env::current_dir().as_ref().map(|x| x.display())
-            )
+        match Self::try_from_path(r) {
+            Ok(x) => x,
+            Err(e) => {
+                panic!(
+                    "texture not found at path: {} (in dir: {:?}): {}",
+                    r.display(),
+                    std::env::current_dir().as_ref().map(|x| x.display()),
+                    e,
+                )
+            }
         }
     }
 
-    pub(crate) fn try_from_path(p: impl AsRef<Path>) -> Option<Self> {
+    pub(crate) fn try_from_path(p: impl AsRef<Path>) -> Result<Self, TextureBuildError> {
         let p = p.as_ref();
         let mut buf = vec![];
-        let mut f = File::open(p).ok()?;
-        f.read_to_end(&mut buf).ok()?;
+        let mut f = File::open(p)?;
+        f.read_to_end(&mut buf)?;
         Self::from_bytes(&buf)
     }
 
-    pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, TextureBuildError> {
         /*
         if bytes.starts_with(b"#?RADIANCE") {
             let irradiance = radiant::load(bytes).ok()?;
@@ -347,8 +357,8 @@ impl<'a> TextureBuilder<'a> {
             return Some(Self::from_img(image_irradiance));
         }*/
 
-        let img = image::load_from_memory(bytes).ok()?;
-        Some(Self::from_img(img))
+        let img = image::load_from_memory(bytes)?;
+        Ok(Self::from_img(img))
     }
 
     pub(crate) fn from_img(img: DynamicImage) -> Self {

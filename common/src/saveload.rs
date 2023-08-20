@@ -2,6 +2,7 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::File;
+use std::io;
 use std::io::{BufReader, BufWriter, ErrorKind, Read, Write};
 
 fn create_file(path: &str) -> Option<File> {
@@ -24,8 +25,8 @@ pub fn walkdir(dir: &Path) -> impl Iterator<Item = PathBuf> {
     paths.into_iter()
 }
 
-fn open_file(path: &str) -> Option<File> {
-    File::open(path).ok()
+fn open_file(path: &str) -> Result<File> {
+    File::open(path)
 }
 pub trait Encoder {
     const EXTENSION: &'static str;
@@ -49,9 +50,9 @@ pub trait Encoder {
         format!("world/{}.{}", name, Self::EXTENSION)
     }
 
-    fn load_reader(name: &str) -> Option<BufReader<File>> {
+    fn load_reader(name: &str) -> Result<BufReader<File>> {
         let file = open_file(&Self::filename(name))?;
-        Some(BufReader::new(file))
+        Ok(BufReader::new(file))
     }
 
     fn save(x: &impl Serialize, name: &str) -> Option<()> {
@@ -73,14 +74,18 @@ pub trait Encoder {
         Some(())
     }
 
-    fn load<T: DeserializeOwned>(name: &str) -> Option<T> {
+    fn load<T: DeserializeOwned>(name: &str) -> Result<T> {
         Self::decode_reader(Self::load_reader(name)?)
-            .map_err(|err| log::error!("failed deserializing {}: {}", name, err))
+            .map_err(|err| {
+                io::Error::new(
+                    ErrorKind::Other,
+                    format!("failed deserializing {}: {}", name, err),
+                )
+            })
             .map(|x| {
                 log::info!("successfully loaded {}", name);
                 x
             })
-            .ok()
     }
 }
 
@@ -181,10 +186,8 @@ impl Encoder for JSONPretty {
     }
 }
 
-pub fn load_raw(
-    p: impl AsRef<Path>,
-) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + 'static>> {
-    std::fs::read(p).map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+pub fn load_raw(p: impl AsRef<Path>) -> Result<Vec<u8>> {
+    std::fs::read(p)
 }
 
 pub fn load_string(

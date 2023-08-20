@@ -23,9 +23,9 @@ pub struct Camera {
     pub pos: Vec3,
     pub yaw: Radians,
     pub pitch: Radians,
-    pub dist: f32,
-    pub viewport_w: f32,
-    pub viewport_h: f32,
+    pub dist: f32,       // in meters
+    pub viewport_w: f32, // in pixels
+    pub viewport_h: f32, // in pixels
     up: Vec3,
     aspect: f32,
     pub fovy: f32,

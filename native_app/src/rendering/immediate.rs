@@ -238,7 +238,7 @@ impl ImmediateDraw {
                     );
                 }
                 OrderKind::TexturedOBB { obb, ref path, z } => {
-                    let tex = unwrap_cont!(ctx.gfx.try_texture(path, "some immediate obb"));
+                    let Ok(tex) = ctx.gfx.try_texture(path, "some immediate obb") else { continue };
                     ctx.objs.push(Box::new(
                         SpriteBatchBuilder::<false>::new(tex, ctx.gfx)
                             .push(obb.center().z(z), obb.axis()[0].z0(), *color, (1.0, 1.0))
