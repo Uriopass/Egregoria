@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-common      = { path = "../common" }
-geom        = { path = "../geom" }
-engine = { path = "../engine" }
-log         = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
+common       = { path = "../common" }
+geom         = { path = "../geom" }
+engine       = { path = "../engine" }
+log          = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
 inline_tweak = "1.0.8"
+egui_dock    = "0.6.3"
+egui         = { workspace = true }

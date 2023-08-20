@@ -1,10 +1,23 @@
-use engine::{Context, FrameContext, GfxContext, KeyCode, MouseButton};
-use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3};
+use std::path::Path;
+
+use egui::FontFamily::{Monospace, Proportional};
+use egui::FontId;
+
+use engine::meshload::load_mesh_with_properties;
+use engine::{Context, FrameContext, GfxContext, SpriteBatchBuilder};
+use geom::{vec3, InfiniteFrustrum, LinearColor, Plane, Vec2, Vec3};
+
+use crate::gui::{Gui, Inspected, Shown};
+use crate::orbit_camera::OrbitCamera;
+
+mod companies;
+mod gui;
+mod orbit_camera;
 
 struct State {
-    is_captured: bool,
-
-    camera: Camera,
+    gui: Gui,
+    camera: OrbitCamera,
+    last_inspect: Inspected,
 }
 
 impl engine::framework::State for State {
@@ -15,115 +28,49 @@ impl engine::framework::State for State {
         gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
         gfx.update_simplelit_bg();
 
-        let mut camera = Camera::new(vec3(9.0, -30.0, 13.0), 1000.0, 1000.0);
-        camera.dist = 0.0;
-        camera.pitch = Radians(0.0);
-        camera.yaw = Radians(-std::f32::consts::PI / 2.0);
+        let mut style = (*ctx.egui.egui.style()).clone();
+
+        style.text_styles = [
+            (egui::TextStyle::Small, FontId::new(15.0, Proportional)),
+            (egui::TextStyle::Body, FontId::new(18.5, Proportional)),
+            (egui::TextStyle::Button, FontId::new(18.5, Proportional)),
+            (egui::TextStyle::Heading, FontId::new(25.0, Proportional)),
+            (egui::TextStyle::Monospace, FontId::new(18.0, Monospace)),
+        ]
+        .into();
+
+        ctx.egui.egui.set_style(style);
+
+        let camera = OrbitCamera::new();
 
         Self {
             camera,
-            is_captured: false,
+            gui: Gui::new(),
+            last_inspect: Inspected::None,
         }
     }
 
     fn update(&mut self, ctx: &mut Context) {
-        if ctx.input.mouse.pressed.contains(&MouseButton::Left) {
-            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::Confined);
-            ctx.window.set_cursor_visible(false);
-            self.is_captured = true;
-        }
+        self.camera.camera_movement(ctx);
 
-        if ctx.input.cursor_left {
-            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::None);
-            ctx.window.set_cursor_visible(true);
-            self.is_captured = false;
+        if self.gui.inspected != self.last_inspect {
+            self.last_inspect = self.gui.inspected;
+            self.gui.shown = create_shown(&mut ctx.gfx, self, self.gui.inspected);
         }
-
-        if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
-            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::None);
-            ctx.window.set_cursor_visible(true);
-            self.is_captured = false;
-        }
-
-        let delta = ctx.delta;
-        let cam_speed = if ctx.input.keyboard.pressed_scancode.contains(&42) {
-            3.0
-        } else {
-            30.0
-        } * delta;
-
-        if ctx.input.keyboard.pressed_scancode.contains(&17) {
-            self.camera.pos -= self
-                .camera
-                .dir()
-                .xy()
-                .z0()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&31) {
-            self.camera.pos += self
-                .camera
-                .dir()
-                .xy()
-                .z0()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&30) {
-            self.camera.pos += self
-                .camera
-                .dir()
-                .perp_up()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&32) {
-            self.camera.pos -= self
-                .camera
-                .dir()
-                .perp_up()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&57) {
-            self.camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&29) {
-            self.camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
-        }
-
-        if self.is_captured {
-            let delta = ctx.input.mouse.screen_delta;
-
-            self.camera.yaw.0 -= 0.001 * delta.x;
-            self.camera.pitch.0 += 0.001 * delta.y;
-            self.camera.pitch.0 = self.camera.pitch.0.clamp(-1.5, 1.5);
-        }
-
-        let sun = vec3(1.0, -1.0, 1.0).normalize();
 
         let gfx = &mut ctx.gfx;
 
-        let viewproj = self.camera.build_view_projection_matrix();
-        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
-        gfx.set_proj(viewproj);
-        gfx.set_inv_proj(inv_viewproj);
-
         let params = gfx.render_params.value_mut();
-        params.time_always = (params.time_always + delta) % 3600.0;
+
+        let sun = vec3(1.0, -1.0, 1.0).normalize();
+        params.time_always = (params.time_always + ctx.delta) % 3600.0;
         params.sun_col = sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-        params.cam_pos = self.camera.eye();
-        params.cam_dir = self.camera.dir();
         params.sun = sun;
         params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
-        self.camera.dist = 300.0;
+        params.shadow_mapping_resolution = 2048;
         params.sun_shadow_proj = self
+            .camera
             .camera
             .build_sun_shadowmap_matrix(
                 sun,
@@ -132,14 +79,62 @@ impl engine::framework::State for State {
             )
             .try_into()
             .unwrap();
-        self.camera.dist = 0.0;
-        params.shadow_mapping_resolution = 2048;
     }
 
-    fn render(&mut self, _fc: &mut FrameContext) {}
+    fn render(&mut self, fc: &mut FrameContext) {
+        fc.draw(self.gui.shown.clone());
+    }
 
-    fn resized(&mut self, _ctx: &mut Context, size: (u32, u32)) {
-        self.camera.set_viewport(size.0 as f32, size.1 as f32);
+    fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {
+        self.camera.resize(ctx, size.0 as f32, size.1 as f32);
+    }
+
+    fn render_gui(&mut self, ui: &egui::Context) {
+        self.gui(ui);
+    }
+}
+
+fn create_shown(gfx: &mut GfxContext, state: &State, inspected: Inspected) -> Shown {
+    match inspected {
+        Inspected::None => Shown::None,
+        Inspected::Company(i) => {
+            let comp = &state.gui.companies.companies[i];
+            let p = Path::new(&comp.asset_location);
+            match p.extension() {
+                Some(x) if (x == "png" || x == "jpg") => {
+                    let tex = match gfx.try_texture(p, "sprite texture") {
+                        Ok(x) => x,
+                        Err(e) => {
+                            return Shown::Error(format!(
+                                "could not load texture {}: {}",
+                                comp.asset_location, e
+                            ))
+                        }
+                    };
+                    let mut sb: SpriteBatchBuilder<false> = SpriteBatchBuilder::new(tex, gfx);
+                    sb.push(Vec3::ZERO, Vec3::X, LinearColor::WHITE, (100.0, 100.0));
+                    Shown::Sprite(sb.build(gfx).unwrap())
+                }
+                Some(x) if x == "glb" => {
+                    let model = match load_mesh_with_properties(gfx, &comp.asset_location) {
+                        Ok(x) => x,
+                        Err(e) => {
+                            return Shown::Error(format!(
+                                "could not load model {}:\n{:?}",
+                                comp.asset_location, e
+                            ))
+                        }
+                    };
+
+                    Shown::Model(model)
+                }
+                Some(_) => Shown::Error(format!(
+                    "unknown asset type for path: {}",
+                    comp.asset_location
+                )),
+                None => Shown::Error(format!("no extension for path: {}", comp.asset_location)),
+            }
+        }
     }
 }
 
