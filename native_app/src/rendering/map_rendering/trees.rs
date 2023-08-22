@@ -74,7 +74,6 @@ impl TreesRender {
                 gfx: &'a GfxContext,
                 rp: &mut RenderPass<'a>,
                 shadow_cascade: Option<&Matrix4>,
-                proj: &'a engine::wgpu::BindGroup,
             ) {
                 if let Some(v) = shadow_cascade {
                     let pos = v.mul(self.1.w(1.0));
@@ -94,7 +93,7 @@ impl TreesRender {
                         return;
                     }
                 }
-                self.0.draw_depth(gfx, rp, shadow_cascade, proj);
+                self.0.draw_depth(gfx, rp, shadow_cascade);
             }
         }
 

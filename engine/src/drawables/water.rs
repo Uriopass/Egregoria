@@ -95,7 +95,7 @@ impl Drawable for Water {
         let pipeline = gfx.get_pipeline(WaterPipeline);
 
         rp.set_pipeline(pipeline);
-        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &gfx.fbos.depth_bg, &[]);
         rp.set_bind_group(3, &self.wavy_bg, &[]);

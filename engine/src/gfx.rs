@@ -517,8 +517,10 @@ impl GfxContext {
                 }),
             });
 
+            depth_prepass.set_bind_group(0, &self.projection.bindgroup, &[]);
+
             for obj in objsref.iter() {
-                obj.draw_depth(self, &mut depth_prepass, None, &self.projection.bindgroup);
+                obj.draw_depth(self, &mut depth_prepass, None);
             }
             drop(depth_prepass);
             *enc_dep_ext = Some(prepass.finish());
@@ -557,8 +559,10 @@ impl GfxContext {
                     }),
                 });
 
+                sun_shadow_pass.set_bind_group(0, &u.bindgroup, &[]);
+
                 for obj in objsref.iter() {
-                    obj.draw_depth(self, &mut sun_shadow_pass, Some(u.value()), &u.bindgroup);
+                    obj.draw_depth(self, &mut sun_shadow_pass, Some(u.value()));
                 }
             }
             *enc_smap_ext = Some(smap_enc.finish());
@@ -621,6 +625,7 @@ impl GfxContext {
                     stencil_ops: None,
                 }),
             });
+            render_pass.set_bind_group(0, &self.projection.bindgroup, &[]);
 
             for obj in objsref.iter() {
                 obj.draw(self, &mut render_pass);

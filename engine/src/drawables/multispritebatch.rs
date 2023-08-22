@@ -16,9 +16,8 @@ impl Drawable for MultiSpriteBatch {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
-        self.sbs.draw_depth(gfx, rp, shadow_cascade, proj);
+        self.sbs.draw_depth(gfx, rp, shadow_cascade);
     }
 }
 

@@ -2,7 +2,7 @@ use egui::{Color32, Ui};
 use egui_dock::{DockArea, NodeIndex, Style, TabStyle, Tree};
 
 use engine::meshload::MeshProperties;
-use engine::wgpu::{BindGroup, RenderPass};
+use engine::wgpu::RenderPass;
 use engine::{Drawable, GfxContext, Mesh, SpriteBatch};
 use geom::Matrix4;
 
@@ -174,12 +174,11 @@ impl Drawable for Shown {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a BindGroup,
     ) {
         match self {
             Shown::None | Shown::Error(_) => {}
-            Shown::Model((mesh, _)) => mesh.draw_depth(gfx, rp, shadow_cascade, proj),
-            Shown::Sprite(sprite) => sprite.draw_depth(gfx, rp, shadow_cascade, proj),
+            Shown::Model((mesh, _)) => mesh.draw_depth(gfx, rp, shadow_cascade),
+            Shown::Sprite(sprite) => sprite.draw_depth(gfx, rp, shadow_cascade),
         }
     }
 }

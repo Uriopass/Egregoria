@@ -29,7 +29,6 @@ pub trait Drawable {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
     }
 }
@@ -45,10 +44,9 @@ impl<T: ?Sized + Drawable> Drawable for Arc<T> {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         let s: &T = self;
-        s.draw_depth(gfx, rp, shadow_cascade, proj);
+        s.draw_depth(gfx, rp, shadow_cascade);
     }
 }
 
@@ -63,10 +61,9 @@ impl<T: ?Sized + Drawable> Drawable for Rc<T> {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         let s: &T = self;
-        s.draw_depth(gfx, rp, shadow_cascade, proj);
+        s.draw_depth(gfx, rp, shadow_cascade);
     }
 }
 
@@ -82,10 +79,9 @@ impl<T: Drawable> Drawable for Option<T> {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         if let Some(s) = self {
-            s.draw_depth(gfx, rp, shadow_cascade, proj);
+            s.draw_depth(gfx, rp, shadow_cascade);
         }
     }
 }
@@ -102,10 +98,9 @@ impl<T: Drawable> Drawable for [T] {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         for s in self {
-            s.draw_depth(gfx, rp, shadow_cascade, proj);
+            s.draw_depth(gfx, rp, shadow_cascade);
         }
     }
 }
@@ -122,10 +117,9 @@ impl<T: Drawable> Drawable for Vec<T> {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         for s in self {
-            s.draw_depth(gfx, rp, shadow_cascade, proj);
+            s.draw_depth(gfx, rp, shadow_cascade);
         }
     }
 }
@@ -141,9 +135,8 @@ impl<T: Drawable, U: Drawable> Drawable for (T, U) {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
-        self.0.draw_depth(gfx, rp, shadow_cascade, proj);
-        self.1.draw_depth(gfx, rp, shadow_cascade, proj);
+        self.0.draw_depth(gfx, rp, shadow_cascade);
+        self.1.draw_depth(gfx, rp, shadow_cascade);
     }
 }

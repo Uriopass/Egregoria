@@ -244,7 +244,6 @@ impl PipelineBuilder for MeshPipeline {
 
 impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -268,12 +267,10 @@ impl Drawable for Mesh {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         if self.skip_depth {
             return;
         }
-        rp.set_bind_group(0, proj, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
 

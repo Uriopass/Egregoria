@@ -421,7 +421,7 @@ impl Drawable for TerrainPrepared {
         });
 
         rp.set_pipeline(pipeline);
-        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.terrainbg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
@@ -434,7 +434,6 @@ impl Drawable for TerrainPrepared {
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
-        proj: &'a wgpu::BindGroup,
     ) {
         if shadow_cascade.is_some() {
             return;
@@ -443,7 +442,6 @@ impl Drawable for TerrainPrepared {
             depth: true,
             smap: false,
         }));
-        rp.set_bind_group(0, proj, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.terrainbg, &[]);
 

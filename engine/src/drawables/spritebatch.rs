@@ -151,7 +151,7 @@ impl Drawable for SpriteBatch {
         rp.set_pipeline(pipeline);
         rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
         rp.set_vertex_buffer(1, self.instance_buf.slice(..));
-        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &gfx.material(self.material).bg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
