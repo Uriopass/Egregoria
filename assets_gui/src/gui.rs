@@ -1,10 +1,12 @@
+use common::descriptions::{BuildingGen, CompanyKind};
 use egui::{Color32, Ui};
 use egui_dock::{DockArea, NodeIndex, Style, TabStyle, Tree};
+use egui_inspect::{Inspect, InspectArgs};
 
 use engine::meshload::MeshProperties;
 use engine::wgpu::RenderPass;
 use engine::{Drawable, GfxContext, Mesh, SpriteBatch};
-use geom::Matrix4;
+use geom::{Matrix4, Vec2};
 
 use crate::companies::Companies;
 use crate::State;
@@ -87,8 +89,154 @@ fn properties(state: &mut State, ui: &mut Ui) {
         Inspected::None => {}
         Inspected::Company(i) => {
             let comp = &mut state.gui.companies.companies[i];
-            ui.label(&comp.name);
+            text_inp(ui, "name", &mut comp.name);
+
+            let mut selected = match comp.kind {
+                CompanyKind::Store => 0,
+                CompanyKind::Factory { .. } => 1,
+                CompanyKind::Network => 2,
+            };
+
+            if egui::ComboBox::new("company_kind", "company kind")
+                .show_index(ui, &mut selected, 3, |idx| match idx {
+                    0 => "Store",
+                    1 => "Factory",
+                    2 => "Network",
+                    _ => unreachable!(),
+                })
+                .changed()
+            {
+                match selected {
+                    0 => comp.kind = CompanyKind::Store,
+                    1 => comp.kind = CompanyKind::Factory { n_trucks: 1 },
+                    2 => comp.kind = CompanyKind::Network,
+                    _ => unreachable!(),
+                }
+            }
+
+            match &mut comp.kind {
+                CompanyKind::Store | CompanyKind::Network => {}
+                CompanyKind::Factory { n_trucks } => {
+                    inspect(ui, "n_trucks", n_trucks);
+                }
+            }
+
+            let mut selected = match comp.bgen {
+                BuildingGen::House => unreachable!(),
+                BuildingGen::Farm => 0,
+                BuildingGen::CenteredDoor { .. } => 1,
+                BuildingGen::NoWalkway { .. } => 2,
+            };
+            if egui::ComboBox::new("bgen_kind", "bgen kind")
+                .show_index(ui, &mut selected, 3, |idx| match idx {
+                    0 => "Farm",
+                    1 => "Centered door",
+                    2 => "No walkway",
+                    _ => unreachable!(),
+                })
+                .changed()
+            {
+                match selected {
+                    0 => comp.bgen = BuildingGen::Farm,
+                    1 => {
+                        comp.bgen = BuildingGen::CenteredDoor {
+                            vertical_factor: 1.0,
+                        }
+                    }
+                    2 => {
+                        comp.bgen = BuildingGen::NoWalkway {
+                            door_pos: Vec2::ZERO,
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+
+            match &mut comp.bgen {
+                BuildingGen::House | BuildingGen::Farm => {}
+                BuildingGen::CenteredDoor { vertical_factor } => {
+                    inspect(ui, "vertical factor", vertical_factor);
+                }
+                BuildingGen::NoWalkway { door_pos } => {
+                    inspect(ui, "door_pos", door_pos);
+                }
+            }
+
+            ui.add_space(5.0);
+            ui.label("Recipe");
+            inspect(ui, "complexity", &mut comp.recipe.complexity);
+            inspect(
+                ui,
+                "storage_multiplier",
+                &mut comp.recipe.storage_multiplier,
+            );
+            ui.label("consumption");
+            ui.indent("consumption", |ui| {
+                for (name, amount) in comp.recipe.consumption.iter_mut() {
+                    inspect_item(ui, name, amount);
+                }
+            });
+
+            ui.label("production");
+            ui.indent("production", |ui| {
+                for (name, amount) in comp.recipe.production.iter_mut() {
+                    inspect_item(ui, name, amount);
+                }
+            });
+
+            inspect(ui, "n_workers", &mut comp.n_workers);
+            inspect(ui, "size", &mut comp.size);
+            text_inp(ui, "asset_location", &mut comp.asset_location);
+            inspect(ui, "price", &mut comp.price);
+
+            ui_opt(ui, "zone", &mut comp.zone, |ui, zone| {
+                ui.indent("zone", |ui| {
+                    inspect(ui, "floor", &mut zone.floor);
+                    inspect(ui, "filler", &mut zone.filler);
+                    inspect(ui, "price_per_area", &mut zone.price_per_area);
+                });
+            });
         }
+    }
+}
+
+fn inspect_item(ui: &mut Ui, name: &mut String, amount: &mut i32) {
+    ui.horizontal(|ui| {
+        ui.label(&*name);
+        ui.add(egui::DragValue::new(amount));
+    });
+}
+
+fn inspect<T: Inspect<T>>(ui: &mut Ui, label: &'static str, x: &mut T) -> bool {
+    <T as Inspect<T>>::render_mut(x, label, ui, &InspectArgs::default())
+}
+
+fn text_inp(ui: &mut Ui, label: &'static str, v: &mut String) {
+    ui.horizontal(|ui| {
+        ui.label(label);
+        ui.text_edit_singleline(v);
+    });
+}
+
+fn ui_opt<T: Default>(
+    ui: &mut Ui,
+    label: &'static str,
+    v: &mut Option<T>,
+    f: impl FnOnce(&mut Ui, &mut T),
+) {
+    ui.horizontal(|ui| {
+        let mut is_some = v.is_some();
+        ui.checkbox(&mut is_some, label);
+        if is_some != v.is_some() {
+            if is_some {
+                *v = Some(Default::default());
+            } else {
+                *v = None;
+            }
+        }
+    });
+    if let Some(v) = v {
+        f(ui, v);
     }
 }
 

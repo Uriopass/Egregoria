@@ -4,6 +4,7 @@ mod f32;
 mod f64;
 pub mod geometry;
 mod i32;
+mod i64;
 mod option;
 mod str;
 mod string;

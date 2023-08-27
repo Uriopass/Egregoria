@@ -1,10 +1,11 @@
 use crate::map::serializing::SerializedMap;
 use crate::map::{
-    Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
-    LaneKind, LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID,
-    ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
-    UpdateType, Zone,
+    Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
+    LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID, ParkingSpots,
+    ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, UpdateType,
+    Zone,
 };
+use common::descriptions::BuildingGen;
 use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;

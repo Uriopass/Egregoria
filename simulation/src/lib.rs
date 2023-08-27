@@ -497,9 +497,8 @@ const START_COMMANDS: &str = r#"
           },
           "kind": "RailFreightStation",
           "gen": {
-            "NoWalkway": {
-              "door_pos": 0
-            }
+            "kind": "no_walkway",
+            "door_pos": 0
           }
         }
       }

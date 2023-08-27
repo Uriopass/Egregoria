@@ -1,14 +1,16 @@
 use super::desire::Work;
 use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market};
-use crate::map::{Building, BuildingGen, BuildingID, Map, Zone, MAX_ZONE_AREA};
+use crate::map::{Building, BuildingID, Map, Zone, MAX_ZONE_AREA};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
-use crate::World;
-use crate::{ParCommandBuffer, Simulation, SoulID};
-use common::descriptions::{GoodsCompanyDescriptionJSON, ZoneDescription};
+use crate::{ParCommandBuffer, SoulID};
+use crate::{Simulation, World};
+use common::descriptions::{
+    BuildingGen, CompanyKind, GoodsCompanyDescriptionJSON, ZoneDescription,
+};
 use common::saveload::Encoder;
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
@@ -66,19 +68,6 @@ impl GoodsCompanyRegistry {
             };
 
         for descr in descriptions {
-            let kind = match descr.kind.as_ref() {
-                "store" => CompanyKind::Store,
-                "network" => CompanyKind::Network,
-                "factory" => CompanyKind::Factory {
-                    n_trucks: descr
-                        .n_trucks
-                        .expect("expecting n_trucks when using kind factory"),
-                },
-                _ => {
-                    log::error!("unknown goods company kind: {}", descr.kind);
-                    continue;
-                }
-            };
             let recipe = Recipe {
                 consumption: descr
                     .recipe
@@ -102,33 +91,14 @@ impl GoodsCompanyRegistry {
                 storage_multiplier: descr.recipe.storage_multiplier,
             };
 
-            let bgen = match descr.bgen.kind.as_ref() {
-                "farm" => BuildingGen::Farm,
-                "centered_door" => BuildingGen::CenteredDoor {
-                    vertical_factor: descr
-                        .bgen
-                        .vertical_factor
-                        .expect("expecting vertical factor when using centered_door"),
-                },
-                "no_walkway" => BuildingGen::NoWalkway {
-                    door_pos: descr
-                        .bgen
-                        .door_pos
-                        .expect("expecting door_pos when using no_walkway"),
-                },
-                _ => {
-                    log::error!("unknown building gen kind: {}", descr.bgen.kind);
-                    continue;
-                }
-            };
             #[allow(unused_variables)]
             let id = self
                 .descriptions
                 .insert_with_key(move |id| GoodsCompanyDescription {
                     id,
                     name: descr.name,
-                    bgen,
-                    kind,
+                    bgen: descr.bgen,
+                    kind: descr.kind,
                     recipe,
                     n_workers: descr.n_workers,
                     size: descr.size,
@@ -176,18 +146,6 @@ impl Recipe {
         }
     }
 }
-
-#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
-pub enum CompanyKind {
-    // Buyers come to get their goods
-    Store,
-    // Buyers get their goods delivered to them
-    Factory { n_trucks: u32 },
-    // Buyers get their goods instantly delivered, useful for things like electricity/water/..
-    Network,
-}
-
-debug_inspect_impl!(CompanyKind);
 
 #[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct GoodsCompany {
@@ -297,9 +255,15 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
         }
 
         (|| {
-            let Some(trade) = c.sold.0.pop() else {return;};
-            let Some(driver) = c.comp.driver else { return; };
-            let Some(w) = world.humans.get(driver).and_then(|h| h.work.as_ref()) else { return; };
+            let Some(trade) = c.sold.0.pop() else {
+                return;
+            };
+            let Some(driver) = c.comp.driver else {
+                return;
+            };
+            let Some(w) = world.humans.get(driver).and_then(|h| h.work.as_ref()) else {
+                return;
+            };
             if !matches!(
                 w.kind,
                 WorkKind::Driver {
@@ -309,23 +273,29 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             ) {
                 return;
             }
-            let Some(owner_build) = find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map) else {
+            let Some(owner_build) = find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
+            else {
                 log::warn!("driver can't find the place to deliver for {:?}", &trade);
                 return;
             };
             cbuf.exec_ent(me, move |sim| {
-                let Some(h) = sim.world.humans.get_mut(driver) else { return; };
-                let Some(w) = h.work.as_mut() else { return; };
-                let WorkKind::Driver {
-                    deliver_order,
-                    ..
-                } = &mut w.kind else { return; };
+                let Some(h) = sim.world.humans.get_mut(driver) else {
+                    return;
+                };
+                let Some(w) = h.work.as_mut() else {
+                    return;
+                };
+                let WorkKind::Driver { deliver_order, .. } = &mut w.kind else {
+                    return;
+                };
                 *deliver_order = Some(owner_build)
             });
         })();
 
         for &worker in c.workers.0.iter() {
-            let Some(w) = world.humans.get(worker) else { continue; };
+            let Some(w) = world.humans.get(worker) else {
+                continue;
+            };
 
             if w.work.is_none() {
                 let mut kind = WorkKind::Worker;
@@ -346,7 +316,9 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
 
                 let b = c.comp.building;
                 cbuf_human.exec_ent(worker, move |sim| {
-                    let Some(w) = sim.world.humans.get_mut(worker) else { return };
+                    let Some(w) = sim.world.humans.get_mut(worker) else {
+                        return;
+                    };
                     w.work = Some(Work::new(b, kind, offset));
                 });
             }

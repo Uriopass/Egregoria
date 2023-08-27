@@ -9,6 +9,7 @@ use crate::gui::windows::GUIWindows;
 use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
+use common::descriptions::BuildingGen;
 use common::saveload::Encoder;
 use egui::{
     Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
@@ -20,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use simulation::economy::{Government, Item, ItemRegistry, Money};
 use simulation::engine_interaction::WorldCommand;
 use simulation::map::{
-    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
+    BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::utils::time::{GameTime, SECONDS_PER_HOUR};

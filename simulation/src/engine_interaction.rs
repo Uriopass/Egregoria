@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::time::Instant;
 
+use common::descriptions::BuildingGen;
 use serde::{Deserialize, Serialize};
 
 use geom::{vec3, Vec2, OBB};
@@ -9,8 +10,8 @@ use WorldCommand::*;
 use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
-    BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
-    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
+    BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder, LightPolicy,
+    LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
 };
 use crate::map_dynamic::{BuildingInfos, ParkingManagement};
 use crate::multiplayer::chat::Message;

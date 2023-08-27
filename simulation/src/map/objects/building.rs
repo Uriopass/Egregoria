@@ -1,6 +1,7 @@
 use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
 use crate::map::{Buildings, LanePattern, SpatialMap, Terrain};
 use crate::souls::goods_company::GoodsCompanyID;
+use common::descriptions::BuildingGen;
 use egui_inspect::debug_inspect_impl;
 use geom::{Color, Polygon, Vec2, Vec3, OBB};
 use serde::{Deserialize, Serialize};
@@ -35,18 +36,6 @@ impl BuildingKind {
             BuildingKind::RailFreightStation | BuildingKind::ExternalTrading
         )
     }
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub enum BuildingGen {
-    House,
-    Farm,
-    CenteredDoor {
-        vertical_factor: f32, // 1.0 means that the door is at the bottom, just on the street
-    },
-    NoWalkway {
-        door_pos: Vec2, // door_pos is relative to the center of the building
-    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

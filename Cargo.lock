@@ -161,6 +161,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "egui",
+ "egui-inspect",
  "egui_dock",
  "engine",
  "geom",
@@ -462,6 +463,7 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "egui-inspect",
  "geom",
  "inline_tweak",
  "log",

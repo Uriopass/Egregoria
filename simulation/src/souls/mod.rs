@@ -1,10 +1,11 @@
 use crate::map::{BuildingID, BuildingKind};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::freight_station::freight_station_soul;
-use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
+use crate::souls::goods_company::{company_soul, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::Simulation;
+use common::descriptions::CompanyKind;
 use geom::Vec3;
 use std::collections::BTreeMap;
 
