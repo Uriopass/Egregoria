@@ -261,7 +261,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
     let max_turn_angle = if is_rail {
-        10.0 * std::f32::consts::PI / 180.0
+        1.0 * std::f32::consts::PI / 180.0
     } else {
         30.0 * std::f32::consts::PI / 180.0
     };

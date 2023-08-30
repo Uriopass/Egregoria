@@ -144,21 +144,23 @@ impl Intersection {
             let r1 = &roads[r1_id];
             let r2 = &roads[r2_id];
 
-            let width1 = r1.width * 0.5;
-            let width2 = r2.width * 0.5;
-
-            let w = width1.hypot(width2);
-
-            let dir1 = r1.dir_from(id);
-            let dir2 = r2.dir_from(id);
-
-            let d = dir1.dot(dir2).clamp(0.0, 1.0);
-            let sin = (1.0 - d * d).sqrt();
-
-            let min_dist = w * 1.1 / sin;
+            let min_dist =
+                Self::interface_calc(r1.width, r2.width, r1.dir_from(id), r2.dir_from(id));
             roads[r1_id].max_interface(id, min_dist);
             roads[r2_id].max_interface(id, min_dist);
         }
+    }
+
+    fn interface_calc(w1: f32, w2: f32, dir1: Vec2, dir2: Vec2) -> f32 {
+        let hwidth1 = w1 * 0.5;
+        let hwidth2 = w2 * 0.5;
+
+        let w = hwidth1.hypot(hwidth2);
+
+        let d = dir1.dot(dir2).clamp(0.0, 1.0);
+        let sin = (1.0 - d * d).sqrt();
+
+        (w * 1.1 / sin).min(30.0)
     }
 
     pub fn empty_interface(width: f32) -> f32 {
@@ -170,16 +172,7 @@ impl Intersection {
         let id = self.id;
         for &r1_id in &self.roads {
             let r1 = unwrap_cont!(roads.get(r1_id));
-
-            let width1 = r1.width * 0.5;
-            let w = width1.hypot(width);
-            let dir1 = r1.dir_from(id);
-
-            let d = dir1.dot(dir).clamp(0.0, 1.0);
-            let sin = (1.0 - d * d).sqrt();
-
-            let min_dist = w * 1.1 / sin;
-            max_inter = max_inter.max(min_dist);
+            max_inter = max_inter.max(Self::interface_calc(r1.width, width, r1.dir_from(id), dir));
         }
         max_inter
     }
