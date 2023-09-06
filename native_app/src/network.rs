@@ -3,9 +3,9 @@ use crate::game_loop::{State, Timings};
 use crate::gui::windows::settings::Settings;
 use crate::uiworld::{ReceivedCommands, SaveLoadState};
 use common::timestep::Timestep;
-use egregoria::engine_interaction::{WorldCommand, WorldCommands};
-use egregoria::utils::scheduler::SeqSchedule;
-use egregoria::Egregoria;
+use simulation::engine_interaction::{WorldCommand, WorldCommands};
+use simulation::utils::scheduler::SeqSchedule;
+use simulation::Simulation;
 
 impl Default for NetworkState {
     fn default() -> Self {
@@ -22,21 +22,21 @@ mod inner {
         Singleplayer(Timestep),
     }
 
-    pub fn goria_update(state: &mut State) {
+    pub fn sim_update(state: &mut State) {
         super::handle_singleplayer(state);
     }
 }
 
 #[allow(dead_code)]
 fn handle_singleplayer(state: &mut State) {
-    let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
+    let mut sim = unwrap_orr!(state.sim.try_write(), return); // mut for tick
 
     let timewarp = state.uiw.read::<Settings>().time_warp;
     let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
     *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
     if handle_replay(
-        &mut goria,
+        &mut sim,
         &mut state.game_schedule,
         &mut state.uiw.write::<SaveLoadState>(),
     ) {
@@ -50,7 +50,7 @@ fn handle_singleplayer(state: &mut State) {
 
     if has_commands && commands.iter().all(WorldCommand::is_instant) {
         for v in commands.iter() {
-            v.apply(&mut goria);
+            v.apply(&mut sim);
         }
         commands = WorldCommands::default();
         has_commands = false;
@@ -64,7 +64,7 @@ fn handle_singleplayer(state: &mut State) {
     let mut commands_once = Some(commands.clone());
     step.prepare_frame(timewarp);
     while step.tick() || (has_commands && commands_once.is_some()) {
-        let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
+        let t = sim.tick(sched, commands_once.take().unwrap_or_default().as_ref());
         timings.world_update.add_value(t.as_secs_f32());
     }
 
@@ -76,17 +76,17 @@ fn handle_singleplayer(state: &mut State) {
 }
 
 fn handle_replay(
-    goria: &mut Egregoria,
+    sim: &mut Simulation,
     schedule: &mut SeqSchedule,
     slstate: &mut SaveLoadState,
 ) -> bool {
-    if let Some(new_goria) = slstate.please_load_goria.take() {
-        *goria = new_goria;
+    if let Some(new_sim) = slstate.please_load_sim.take() {
+        *sim = new_sim;
         slstate.render_reset = true;
-        log::info!("replaced goria");
+        log::info!("replaced sim");
     }
     if let Some(ref mut replay) = slstate.please_load {
-        if replay.advance_tick(goria, schedule) {
+        if replay.advance_tick(sim, schedule) {
             slstate.please_load = None;
             log::info!("finished loading replay");
         }
@@ -102,16 +102,16 @@ mod inner {
     use crate::network::handle_replay;
     use crate::uiworld::{ReceivedCommands, SaveLoadState};
     use common::timestep::Timestep;
-    use egregoria::engine_interaction::WorldCommands;
-    use egregoria::Egregoria;
     use networking::{
         ConnectConf, Frame, PollResult, ServerConfiguration, ServerPollResult, VirtualClientConf,
     };
+    use simulation::engine_interaction::WorldCommands;
+    use simulation::Simulation;
     use std::net::ToSocketAddrs;
     use std::sync::Mutex;
 
-    pub type Client = Mutex<networking::Client<Egregoria, WorldCommands>>;
-    pub type Server = Mutex<networking::Server<Egregoria, WorldCommands>>;
+    pub type Client = Mutex<networking::Client<Simulation, WorldCommands>>;
+    pub type Server = Mutex<networking::Server<Simulation, WorldCommands>>;
 
     #[allow(clippy::large_enum_variant)]
     pub enum NetworkState {
@@ -120,7 +120,7 @@ mod inner {
         Server(Server),
     }
 
-    pub fn goria_update(state: &mut State) {
+    pub fn sim_update(state: &mut State) {
         if matches!(
             *state.uiw.read::<NetworkState>(),
             NetworkState::Singleplayer(_)
@@ -129,13 +129,13 @@ mod inner {
             return;
         }
 
-        let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
+        let mut sim = unwrap_orr!(state.sim.try_write(), return); // mut for tick
 
         let commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
         *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
         if handle_replay(
-            &mut goria,
+            &mut sim,
             &mut state.game_schedule,
             &mut state.uiw.write::<SaveLoadState>(),
         ) {
@@ -152,7 +152,7 @@ mod inner {
                     server
                         .get_mut()
                         .unwrap()
-                        .poll(&goria, Frame(goria.get_tick()), Some(commands));
+                        .poll(&sim, Frame(sim.get_tick()), Some(commands));
                 match polled {
                     ServerPollResult::Wait(commands) => {
                         if let Some(commands) = commands {
@@ -173,8 +173,8 @@ mod inner {
                     PollResult::Input(inputs) => {
                         inputs_to_apply = Some(inputs);
                     }
-                    PollResult::GameWorld(commands, prepared_goria) => {
-                        *goria = prepared_goria;
+                    PollResult::GameWorld(commands, prepared_sim) => {
+                        *sim = prepared_sim;
                         *state.uiw.write::<WorldCommands>() = commands;
                     }
                     PollResult::Disconnect(reason) => {
@@ -191,13 +191,13 @@ mod inner {
         if let Some(inputs) = inputs_to_apply {
             let mut merged = WorldCommands::default();
             for frame_commands in inputs {
-                assert_eq!(frame_commands.frame.0, goria.get_tick() + 1);
+                assert_eq!(frame_commands.frame.0, sim.get_tick() + 1);
                 let commands: WorldCommands = frame_commands
                     .inputs
                     .iter()
                     .map(|x| x.inp.clone())
                     .collect();
-                let t = goria.tick(&mut state.game_schedule, commands.as_ref());
+                let t = sim.tick(&mut state.game_schedule, commands.as_ref());
                 state
                     .uiw
                     .write::<Timings>()
@@ -216,9 +216,9 @@ mod inner {
         }
     }
 
-    pub fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<Server> {
+    pub fn start_server(info: &mut NetworkConnectionInfo, sim: &Simulation) -> Option<Server> {
         let server = match networking::Server::start(ServerConfiguration {
-            start_frame: Frame(goria.get_tick()),
+            start_frame: Frame(sim.get_tick()),
             period: common::timestep::UP_DT,
             port: None,
             virtual_client: Some(VirtualClientConf {

@@ -1,22 +1,22 @@
 use crate::world::{CompanyEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
-use crate::{Egregoria, FreightStationEnt, ParCommandBuffer};
+use crate::{FreightStationEnt, ParCommandBuffer, Simulation};
 use common::History;
 use ordered_float::OrderedFloat;
 use std::time::Instant;
 
 pub trait RunnableSystem {
-    fn run(&self, goria: &mut Egregoria);
+    fn run(&self, sim: &mut Simulation);
     fn name(&self) -> &'static str;
 }
 
-pub struct RunnableFn<F: Fn(&mut Egregoria)> {
+pub struct RunnableFn<F: Fn(&mut Simulation)> {
     pub f: F,
     pub name: &'static str,
 }
 
-impl<F: Fn(&mut Egregoria)> RunnableSystem for RunnableFn<F> {
-    fn run(&self, goria: &mut Egregoria) {
-        (self.f)(goria)
+impl<F: Fn(&mut Simulation)> RunnableSystem for RunnableFn<F> {
+    fn run(&self, sim: &mut Simulation) {
+        (self.f)(sim)
     }
 
     fn name(&self) -> &'static str {
@@ -36,19 +36,19 @@ impl SeqSchedule {
     }
 
     #[inline(never)]
-    pub fn execute(&mut self, goria: &mut Egregoria) {
+    pub fn execute(&mut self, sim: &mut Simulation) {
         profiling::scope!("scheduler::execute");
         for (sys, h) in &mut self.systems {
             let start = Instant::now();
 
-            sys.run(goria);
+            sys.run(sim);
 
-            ParCommandBuffer::<VehicleEnt>::apply(goria);
-            ParCommandBuffer::<HumanEnt>::apply(goria);
-            ParCommandBuffer::<TrainEnt>::apply(goria);
-            ParCommandBuffer::<WagonEnt>::apply(goria);
-            ParCommandBuffer::<FreightStationEnt>::apply(goria);
-            ParCommandBuffer::<CompanyEnt>::apply(goria);
+            ParCommandBuffer::<VehicleEnt>::apply(sim);
+            ParCommandBuffer::<HumanEnt>::apply(sim);
+            ParCommandBuffer::<TrainEnt>::apply(sim);
+            ParCommandBuffer::<WagonEnt>::apply(sim);
+            ParCommandBuffer::<FreightStationEnt>::apply(sim);
+            ParCommandBuffer::<CompanyEnt>::apply(sim);
 
             let elapsed = start.elapsed();
 

@@ -1,12 +1,12 @@
 use crate::uiworld::UiWorld;
 use common::timestep::UP_DT;
-use egregoria::economy::{
-    EcoStats, ItemHistories, ItemRegistry, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
-};
-use egregoria::Egregoria;
 use egui::plot::{Line, PlotPoints};
 use egui::{Align2, Color32, Ui};
 use geom::Color;
+use simulation::economy::{
+    EcoStats, ItemHistories, ItemRegistry, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
+};
+use simulation::Simulation;
 use slotmapd::Key;
 use std::cmp::Reverse;
 use std::collections::HashSet;
@@ -32,15 +32,15 @@ struct EconomyState {
 
 /// Economy window
 /// Shows the economy stats
-pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
+pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, sim: &Simulation) {
     uiw.check_present(|| EconomyState {
         curlevel: 0,
         tab: EconomyTab::ImportExports,
         hist_type: Default::default(),
     });
     let mut state = uiw.write::<EconomyState>();
-    let ecostats = goria.read::<EcoStats>();
-    let registry = goria.read::<ItemRegistry>();
+    let ecostats = sim.read::<EcoStats>();
+    let registry = sim.read::<ItemRegistry>();
 
     window
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
@@ -282,7 +282,7 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                 }
                 EconomyTab::MarketPrices => {
                     ui.push_id(3, |ui| {
-                        render_market_prices(goria, ui);
+                        render_market_prices(sim, ui);
                     });
                 }
             }
@@ -290,9 +290,9 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
         });
 }
 
-fn render_market_prices(goria: &Egregoria, ui: &mut Ui) {
-    let registry = goria.read::<ItemRegistry>();
-    let market = goria.read::<Market>();
+fn render_market_prices(sim: &Simulation, ui: &mut Ui) {
+    let registry = sim.read::<ItemRegistry>();
+    let market = sim.read::<Market>();
     egui::Grid::new("marketprices").show(ui, |ui| {
         for (id, market) in market.iter() {
             ui.label(&registry[*id].name);

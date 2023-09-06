@@ -1,6 +1,6 @@
 use crate::transportation::Vehicle;
 use crate::utils::resources::Resources;
-use crate::{Egregoria, World};
+use crate::{Simulation, World};
 use egui_inspect::Inspect;
 use egui_inspect::InspectVec2Rotation;
 use flat_spatial::grid::GridHandle;
@@ -62,9 +62,9 @@ pub struct Collider(pub GridHandle);
 debug_inspect_impl!(Collider);
 
 impl Collider {
-    pub fn destroy(self) -> impl FnOnce(&mut Egregoria) {
-        move |goria| {
-            let cw = &mut goria.write::<CollisionWorld>();
+    pub fn destroy(self) -> impl FnOnce(&mut Simulation) {
+        move |sim| {
+            let cw = &mut sim.write::<CollisionWorld>();
             cw.remove_maintain(self.0);
         }
     }

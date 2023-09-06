@@ -4,7 +4,7 @@
 extern crate common;
 
 #[macro_use]
-extern crate egregoria;
+extern crate simulation;
 
 #[allow(unused_imports)]
 #[macro_use]

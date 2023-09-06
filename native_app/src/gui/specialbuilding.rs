@@ -4,11 +4,11 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::{ProjectFilter, ProjectKind};
-use egregoria::Egregoria;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
+use simulation::engine_interaction::WorldCommand;
+use simulation::map::{ProjectFilter, ProjectKind};
+use simulation::Simulation;
 use std::borrow::Cow;
 
 pub struct SpecialBuildArgs {
@@ -33,7 +33,7 @@ pub struct SpecialBuildingResource {
 
 /// SpecialBuilding tool
 /// Allows to build special buildings like farms, factories, etc.
-pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::specialbuilding");
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();
@@ -41,7 +41,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut draw = uiworld.write::<ImmediateDraw>();
     let mut sound = uiworld.write::<ImmediateSound>();
 
-    let map = goria.map();
+    let map = sim.map();
 
     let commands = &mut *uiworld.commands();
 
@@ -87,9 +87,9 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut draw = |obb, red| {
         let p = asset.to_string();
         let col = if red {
-            egregoria::config().special_building_invalid_col
+            simulation::config().special_building_invalid_col
         } else {
-            egregoria::config().special_building_col
+            simulation::config().special_building_col
         };
 
         if p.ends_with(".png") || p.ends_with(".jpg") {

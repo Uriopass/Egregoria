@@ -3,20 +3,20 @@
 use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
 use crate::uiworld::UiWorld;
-use egregoria::map_dynamic::ParkingManagement;
-use egregoria::physics::CollisionWorld;
-use egregoria::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
-use egregoria::{Egregoria, TrainID};
+use simulation::map_dynamic::ParkingManagement;
+use simulation::physics::CollisionWorld;
+use simulation::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
+use simulation::{Simulation, TrainID};
 
 use crate::inputmap::InputMap;
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::{
-    IntersectionID, Map, MapSubscriber, RoadSegmentKind, TraverseKind, UpdateType,
-};
-use egregoria::transportation::train::TrainReservations;
 use egui::Widget;
 use engine::Tesselator;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
+use simulation::engine_interaction::WorldCommand;
+use simulation::map::{
+    IntersectionID, Map, MapSubscriber, RoadSegmentKind, TraverseKind, UpdateType,
+};
+use simulation::transportation::train::TrainReservations;
 
 #[derive(Default)]
 pub struct DebugState {
@@ -28,7 +28,7 @@ pub struct DebugObjs(
     pub  Vec<(
         bool,
         &'static str,
-        fn(&mut Tesselator<true>, &Egregoria, &UiWorld) -> Option<()>,
+        fn(&mut Tesselator<true>, &Simulation, &UiWorld) -> Option<()>,
     )>,
 );
 
@@ -68,7 +68,7 @@ pub fn debug(
     window: egui::Window<'_>,
     ui: &egui::Context,
     uiworld: &mut UiWorld,
-    goria: &Egregoria,
+    sim: &Simulation,
 ) {
     window.show(ui, |ui| {
         let mut objs = uiworld.write::<DebugObjs>();
@@ -81,8 +81,8 @@ pub fn debug(
         );
         drop(objs);
 
-        let time = goria.read::<GameTime>().timestamp;
-        let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
+        let time = sim.read::<GameTime>().timestamp;
+        let daysecleft = SECONDS_PER_DAY - sim.read::<GameTime>().daytime.daysec();
 
         if ui.small_button("set night").clicked() {
             uiworld
@@ -113,10 +113,10 @@ pub fn debug(
 
         ui.label(format!(
             "World timestamp: {:.1}",
-            goria.read::<GameTime>().timestamp
+            sim.read::<GameTime>().timestamp
         ));
 
-        ui.label(format!("Tick: {}", goria.read::<Tick>().0));
+        ui.label(format!("Tick: {}", sim.read::<Tick>().0));
 
         let timings = uiworld.read::<Timings>();
         let mouse = uiworld.read::<InputMap>().unprojected;
@@ -171,8 +171,8 @@ pub fn debug(
             );
         }
 
-        ui.label(format!("{} pedestrians", goria.world().humans.len()));
-        ui.label(format!("{} vehicles", goria.world().vehicles.len()));
+        ui.label(format!("{} pedestrians", sim.world().humans.len()));
+        ui.label(format!("{} vehicles", sim.world().vehicles.len()));
 
         ui.separator();
         ui.label("Game system times");
@@ -189,8 +189,8 @@ pub fn debug(
     });
 }
 
-pub fn debug_spline(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    for road in goria.map().roads().values() {
+pub fn debug_spline(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    for road in sim.map().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.points.first();
             let to = road.points.last();
@@ -209,21 +209,17 @@ pub fn debug_spline(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld)
     Some(())
 }
 
-pub fn debug_lots(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld) -> Option<()> {
+pub fn debug_lots(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
     tess.set_color(Color::RED);
-    for lot in goria.map().lots().values() {
+    for lot in sim.map().lots().values() {
         tess.draw_circle(lot.shape.corners[0].z(lot.height), 1.0);
     }
 
     Some(())
 }
 
-pub fn debug_road_points(
-    tess: &mut Tesselator<true>,
-    goria: &Egregoria,
-    _: &UiWorld,
-) -> Option<()> {
-    let map = goria.map();
+pub fn debug_road_points(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    let map = sim.map();
     tess.set_color(Color::RED.a(0.5));
     for (_, road) in map.roads() {
         for (_, p) in road.points.as_slice().iter().enumerate() {
@@ -261,12 +257,12 @@ pub fn debug_road_points(
 
 pub fn debug_connectivity(
     tess: &mut Tesselator<true>,
-    goria: &Egregoria,
+    sim: &Simulation,
     uiw: &UiWorld,
 ) -> Option<()> {
-    use egregoria::map::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
+    use simulation::map::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
     let mut state = uiw.write::<DebugState>();
-    let map = goria.map();
+    let map = sim.map();
 
     if state.connectivity.0.is_none() {
         state.connectivity.0 = Some(map.subscribe(UpdateType::Road));
@@ -320,8 +316,8 @@ fn draw_spline(tess: &mut Tesselator<true>, mut sp: Spline3) {
     tess.draw_circle(sp.to - sp.to_derivative, 0.7);
 }
 
-fn debug_coworld(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let coworld = goria.read::<CollisionWorld>();
+fn debug_coworld(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    let coworld = sim.read::<CollisionWorld>();
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
     for h in coworld.handles() {
@@ -332,8 +328,8 @@ fn debug_coworld(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld) ->
 }
 
 /*
-pub fn debug_obb(tess: &mut Tesselator<true, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
-    let time = goria.read::<GameTime>();
+pub fn debug_obb(tess: &mut Tesselator<true, sim: &Simulation, uiworld: &UiWorld) -> Option<()> {
+    let time = sim.read::<GameTime>();
     let mouse = uiworld.read::<MouseInfo>().unprojected;
 
     let time = time.timestamp * 0.2;
@@ -394,9 +390,9 @@ pub fn debug_obb(tess: &mut Tesselator<true, goria: &Egregoria, uiworld: &UiWorl
 }
 */
 
-pub fn debug_parking(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let map: &Map = &goria.map();
-    let pm = goria.read::<ParkingManagement>();
+pub fn debug_parking(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    let map: &Map = &sim.map();
+    let pm = sim.read::<ParkingManagement>();
 
     for (id, spot) in map.parking.all_spots() {
         let color = if pm.is_spot_free(id) {
@@ -414,11 +410,11 @@ pub fn debug_parking(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld
 
 pub fn debug_trainreservations(
     tess: &mut Tesselator<true>,
-    goria: &Egregoria,
+    sim: &Simulation,
     uiworld: &UiWorld,
 ) -> Option<()> {
-    let reservs = goria.read::<TrainReservations>();
-    let map = goria.map();
+    let reservs = sim.read::<TrainReservations>();
+    let map = sim.map();
     tess.set_color(LinearColor::new(0.8, 0.3, 0.3, 1.0));
     for (id, poses) in &reservs.localisations {
         let points = match id {
@@ -441,7 +437,7 @@ pub fn debug_trainreservations(
         let inter = unwrap_cont!(map.intersections().get(*inter));
         tess.draw_circle(inter.pos.up(0.3), 3.0);
 
-        let p = unwrap_cont!(goria.pos(*e));
+        let p = unwrap_cont!(sim.pos(*e));
 
         tess.set_color(LinearColor::new(0.2, 0.2, 0.2, 1.0));
         tess.draw_stroke(inter.pos.up(0.5), p, 2.0);
@@ -449,7 +445,7 @@ pub fn debug_trainreservations(
     let selected = uiworld.read::<InspectedEntity>().e?;
 
     let t_id: TrainID = selected.try_into().ok()?;
-    let t = goria.world().trains.get(t_id)?;
+    let t = sim.world().trains.get(t_id)?;
 
     let travers = t.it.get_travers()?;
     let dist_to_next = travers
@@ -459,7 +455,7 @@ pub fn debug_trainreservations(
         - t.res.cur_travers_dist;
 
     let stop_dist = t.speed.0 * t.speed.0 / (2.0 * t.locomotive.dec_force);
-    for (v, _, _, _) in egregoria::transportation::train::traverse_forward(
+    for (v, _, _, _) in simulation::transportation::train::traverse_forward(
         &map,
         &t.it,
         stop_dist + 15.0,
@@ -487,14 +483,14 @@ pub fn debug_trainreservations(
 
 pub fn debug_pathfinder(
     tess: &mut Tesselator<true>,
-    goria: &Egregoria,
+    sim: &Simulation,
     uiworld: &UiWorld,
 ) -> Option<()> {
-    let map: &Map = &goria.map();
+    let map: &Map = &sim.map();
     let selected = uiworld.read::<InspectedEntity>().e?;
-    let pos = goria.pos_any(selected)?;
+    let pos = sim.pos_any(selected)?;
 
-    let itinerary = goria.world().it_any(selected)?;
+    let itinerary = sim.world().it_any(selected)?;
 
     tess.set_color(LinearColor::GREEN);
     tess.draw_polyline(
@@ -549,8 +545,8 @@ pub fn debug_pathfinder(
 }
 
 /*
-pub fn debug_rays(tess: &mut Tesselator<true, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
-    let time = goria.read::<GameTime>();
+pub fn debug_rays(tess: &mut Tesselator<true, sim: &Simulation, uiworld: &UiWorld) -> Option<()> {
+    let time = sim.read::<GameTime>();
     let time = time.timestamp * 0.2;
     let c = time.cos() as f32;
     let s = time.sin() as f32;
@@ -583,8 +579,8 @@ pub fn debug_rays(tess: &mut Tesselator<true, goria: &Egregoria, uiworld: &UiWor
     Some(())
 }*/
 
-pub fn debug_spatialmap(tess: &mut Tesselator<true>, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let map: &Map = &goria.map();
+pub fn debug_spatialmap(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    let map: &Map = &sim.map();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor::BLUE.a(0.1));
         tess.draw_rect_cos_sin(

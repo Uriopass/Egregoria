@@ -1,8 +1,8 @@
 use common::logger::MyLog;
 use common::unwrap_or;
-use egregoria::engine_interaction::WorldCommands;
-use egregoria::Egregoria;
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
+use simulation::engine_interaction::WorldCommands;
+use simulation::Simulation;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
@@ -32,18 +32,18 @@ struct Opt {
 fn main() {
     let opt: Opt = Opt::from_args();
     MyLog::init();
-    egregoria::init::init();
+    simulation::init::init();
 
     log::info!("starting server with version: {}", VERSION);
 
-    let mut w = unwrap_or!(Egregoria::load_from_disk("world"), {
+    let mut w = unwrap_or!(Simulation::load_from_disk("world"), {
         log::info!("savegame not found defaulting to empty");
-        Egregoria::new(true)
+        Simulation::new(true)
     });
 
-    let mut sched = Egregoria::schedule();
+    let mut sched = Simulation::schedule();
 
-    let mut server: Server<Egregoria, WorldCommands> = match Server::start(ServerConfiguration {
+    let mut server: Server<Simulation, WorldCommands> = match Server::start(ServerConfiguration {
         start_frame: Frame(w.get_tick()),
         period: Duration::from_millis(opt.timestep),
         port: opt.port,

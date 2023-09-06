@@ -1,7 +1,7 @@
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
-use egregoria::engine_interaction::{WorldCommand, WorldCommands};
-use egregoria::utils::resources::{Ref, RefMut, Resources};
-use egregoria::{Egregoria, EgregoriaReplayLoader};
+use simulation::engine_interaction::{WorldCommand, WorldCommands};
+use simulation::utils::resources::{Ref, RefMut, Resources};
+use simulation::{Simulation, SimulationReplayLoader};
 use std::any::Any;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -13,8 +13,8 @@ pub struct UiWorld {
 
 #[derive(Default)]
 pub struct SaveLoadState {
-    pub please_load: Option<EgregoriaReplayLoader>,
-    pub please_load_goria: Option<Egregoria>,
+    pub please_load: Option<SimulationReplayLoader>,
+    pub please_load_sim: Option<Simulation>,
     pub render_reset: bool,
     pub please_save: bool,
     pub saving_status: Arc<AtomicBool>,

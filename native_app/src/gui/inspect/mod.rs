@@ -2,13 +2,13 @@ use crate::gui::inspect::inspect_train::inspect_train;
 use crate::gui::windows::debug::DebugState;
 use crate::gui::{FollowEntity, InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;
-use egregoria::map::BuildingID;
-use egregoria::{AnyEntity, Egregoria};
 use egui::{Context, Ui, Window};
 use inspect_building::inspect_building;
 use inspect_debug::InspectRenderer;
 use inspect_human::inspect_human;
 use inspect_vehicle::inspect_vehicle;
+use simulation::map::BuildingID;
+use simulation::{AnyEntity, Simulation};
 use slotmapd::Key;
 
 mod inspect_building;
@@ -17,11 +17,11 @@ mod inspect_human;
 mod inspect_train;
 mod inspect_vehicle;
 
-pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn inspector(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
     profiling::scope!("topgui::inspector");
     let inspected_building = *uiworld.read::<InspectedBuilding>();
     if let Some(b) = inspected_building.e {
-        inspect_building(uiworld, goria, ui, b);
+        inspect_building(uiworld, sim, ui, b);
     }
 
     let e = unwrap_or!(uiworld.read::<InspectedEntity>().e, return);
@@ -31,18 +31,18 @@ pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
     let mut is_open = true;
     match e {
         AnyEntity::HumanID(id) if !force_debug_inspect => {
-            is_open = inspect_human(uiworld, goria, ui, id);
+            is_open = inspect_human(uiworld, sim, ui, id);
         }
         AnyEntity::VehicleID(id) if !force_debug_inspect => {
-            is_open = inspect_vehicle(uiworld, goria, ui, id);
+            is_open = inspect_vehicle(uiworld, sim, ui, id);
         }
         AnyEntity::WagonID(id) if !force_debug_inspect => {
-            let Some(w) = goria.world().get(id) else { return; };
+            let Some(w) = sim.world().get(id) else { return; };
             let train_id = w.itfollower.leader;
             uiworld.write::<InspectedEntity>().e = Some(AnyEntity::TrainID(train_id));
         }
         AnyEntity::TrainID(id) if !force_debug_inspect => {
-            is_open = inspect_train(uiworld, goria, ui, id);
+            is_open = inspect_train(uiworld, sim, ui, id);
         }
         _ => {
             Window::new("Inspect")
@@ -52,7 +52,7 @@ pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
                 .open(&mut is_open)
                 .show(ui, |ui| {
                     let mut ins = InspectRenderer { entity: e };
-                    ins.render(uiworld, goria, ui);
+                    ins.render(uiworld, sim, ui);
                     uiworld.write::<InspectedEntity>().e = Some(ins.entity);
                 });
         }
@@ -63,23 +63,23 @@ pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
     }
 }
 
-pub fn building_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, b: BuildingID) {
+pub fn building_link(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, b: BuildingID) {
     if ui.link(format!("{:?}", b.data())).clicked() {
         uiworld.write::<InspectedBuilding>().e = Some(b);
-        if let Some(b) = goria.map().buildings().get(b) {
+        if let Some(b) = sim.map().buildings().get(b) {
             uiworld.camera_mut().targetpos = b.door_pos;
         }
     }
 }
 
-pub fn entity_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: impl Into<AnyEntity>) {
-    entity_link_inner(uiworld, goria, ui, e.into())
+pub fn entity_link(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, e: impl Into<AnyEntity>) {
+    entity_link_inner(uiworld, sim, ui, e.into())
 }
 
-fn entity_link_inner(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: AnyEntity) {
+fn entity_link_inner(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, e: AnyEntity) {
     let linkname = match e {
         AnyEntity::HumanID(id) => {
-            if let Some(human) = goria.world().humans.get(id) {
+            if let Some(human) = sim.world().humans.get(id) {
                 human.personal_info.name.to_string()
             } else {
                 "???".to_string()
@@ -90,7 +90,7 @@ fn entity_link_inner(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: A
 
     if ui.link(linkname).clicked() {
         uiworld.write::<InspectedEntity>().e = Some(e);
-        if goria.pos_any(e).is_some() {
+        if sim.pos_any(e).is_some() {
             uiworld.write::<FollowEntity>().0 = Some(e);
         }
     }

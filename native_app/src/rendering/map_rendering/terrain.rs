@@ -1,8 +1,8 @@
-use egregoria::map::{Map, MapSubscriber, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE};
-use egregoria::Egregoria;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, GfxContext};
 use geom::{Camera, InfiniteFrustrum};
+use simulation::map::{Map, MapSubscriber, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE};
+use simulation::Simulation;
 
 const CSIZE: usize = CHUNK_SIZE as usize;
 const CRESO: usize = CHUNK_RESOLUTION;
@@ -13,17 +13,17 @@ pub struct TerrainRender {
 }
 
 impl TerrainRender {
-    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
-        let w = goria.map().terrain.width;
-        let h = goria.map().terrain.height;
+    pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
+        let w = sim.map().terrain.width;
+        let h = sim.map().terrain.height;
 
         let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
 
         let terrain =
-            EngineTerrainRender::new(gfx, w, h, egregoria::config().border_col.into(), grass);
+            EngineTerrainRender::new(gfx, w, h, simulation::config().border_col.into(), grass);
 
         /*
-        let ter = &goria.map().terrain;
+        let ter = &sim.map().terrain;
         let minchunk = *ter.chunks.keys().min().unwrap();
         let maxchunk = *ter.chunks.keys().max().unwrap();
         terrain.update_borders(minchunk, maxchunk, gfx, &|p| ter.height(p));
@@ -31,7 +31,7 @@ impl TerrainRender {
 
         Self {
             terrain,
-            terrain_sub: goria.map().subscribe(UpdateType::Terrain),
+            terrain_sub: sim.map().subscribe(UpdateType::Terrain),
         }
     }
 

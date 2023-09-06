@@ -11,7 +11,7 @@ use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::world::{FreightStationEnt, HumanEnt, HumanID, VehicleID};
 use crate::World;
-use crate::{BuildingKind, Egregoria, Map, ParCommandBuffer, SoulID};
+use crate::{BuildingKind, Map, ParCommandBuffer, Simulation, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
 use lazy_static::lazy_static;
@@ -229,28 +229,28 @@ pub fn update_decision(
     }
 }
 
-pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<HumanID> {
+pub fn spawn_human(sim: &mut Simulation, house: BuildingID) -> Option<HumanID> {
     profiling::scope!("spawn_human");
-    let map = goria.map();
+    let map = sim.map();
     let housepos = map.buildings().get(house)?.door_pos;
     drop(map);
 
-    let _color = random_pedestrian_shirt_color(&mut goria.write::<RandProvider>());
+    let _color = random_pedestrian_shirt_color(&mut sim.write::<RandProvider>());
 
-    let hpos = goria.map().buildings().get(house)?.door_pos;
-    let p = Pedestrian::new(&mut goria.write::<RandProvider>());
+    let hpos = sim.map().buildings().get(house)?.door_pos;
+    let p = Pedestrian::new(&mut sim.write::<RandProvider>());
 
-    let registry = goria.read::<ItemRegistry>();
-    let time = goria.read::<GameTime>().instant();
+    let registry = sim.read::<ItemRegistry>();
+    let time = sim.read::<GameTime>().instant();
 
     let food = BuyFood::new(time, &registry);
     drop(registry);
 
-    let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
+    let car = spawn_parked_vehicle(sim, VehicleKind::Car, housepos);
 
-    let personal_info = Box::new(PersonalInfo::new(&mut goria.write::<RandProvider>()));
+    let personal_info = Box::new(PersonalInfo::new(&mut sim.write::<RandProvider>()));
 
-    let id = goria.world.insert(HumanEnt {
+    let id = sim.world.insert(HumanEnt {
         trans: Transform::new(hpos),
         location: Location::Building(house),
         pedestrian: p,
@@ -267,12 +267,12 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<HumanID> 
     });
 
     let soul = SoulID::Human(id);
-    let mut m = goria.write::<Market>();
-    let registry = goria.read::<ItemRegistry>();
+    let mut m = sim.write::<Market>();
+    let registry = sim.read::<ItemRegistry>();
     m.buy(soul, housepos.xy(), registry.id("job-opening"), 1);
 
-    goria.write::<BuildingInfos>().get_in(house, soul);
-    goria.write::<BuildingInfos>().set_owner(house, soul);
+    sim.write::<BuildingInfos>().get_in(house, soul);
+    sim.write::<BuildingInfos>().set_owner(house, soul);
 
     Some(id)
 }

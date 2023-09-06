@@ -1,10 +1,10 @@
 use crate::gui::windows::settings::Settings;
 use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;
-use egregoria::map::pathfinding_crate::num_traits::Pow;
-use egregoria::map::CHUNK_SIZE;
 use engine::{Context, Tesselator};
 use geom::{vec4, Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
+use simulation::map::pathfinding_crate::num_traits::Pow;
+use simulation::map::CHUNK_SIZE;
 
 /// CameraHandler3D is the camera handler for the 3D view
 /// It controls the camera using an orbit view

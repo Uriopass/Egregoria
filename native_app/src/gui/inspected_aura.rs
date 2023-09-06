@@ -2,26 +2,26 @@ use crate::gui::selectable::select_radius;
 use crate::gui::{InspectedBuilding, InspectedEntity};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::transportation::Location;
-use egregoria::{AnyEntity, Egregoria};
 use geom::Color;
+use simulation::transportation::Location;
+use simulation::{AnyEntity, Simulation};
 
 /// InspectedAura shows the circle around the inspected entity
-pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn inspected_aura(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::inspected_aura");
     let inspected = uiworld.write::<InspectedEntity>();
     let inspected_b = uiworld.write::<InspectedBuilding>();
-    let map = goria.map();
+    let map = sim.map();
     let mut draw = uiworld.write::<ImmediateDraw>();
 
     if let Some(sel) = inspected.e {
-        let mut pos = goria.pos_any(sel);
+        let mut pos = sim.pos_any(sel);
 
         if let AnyEntity::HumanID(id) = sel {
-            let loc = &goria.world().get(id).unwrap().location;
+            let loc = &sim.world().get(id).unwrap().location;
             match *loc {
                 Location::Outside => {}
-                Location::Vehicle(v) => pos = goria.pos(v),
+                Location::Vehicle(v) => pos = sim.pos(v),
                 Location::Building(b) => pos = map.buildings().get(b).map(|b| b.door_pos),
             }
         }
@@ -45,6 +45,6 @@ pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
 
         draw.obb(b.obb, b.height + 0.01)
-            .color(egregoria::config().gui_primary);
+            .color(simulation::config().gui_primary);
     }
 }

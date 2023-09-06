@@ -2,7 +2,7 @@
 members = [
     "assets_gui",
     "common",
-    "egregoria",
+    "simulation",
     "egui-inspect",
     "egui-inspect-derive",
     "engine",
@@ -36,7 +36,7 @@ opt-level = 2
 [profile.dev.package.common]
 opt-level = 2
 
-[profile.dev.package.egregoria]
+[profile.dev.package.simulation]
 opt-level = 1
 
 [profile.dev.package.native_app]

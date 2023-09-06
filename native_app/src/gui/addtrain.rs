@@ -3,16 +3,16 @@ use crate::gui::PotentialCommands;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::LaneKind;
-use egregoria::transportation::train::{train_length, wagons_positions_for_render};
-use egregoria::Egregoria;
 use geom::{Color, OBB};
+use simulation::engine_interaction::WorldCommand;
+use simulation::map::LaneKind;
+use simulation::transportation::train::{train_length, wagons_positions_for_render};
+use simulation::Simulation;
 use std::option::Option::None;
 
 /// Addtrain handles the "Adding a train" tool
 /// It allows to add a train to any rail lane
-pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn addtrain(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::addtrain");
     let tool = *uiworld.read::<Tool>();
     if !matches!(tool, Tool::Train) {
@@ -23,7 +23,7 @@ pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut potential = uiworld.write::<PotentialCommands>();
 
     let mut draw = uiworld.write::<ImmediateDraw>();
-    let map = goria.map();
+    let map = sim.map();
     let commands = &mut *uiworld.commands();
 
     let mpos = unwrap_ret!(inp.unprojected);
@@ -34,7 +34,7 @@ pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
         Some(x) => x,
         None => {
             draw.circle(mpos, 10.0)
-                .color(egregoria::config().gui_danger);
+                .color(simulation::config().gui_danger);
             return;
         }
     };
@@ -53,11 +53,11 @@ pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     };
 
     if dist <= trainlength {
-        drawtrain(egregoria::config().gui_danger);
+        drawtrain(simulation::config().gui_danger);
         return;
     }
 
-    drawtrain(egregoria::config().gui_primary);
+    drawtrain(simulation::config().gui_primary);
 
     let cmd = WorldCommand::AddTrain {
         dist,

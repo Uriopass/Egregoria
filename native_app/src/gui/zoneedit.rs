@@ -2,11 +2,11 @@ use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::{ProjectFilter, ProjectKind, Zone, MAX_ZONE_AREA};
-use egregoria::Egregoria;
 use geom::{Polygon, Vec2};
 use ordered_float::OrderedFloat;
+use simulation::engine_interaction::WorldCommand;
+use simulation::map::{ProjectFilter, ProjectKind, Zone, MAX_ZONE_AREA};
+use simulation::Simulation;
 use std::borrow::Cow;
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -18,7 +18,7 @@ pub struct ZoneEditState {
 
 /// ZoneEdit tool
 /// Allows to edit the zone of a building like a farm field or solarpanel field
-pub fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn zoneedit(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::zoneedit");
     let mut inspected_b = uiworld.write::<InspectedBuilding>();
     let mut state = uiworld.write::<ZoneEditState>();
@@ -26,7 +26,7 @@ pub fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let Some(bid) = inspected_b.e else { state.offset = None; return; };
 
-    let map = goria.map();
+    let map = sim.map();
     let Some(b) = map.buildings().get(bid) else { return; };
 
     let Some(ref zone) = b.zone else { return; };
@@ -82,9 +82,9 @@ pub fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let base_col = if !isvalid {
         uiworld.write::<ErrorTooltip>().msg = Some(Cow::Owned(invalidmsg));
         uiworld.write::<ErrorTooltip>().isworld = true;
-        egregoria::config().gui_danger
+        simulation::config().gui_danger
     } else {
-        egregoria::config().gui_primary
+        simulation::config().gui_primary
     };
 
     for (p1, p2) in newpoly.iter().zip(newpoly.iter().cycle().skip(1)) {
@@ -122,7 +122,7 @@ pub fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     for (i, &p) in newpoly.iter().enumerate() {
         if Some((i, p, false)) == closest {
             draw.circle(p.z(1.1), 6.0)
-                .color(egregoria::config().gui_success);
+                .color(simulation::config().gui_success);
             continue;
         }
 
@@ -132,7 +132,7 @@ pub fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     for (i, p) in newpoly.segments().map(|s| s.center()).enumerate() {
         if Some((i, p, true)) == closest {
             draw.circle(p.z(1.1), 3.0)
-                .color(egregoria::config().gui_success);
+                .color(simulation::config().gui_success);
             continue;
         }
 

@@ -1,10 +1,10 @@
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use egregoria::map::Terrain;
-use egregoria::Egregoria;
 use engine::{AudioContext, ControlHandle, Stereo};
 use geom::{lerp, vec2, Camera, Vec2, AABB};
 use oddio::{Cycle, Gain};
+use simulation::map::Terrain;
+use simulation::Simulation;
 
 /// Ambient sounds
 /// These are sounds that are played in the background
@@ -38,9 +38,9 @@ impl Ambient {
         Self { wind, forest }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld) {
+    pub fn update(&mut self, sim: &Simulation, uiworld: &mut UiWorld) {
         let eye = uiworld.read::<Camera>().eye();
-        let map = goria.map();
+        let map = sim.map();
 
         let h = eye.z;
 

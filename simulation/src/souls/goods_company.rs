@@ -7,7 +7,7 @@ use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
 use crate::World;
-use crate::{Egregoria, ParCommandBuffer, SoulID};
+use crate::{ParCommandBuffer, Simulation, SoulID};
 use common::descriptions::{GoodsCompanyDescriptionJSON, ZoneDescription};
 use common::saveload::Encoder;
 use egui_inspect::Inspect;
@@ -207,15 +207,15 @@ impl GoodsCompany {
     }
 }
 
-pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<SoulID> {
-    let map = goria.map();
+pub fn company_soul(sim: &mut Simulation, company: GoodsCompany) -> Option<SoulID> {
+    let map = sim.map();
     let b = map.buildings().get(company.building)?;
     let door_pos = b.door_pos;
     let obb = b.obb;
     let height = b.height;
     drop(map);
 
-    let id = goria.world.insert(CompanyEnt {
+    let id = sim.world.insert(CompanyEnt {
         trans: Transform::new(obb.center().z(height)),
         comp: company,
         workers: Default::default(),
@@ -223,22 +223,21 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
         bought: Default::default(),
     });
 
-    let company = &goria.world.get(id).unwrap().comp;
+    let company = &sim.world.get(id).unwrap().comp;
 
     let soul = SoulID::GoodsCompany(id);
 
-    let job_opening = goria.read::<ItemRegistry>().id("job-opening");
+    let job_opening = sim.read::<ItemRegistry>().id("job-opening");
 
     {
-        let m = &mut *goria.write::<Market>();
+        let m = &mut *sim.write::<Market>();
         m.produce(soul, job_opening, company.max_workers);
         m.sell_all(soul, door_pos.xy(), job_opening, 0);
 
         company.recipe.init(soul, door_pos.xy(), m);
     }
 
-    goria
-        .write::<BuildingInfos>()
+    sim.write::<BuildingInfos>()
         .set_owner(company.building, soul);
 
     Some(soul)
@@ -283,8 +282,8 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
                 if let Some(owner_build) =
                     find_trade_place(trade.seller, b.door_pos.xy(), binfos, map)
                 {
-                    cbuf.exec_ent(me, move |goria| {
-                        let (world, res) = goria.world_res();
+                    cbuf.exec_ent(me, move |sim| {
+                        let (world, res) = sim.world_res();
                         if let Some(SoulID::FreightStation(owner)) =
                             res.read::<BuildingInfos>().owner(owner_build)
                         {
@@ -314,8 +313,8 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
                 log::warn!("driver can't find the place to deliver for {:?}", &trade);
                 return;
             };
-            cbuf.exec_ent(me, move |goria| {
-                let Some(h) = goria.world.humans.get_mut(driver) else { return; };
+            cbuf.exec_ent(me, move |sim| {
+                let Some(h) = sim.world.humans.get_mut(driver) else { return; };
                 let Some(w) = h.work.as_mut() else { return; };
                 let WorkKind::Driver {
                     deliver_order,
@@ -346,8 +345,8 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
                 let offset = common::rand::randu(common::hash_u64(worker) as u32);
 
                 let b = c.comp.building;
-                cbuf_human.exec_ent(worker, move |goria| {
-                    let Some(w) = goria.world.humans.get_mut(worker) else { return };
+                cbuf_human.exec_ent(worker, move |sim| {
+                    let Some(w) = sim.world.humans.get_mut(worker) else { return };
                     w.work = Some(Work::new(b, kind, offset));
                 });
             }

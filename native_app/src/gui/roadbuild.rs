@@ -3,13 +3,13 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use egregoria::engine_interaction::{WorldCommand, WorldCommands};
-use egregoria::map::{
-    Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
-};
-use egregoria::Egregoria;
 use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
 use geom::{PolyLine3, Spline3, Vec2, Vec3};
+use simulation::engine_interaction::{WorldCommand, WorldCommands};
+use simulation::map::{
+    Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
+};
+use simulation::Simulation;
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
@@ -31,7 +31,7 @@ pub struct RoadBuildResource {
 
 /// Road building tool
 /// Allows to build roads and intersections
-pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::roadbuild");
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
@@ -39,7 +39,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let potential_command = &mut *uiworld.write::<PotentialCommands>();
     let mut inp = uiworld.write::<InputMap>();
     let tool = *uiworld.read::<Tool>();
-    let map = &*goria.map();
+    let map = &*sim.map();
     let commands: &mut WorldCommands = &mut uiworld.commands();
     let cam = &*uiworld.read::<Camera>();
 
@@ -67,7 +67,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
-        let col = egregoria::config().gui_primary.a(alpha);
+        let col = simulation::config().gui_primary.a(alpha);
         let screen = AABB::new(unproj.xy(), unproj.xy()).expand(300.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         let starty = (screen.ll.y / grid_size).ceil() * grid_size;
@@ -362,9 +362,9 @@ impl RoadBuildResource {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.1;
         let col = if is_valid {
-            egregoria::config().gui_primary
+            simulation::config().gui_primary
         } else {
-            egregoria::config().gui_danger
+            simulation::config().gui_danger
         };
 
         let interf = |ang: Vec2, proj: MapProject| match proj.kind {
@@ -438,7 +438,7 @@ impl RoadBuildResource {
             terrain_height,
             pos,
             ..
-        } in egregoria::map::Road::pylons_positions(&p, &map.terrain)
+        } in simulation::map::Road::pylons_positions(&p, &map.terrain)
         {
             immdraw
                 .circle(pos.xy().z(terrain_height + 0.1), patwidth * 0.5)

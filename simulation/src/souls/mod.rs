@@ -4,7 +4,7 @@ use crate::souls::freight_station::freight_station_soul;
 use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
-use crate::Egregoria;
+use crate::Simulation;
 use geom::Vec3;
 use std::collections::BTreeMap;
 
@@ -16,10 +16,10 @@ pub mod goods_company;
 pub mod human;
 
 /// Adds souls to empty buildings
-pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
+pub(crate) fn add_souls_to_empty_buildings(sim: &mut Simulation) {
     profiling::scope!("souls::add_souls_to_empty_buildings");
-    let map = goria.map();
-    let infos = goria.read::<BuildingInfos>();
+    let map = sim.map();
+    let infos = sim.read::<BuildingInfos>();
     let mut empty_buildings: BTreeMap<BuildingKind, Vec<(BuildingID, Vec3)>> = BTreeMap::default();
 
     for (id, building) in map.buildings() {
@@ -43,7 +43,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         .iter()
         .take(50)
     {
-        spawn_human(goria, build_id);
+        spawn_human(sim, build_id);
         n_souls_added += 1;
     }
 
@@ -52,7 +52,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         .unwrap_or(&vec![])
         .iter()
     {
-        freight_station_soul(goria, build_id);
+        freight_station_soul(sim, build_id);
         n_souls_added += 1;
     }
 
@@ -61,15 +61,15 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         .filter_map(|(kind, v)| kind.as_goods_company().zip(Some(v)))
         .flat_map(|(bkind, v)| v.iter().map(move |x| (bkind, x)))
     {
-        let registry = goria.read::<GoodsCompanyRegistry>();
+        let registry = sim.read::<GoodsCompanyRegistry>();
         let des = &unwrap_or!(registry.descriptions.get(bkind), continue);
 
         let ckind = des.kind;
-        let mk_trucks = |goria: &mut Egregoria| {
+        let mk_trucks = |sim: &mut Simulation| {
             let mut trucks = vec![];
             if let CompanyKind::Factory { n_trucks } = ckind {
                 for _ in 0..n_trucks {
-                    trucks.extend(spawn_parked_vehicle(goria, VehicleKind::Truck, pos))
+                    trucks.extend(spawn_parked_vehicle(sim, VehicleKind::Truck, pos))
                 }
                 if trucks.is_empty() {
                     return None;
@@ -87,11 +87,11 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
             driver: None,
             trucks: {
                 drop(registry);
-                unwrap_or!(mk_trucks(goria), continue)
+                unwrap_or!(mk_trucks(sim), continue)
             },
         };
 
-        company_soul(goria, comp);
+        company_soul(sim, comp);
 
         n_souls_added += 1;
     }

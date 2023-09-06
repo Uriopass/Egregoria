@@ -10,14 +10,6 @@ use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTex
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
-use egregoria::economy::{Government, Item, ItemRegistry, Money};
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::{
-    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
-};
-use egregoria::souls::goods_company::GoodsCompanyRegistry;
-use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
-use egregoria::Egregoria;
 use egui::{
     Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
     Widget, Window,
@@ -25,6 +17,14 @@ use egui::{
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use serde::{Deserialize, Serialize};
+use simulation::economy::{Government, Item, ItemRegistry, Money};
+use simulation::engine_interaction::WorldCommand;
+use simulation::map::{
+    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
+};
+use simulation::souls::goods_company::GoodsCompanyRegistry;
+use simulation::utils::time::{GameTime, SECONDS_PER_HOUR};
+use simulation::Simulation;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
@@ -68,7 +68,7 @@ impl Gui {
     }
 
     /// Root GUI entrypoint
-    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
         profiling::scope!("topgui::render");
         self.auto_save(uiworld);
 
@@ -76,22 +76,22 @@ impl Gui {
             return;
         }
 
-        self.time_controls(ui, uiworld, goria);
+        self.time_controls(ui, uiworld, sim);
 
-        self.menu_bar(ui, uiworld, goria);
+        self.menu_bar(ui, uiworld, sim);
 
-        inspector(ui, uiworld, goria);
+        inspector(ui, uiworld, sim);
 
-        chat(ui, uiworld, goria);
+        chat(ui, uiworld, sim);
 
-        self.windows.render(ui, uiworld, goria);
+        self.windows.render(ui, uiworld, sim);
 
-        Self::toolbox(ui, uiworld, goria);
+        Self::toolbox(ui, uiworld, sim);
 
-        self.tooltip(ui, uiworld, goria);
+        self.tooltip(ui, uiworld, sim);
     }
 
-    pub fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
         profiling::scope!("gui::tooltip");
         let tooltip = std::mem::take(&mut *uiworld.write::<ErrorTooltip>());
         if let Some(msg) = tooltip.msg {
@@ -112,7 +112,7 @@ impl Gui {
         let pot = &mut uiworld.write::<PotentialCommands>().0;
         let cost: Money = pot
             .drain(..)
-            .map(|cmd| Government::action_cost(&cmd, goria))
+            .map(|cmd| Government::action_cost(&cmd, sim))
             .sum();
 
         if cost == Money::default() {
@@ -120,7 +120,7 @@ impl Gui {
         }
 
         egui::show_tooltip(ui, Id::new("tooltip_command_cost"), |ui| {
-            if cost > goria.read::<Government>().money {
+            if cost > sim.read::<Government>().money {
                 ui.colored_label(Color32::RED, format!("{cost} too expensive"));
             } else {
                 ui.label(cost.to_string());
@@ -148,7 +148,7 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
         profiling::scope!("topgui::toolbox");
         #[derive(Copy, Clone)]
         pub enum Tab {
@@ -510,10 +510,10 @@ impl Gui {
         }
 
         let building_select_w = 200.0;
-        let registry = goria.read::<GoodsCompanyRegistry>();
+        let registry = sim.read::<GoodsCompanyRegistry>();
         let gbuildings = registry.descriptions.values().peekable();
 
-        let iregistry = goria.read::<ItemRegistry>();
+        let iregistry = sim.read::<ItemRegistry>();
 
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
@@ -606,9 +606,9 @@ impl Gui {
         }
     }
 
-    pub fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
         profiling::scope!("topgui::time_controls");
-        let time = goria.read::<GameTime>().daytime;
+        let time = sim.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
         if uiworld
@@ -684,7 +684,7 @@ impl Gui {
             });
     }
 
-    pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
         profiling::scope!("topgui::menu_bar");
         //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
@@ -706,7 +706,7 @@ impl Gui {
                     uiworld.save_to_disk();
                 }
 
-                ui.label(format!("Money: {}", goria.read::<Government>().money));
+                ui.label(format!("Money: {}", sim.read::<Government>().money));
 
                 let mut estate = uiworld.write::<ExitState>();
 

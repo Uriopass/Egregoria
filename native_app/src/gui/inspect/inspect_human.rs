@@ -1,18 +1,18 @@
 use egui::{Context, Widget};
 
-use egregoria::economy::{ItemRegistry, Market};
-use egregoria::map_dynamic::Destination;
-use egregoria::souls::desire::WorkKind;
-use egregoria::transportation::Location;
-use egregoria::{Egregoria, HumanID};
+use simulation::economy::{ItemRegistry, Market};
+use simulation::map_dynamic::Destination;
+use simulation::souls::desire::WorkKind;
+use simulation::transportation::Location;
+use simulation::{HumanID, Simulation};
 
 use crate::gui::inspect::{building_link, follow_button};
 use crate::gui::item_icon;
 use crate::uiworld::UiWorld;
 
 /// Inspect a specific building, showing useful information about it
-pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id: HumanID) -> bool {
-    let Some(human) = goria.get(id) else { return false; };
+pub fn inspect_human(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: HumanID) -> bool {
+    let Some(human) = sim.get(id) else { return false; };
 
     let mut is_open = true;
     egui::Window::new("Human")
@@ -34,7 +34,7 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
                 Location::Building(x) => {
                     ui.horizontal(|ui| {
                         ui.label("In a building:");
-                        building_link(uiworld, goria, ui, x);
+                        building_link(uiworld, sim, ui, x);
                     });
                 }
             }
@@ -47,7 +47,7 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
                     Destination::Building(b) => {
                         ui.horizontal(|ui| {
                             ui.label("Going to building");
-                            building_link(uiworld, goria, ui, *b);
+                            building_link(uiworld, sim, ui, *b);
                         });
                     }
                 }
@@ -55,7 +55,7 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
 
             ui.horizontal(|ui| {
                 ui.label("House is");
-                building_link(uiworld, goria, ui, human.home.house);
+                building_link(uiworld, sim, ui, human.home.house);
             });
 
             ui.label(format!("Last ate: {}", human.food.last_ate));
@@ -63,7 +63,7 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
             if let Some(ref x) = human.work {
                 ui.horizontal(|ui| {
                     ui.label("Working at");
-                    building_link(uiworld, goria, ui, x.workplace);
+                    building_link(uiworld, sim, ui, x.workplace);
                     match x.kind {
                         WorkKind::Driver { .. } => {
                             ui.label("as a driver");
@@ -93,8 +93,8 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
                 ui.label("Work");
             });
 
-            let market = goria.read::<Market>();
-            let itemregistry = goria.read::<ItemRegistry>();
+            let market = sim.read::<Market>();
+            let itemregistry = sim.read::<ItemRegistry>();
 
             ui.add_space(10.0);
 

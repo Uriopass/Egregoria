@@ -2,10 +2,10 @@ use crate::game_loop::Timings;
 use crate::inputmap::{Bindings, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
-use egregoria::Egregoria;
 use egui::{Align2, Context, Widget};
 use egui_extras::Column;
 use engine::GfxContext;
+use simulation::Simulation;
 use std::time::{Duration, Instant};
 use winit::window::Fullscreen;
 
@@ -149,7 +149,7 @@ impl AsRef<str> for AutoSaveEvery {
 
 /// Settings window
 /// This window is used to change the settings of the game
-pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _: &Egregoria) {
+pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _: &Simulation) {
     let mut settings = uiworld.write::<Settings>();
     let [_, h]: [f32; 2] = ui.available_rect().size().into();
 

@@ -1,11 +1,11 @@
 use common::FastMap;
-use egregoria::map::{ChunkID, Map, MapSubscriber, UpdateType, CHUNK_SIZE};
 use engine::meshload::load_mesh;
 use engine::wgpu::RenderPass;
 use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
 use geom::{vec3, vec4, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
+use simulation::map::{ChunkID, Map, MapSubscriber, UpdateType, CHUNK_SIZE};
 use std::ops::Mul;
 
 pub struct TreesRender {

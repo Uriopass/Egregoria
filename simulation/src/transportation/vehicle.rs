@@ -3,7 +3,7 @@ use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
 use crate::world::{VehicleEnt, VehicleID};
-use crate::Egregoria;
+use crate::Simulation;
 use egui_inspect::Inspect;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
@@ -45,8 +45,8 @@ pub struct Vehicle {
 }
 
 #[must_use]
-pub fn put_vehicle_in_coworld(goria: &Egregoria, w: f32, trans: Transform) -> Collider {
-    Collider(goria.write::<CollisionWorld>().insert(
+pub fn put_vehicle_in_coworld(sim: &Simulation, w: f32, trans: Transform) -> Collider {
+    Collider(sim.write::<CollisionWorld>().insert(
         trans.position.xy(),
         PhysicsObject {
             dir: trans.dir.xy(),
@@ -104,60 +104,60 @@ impl VehicleKind {
     }
 }
 
-pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
-    let v = unwrap_ret!(goria.world.vehicles.get_mut(vehicle));
+pub fn unpark(sim: &mut Simulation, vehicle: VehicleID) {
+    let v = unwrap_ret!(sim.world.vehicles.get_mut(vehicle));
     let w = v.vehicle.kind.width();
     let trans = v.trans;
 
     if let VehicleState::Parked(spot) =
         std::mem::replace(&mut v.vehicle.state, VehicleState::Driving)
     {
-        goria.write::<ParkingManagement>().free(spot);
+        sim.write::<ParkingManagement>().free(spot);
     } else {
         log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
     }
 
-    let coll = put_vehicle_in_coworld(goria, w, trans);
+    let coll = put_vehicle_in_coworld(sim, w, trans);
 
-    let v = unwrap_ret!(goria.world.vehicles.get_mut(vehicle));
+    let v = unwrap_ret!(sim.world.vehicles.get_mut(vehicle));
     v.collider = Some(coll);
 }
 
 pub fn spawn_parked_vehicle(
-    goria: &mut Egregoria,
+    sim: &mut Simulation,
     kind: VehicleKind,
     near: Vec3,
 ) -> Option<VehicleID> {
-    let map = goria.map();
-    let mut pm = goria.write::<ParkingManagement>();
+    let map = sim.map();
+    let mut pm = sim.write::<ParkingManagement>();
     let spot_id = pm.reserve_near(near, &map).ok()?;
     drop((map, pm));
 
-    spawn_parked_vehicle_with_spot(goria, kind, spot_id)
+    spawn_parked_vehicle_with_spot(sim, kind, spot_id)
 }
 
 pub fn spawn_parked_vehicle_with_spot(
-    goria: &mut Egregoria,
+    sim: &mut Simulation,
     kind: VehicleKind,
     spot_id: SpotReservation,
 ) -> Option<VehicleID> {
-    let map = goria.map();
+    let map = sim.map();
     let it = Itinerary::NONE;
     let pos = spot_id.get(&map.parking).unwrap().trans; // Unwrap ok: Gotten using reserve_near
     drop(map);
 
     let tint = match kind {
-        VehicleKind::Car => get_random_car_color(&mut goria.write::<RandProvider>()),
+        VehicleKind::Car => get_random_car_color(&mut sim.write::<RandProvider>()),
         _ => Color::WHITE,
     };
 
-    let vehicle = Vehicle::new(kind, spot_id, tint, &mut goria.write::<RandProvider>());
+    let vehicle = Vehicle::new(kind, spot_id, tint, &mut sim.write::<RandProvider>());
 
-    Some(make_vehicle_entity(goria, pos, vehicle, it, false))
+    Some(make_vehicle_entity(sim, pos, vehicle, it, false))
 }
 
 pub fn make_vehicle_entity(
-    goria: &mut Egregoria,
+    sim: &mut Simulation,
     trans: Transform,
     vehicle: Vehicle,
     it: Itinerary,
@@ -167,9 +167,9 @@ pub fn make_vehicle_entity(
 
     let mut collider = None;
     if mk_collider {
-        collider = Some(put_vehicle_in_coworld(goria, w, trans));
+        collider = Some(put_vehicle_in_coworld(sim, w, trans));
     }
-    goria.world.insert(VehicleEnt {
+    sim.world.insert(VehicleEnt {
         trans,
         speed: Default::default(),
         vehicle,

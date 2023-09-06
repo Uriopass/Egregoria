@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 bytemuck      = "1.7.2"
-egregoria     = { path = "../egregoria" }
+simulation     = { path = "../simulation" }
 geom          = { path = "../geom" }
 engine   = { path = "../engine" }
 common        = { path = "../common" }

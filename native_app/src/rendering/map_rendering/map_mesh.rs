@@ -1,12 +1,5 @@
 use crate::rendering::MapRenderOptions;
 use common::FastMap;
-use egregoria::map::{
-    chunk_id, Building, BuildingKind, CanonicalPosition, Chunk, ChunkID, Intersection, LaneKind,
-    Lanes, LotKind, Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads,
-    Terrain, Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
-};
-use egregoria::souls::goods_company::GoodsCompanyRegistry;
-use egregoria::Egregoria;
 use engine::earcut::earcut;
 use engine::meshload::load_mesh;
 use engine::{
@@ -14,6 +7,13 @@ use engine::{
     MeshInstance, MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
+use simulation::map::{
+    chunk_id, Building, BuildingKind, CanonicalPosition, Chunk, ChunkID, Intersection, LaneKind,
+    Lanes, LotKind, Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads,
+    Terrain, Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
+};
+use simulation::souls::goods_company::GoodsCompanyRegistry;
+use simulation::Simulation;
 use std::ops::{Mul, Neg};
 use std::rc::Rc;
 
@@ -47,14 +47,14 @@ struct MapBuilders {
 }
 
 impl MapMeshHandler {
-    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
+    pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/sprites/arrow_one_way.png");
 
         let mut buildsprites = FastMap::default();
         let mut buildmeshes = FastMap::default();
         let mut zonemeshes = FastMap::default();
 
-        for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
+        for descr in sim.read::<GoodsCompanyRegistry>().descriptions.values() {
             let asset = &descr.asset_location;
             if !asset.ends_with(".png") && !asset.ends_with(".jpg") {
                 continue;
@@ -68,7 +68,7 @@ impl MapMeshHandler {
             );
         }
 
-        for (asset, bkind) in goria
+        for (asset, bkind) in sim
             .read::<GoodsCompanyRegistry>()
             .descriptions
             .values()
@@ -97,7 +97,7 @@ impl MapMeshHandler {
             buildmeshes.insert(bkind, InstancedMeshBuilder::new(m));
         }
 
-        for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
+        for descr in sim.read::<GoodsCompanyRegistry>().descriptions.values() {
             let Some(ref z) = descr.zone else { continue };
             let floor = &z.floor;
             let filler = &z.filler;
@@ -166,8 +166,8 @@ impl MapMeshHandler {
         Self {
             builders,
             cache: Default::default(),
-            road_sub: goria.map().subscribe(UpdateType::Road),
-            building_sub: goria.map().subscribe(UpdateType::Building),
+            road_sub: sim.map().subscribe(UpdateType::Road),
+            building_sub: sim.map().subscribe(UpdateType::Building),
         }
     }
 
@@ -548,10 +548,10 @@ impl MapBuilders {
         self.tess_map.meshbuilder.clear();
         self.tess_lots.meshbuilder.clear();
 
-        let low_col: LinearColor = egregoria::config().road_low_col.into();
-        let mid_col: LinearColor = egregoria::config().road_mid_col.into();
-        let hig_col: LinearColor = egregoria::config().road_hig_col.into();
-        let line_col: LinearColor = egregoria::config().road_line_col.into();
+        let low_col: LinearColor = simulation::config().road_low_col.into();
+        let mid_col: LinearColor = simulation::config().road_mid_col.into();
+        let hig_col: LinearColor = simulation::config().road_hig_col.into();
+        let line_col: LinearColor = simulation::config().road_line_col.into();
 
         let objs = map.spatial_map().query(
             Chunk::rect(chunk),
@@ -723,8 +723,8 @@ impl MapBuilders {
         for lot in chunk_lots {
             let lot = &lots[lot];
             let col = match lot.kind {
-                LotKind::Unassigned => egregoria::config().lot_unassigned_col,
-                LotKind::Residential => egregoria::config().lot_residential_col,
+                LotKind::Unassigned => simulation::config().lot_unassigned_col,
+                LotKind::Residential => simulation::config().lot_residential_col,
             };
             self.tess_lots.set_color(col);
             self.tess_lots
@@ -742,7 +742,7 @@ fn add_polyon(
         dir,
     }: PylonPosition,
 ) {
-    let color = LinearColor::from(egregoria::config().road_pylon_col);
+    let color = LinearColor::from(simulation::config().road_pylon_col);
     let color: [f32; 4] = color.into();
 
     let up = pos.up(-0.2);
@@ -942,7 +942,7 @@ fn intersection_mesh(
 
     polygon.simplify();
 
-    let col = LinearColor::from(egregoria::config().road_mid_col).into();
+    let col = LinearColor::from(simulation::config().road_mid_col).into();
     tess.meshbuilder.extend_with(move |vertices, add_idx| {
         vertices.extend(polygon.iter().map(|pos| MeshVertex {
             position: pos.z(inter.pos.z - 0.001).into(),

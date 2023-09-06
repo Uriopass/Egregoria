@@ -10,7 +10,7 @@ There's also the `market_update` which updates the markets and determines which 
 
 To handle user interactions, Egregoria uses a Server-Client model.
 This ensures Egregoria's state cannot be easily corrupted and enables [Deterministic Lockstep](https://gafferongames.com/post/deterministic_lockstep/) networking.
-The [`WorldCommand`](https://github.com/Uriopass/Egregoria/blob/master/egregoria/src/engine_interaction.rs#L32) enum encodes theses possible mutations.
+The [`WorldCommand`](https://github.com/Uriopass/Egregoria/blob/master/simulation/src/engine_interaction.rs#L32) enum encodes theses possible mutations.
 
 For rendering+audio, all the render state is specifically NOT contained along the simulated entities.
 Instead of saying "this road has this mesh" with the rest of the `Road`'s definition, it is entirely determined on the rendering side and cached.
@@ -26,16 +26,16 @@ This is a (not up-to-date) codemap to showcase the different crate's usages and 
 
 Approximately sorted by importance.
 
-## `egregoria`
+## `simulation`
 
 The main crate, which contains all the simulation logic.
 It is itself composed of the following subsystems:
 
-### `egregoria/economy`
+### `simulation/economy`
 
 Everything related to the market. Doesn't contain the economic actors.
 
-## `egregoria/map`
+## `simulation/map`
 
 Contains all the map related data. It contains the data about:
 - Roads/intersections/lanes/lots
@@ -45,15 +45,15 @@ Contains all the map related data. It contains the data about:
 
 It is only raw data and operators (e.g. build this road here), but it doesn't contain any simulation logic per se.
 
-### `egregoria/map_dynamic`
+### `simulation/map_dynamic`
 
 This contains all the dynamism around the map, like the pathfinding, routing, parking and itinerary systems.
 
-### `egregoria/transportation`
+### `simulation/transportation`
 
 This module handles vehicles and pedestrians, it contains all the complex rules around traffic and how to handle intersections.
 
-### `egregoria/souls`
+### `simulation/souls`
 
 This module contains all the AI related to the companies and the humans in the world.  
 This is where companies decide to employ people, and where people decide to buy some bread.
@@ -121,7 +121,7 @@ All the UI related code is in the `native_app` crate, more specifically in the `
 
 ## Simulation/Gameplay
 
-All the simulation code is in the `egregoria` crate. The different modules of this crate are explained in the codemap.  
+All the simulation code is in the `simulation` crate. The different modules of this crate are explained in the codemap.  
 Try to keep the different aspects of the simulation decoupled so that it is easier to reason about.
 
 ## 3D Graphics

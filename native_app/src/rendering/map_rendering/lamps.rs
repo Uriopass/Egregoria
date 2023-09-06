@@ -1,10 +1,10 @@
 use common::{FastMap, FastSet};
-use egregoria::map::{
-    chunk_id, Chunk, ChunkID, Map, MapSubscriber, ProjectFilter, ProjectKind, UpdateType,
-};
 use engine::{Context, LampLights, LightChunkID};
 use flat_spatial::AABBGrid;
 use geom::{Vec3, AABB3, V3};
+use simulation::map::{
+    chunk_id, Chunk, ChunkID, Map, MapSubscriber, ProjectFilter, ProjectKind, UpdateType,
+};
 
 pub struct LampsRender {
     lamp_memory: FastMap<LightChunkID, Vec<Vec3>>,

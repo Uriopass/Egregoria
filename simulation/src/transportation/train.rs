@@ -2,7 +2,7 @@ use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::ItineraryFollower;
 use crate::utils::resources::Resources;
 use crate::world::{TrainEnt, TrainID, WagonEnt};
-use crate::{Egregoria, GameTime, Itinerary, ItineraryLeader, Speed, World};
+use crate::{GameTime, Itinerary, ItineraryLeader, Simulation, Speed, World};
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use ordered_float::OrderedFloat;
@@ -82,13 +82,13 @@ pub fn train_length(n_wagons: u32) -> f32 {
 }
 
 pub fn spawn_train(
-    goria: &mut Egregoria,
+    sim: &mut Simulation,
     dist: f32,
     n_wagons: u32,
     lane: LaneID,
     kind: RailWagonKind,
 ) -> Option<TrainID> {
-    let (world, res) = goria.world_res();
+    let (world, res) = sim.world_res();
 
     let map = res.read::<Map>();
     let lane = map.lanes().get(lane)?;

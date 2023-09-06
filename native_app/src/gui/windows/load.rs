@@ -1,7 +1,7 @@
 #![allow(unused)]
 use crate::uiworld::{SaveLoadState, UiWorld};
-use egregoria::Egregoria;
 use egui::{Color32, DroppedFile, Widget};
+use simulation::Simulation;
 use std::path::PathBuf;
 
 #[derive(Default)]
@@ -12,7 +12,7 @@ pub struct LoadState {
 
 /// Load window
 /// Allows to load a replay from disk and play it
-pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: &Egregoria) {
+pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: &Simulation) {
     window.show(ui, |ui| {
         let mut lstate = uiw.write::<LoadState>();
 
@@ -23,17 +23,17 @@ pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: 
         });
 
         if ui.button("New Game").clicked() {
-            uiw.write::<SaveLoadState>().please_load_goria = Some(Egregoria::new(true));
+            uiw.write::<SaveLoadState>().please_load_sim = Some(Simulation::new(true));
         }
 
         if has_save {
             if ui.button("Load world/world_replay.json").clicked() {
-                let replay = Egregoria::load_replay_from_disk("world");
+                let replay = Simulation::load_replay_from_disk("world");
 
                 if let Some(replay) = replay {
-                    let (goria, loader) = Egregoria::from_replay(replay);
+                    let (sim, loader) = Simulation::from_replay(replay);
                     uiw.write::<SaveLoadState>().please_load = Some(loader);
-                    uiw.write::<SaveLoadState>().please_load_goria = Some(goria);
+                    uiw.write::<SaveLoadState>().please_load_sim = Some(sim);
                 } else {
                     lstate.load_fail = "Failed to load replay".to_string();
                 }

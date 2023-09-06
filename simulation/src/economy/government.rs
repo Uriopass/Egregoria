@@ -1,7 +1,7 @@
 use crate::economy::Money;
 use crate::engine_interaction::WorldCommand;
 use crate::map::{LanePattern, MapProject, MAX_ZONE_AREA};
-use crate::{BuildingKind, Egregoria, GoodsCompanyRegistry};
+use crate::{BuildingKind, GoodsCompanyRegistry, Simulation};
 use serde::{Deserialize, Serialize};
 
 /// The government represents the player.
@@ -19,7 +19,7 @@ impl Default for Government {
 }
 
 impl Government {
-    pub fn action_cost(action: &WorldCommand, goria: &Egregoria) -> Money {
+    pub fn action_cost(action: &WorldCommand, sim: &Simulation) -> Money {
         Money::new_bucks(match action {
             WorldCommand::MapBuildHouse(_) => 100,
             WorldCommand::AddTrain { n_wagons, .. } => 1000 + 100 * (*n_wagons as i64),
@@ -30,10 +30,10 @@ impl Government {
                 building: bid,
                 zone: z,
             } => {
-                let m = goria.map();
+                let m = sim.map();
                 let Some(b) = m.buildings.get(*bid) else { return Money::ZERO; };
                 let Some(gc) = b.kind.as_goods_company() else { return Money::ZERO; };
-                let registry = goria.read::<GoodsCompanyRegistry>();
+                let registry = sim.read::<GoodsCompanyRegistry>();
                 let zonedescr = registry.descriptions[gc].zone.as_ref().unwrap();
 
                 let oldarea = b.zone.as_ref().map_or(0.0, |z| z.area);
@@ -51,7 +51,7 @@ impl Government {
             }
             WorldCommand::MapBuildSpecialBuilding { kind: x, .. } => match x {
                 BuildingKind::GoodsCompany(x) => {
-                    let descr = &goria.read::<GoodsCompanyRegistry>().descriptions[*x];
+                    let descr = &sim.read::<GoodsCompanyRegistry>().descriptions[*x];
                     descr.price
                         + descr
                             .zone

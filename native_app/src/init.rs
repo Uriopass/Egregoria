@@ -17,14 +17,14 @@ use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
-use egregoria::engine_interaction::WorldCommands;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use simulation::engine_interaction::WorldCommands;
 
 /// init is called at the beginning of the program to initialize the globals
 /// It is mostly to register types for serialization and initialization of the engine
 pub fn init() {
-    egregoria::init::init();
+    simulation::init::init();
     register_resource::<Settings>("settings");
     #[cfg(feature = "multiplayer")]
     register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");

@@ -214,7 +214,7 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
                     }
                 }
                 RoutingStep::Unpark(vehicle) => {
-                    cbuf_vehicle.exec_ent(vehicle, move |goria| unpark(goria, vehicle));
+                    cbuf_vehicle.exec_ent(vehicle, move |sim| unpark(sim, vehicle));
                 }
                 RoutingStep::GetInVehicle(vehicle) => {
                     if !world.vehicles.contains_key(vehicle) {
@@ -263,9 +263,9 @@ fn walk_inside(body: HumanID, h: &mut HumanEnt, cbuf: &ParCommandBuffer<HumanEnt
 
 fn walk_outside(body: HumanID, pos: Vec3, cbuf: &ParCommandBuffer<HumanEnt>, loc: &mut Location) {
     *loc = Location::Outside;
-    cbuf.exec_ent(body, move |goria| {
-        let coll = put_pedestrian_in_coworld(&mut goria.write::<CollisionWorld>(), pos);
-        let h = unwrap_ret!(goria.world.humans.get_mut(body));
+    cbuf.exec_ent(body, move |sim| {
+        let coll = put_pedestrian_in_coworld(&mut sim.write::<CollisionWorld>(), pos);
+        let h = unwrap_ret!(sim.world.humans.get_mut(body));
         h.trans.position = pos;
         h.collider = Some(coll);
     });

@@ -1,10 +1,10 @@
-use egregoria::map::{
-    Lane, LaneID, LaneKind, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE,
-};
-use egregoria::Egregoria;
 use engine::{Context, FrameContext, GfxContext, Water};
 use geom::{Camera, Circle, InfiniteFrustrum, Intersect3};
 use map_mesh::MapMeshHandler;
+use simulation::map::{
+    Lane, LaneID, LaneKind, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE,
+};
+use simulation::Simulation;
 use terrain::TerrainRender;
 
 use crate::rendering::immediate::ImmediateDraw;
@@ -31,23 +31,23 @@ pub struct MapRenderOptions {
 }
 
 impl MapRenderer {
-    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
-        let w = goria.map().terrain.width;
-        let h = goria.map().terrain.height;
+    pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
+        let w = sim.map().terrain.width;
+        let h = sim.map().terrain.height;
 
         defer!(log::info!("finished init of road render"));
         MapRenderer {
-            meshb: MapMeshHandler::new(gfx, goria),
-            trees: TreesRender::new(gfx, &goria.map()),
-            terrain: TerrainRender::new(gfx, goria),
+            meshb: MapMeshHandler::new(gfx, sim),
+            trees: TreesRender::new(gfx, &sim.map()),
+            terrain: TerrainRender::new(gfx, sim),
             water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
-            lamps: LampsRender::new(&goria.map()),
+            lamps: LampsRender::new(&sim.map()),
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, ctx: &mut Context) {
+    pub fn update(&mut self, sim: &Simulation, ctx: &mut Context) {
         profiling::scope!("update map renderer");
-        let map = goria.map();
+        let map = sim.map();
         self.lamps.update(&map, ctx);
         self.terrain.update(ctx, &map);
     }

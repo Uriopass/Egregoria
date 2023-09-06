@@ -1,9 +1,9 @@
-use egregoria::transportation::train::RailWagonKind;
-use egregoria::transportation::{Location, VehicleKind};
-use egregoria::Egregoria;
 use engine::meshload::load_mesh;
 use engine::{FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder};
 use geom::{LinearColor, Vec3, V3};
+use simulation::transportation::train::RailWagonKind;
+use simulation::transportation::{Location, VehicleKind};
+use simulation::Simulation;
 
 /// Render all entities using instanced rendering for performance
 pub struct InstancedRender {
@@ -35,12 +35,12 @@ impl InstancedRender {
         }
     }
 
-    pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
+    pub fn render(&mut self, sim: &Simulation, fctx: &mut FrameContext<'_>) {
         profiling::scope!("entity_render::render");
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();
-        for v in goria.world().vehicles.values() {
+        for v in sim.world().vehicles.values() {
             let trans = &v.trans;
             let instance = MeshInstance {
                 pos: trans.position,
@@ -58,7 +58,7 @@ impl InstancedRender {
         self.locomotives.instances.clear();
         self.wagons_passenger.instances.clear();
         self.wagons_freight.instances.clear();
-        for wagon in goria.world().wagons.values() {
+        for wagon in sim.world().wagons.values() {
             let trans = &wagon.trans;
             let instance = MeshInstance {
                 pos: trans.position,
@@ -79,7 +79,7 @@ impl InstancedRender {
             }
         }
 
-        for p in goria.world().humans.values() {
+        for p in sim.world().humans.values() {
             if matches!(p.location, Location::Outside) {
                 self.pedestrians.instances.push(MeshInstance {
                     pos: p
@@ -93,7 +93,7 @@ impl InstancedRender {
         }
 
         self.path_not_found.clear();
-        for (_, (trans, itin)) in goria.world().query_trans_itin() {
+        for (_, (trans, itin)) in sim.world().query_trans_itin() {
             let Some(wait) = itin.is_wait_for_reroute() else { continue };
             if wait == 0 {
                 continue;

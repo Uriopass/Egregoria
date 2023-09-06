@@ -1,11 +1,11 @@
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use egregoria::physics::CollisionWorld;
-use egregoria::Egregoria;
 use engine::{AudioContext, ControlHandle, Stereo};
 use flat_spatial::grid::GridHandle;
 use geom::{Camera, AABB};
 use oddio::{Cycle, Gain, Seek, Speed, Stop};
+use simulation::physics::CollisionWorld;
+use simulation::Simulation;
 use slotmapd::SecondaryMap;
 
 /// CarSound is the sound of a single car
@@ -37,8 +37,8 @@ impl CarSounds {
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
-        let coworld = goria.read::<CollisionWorld>();
+    pub fn update(&mut self, sim: &Simulation, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
+        let coworld = sim.read::<CollisionWorld>();
         let campos = uiworld.read::<Camera>().eye();
         let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);
 
@@ -79,7 +79,7 @@ impl CarSounds {
                 .sqrt(),
         ) {
             let (pos, obj) = coworld.get(h).unwrap();
-            if !matches!(obj.group, egregoria::physics::PhysicsGroup::Vehicles) {
+            if !matches!(obj.group, simulation::physics::PhysicsGroup::Vehicles) {
                 continue;
             }
 
@@ -144,7 +144,7 @@ impl CarSounds {
             let cars_on_screen = coworld
                 .query_aabb(cambox.ll, cambox.ur)
                 .filter_map(|(h, _)| coworld.get(h))
-                .filter(|(_, obj)| matches!(obj.group, egregoria::physics::PhysicsGroup::Vehicles))
+                .filter(|(_, obj)| matches!(obj.group, simulation::physics::PhysicsGroup::Vehicles))
                 .count();
             if let Some(ref mut s) = self.generic_car_sound {
                 s.control::<Gain<_>, _>().set_amplitude_ratio(

@@ -1,13 +1,13 @@
 use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
-use egregoria::economy::{ItemRegistry, Market};
-use egregoria::transportation::Location;
-use egregoria::{
-    AnyEntity, CompanyEnt, Egregoria, FreightStationEnt, HumanEnt, SoulID, TrainEnt, VehicleEnt,
-    WagonEnt,
-};
 use egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
+use simulation::economy::{ItemRegistry, Market};
+use simulation::transportation::Location;
+use simulation::{
+    AnyEntity, CompanyEnt, FreightStationEnt, HumanEnt, Simulation, SoulID, TrainEnt, VehicleEnt,
+    WagonEnt,
+};
 
 /// Inspect window
 /// Allows to inspect an entity
@@ -16,7 +16,7 @@ pub struct InspectRenderer {
 }
 
 impl InspectRenderer {
-    pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui) {
+    pub fn render(&mut self, uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui) {
         let entity = self.entity;
         ui.label(format!("{:?}", self.entity));
 
@@ -27,32 +27,32 @@ impl InspectRenderer {
 
         match entity {
             AnyEntity::VehicleID(x) => {
-                <VehicleEnt as Inspect<VehicleEnt>>::render(goria.get(x).unwrap(), "", ui, &args)
+                <VehicleEnt as Inspect<VehicleEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
             }
             AnyEntity::TrainID(x) => {
-                <TrainEnt as Inspect<TrainEnt>>::render(goria.get(x).unwrap(), "", ui, &args)
+                <TrainEnt as Inspect<TrainEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
             }
             AnyEntity::WagonID(x) => {
-                <WagonEnt as Inspect<WagonEnt>>::render(goria.get(x).unwrap(), "", ui, &args)
+                <WagonEnt as Inspect<WagonEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
             }
             AnyEntity::FreightStationID(x) => {
                 <FreightStationEnt as Inspect<FreightStationEnt>>::render(
-                    goria.get(x).unwrap(),
+                    sim.get(x).unwrap(),
                     "",
                     ui,
                     &args,
                 )
             }
             AnyEntity::CompanyID(x) => {
-                <CompanyEnt as Inspect<CompanyEnt>>::render(goria.get(x).unwrap(), "", ui, &args)
+                <CompanyEnt as Inspect<CompanyEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
             }
             AnyEntity::HumanID(x) => {
-                <HumanEnt as Inspect<HumanEnt>>::render(goria.get(x).unwrap(), "", ui, &args)
+                <HumanEnt as Inspect<HumanEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
             }
         }
 
         if let AnyEntity::VehicleID(id) = entity {
-            for (hid, h) in goria.world().humans.iter() {
+            for (hid, h) in sim.world().humans.iter() {
                 if h.location == Location::Vehicle(id)
                     && ui
                         .small_button(&*format!("inspect inside vehicle: {hid:?}"))
@@ -65,8 +65,8 @@ impl InspectRenderer {
         }
 
         /*
-        if let Some(coll) = goria.comp::<Collider>(self.entity) {
-            if let Some((pos, po)) = goria.read::<CollisionWorld>().get(coll.0) {
+        if let Some(coll) = sim.comp::<Collider>(self.entity) {
+            if let Some((pos, po)) = sim.read::<CollisionWorld>().get(coll.0) {
                 egui::CollapsingHeader::new("Physics Object").show(ui, |ui| {
                     <Vec2 as Inspect<Vec2>>::render(&pos, "pos", ui, &InspectArgs::default());
                     <PhysicsObject as Inspect<PhysicsObject>>::render(
@@ -96,8 +96,8 @@ impl InspectRenderer {
         }
 
         if let Ok(soul) = SoulID::try_from(entity) {
-            let market = goria.read::<Market>();
-            let registry = goria.read::<ItemRegistry>();
+            let market = sim.read::<Market>();
+            let registry = sim.read::<ItemRegistry>();
             let mut capitals = vec![];
             let mut borders = vec![];
             let mut sellorders = vec![];

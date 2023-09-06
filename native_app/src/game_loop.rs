@@ -6,10 +6,10 @@ use winit::event_loop::ControlFlow;
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
-use egregoria::utils::time::GameTime;
-use egregoria::Egregoria;
 use engine::{Context, FrameContext, Tesselator};
 use geom::{vec2, vec3, Camera, LinearColor};
+use simulation::utils::time::GameTime;
+use simulation::Simulation;
 
 use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
@@ -19,13 +19,13 @@ use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
-use egregoria::utils::scheduler::SeqSchedule;
+use simulation::utils::scheduler::SeqSchedule;
 
 pub const VERSION: &str = include_str!("../../VERSION");
 
 /// State is the main struct that contains all the state of the game and game UI.
 pub struct State {
-    pub goria: Arc<RwLock<Egregoria>>,
+    pub sim: Arc<RwLock<Simulation>>,
     pub uiw: UiWorld,
     pub game_schedule: SeqSchedule,
 
@@ -44,9 +44,9 @@ impl engine::framework::State for State {
         Gui::set_style(&ctx.egui.egui);
         log::info!("loaded egui_render");
 
-        let goria: Egregoria =
-            Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(true));
-        let game_schedule = Egregoria::schedule();
+        let sim: Simulation =
+            Simulation::load_from_disk("world").unwrap_or_else(|| Simulation::new(true));
+        let game_schedule = Simulation::schedule();
         let mut uiworld = UiWorld::init();
 
         let mut bindings = uiworld.write::<Bindings>();
@@ -79,13 +79,13 @@ impl engine::framework::State for State {
             uiw: uiworld,
             game_schedule,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
-            map_renderer: MapRenderer::new(&mut ctx.gfx, &goria),
+            map_renderer: MapRenderer::new(&mut ctx.gfx, &sim),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
-            goria: Arc::new(RwLock::new(goria)),
+            sim: Arc::new(RwLock::new(sim)),
             immtess: Tesselator::new(&mut ctx.gfx, None, 1.0),
         };
-        me.goria.write().unwrap().map().dispatch_all();
+        me.sim.write().unwrap().map().dispatch_all();
         me
     }
 
@@ -95,7 +95,7 @@ impl engine::framework::State for State {
         let mut slstate = self.uiw.write::<SaveLoadState>();
         if slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
             slstate.please_save = false;
-            let cpy = self.goria.clone();
+            let cpy = self.sim.clone();
             slstate.saving_status.store(true, Ordering::SeqCst);
             let status = slstate.saving_status.clone();
             std::thread::spawn(move || {
@@ -106,15 +106,15 @@ impl engine::framework::State for State {
         }
         drop(slstate);
 
-        crate::network::goria_update(self);
+        crate::network::sim_update(self);
 
         if std::mem::take(&mut self.uiw.write::<SaveLoadState>().render_reset) {
             self.reset(ctx);
         }
 
         if !ctx.egui.last_mouse_captured {
-            let goria = self.goria.read().unwrap();
-            let map = goria.map();
+            let sim = self.sim.read().unwrap();
+            let map = sim.map();
             let unproj = self
                 .uiw
                 .read::<OrbitCamera>()
@@ -130,7 +130,7 @@ impl engine::framework::State for State {
             !ctx.egui.last_kb_captured,
             !ctx.egui.last_mouse_captured,
         );
-        crate::gui::run_ui_systems(&self.goria.read().unwrap(), &mut self.uiw);
+        crate::gui::run_ui_systems(&self.sim.read().unwrap(), &mut self.uiw);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
@@ -144,16 +144,16 @@ impl engine::framework::State for State {
         manage_settings(ctx, &self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
-        self.map_renderer.update(&self.goria.read().unwrap(), ctx);
+        self.map_renderer.update(&self.sim.read().unwrap(), ctx);
 
         ctx.gfx
-            .set_time(self.goria.read().unwrap().read::<GameTime>().timestamp as f32);
+            .set_time(self.sim.read().unwrap().read::<GameTime>().timestamp as f32);
 
         for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
         self.all_audio
-            .update(&self.goria.read().unwrap(), &mut self.uiw, &mut ctx.audio);
+            .update(&self.sim.read().unwrap(), &mut self.uiw, &mut ctx.audio);
 
         FollowEntity::update_camera(self);
         self.uiw.camera_mut().update(ctx);
@@ -163,16 +163,16 @@ impl engine::framework::State for State {
     fn render(&mut self, ctx: &mut FrameContext<'_>) {
         profiling::scope!("game_loop::render");
         let start = Instant::now();
-        let goria = self.goria.read().unwrap();
+        let sim = self.sim.read().unwrap();
 
         self.immtess.meshbuilder.clear();
         let camera = self.uiw.read::<OrbitCamera>();
         camera.cull_tess(&mut self.immtess);
 
-        let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
+        let time: GameTime = *self.sim.read().unwrap().read::<GameTime>();
 
         self.map_renderer.render(
-            &goria.map(),
+            &sim.map(),
             time.seconds,
             &camera.camera,
             &camera.frustrum,
@@ -185,13 +185,13 @@ impl engine::framework::State for State {
         );
 
         self.instanced_renderer
-            .render(&self.goria.read().unwrap(), ctx);
+            .render(&self.sim.read().unwrap(), ctx);
 
         {
             let objs = self.uiw.read::<DebugObjs>();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut self.immtess, &goria, &self.uiw);
+                    obj(&mut self.immtess, &sim, &self.uiw);
                 }
             }
         }
@@ -259,16 +259,16 @@ impl engine::framework::State for State {
     }
 
     fn render_gui(&mut self, ui: &egui::Context) {
-        let goria = self.goria.read().unwrap();
-        self.gui.render(ui, &mut self.uiw, &goria);
+        let sim = self.sim.read().unwrap();
+        self.gui.render(ui, &mut self.uiw, &sim);
     }
 }
 
 impl State {
     fn reset(&mut self, ctx: &mut Context) {
         ctx.gfx.lamplights.reset(&ctx.gfx.device, &ctx.gfx.queue);
-        self.map_renderer = MapRenderer::new(&mut ctx.gfx, &self.goria.read().unwrap());
-        self.goria.write().unwrap().map().dispatch_all();
+        self.map_renderer = MapRenderer::new(&mut ctx.gfx, &self.sim.read().unwrap());
+        self.sim.write().unwrap().map().dispatch_all();
         ctx.gfx.update_simplelit_bg();
     }
 
@@ -297,7 +297,7 @@ impl State {
             .try_into()
             .unwrap();
         drop(camera);
-        let c = egregoria::config();
+        let c = simulation::config();
         params.grass_col = c.grass_col.into();
         params.sand_col = c.sand_col.into();
         params.sea_col = c.sea_col.into();
@@ -305,8 +305,8 @@ impl State {
     }
 
     fn manage_io(&mut self, ctx: &mut Context) {
-        let goria = self.goria.read().unwrap();
-        let map = goria.map();
+        let sim = self.sim.read().unwrap();
+        let map = sim.map();
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.uiw.camera_mut().camera_movement(
             ctx,

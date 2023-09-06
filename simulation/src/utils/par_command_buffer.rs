@@ -1,20 +1,20 @@
 use crate::utils::resources::Resources;
 use crate::world::Entity;
-use crate::Egregoria;
+use crate::Simulation;
 use std::sync::Mutex;
 
-pub trait GoriaDrop: Entity {
-    fn goria_drop(self, id: Self::ID, res: &mut Resources);
+pub trait SimDrop: Entity {
+    fn sim_drop(self, id: Self::ID, res: &mut Resources);
 }
 
-type ExecType = Box<dyn for<'a> FnOnce(&'a mut Egregoria) + Send>;
+type ExecType = Box<dyn for<'a> FnOnce(&'a mut Simulation) + Send>;
 
-pub struct ParCommandBuffer<E: GoriaDrop> {
+pub struct ParCommandBuffer<E: SimDrop> {
     to_kill: Mutex<Vec<E::ID>>,
     exec_ent: Mutex<Vec<(E::ID, ExecType)>>,
 }
 
-impl<E: GoriaDrop> Default for ParCommandBuffer<E> {
+impl<E: SimDrop> Default for ParCommandBuffer<E> {
     fn default() -> Self {
         Self {
             to_kill: Default::default(),
@@ -24,7 +24,7 @@ impl<E: GoriaDrop> Default for ParCommandBuffer<E> {
 }
 
 #[allow(clippy::unwrap_used)]
-impl<E: GoriaDrop> ParCommandBuffer<E> {
+impl<E: SimDrop> ParCommandBuffer<E> {
     pub fn kill(&self, e: E::ID) {
         self.to_kill.lock().unwrap().push(e);
     }
@@ -33,7 +33,7 @@ impl<E: GoriaDrop> ParCommandBuffer<E> {
         self.to_kill.lock().unwrap().extend_from_slice(e);
     }
 
-    pub fn exec_ent(&self, e: E::ID, f: impl for<'a> FnOnce(&'a mut Egregoria) + 'static + Send) {
+    pub fn exec_ent(&self, e: E::ID, f: impl for<'a> FnOnce(&'a mut Simulation) + 'static + Send) {
         self.exec_ent.lock().unwrap().push((e, Box::new(f)));
     }
 
@@ -42,15 +42,15 @@ impl<E: GoriaDrop> ParCommandBuffer<E> {
         e: E::ID,
         f: impl for<'a> FnOnce(&'a mut T) + 'static + Send,
     ) {
-        self.exec_ent(e, move |goria| {
-            f(&mut *goria.write::<T>());
+        self.exec_ent(e, move |sim| {
+            f(&mut *sim.write::<T>());
         })
     }
 
-    pub fn apply(goria: &mut Egregoria) {
+    pub fn apply(sim: &mut Simulation) {
         profiling::scope!("par_command_buffer::apply");
         let mut deleted: Vec<E::ID> = std::mem::take(
-            &mut *goria
+            &mut *sim
                 .write::<ParCommandBuffer<E>>()
                 .to_kill
                 .get_mut()
@@ -60,13 +60,13 @@ impl<E: GoriaDrop> ParCommandBuffer<E> {
         deleted.sort_unstable();
 
         for entity in deleted {
-            let Some(v) = E::storage_mut(&mut goria.world).remove(entity) else { continue };
+            let Some(v) = E::storage_mut(&mut sim.world).remove(entity) else { continue };
 
-            E::goria_drop(v, entity, &mut goria.resources);
+            E::sim_drop(v, entity, &mut sim.resources);
         }
 
         let mut exec_ent = std::mem::take(
-            &mut *goria
+            &mut *sim
                 .write::<ParCommandBuffer<E>>()
                 .exec_ent
                 .get_mut()
@@ -76,7 +76,7 @@ impl<E: GoriaDrop> ParCommandBuffer<E> {
         exec_ent.sort_unstable_by_key(|(id, _)| *id);
 
         for (_, exec) in exec_ent {
-            exec(goria);
+            exec(sim);
         }
     }
 }

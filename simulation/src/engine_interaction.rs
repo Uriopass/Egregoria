@@ -20,7 +20,7 @@ use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::transportation::{spawn_parked_vehicle_with_spot, unpark, VehicleKind};
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::{GameTime, Tick};
-use crate::{Egregoria, EgregoriaOptions, Replay};
+use crate::{SimulationOptions, Replay, Simulation};
 
 #[derive(Clone, Default)]
 pub struct WorldCommands {
@@ -31,7 +31,7 @@ defer_serialize!(WorldCommands, Vec<WorldCommand>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorldCommand {
-    Init(Box<EgregoriaOptions>),
+    Init(Box<SimulationOptions>),
     MapRemoveIntersection(IntersectionID),
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
@@ -201,24 +201,24 @@ impl WorldCommand {
         )
     }
 
-    pub fn apply(&self, goria: &mut Egregoria) {
-        let cost = Government::action_cost(self, goria);
-        goria.write::<Government>().money -= cost;
+    pub fn apply(&self, sim: &mut Simulation) {
+        let cost = Government::action_cost(self, sim);
+        sim.write::<Government>().money -= cost;
 
-        let mut rep = goria.resources.write::<Replay>();
+        let mut rep = sim.resources.write::<Replay>();
         if rep.enabled {
-            let tick = goria.read::<Tick>();
+            let tick = sim.read::<Tick>();
             rep.commands.push((*tick, self.clone()));
         }
         drop(rep);
 
         match *self {
-            MapRemoveIntersection(id) => goria.map_mut().remove_intersection(id),
-            MapRemoveRoad(id) => drop(goria.map_mut().remove_road(id)),
-            MapRemoveBuilding(id) => drop(goria.map_mut().remove_building(id)),
+            MapRemoveIntersection(id) => sim.map_mut().remove_intersection(id),
+            MapRemoveRoad(id) => drop(sim.map_mut().remove_road(id)),
+            MapRemoveBuilding(id) => drop(sim.map_mut().remove_building(id)),
             MapBuildHouse(id) => {
-                if let Some(build) = goria.map_mut().build_house(id) {
-                    let mut infos = goria.write::<BuildingInfos>();
+                if let Some(build) = sim.map_mut().build_house(id) {
+                    let mut infos = sim.write::<BuildingInfos>();
                     infos.insert(build);
                 }
             }
@@ -228,10 +228,10 @@ impl WorldCommand {
                 inter,
                 ref pat,
             } => {
-                goria.write::<Map>().make_connection(from, to, inter, pat);
+                sim.write::<Map>().make_connection(from, to, inter, pat);
             }
             MapMakeMultipleConnections(ref projects, ref links) => {
-                let mut map = goria.map_mut();
+                let mut map = sim.map_mut();
                 let mut inters = BTreeMap::new();
                 for (from, to, interpoint, pat) in links {
                     let mut fromproj = projects[*from];
@@ -258,7 +258,7 @@ impl WorldCommand {
                 inter: id,
                 turn: tp,
                 light: lp,
-            } => goria.map_mut().update_intersection(id, move |i| {
+            } => sim.map_mut().update_intersection(id, move |i| {
                 i.light_policy = lp;
                 i.turn_policy = tp;
             }),
@@ -269,65 +269,62 @@ impl WorldCommand {
                 ref zone,
             } => {
                 if let Some(id) =
-                    goria
-                        .write::<Map>()
+                    sim.write::<Map>()
                         .build_special_building(&obb, kind, gen, zone.clone())
                 {
-                    goria.write::<BuildingInfos>().insert(id);
+                    sim.write::<BuildingInfos>().insert(id);
                 }
             }
-            SetGameTime(gt) => *goria.write::<GameTime>() = gt,
+            SetGameTime(gt) => *sim.write::<GameTime>() = gt,
             AddTrain {
                 dist,
                 n_wagons,
                 lane,
             } => {
-                spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Freight);
+                spawn_train(sim, dist, n_wagons, lane, RailWagonKind::Freight);
             }
-            MapLoadParis => load_parismap(&mut goria.map_mut()),
+            MapLoadParis => load_parismap(&mut sim.map_mut()),
             MapLoadTestField { pos, size, spacing } => {
-                load_testfield(&mut goria.map_mut(), pos, size, spacing)
+                load_testfield(&mut sim.map_mut(), pos, size, spacing)
             }
             Init(ref opts) => {
                 if opts.save_replay {
-                    let mut rep = goria.resources.write::<Replay>();
+                    let mut rep = sim.resources.write::<Replay>();
                     rep.enabled = true;
-                    let tick = goria.read::<Tick>();
+                    let tick = sim.read::<Tick>();
                     rep.commands.push((*tick, Init(opts.clone())));
                 }
 
                 if opts.terrain_size > 0 {
-                    generate_terrain(goria, opts.terrain_size);
+                    generate_terrain(sim, opts.terrain_size);
                 }
 
-                goria
-                    .resources
-                    .insert::<EgregoriaOptions>(EgregoriaOptions::clone(opts));
+                sim.resources
+                    .insert::<SimulationOptions>(SimulationOptions::clone(opts));
             }
             UpdateZone { building, ref zone } => {
-                let mut map = goria.map_mut();
+                let mut map = sim.map_mut();
 
                 map.update_zone(building, move |z| *z = zone.clone());
             }
             SpawnRandomCars { n_cars } => {
                 for _ in 0..n_cars {
-                    let mut pm = goria.write::<ParkingManagement>();
-                    let map = goria.map();
-                    let mut rng = goria.write::<RandProvider>();
+                    let mut pm = sim.write::<ParkingManagement>();
+                    let map = sim.map();
+                    let mut rng = sim.write::<RandProvider>();
 
                     let Some(spot) = pm.reserve_random_free_spot(&map.parking, rng.next_u64()) else { continue; };
 
                     drop((map, pm, rng));
 
-                    let Some(v_id) = spawn_parked_vehicle_with_spot(goria, VehicleKind::Car, spot) else { continue; };
-                    unpark(goria, v_id);
+                    let Some(v_id) = spawn_parked_vehicle_with_spot(sim, VehicleKind::Car, spot) else { continue; };
+                    unpark(sim, v_id);
 
-                    goria.write::<RandomVehicles>().vehicles.insert(v_id);
+                    sim.write::<RandomVehicles>().vehicles.insert(v_id);
                 }
             }
             SendMessage { ref message } => {
-                goria
-                    .write::<MultiplayerState>()
+                sim.write::<MultiplayerState>()
                     .chat
                     .add_message(message.clone());
             }
@@ -335,11 +332,11 @@ impl WorldCommand {
     }
 }
 
-fn generate_terrain(goria: &mut Egregoria, size: u32) {
+fn generate_terrain(sim: &mut Simulation, size: u32) {
     info!("generating terrain..");
     let t = Instant::now();
 
-    goria.map_mut().terrain = Terrain::new(size, size);
+    sim.map_mut().terrain = Terrain::new(size, size);
     info!("took {}s", t.elapsed().as_secs_f32());
 
     let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.3);
@@ -349,14 +346,14 @@ fn generate_terrain(goria: &mut Egregoria, size: u32) {
 
     let pat = LanePatternBuilder::new().rail(true).build();
 
-    goria.map_mut().make_connection(
+    sim.map_mut().make_connection(
         MapProject::ground(c - offy * 100.0),
         MapProject::ground(c + offy * 120.0),
         None,
         &pat,
     );
 
-    if goria
+    if sim
         .map_mut()
         .build_special_building(
             &obb,

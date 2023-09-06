@@ -6,7 +6,7 @@ use crate::map::{BuildingID, LanePatternBuilder, ProjectFilter};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
-use crate::{Egregoria, EgregoriaOptions};
+use crate::{SimulationOptions, Simulation};
 use common::logger::MyLog;
 use common::saveload::Encoder;
 use geom::{Vec2, Vec3};
@@ -15,7 +15,7 @@ mod test_iso;
 mod vehicles;
 
 pub(crate) struct TestCtx {
-    pub g: Egregoria,
+    pub g: Simulation,
     sched: SeqSchedule,
 }
 
@@ -24,12 +24,12 @@ impl TestCtx {
         MyLog::init();
         crate::init::init();
 
-        let g = Egregoria::new_with_options(EgregoriaOptions {
+        let g = Simulation::new_with_options(SimulationOptions {
             terrain_size: 1,
             save_replay: false,
             ..Default::default()
         });
-        let sched = Egregoria::schedule();
+        let sched = Simulation::schedule();
 
         Self { g, sched }
     }
@@ -69,7 +69,7 @@ impl TestCtx {
             .tick(&mut self.sched, WorldCommands::default().as_ref());
 
         let serialized = common::saveload::Bincode::encode(&self.g).unwrap();
-        let deserialized: Egregoria = common::saveload::Bincode::decode(&serialized).unwrap();
+        let deserialized: Simulation = common::saveload::Bincode::decode(&serialized).unwrap();
 
         let testhashes = self.g.hashes();
         for (key, hash) in deserialized.hashes().iter() {

@@ -2,10 +2,10 @@ use crate::gui::Tool;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::map::{IntersectionID, LightPolicy, TurnPolicy};
-use egregoria::map::{ProjectFilter, ProjectKind};
-use egregoria::Egregoria;
 use geom::Color;
+use simulation::map::{IntersectionID, LightPolicy, TurnPolicy};
+use simulation::map::{ProjectFilter, ProjectKind};
+use simulation::Simulation;
 
 #[derive(Clone)]
 pub struct IntersectionComponent {
@@ -22,13 +22,13 @@ pub struct RoadEditorResource {
 
 /// RoadEditor tool
 /// Allows to edit intersections properties like turns and signals
-pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn roadeditor(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::roadeditor");
     let tool = uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();
     let mut state = uiworld.write::<RoadEditorResource>();
     let mut imm_draw = uiworld.write::<ImmediateDraw>();
-    let map = goria.map();
+    let map = sim.map();
     let commands = &mut *uiworld.commands();
 
     if !matches!(*tool, Tool::RoadEditor) {
@@ -68,14 +68,14 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
         if Some(id) != state.inspect.as_ref().map(|x| x.id) {
             proj_pos = cur_proj.pos;
         }
-        proj_col = egregoria::config().gui_primary;
+        proj_col = simulation::config().gui_primary;
     } else {
-        proj_col = egregoria::config().gui_disabled;
+        proj_col = simulation::config().gui_disabled;
     }
 
     if inp.act.contains(&InputAction::Select) {
         if let ProjectKind::Inter(id) = cur_proj.kind {
-            proj_col = egregoria::config().gui_success;
+            proj_col = simulation::config().gui_success;
             proj_pos = cur_proj.pos;
             let inter = &map.intersections()[id];
             state.inspect = Some(IntersectionComponent {

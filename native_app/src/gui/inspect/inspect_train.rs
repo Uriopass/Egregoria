@@ -1,10 +1,10 @@
 use crate::gui::inspect::follow_button;
 use crate::uiworld::UiWorld;
-use egregoria::{Egregoria, TrainID};
 use egui::Context;
+use simulation::{Simulation, TrainID};
 
-pub fn inspect_train(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id: TrainID) -> bool {
-    let Some(t) = goria.get(id) else { return false; };
+pub fn inspect_train(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: TrainID) -> bool {
+    let Some(t) = sim.get(id) else { return false; };
 
     let mut is_open = true;
     egui::Window::new("Train")

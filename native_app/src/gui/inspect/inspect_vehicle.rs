@@ -1,16 +1,16 @@
 use crate::gui::inspect::{entity_link, follow_button};
 use crate::uiworld::UiWorld;
-use egregoria::transportation::VehicleState;
-use egregoria::{Egregoria, VehicleID};
 use egui::Context;
+use simulation::transportation::VehicleState;
+use simulation::{Simulation, VehicleID};
 
 pub fn inspect_vehicle(
     uiworld: &mut UiWorld,
-    goria: &Egregoria,
+    sim: &Simulation,
     ui: &Context,
     id: VehicleID,
 ) -> bool {
-    let Some(v) = goria.get(id) else { return false; };
+    let Some(v) = sim.get(id) else { return false; };
 
     let name = format!("{:?}", v.vehicle.kind);
 
@@ -39,11 +39,11 @@ pub fn inspect_vehicle(
                 }
             }
 
-            for (human_id, human) in &goria.world().humans {
+            for (human_id, human) in &sim.world().humans {
                 if human.router.personal_car == Some(id) {
                     ui.horizontal(|ui| {
                         ui.label("Owned by");
-                        entity_link(uiworld, goria, ui, human_id);
+                        entity_link(uiworld, sim, ui, human_id);
                     });
                 }
             }

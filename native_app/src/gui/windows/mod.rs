@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
-use egregoria::Egregoria;
+use simulation::Simulation;
 
 mod config;
 pub mod debug;
@@ -19,22 +19,22 @@ pub trait GUIWindow: Send + Sync {
         window: egui::Window<'_>,
         ui: &Context,
         uiworld: &mut UiWorld,
-        goria: &Egregoria,
+        sim: &Simulation,
     );
 }
 
 impl<F> GUIWindow for F
 where
-    F: Fn(egui::Window<'_>, &Context, &mut UiWorld, &Egregoria) + Send + Sync,
+    F: Fn(egui::Window<'_>, &Context, &mut UiWorld, &Simulation) + Send + Sync,
 {
     fn render_window(
         &mut self,
         window: egui::Window<'_>,
         ui: &Context,
         uiworld: &mut UiWorld,
-        goria: &Egregoria,
+        sim: &Simulation,
     ) {
-        self(window, ui, uiworld, goria);
+        self(window, ui, uiworld, sim);
     }
 }
 
@@ -89,7 +89,7 @@ impl GUIWindows {
         }
     }
 
-    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
         profiling::scope!("windows::render");
         if uiworld
             .write::<InputMap>()
@@ -104,7 +104,7 @@ impl GUIWindows {
         }
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
-                ws.w.render_window(egui::Window::new(ws.name).open(opened), ui, uiworld, goria);
+                ws.w.render_window(egui::Window::new(ws.name).open(opened), ui, uiworld, sim);
             }
         }
     }

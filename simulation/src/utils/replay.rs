@@ -1,7 +1,7 @@
 use crate::engine_interaction::WorldCommand;
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
-use crate::Egregoria;
+use crate::Simulation;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ pub struct Replay {
     pub commands: Vec<(Tick, WorldCommand)>,
 }
 
-pub struct EgregoriaReplayLoader {
+pub struct SimulationReplayLoader {
     pub replay: Replay,
     pub pastt: Tick,
     pub idx: usize,
@@ -18,9 +18,9 @@ pub struct EgregoriaReplayLoader {
     pub advance_n_ticks: usize,
 }
 
-impl EgregoriaReplayLoader {
+impl SimulationReplayLoader {
     /// Returns true if the replay is finished
-    pub fn advance_tick(&mut self, goria: &mut Egregoria, schedule: &mut SeqSchedule) -> bool {
+    pub fn advance_tick(&mut self, sim: &mut Simulation, schedule: &mut SeqSchedule) -> bool {
         // iterate through tick grouped commands
         let mut ticks_left = if self.speed == 0 {
             let v = self.advance_n_ticks;
@@ -32,7 +32,7 @@ impl EgregoriaReplayLoader {
         while self.idx < self.replay.commands.len() && ticks_left > 0 {
             let curt = self.replay.commands[self.idx].0;
             while self.pastt < curt {
-                goria.tick(schedule, &[]);
+                sim.tick(schedule, &[]);
                 self.pastt.0 += 1;
                 ticks_left -= 1;
                 if ticks_left == 0 {
@@ -52,7 +52,7 @@ impl EgregoriaReplayLoader {
                 self.pastt,
                 command_slice.len()
             );
-            goria.tick(schedule, command_slice.iter().map(|(_, c)| c));
+            sim.tick(schedule, command_slice.iter().map(|(_, c)| c));
             self.pastt.0 += 1;
             ticks_left -= 1;
         }

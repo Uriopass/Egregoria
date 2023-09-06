@@ -1,9 +1,9 @@
 use crate::gui::{InspectedBuilding, InspectedEntity, Tool};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
-use egregoria::map::ProjectFilter;
-use egregoria::{AnyEntity, Egregoria};
 use geom::Vec2;
+use simulation::map::ProjectFilter;
+use simulation::{AnyEntity, Simulation};
 
 pub fn select_radius(id: AnyEntity) -> f32 {
     match id {
@@ -17,7 +17,7 @@ pub fn select_radius(id: AnyEntity) -> f32 {
 }
 
 /// Selectable allows to select entities by clicking on them
-pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn selectable(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::selectable");
     let mut inspected = uiworld.write::<InspectedEntity>();
     let mut inspected_b = uiworld.write::<InspectedBuilding>();
@@ -30,7 +30,7 @@ pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     {
         let unproj = unwrap_ret!(inp.unprojected);
 
-        let w = goria.world();
+        let w = sim.world();
 
         inspected.dist2 = f32::INFINITY;
         inspected.e = None;
@@ -54,7 +54,7 @@ pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
         inspected_b.e = None;
         if inspected.e.is_none() {
             let unproj = unwrap_ret!(inp.unprojected);
-            let map = goria.map();
+            let map = sim.map();
             inspected_b.e = map
                 .spatial_map()
                 .query(unproj.xy(), ProjectFilter::BUILDING)
@@ -65,13 +65,13 @@ pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     inspected_b.dontclear = false;
 
     if let Some(e) = inspected.e {
-        if !goria.world().contains(e) {
+        if !sim.world().contains(e) {
             inspected.e = None;
         }
     }
 
     if let Some(b) = inspected_b.e {
-        if !goria.map().buildings().contains_key(b) {
+        if !sim.map().buildings().contains_key(b) {
             inspected_b.e = None;
         }
     }

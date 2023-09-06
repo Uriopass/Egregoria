@@ -3,7 +3,7 @@ use crate::map::{LanePatternBuilder, Map, MapProject, ProjectKind};
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
 use crate::World;
-use crate::{Egregoria, Replay};
+use crate::{Replay, Simulation};
 use common::logger::MyLog;
 use common::saveload::{Bincode, Encoder};
 use geom::vec3;
@@ -228,13 +228,13 @@ fn test_world_survives_serde() {
     MyLog::init();
 
     let replay: Replay = common::saveload::JSONPretty::decode(REPLAY).unwrap();
-    let (mut goria, mut loader) = Egregoria::from_replay(replay.clone());
-    let (mut goria2, mut loader2) = Egregoria::from_replay(replay);
+    let (mut sim, mut loader) = Simulation::from_replay(replay.clone());
+    let (mut sim2, mut loader2) = Simulation::from_replay(replay);
     let mut s = SeqSchedule::default();
 
     //let mut idx = 0;
-    while !loader.advance_tick(&mut goria, &mut s) {
-        loader2.advance_tick(&mut goria2, &mut s);
+    while !loader.advance_tick(&mut sim, &mut s) {
+        loader2.advance_tick(&mut sim2, &mut s);
 
         /*
         let next_idx = idx
@@ -247,7 +247,7 @@ fn test_world_survives_serde() {
             match command {
                 WorldCommand::MapMakeConnection { from, to, .. } => {
                     println!("{:?} {:?}", tick, command);
-                    let map = goria.map();
+                    let map = sim.map();
 
                     check_coherent(&*map, *from);
                     println!("ho");
@@ -259,36 +259,36 @@ fn test_world_survives_serde() {
 
         idx = next_idx;*/
 
-        let tick = goria.read::<Tick>().0;
+        let tick = sim.read::<Tick>().0;
         if tick % 1000 != 0 || (tick < 7840) {
             continue;
         }
 
         println!(
             "--- tick {} ({}/{})",
-            goria.read::<Tick>().0,
+            sim.read::<Tick>().0,
             loader.pastt.0,
             loader.replay.commands.last().unwrap().0 .0
         );
 
-        let ser = common::saveload::Bincode::encode(&goria).unwrap();
-        let mut deser: Egregoria = common::saveload::Bincode::decode(&ser).unwrap();
+        let ser = common::saveload::Bincode::encode(&sim).unwrap();
+        let mut deser: Simulation = common::saveload::Bincode::decode(&ser).unwrap();
 
-        if !deser.is_equal(&goria) {
+        if !deser.is_equal(&sim) {
             println!("not equal");
             deser.save_to_disk("world");
-            goria.save_to_disk("world2");
+            sim.save_to_disk("world2");
             assert!(false);
         }
-        if !deser.is_equal(&goria2) {
+        if !deser.is_equal(&sim2) {
             println!("not equal");
             deser.save_to_disk("world");
-            goria2.save_to_disk("world2");
+            sim2.save_to_disk("world2");
             assert!(false);
         }
 
-        std::mem::swap(&mut deser, &mut goria2);
+        std::mem::swap(&mut deser, &mut sim2);
     }
 
-    goria.save_to_disk("world2");
+    sim.save_to_disk("world2");
 }

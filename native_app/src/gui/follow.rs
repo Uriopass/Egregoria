@@ -1,7 +1,7 @@
 use crate::game_loop::State;
 use crate::inputmap::{InputAction, InputMap};
-use egregoria::AnyEntity;
 use egui::Ui;
+use simulation::AnyEntity;
 
 /// FollowEntity is a component that tells the camera to follow an entity
 /// Entity is defined by a function that returns the position of the entity
@@ -39,7 +39,7 @@ impl FollowEntity {
         }
 
         if let Some(e) = state.uiw.read::<FollowEntity>().0 {
-            if let Some(pos) = state.goria.read().unwrap().pos_any(e) {
+            if let Some(pos) = state.sim.read().unwrap().pos_any(e) {
                 state.uiw.camera_mut().follow(pos);
             }
         }

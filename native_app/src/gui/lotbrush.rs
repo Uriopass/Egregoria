@@ -2,9 +2,9 @@ use super::Tool;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::map::{LotKind, ProjectFilter, ProjectKind};
-use egregoria::Egregoria;
 use serde::{Deserialize, Serialize};
+use simulation::map::{LotKind, ProjectFilter, ProjectKind};
+use simulation::Simulation;
 
 #[derive(Serialize, Deserialize)]
 pub struct LotBrushResource {
@@ -14,13 +14,13 @@ pub struct LotBrushResource {
 
 /// Lot brush tool
 /// Allows to build houses on lots
-pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn lotbrush(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::lotbrush");
     let res = uiworld.read::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();
     let mut draw = uiworld.write::<ImmediateDraw>();
-    let map = goria.map();
+    let map = sim.map();
     let commands = &mut *uiworld.commands();
 
     if !matches!(tool, Tool::LotBrush) {
@@ -30,8 +30,8 @@ pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let kind = res.kind;
 
     let mut col = match kind {
-        LotKind::Unassigned => egregoria::config().lot_unassigned_col,
-        LotKind::Residential => egregoria::config().lot_residential_col,
+        LotKind::Unassigned => simulation::config().lot_unassigned_col,
+        LotKind::Residential => simulation::config().lot_residential_col,
     };
 
     col.a = 0.2;

@@ -10,7 +10,7 @@ use crate::souls::goods_company::GoodsCompany;
 use crate::souls::human::{HumanDecision, PersonalInfo};
 use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon};
 use crate::transportation::{Location, Pedestrian, Vehicle, VehicleKind, VehicleState};
-use crate::utils::par_command_buffer::GoriaDrop;
+use crate::utils::par_command_buffer::SimDrop;
 use crate::utils::resources::Resources;
 use crate::{impl_entity, impl_trans, SoulID};
 use derive_more::{From, TryInto};
@@ -62,8 +62,8 @@ pub struct VehicleEnt {
     pub collider: Option<Collider>,
 }
 
-impl GoriaDrop for VehicleEnt {
-    fn goria_drop(mut self, id: VehicleID, res: &mut Resources) {
+impl SimDrop for VehicleEnt {
+    fn sim_drop(mut self, id: VehicleID, res: &mut Resources) {
         if let Some(collider) = self.collider {
             res.write::<CollisionWorld>().remove_maintain(collider.0);
         }
@@ -101,8 +101,8 @@ pub struct HumanEnt {
     pub personal_info: Box<PersonalInfo>,
 }
 
-impl GoriaDrop for HumanEnt {
-    fn goria_drop(mut self, id: HumanID, res: &mut Resources) {
+impl SimDrop for HumanEnt {
+    fn sim_drop(mut self, id: HumanID, res: &mut Resources) {
         if let Some(collider) = self.collider {
             res.write::<CollisionWorld>().remove_maintain(collider.0);
         }
@@ -125,8 +125,8 @@ pub struct TrainEnt {
     pub leader: ItineraryLeader,
 }
 
-impl GoriaDrop for TrainEnt {
-    fn goria_drop(self, id: TrainID, res: &mut Resources) {
+impl SimDrop for TrainEnt {
+    fn sim_drop(self, id: TrainID, res: &mut Resources) {
         res.write::<Dispatcher>()
             .unregister(DispatchID::FreightTrain(id));
     }
@@ -140,8 +140,8 @@ pub struct WagonEnt {
     pub itfollower: ItineraryFollower,
 }
 
-impl GoriaDrop for WagonEnt {
-    fn goria_drop(self, _: WagonID, _: &mut Resources) {}
+impl SimDrop for WagonEnt {
+    fn sim_drop(self, _: WagonID, _: &mut Resources) {}
 }
 
 #[derive(Inspect, Serialize, Deserialize)]
@@ -150,8 +150,8 @@ pub struct FreightStationEnt {
     pub f: FreightStation,
 }
 
-impl GoriaDrop for FreightStationEnt {
-    fn goria_drop(self, id: FreightStationID, res: &mut Resources) {
+impl SimDrop for FreightStationEnt {
+    fn sim_drop(self, id: FreightStationID, res: &mut Resources) {
         res.write::<Market>().remove(SoulID::FreightStation(id));
 
         let mut d = res.write::<Dispatcher>();
@@ -171,8 +171,8 @@ pub struct CompanyEnt {
     pub bought: Bought,
 }
 
-impl GoriaDrop for CompanyEnt {
-    fn goria_drop(self, id: CompanyID, res: &mut Resources) {
+impl SimDrop for CompanyEnt {
+    fn sim_drop(self, id: CompanyID, res: &mut Resources) {
         res.write::<Market>().remove(SoulID::GoodsCompany(id));
     }
 }

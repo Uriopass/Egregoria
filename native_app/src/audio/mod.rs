@@ -2,8 +2,8 @@ use crate::audio::ambient::Ambient;
 use crate::audio::car_sounds::CarSounds;
 use crate::audio::music::Music;
 use crate::uiworld::UiWorld;
-use egregoria::Egregoria;
 use engine::AudioContext;
+use simulation::Simulation;
 
 mod ambient;
 mod car_sounds;
@@ -36,9 +36,9 @@ impl GameAudio {
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
+    pub fn update(&mut self, sim: &Simulation, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
         self.music.update(ctx);
-        self.ambiant.update(goria, uiworld);
-        self.carsounds.update(goria, uiworld, ctx);
+        self.ambiant.update(sim, uiworld);
+        self.carsounds.update(sim, uiworld, ctx);
     }
 }

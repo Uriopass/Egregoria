@@ -104,7 +104,7 @@ impl TryFrom<AnyEntity> for SoulID {
 
 debug_inspect_impl!(SoulID);
 
-pub struct Egregoria {
+pub struct Simulation {
     pub(crate) world: World,
     resources: Resources,
 }
@@ -113,21 +113,21 @@ const RNG_SEED: u64 = 123;
 const VERSION: &str = include_str!("../../VERSION");
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct EgregoriaOptions {
+pub struct SimulationOptions {
     pub terrain_size: u32,
     pub save_replay: bool,
 }
 
-impl Default for EgregoriaOptions {
+impl Default for SimulationOptions {
     fn default() -> Self {
-        EgregoriaOptions {
+        SimulationOptions {
             terrain_size: 50,
             save_replay: true,
         }
     }
 }
 
-impl Egregoria {
+impl Simulation {
     pub fn schedule() -> SeqSchedule {
         let mut schedule = SeqSchedule::default();
         unsafe {
@@ -139,15 +139,15 @@ impl Egregoria {
         schedule
     }
 
-    pub fn new(gen_terrain: bool) -> Egregoria {
-        Self::new_with_options(EgregoriaOptions {
+    pub fn new(gen_terrain: bool) -> Simulation {
+        Self::new_with_options(SimulationOptions {
             terrain_size: if gen_terrain { 50 } else { 0 },
             ..Default::default()
         })
     }
 
-    pub fn from_replay(replay: Replay) -> (Egregoria, EgregoriaReplayLoader) {
-        let mut goria = Egregoria {
+    pub fn from_replay(replay: Replay) -> (Simulation, SimulationReplayLoader) {
+        let mut sim = Simulation {
             world: Default::default(),
             resources: Default::default(),
         };
@@ -156,13 +156,13 @@ impl Egregoria {
 
         unsafe {
             for s in &INIT_FUNCS {
-                (s.f)(&mut goria);
+                (s.f)(&mut sim);
             }
         }
 
         (
-            goria,
-            EgregoriaReplayLoader {
+            sim,
+            SimulationReplayLoader {
                 replay,
                 pastt: Tick::default(),
                 idx: 0,
@@ -172,8 +172,8 @@ impl Egregoria {
         )
     }
 
-    pub fn new_with_options(opts: EgregoriaOptions) -> Egregoria {
-        let mut goria = Egregoria {
+    pub fn new_with_options(opts: SimulationOptions) -> Simulation {
+        let mut sim = Simulation {
             world: Default::default(),
             resources: Default::default(),
         };
@@ -183,20 +183,20 @@ impl Egregoria {
 
         unsafe {
             for s in &INIT_FUNCS {
-                (s.f)(&mut goria);
+                (s.f)(&mut sim);
             }
         }
 
-        Init(Box::new(opts)).apply(&mut goria);
+        Init(Box::new(opts)).apply(&mut sim);
 
         let start_commands: Vec<(u32, WorldCommand)> =
             common::saveload::JSON::decode(START_COMMANDS.as_bytes()).unwrap();
 
         for (_, command) in start_commands {
-            command.apply(&mut goria);
+            command.apply(&mut sim);
         }
 
-        goria
+        sim
     }
 
     pub fn world_res(&mut self) -> (&mut World, &mut Resources) {
@@ -238,7 +238,7 @@ impl Egregoria {
         game_schedule: &mut SeqSchedule,
         commands: impl IntoIterator<Item = &'a WorldCommand>,
     ) -> Duration {
-        profiling::scope!("egregoria::tick");
+        profiling::scope!("simulation::tick");
         let t = Instant::now();
         // It is very important that the first thing being done is applying commands
         // so that instant commands work on single player but the game is still deterministic
@@ -290,8 +290,8 @@ impl Egregoria {
     }
 
     pub fn load_from_disk(save_name: &str) -> Option<Self> {
-        let goria: Egregoria = common::saveload::CompressedBincode::load(save_name).ok()?;
-        Some(goria)
+        let sim: Simulation = common::saveload::CompressedBincode::load(save_name).ok()?;
+        Some(sim)
     }
 
     pub fn save_to_disk(&self, save_name: &str) {
@@ -347,12 +347,12 @@ impl Egregoria {
     }
 }
 
-impl Serialize for Egregoria {
+impl Serialize for Simulation {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        log::info!("serializing egregoria");
+        log::info!("serializing sim state");
         let t = Instant::now();
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
@@ -365,7 +365,7 @@ impl Serialize for Egregoria {
 
         log::info!("took {}s to serialize resources", t.elapsed().as_secs_f32());
 
-        let v = EgregoriaSer {
+        let v = SimulationSer {
             world: &self.world,
             version: VERSION.to_string(),
             res: m,
@@ -377,28 +377,28 @@ impl Serialize for Egregoria {
 }
 
 #[derive(Serialize)]
-struct EgregoriaSer<'a> {
+struct SimulationSer<'a> {
     world: &'a World,
     version: String,
     res: FastMap<String, Vec<u8>>,
 }
 
 #[derive(Deserialize)]
-struct EgregoriaDeser {
+struct SimulationDeser {
     world: World,
     version: String,
     res: FastMap<String, Vec<u8>>,
 }
 
-impl<'de> Deserialize<'de> for Egregoria {
+impl<'de> Deserialize<'de> for Simulation {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        log::info!("deserializing egregoria");
+        log::info!("deserializing sim state");
         let t = Instant::now();
 
-        let mut goriadeser = <EgregoriaDeser as Deserialize>::deserialize(deserializer)?;
+        let mut simdeser = <SimulationDeser as Deserialize>::deserialize(deserializer)?;
 
         log::info!(
             "took {}s to deserialize base deser",
@@ -406,35 +406,35 @@ impl<'de> Deserialize<'de> for Egregoria {
         );
 
         let cur_version_parts = VERSION.split('.').collect::<Vec<_>>();
-        let deser_parts = goriadeser.version.split('.').collect::<Vec<_>>();
+        let deser_parts = simdeser.version.split('.').collect::<Vec<_>>();
 
         if cur_version_parts[0] != deser_parts[0]
             || (cur_version_parts[0] == "0" && cur_version_parts[1] != deser_parts[1])
         {
             log::warn!(
                 "incompatible version, save might be corrupted! save is: {} - game is: {}",
-                goriadeser.version,
+                simdeser.version,
                 VERSION
             );
         }
 
-        let mut goria = Self {
+        let mut sim = Self {
             world: World::default(),
             resources: Resources::default(),
         };
 
         unsafe {
             for s in &INIT_FUNCS {
-                (s.f)(&mut goria);
+                (s.f)(&mut sim);
             }
         }
 
-        goria.world = goriadeser.world;
+        sim.world = simdeser.world;
 
         unsafe {
             for l in &SAVELOAD_FUNCS {
-                if let Some(data) = goriadeser.res.remove(l.name) {
-                    (l.load)(&mut goria, data);
+                if let Some(data) = simdeser.res.remove(l.name) {
+                    (l.load)(&mut sim, data);
                 }
             }
         }
@@ -444,7 +444,7 @@ impl<'de> Deserialize<'de> for Egregoria {
             t.elapsed().as_secs_f32()
         );
 
-        Ok(goria)
+        Ok(sim)
     }
 }
 

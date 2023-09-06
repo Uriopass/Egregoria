@@ -20,8 +20,8 @@ use crate::utils::time::Tick;
 use crate::world::{CompanyEnt, FreightStationEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
 use crate::World;
 use crate::{
-    add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, EgregoriaOptions, GameTime,
-    ParCommandBuffer, RandProvider, Replay, RunnableSystem, RNG_SEED, SECONDS_PER_DAY,
+    add_souls_to_empty_buildings, utils, CollisionWorld, GameTime, ParCommandBuffer, RandProvider,
+    Replay, RunnableSystem, Simulation, SimulationOptions, RNG_SEED, SECONDS_PER_DAY,
     SECONDS_PER_HOUR,
 };
 use common::saveload::{Bincode, Encoder};
@@ -45,7 +45,7 @@ pub fn init() {
     register_system("freight_station", freight_station_system);
     register_system("random_vehicles", random_vehicles_update);
 
-    register_system_goria("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
+    register_system_sim("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 
     register_resource_noserialize::<GoodsCompanyRegistry>();
     register_resource_noserialize::<ItemRegistry>();
@@ -57,7 +57,7 @@ pub fn init() {
     register_resource_noserialize::<ParCommandBuffer<CompanyEnt>>();
     register_resource_noinit::<Market, Bincode>("market");
     register_resource_noinit::<EcoStats, Bincode>("ecostats");
-    register_resource_noinit::<EgregoriaOptions, Bincode>("egregoriaoptions");
+    register_resource_noinit::<SimulationOptions, Bincode>("simoptions");
 
     register_init(init_market);
 
@@ -79,13 +79,13 @@ pub fn init() {
 }
 
 pub struct InitFunc {
-    pub f: Box<dyn Fn(&mut Egregoria) + 'static>,
+    pub f: Box<dyn Fn(&mut Simulation) + 'static>,
 }
 
 pub(crate) struct SaveLoadFunc {
     pub name: &'static str,
-    pub save: Box<dyn Fn(&Egregoria) -> Vec<u8> + 'static>,
-    pub load: Box<dyn Fn(&mut Egregoria, Vec<u8>) + 'static>,
+    pub save: Box<dyn Fn(&Simulation) -> Vec<u8> + 'static>,
+    pub load: Box<dyn Fn(&mut Simulation, Vec<u8>) + 'static>,
 }
 
 pub(crate) struct GSystem {
@@ -99,7 +99,7 @@ pub(crate) static mut GSYSTEMS: Vec<GSystem> = Vec::new();
 fn register_init(s: fn(&mut World, &mut Resources)) {
     unsafe {
         INIT_FUNCS.push(InitFunc {
-            f: Box::new(move |goria| s(&mut goria.world, &mut goria.resources)),
+            f: Box::new(move |sim| s(&mut sim.world, &mut sim.resources)),
         });
     }
 }
@@ -109,7 +109,7 @@ fn register_system(name: &'static str, s: fn(&mut World, &mut Resources)) {
         GSYSTEMS.push(GSystem {
             s: Box::new(move || {
                 Box::new(utils::scheduler::RunnableFn {
-                    f: move |goria| s(&mut goria.world, &mut goria.resources),
+                    f: move |sim| s(&mut sim.world, &mut sim.resources),
                     name,
                 })
             }),
@@ -117,7 +117,7 @@ fn register_system(name: &'static str, s: fn(&mut World, &mut Resources)) {
     }
 }
 
-fn register_system_goria(name: &'static str, s: fn(&mut Egregoria)) {
+fn register_system_sim(name: &'static str, s: fn(&mut Simulation)) {
     unsafe {
         GSYSTEMS.push(GSystem {
             s: Box::new(move || Box::new(utils::scheduler::RunnableFn { f: s, name })),

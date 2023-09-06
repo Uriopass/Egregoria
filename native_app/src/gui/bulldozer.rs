@@ -3,9 +3,9 @@ use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::map::{BuildingKind, Map, ProjectFilter, ProjectKind};
-use egregoria::Egregoria;
 use egui_inspect::Inspect;
+use simulation::map::{BuildingKind, Map, ProjectFilter, ProjectKind};
+use simulation::Simulation;
 
 #[derive(Copy, Clone, Default, Inspect)]
 pub struct BulldozerState {
@@ -14,7 +14,7 @@ pub struct BulldozerState {
 
 /// Bulldozer tool
 /// Allows to remove roads, intersections and buildings
-pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn bulldozer(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::bulldozer");
     let tool: &Tool = &uiworld.read::<Tool>();
 
@@ -23,7 +23,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let inp: &InputMap = &uiworld.read::<InputMap>();
-    let map: &Map = &goria.map();
+    let map: &Map = &sim.map();
     let draw: &mut ImmediateDraw = &mut uiworld.write::<ImmediateDraw>();
     let mut commands = uiworld.commands();
     let state: &BulldozerState = &uiworld.read::<BulldozerState>();
@@ -34,9 +34,9 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         cur_proj.kind,
         ProjectKind::Inter(_) | ProjectKind::Road(_) | ProjectKind::Building(_)
     ) {
-        egregoria::config().gui_danger
+        simulation::config().gui_danger
     } else {
-        egregoria::config().gui_disabled
+        simulation::config().gui_disabled
     };
 
     draw.circle(cur_proj.pos.up(0.5), 2.0).color(col);

@@ -6,10 +6,10 @@ use egui::{ColorImage, ImageData, TextureHandle, TextureId, TextureOptions};
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::BuildingID;
-use egregoria::{AnyEntity, Egregoria};
 use roadbuild::RoadBuildResource;
+use simulation::engine_interaction::WorldCommand;
+use simulation::map::BuildingID;
+use simulation::{AnyEntity, Simulation};
 
 pub mod addtrain;
 pub mod bulldozer;
@@ -29,19 +29,19 @@ pub mod zoneedit;
 pub use follow::FollowEntity;
 pub use topgui::*;
 
-pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn run_ui_systems(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::run_ui_systems");
-    bulldozer::bulldozer(goria, uiworld);
-    inspected_aura::inspected_aura(goria, uiworld);
-    lotbrush::lotbrush(goria, uiworld);
-    roadbuild::roadbuild(goria, uiworld);
-    roadeditor::roadeditor(goria, uiworld);
-    specialbuilding::specialbuilding(goria, uiworld);
-    addtrain::addtrain(goria, uiworld);
-    zoneedit::zoneedit(goria, uiworld);
+    bulldozer::bulldozer(sim, uiworld);
+    inspected_aura::inspected_aura(sim, uiworld);
+    lotbrush::lotbrush(sim, uiworld);
+    roadbuild::roadbuild(sim, uiworld);
+    roadeditor::roadeditor(sim, uiworld);
+    specialbuilding::specialbuilding(sim, uiworld);
+    addtrain::addtrain(sim, uiworld);
+    zoneedit::zoneedit(sim, uiworld);
 
     // run last so other systems can have the chance to cancel select
-    selectable::selectable(goria, uiworld);
+    selectable::selectable(sim, uiworld);
 }
 
 #[derive(Default, Clone, Debug)]

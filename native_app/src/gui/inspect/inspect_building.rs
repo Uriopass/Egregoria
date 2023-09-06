@@ -1,22 +1,22 @@
 use crate::uiworld::UiWorld;
-use egregoria::economy::{ItemRegistry, Market};
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::{Egregoria, SoulID};
 use egui::{Context, Ui, Widget};
+use simulation::economy::{ItemRegistry, Market};
+use simulation::engine_interaction::WorldCommand;
+use simulation::{Simulation, SoulID};
 
 use crate::gui::inspect::entity_link;
 use crate::gui::item_icon;
-use egregoria::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
-use egregoria::map_dynamic::BuildingInfos;
-use egregoria::souls::freight_station::FreightTrainState;
-use egregoria::souls::goods_company::{GoodsCompanyRegistry, Recipe};
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
+use simulation::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
+use simulation::map_dynamic::BuildingInfos;
+use simulation::souls::freight_station::FreightTrainState;
+use simulation::souls::goods_company::{GoodsCompanyRegistry, Recipe};
 
 /// Inspect a specific building, showing useful information about it
-pub fn inspect_building(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id: BuildingID) {
-    let map = goria.map();
+pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: BuildingID) {
+    let map = sim.map();
     let Some(building) = map.buildings().get(id) else { return; };
-    let gregistry = goria.read::<GoodsCompanyRegistry>();
+    let gregistry = sim.read::<GoodsCompanyRegistry>();
 
     let title: &str = match building.kind {
         BuildingKind::House => "House",
@@ -35,12 +35,12 @@ pub fn inspect_building(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, 
             }
 
             match building.kind {
-                BuildingKind::House => render_house(ui, uiworld, goria, building),
+                BuildingKind::House => render_house(ui, uiworld, sim, building),
                 BuildingKind::GoodsCompany(_) => {
-                    render_goodscompany(ui, uiworld, goria, building);
+                    render_goodscompany(ui, uiworld, sim, building);
                 }
                 BuildingKind::RailFreightStation => {
-                    render_freightstation(ui, uiworld, goria, building);
+                    render_freightstation(ui, uiworld, sim, building);
                 }
                 BuildingKind::TrainStation => {}
                 BuildingKind::ExternalTrading => {}
@@ -70,26 +70,26 @@ pub fn inspect_building(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, 
         });
 }
 
-fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
-    let binfos = goria.read::<BuildingInfos>();
+fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
+    let binfos = sim.read::<BuildingInfos>();
     let Some(info) = binfos.get(b.id) else { return; };
     let Some(SoulID::Human(owner)) = info.owner else { return; };
 
     ui.horizontal(|ui| {
         ui.label("Owner");
-        entity_link(uiworld, goria, ui, owner);
+        entity_link(uiworld, sim, ui, owner);
     });
 
     ui.label("Currently in the house:");
     for &soul in info.inside.iter() {
         let SoulID::Human(soul) = soul else { continue; };
-        entity_link(uiworld, goria, ui, soul);
+        entity_link(uiworld, sim, ui, soul);
     }
 }
 
-fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
-    let Some(SoulID::FreightStation(owner)) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
-    let Some(freight) = goria.world().get(owner) else { return; };
+fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
+    let Some(SoulID::FreightStation(owner)) = sim.read::<BuildingInfos>().owner(b.id) else { return; };
+    let Some(freight) = sim.world().get(owner) else { return; };
 
     ui.label(format!("Waiting cargo: {}", freight.f.waiting_cargo));
     ui.label(format!("Wanted cargo: {}", freight.f.wanted_cargo));
@@ -98,7 +98,7 @@ fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, 
     ui.label("Trains:");
     for (tid, state) in &freight.f.trains {
         ui.horizontal(|ui| {
-            entity_link(uiworld, goria, ui, *tid);
+            entity_link(uiworld, sim, ui, *tid);
             match state {
                 FreightTrainState::Arriving => {
                     ui.label("Arriving");
@@ -114,16 +114,16 @@ fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, 
     }
 }
 
-fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
-    let owner = goria.read::<BuildingInfos>().owner(b.id);
+fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
+    let owner = sim.read::<BuildingInfos>().owner(b.id);
 
     let Some(SoulID::GoodsCompany(c_id)) = owner else { return; };
-    let Some(c) = goria.world().companies.get(c_id) else { return; };
+    let Some(c) = sim.world().companies.get(c_id) else { return; };
     let goods = &c.comp;
     let workers = &c.workers;
 
-    let market = goria.read::<Market>();
-    let itemregistry = goria.read::<ItemRegistry>();
+    let market = sim.read::<Market>();
+    let itemregistry = sim.read::<ItemRegistry>();
     let max_workers = goods.max_workers;
     egui::ProgressBar::new(workers.0.len() as f32 / max_workers as f32)
         .text(format!("workers: {}/{}", workers.0.len(), max_workers))
@@ -132,7 +132,7 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b:
     if let Some(driver) = goods.driver {
         ui.horizontal(|ui| {
             ui.label("Driver is");
-            entity_link(uiworld, goria, ui, driver);
+            entity_link(uiworld, sim, ui, driver);
         });
     }
     let productivity = goods.productivity(workers.0.len(), b.zone.as_ref());
@@ -144,7 +144,7 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b:
             .ui(ui);
     }
 
-    render_recipe(ui, uiworld, goria, &goods.recipe);
+    render_recipe(ui, uiworld, sim, &goods.recipe);
 
     egui::ProgressBar::new(goods.progress)
         .show_percentage()
@@ -166,8 +166,8 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b:
     }
 }
 
-fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, goria: &Egregoria, recipe: &Recipe) {
-    let registry = goria.read::<ItemRegistry>();
+fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, recipe: &Recipe) {
+    let registry = sim.read::<ItemRegistry>();
 
     if recipe.consumption.is_empty() {
         ui.label("No Inputs");

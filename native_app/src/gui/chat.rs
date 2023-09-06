@@ -1,12 +1,12 @@
 use egui::panel::TopBottomSide;
 use egui::{Align2, Color32, Frame, RichText, ScrollArea, TextBuffer, TopBottomPanel};
 
-use egregoria::engine_interaction::WorldCommand;
-use egregoria::multiplayer::chat::{Message, MessageKind};
-use egregoria::multiplayer::MultiplayerState;
-use egregoria::utils::time::{GameInstant, GameTime, SECONDS_PER_REALTIME_SECOND};
-use egregoria::Egregoria;
 use geom::Color;
+use simulation::engine_interaction::WorldCommand;
+use simulation::multiplayer::chat::{Message, MessageKind};
+use simulation::multiplayer::MultiplayerState;
+use simulation::utils::time::{GameInstant, GameTime, SECONDS_PER_REALTIME_SECOND};
+use simulation::Simulation;
 
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
@@ -17,15 +17,15 @@ pub struct GUIChatState {
     chat_bar_showed: bool,
 }
 
-pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
+pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, sim: &Simulation) {
     const MAX_MESSAGES: usize = 30;
     let mut state = uiw.write::<GUIChatState>();
     let one_minute_ago = GameInstant {
-        timestamp: goria.read::<GameTime>().instant().timestamp
+        timestamp: sim.read::<GameTime>().instant().timestamp
             - 120.0 * SECONDS_PER_REALTIME_SECOND as f64,
     };
 
-    let mstate = goria.read::<MultiplayerState>();
+    let mstate = sim.read::<MultiplayerState>();
 
     let just_opened = uiw
         .read::<InputMap>()
@@ -109,7 +109,7 @@ pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
                                     message: Message {
                                         name: "player".to_string(),
                                         text: msg,
-                                        sent_at: goria.read::<GameTime>().instant(),
+                                        sent_at: sim.read::<GameTime>().instant(),
                                         color: Color::WHITE,
                                         kind: MessageKind::PlayerChat,
                                     },

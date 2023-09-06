@@ -6,7 +6,7 @@ use crate::utils::resources::Resources;
 use crate::utils::time::{GameTime, Tick};
 use crate::world::{FreightStationEnt, FreightStationID, TrainID};
 use crate::World;
-use crate::{Egregoria, ParCommandBuffer, SoulID};
+use crate::{ParCommandBuffer, Simulation, SoulID};
 use geom::Transform;
 use serde::{Deserialize, Serialize};
 
@@ -34,10 +34,10 @@ pub struct FreightStation {
 }
 
 pub fn freight_station_soul(
-    goria: &mut Egregoria,
+    sim: &mut Simulation,
     building: BuildingID,
 ) -> Option<FreightStationID> {
-    let map = goria.map();
+    let map = sim.map();
 
     let f = FreightStation {
         building,
@@ -54,13 +54,12 @@ pub fn freight_station_soul(
 
     drop(map);
 
-    let id = goria.world.insert(FreightStationEnt {
+    let id = sim.world.insert(FreightStationEnt {
         f,
         trans: Transform::new_dir(pos.z(height), axis[1].z(0.0).normalize()),
     });
 
-    goria
-        .write::<BuildingInfos>()
+    sim.write::<BuildingInfos>()
         .set_owner(building, SoulID::FreightStation(id));
 
     Some(id)

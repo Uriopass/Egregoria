@@ -1,9 +1,9 @@
 use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
-use egregoria::Egregoria;
 use egui::{Context, RichText, Ui};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use simulation::Simulation;
 use std::collections::BTreeMap;
 
 pub struct NetworkConnectionInfo {
@@ -17,7 +17,7 @@ pub struct NetworkConnectionInfo {
 /// Network window
 /// Allows to connect to a server or start a server
 #[cfg(feature = "multiplayer")]
-pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
     window.show(ui, |ui| {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
@@ -41,7 +41,7 @@ pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, go
                 }
 
                 if ui.small_button("Start server").clicked() {
-                    if let Some(server) = crate::network::start_server(&mut info, goria) {
+                    if let Some(server) = crate::network::start_server(&mut info, sim) {
                         *state = NetworkState::Server(server);
                     }
                 }
@@ -60,25 +60,25 @@ pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, go
             }
             NetworkState::Client(ref client) => {
                 ui.label(client.lock().unwrap().describe());
-                show_hashes(ui, goria, &mut info);
+                show_hashes(ui, sim, &mut info);
             }
             NetworkState::Server(ref server) => {
                 ui.label("Running server");
                 ui.label(server.lock().unwrap().describe());
-                show_hashes(ui, goria, &mut info);
+                show_hashes(ui, sim, &mut info);
             }
         }
     });
 }
 
-fn show_hashes(ui: &mut Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
+fn show_hashes(ui: &mut Ui, sim: &Simulation, info: &mut NetworkConnectionInfo) {
     ui.checkbox(&mut info.show_hashes, "show hashes");
     if !info.show_hashes {
         return;
     }
 
-    if goria.get_tick() % 100 == 0 || info.hashes.is_empty() {
-        info.hashes = goria.hashes();
+    if sim.get_tick() % 100 == 0 || info.hashes.is_empty() {
+        info.hashes = sim.hashes();
     }
 
     for (name, hash) in &info.hashes {
