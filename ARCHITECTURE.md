@@ -2,11 +2,10 @@ This document describes the high-level architecture of Egregoria. If you want to
 
 # Bird's Eye View
 
-Egregoria's core is a fixed-time "tick" update and uses an [ECS](https://en.wikipedia.org/wiki/Entity_component_system).
+Egregoria's core is a fixed-time "tick" update.
 The whole simulation is advanced by one step depending on the current state, it is pure and deterministic.
 
 The simulation is composed of many systems which acts upon the different entities and singletons.
-For example, there's the `kinematics` system which says `position += velocity * DT`.
 There's also the `market_update` which updates the markets and determines which trades are to be made.
 
 To handle user interactions, Egregoria uses a Server-Client model.
@@ -23,19 +22,9 @@ Decoupling the rendering from the simulation really helps to separate concerns a
 
 ![](assets/crates_architecture.jpg)
 
-This is a codemap to showcase the different crate's usages and modules within some crates.
+This is a (not up-to-date) codemap to showcase the different crate's usages and modules within some crates.
 
 Approximately sorted by importance.
-
-## `map_model`
-
-Contains all the map related data. It contains the data about:
- - Roads/intersections/lanes/lots
- - Buildings
- - Terrain
- - Trees
-
-It is only raw data and operators (e.g. build this road here), but it doesn't contain any logic per se.
 
 ## `egregoria`
 
@@ -46,26 +35,28 @@ It is itself composed of the following subsystems:
 
 Everything related to the market. Doesn't contain the economic actors.
 
+## `egregoria/map`
+
+Contains all the map related data. It contains the data about:
+- Roads/intersections/lanes/lots
+- Buildings
+- Terrain
+- Trees
+
+It is only raw data and operators (e.g. build this road here), but it doesn't contain any simulation logic per se.
+
 ### `egregoria/map_dynamic`
 
 This contains all the dynamism around the map, like the pathfinding, routing, parking and itinerary systems.
 
-### `egregoria/pedestrians`
+### `egregoria/transportation`
 
-This module handles pedestrians, that is bodies walking around the world.
-
-### `egregoria/physics`
-
-This module handles everything related to physics, that is the velocity systems but also the spatial structures.
+This module handles vehicles and pedestrians, it contains all the complex rules around traffic and how to handle intersections.
 
 ### `egregoria/souls`
 
 This module contains all the AI related to the companies and the humans in the world.  
 This is where companies decide to employ people, and where people decide to buy some bread.
-
-### `egregoria/vehicles`
-
-This module handles vehicles, it contains all the complex rules around traffic and how to handle intersections.  
 
 ## `engine`
 
@@ -75,11 +66,11 @@ All the shaders are in the assets/shaders folder.
 It is a simple Forward renderer with the following passes:
  - Opaque depth prepass
  - SSAO with depth reconstruction using the prepass
- - Shadow map pass for the sun
- - Main forward/color pass
+ - Cascaded shadow map pass for the sun
+ - Main forward/color pass using Physically Based Rendering (PBR)
  - UI pass
 
-It does not use PBR, only basic albedo textures. Objects are loaded using the gltf format.
+Objects are loaded using the gltf format.
 
 ## `native_app`
 
@@ -95,13 +86,10 @@ It implements basic connection, authentication, catching up mechanism and input 
 
 See [this blog post](http://douady.paris/blog/egregoria_8.html) for more details.
 
-## `flat_spatial`
-
-This is a forked and specialized version of this crate for Egregoria, but a more general version and description can be found on the project's page [here](https://github.com/Uriopass/flat_spatial).  
 
 ## `geom`
 
-As most of Rust's math libraries lack some methods or are far too generic, I prefered to just recode one for my usecase. It contains the basic vector types, some matrix math and a lot of geometry primitives like `Circle`, `Segment`, `Polyline` and `Polygon`.
+As most of Rust's math libraries lack some methods or are far too generic, I preferred to just recode one for my usecase. It contains the basic vector types, some matrix math and a lot of geometry primitives like `Circle`, `Segment`, `Polyline` and `Polygon`.
 
 ## `headless`
 
@@ -121,15 +109,15 @@ When you have decided what you would like to contribute, please come chat about 
 ## Audio/Art
 
 Egregoria uses the GLTF format for meshes and ogg for audio files.  
-At the moment, the renderer is pretty limited as it only supports one material per mesh.  
-Modding support is nonexistent so everything goes through static links in the code.  
+The assets are in the `assets` folder.
+You can change assets for companies in the `assets/companies.json` file.
+
+A dedicated Asset Manager is in construction to help the process.
 
 ## UI
 
 All the UI related code is in the `native_app` crate, more specifically in the `gui` module. It contains code for the road editor, building placement, inspect window, top gui and others.
-topgui.rs contains most of the egui code.
-
-The other files follow one file = one system.
+`topgui.rs` contains most of the egui code.
 
 ## Simulation/Gameplay
 
@@ -138,10 +126,11 @@ Try to keep the different aspects of the simulation decoupled so that it is easi
 
 ## 3D Graphics
 
-Most of the 3D graphics code is in the `engine` crate. It uses a basic forward renderer.  
-Some notable features you could add would be cascaded shadow maps, PBR and clustered lighting.
+Most of the 3D graphics code is in the `engine` crate.
+It contains all the low-level graphics code like connecting to the gpu, setting up pipelines, sending textures and render meshes.
+It is a forward renderer with SSAO, cascaded shadow maps, PBR and world-space lights (not screen space clustered).
 
-As the name hints, it uses wgpu as the rendering backend which is multi-backend (vulkan, dx12 and metal).
+It uses wgpu for the rendering backend which is multi-backend (vulkan, dx12 and metal).
 
 # Economy
 
