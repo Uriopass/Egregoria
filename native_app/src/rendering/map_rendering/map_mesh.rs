@@ -390,8 +390,12 @@ impl MapBuilders {
     }
 
     fn zone_mesh(&mut self, building: &Building) {
-        let Some(bzone) = &building.zone else { return; };
-        let Some((zone_mesh, filler, randomize)) = self.zonemeshes.get_mut(&building.kind) else { return; };
+        let Some(bzone) = &building.zone else {
+            return;
+        };
+        let Some((zone_mesh, filler, randomize)) = self.zonemeshes.get_mut(&building.kind) else {
+            return;
+        };
         let zone = &bzone.poly;
         let randomize = *randomize;
 
@@ -408,7 +412,11 @@ impl MapBuilders {
 
         let principal_axis = building.obb.axis()[0].normalize().rotated_by(bzone.filldir);
 
-        let Some((mut min, mut max)) = minmax(zone.iter().map(|x| x.rotated_by(principal_axis.flipy()))) else { return; };
+        let Some((mut min, mut max)) =
+            minmax(zone.iter().map(|x| x.rotated_by(principal_axis.flipy())))
+        else {
+            return;
+        };
         min = min.rotated_by(principal_axis);
         max = max.rotated_by(principal_axis);
 

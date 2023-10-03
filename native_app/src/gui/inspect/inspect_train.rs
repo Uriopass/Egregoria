@@ -4,7 +4,9 @@ use egui::Context;
 use simulation::{Simulation, TrainID};
 
 pub fn inspect_train(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: TrainID) -> bool {
-    let Some(t) = sim.get(id) else { return false; };
+    let Some(t) = sim.get(id) else {
+        return false;
+    };
 
     let mut is_open = true;
     egui::Window::new("Train")

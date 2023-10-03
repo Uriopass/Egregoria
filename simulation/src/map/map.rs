@@ -66,7 +66,9 @@ impl Map {
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
 
-        let Some(inter) = self.intersections.get_mut(id) else { return; };
+        let Some(inter) = self.intersections.get_mut(id) else {
+            return;
+        };
         f(inter);
         self.invalidate(id);
 
@@ -156,10 +158,14 @@ impl Map {
     }
 
     pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Zone)) {
-        let Some(b) = self.buildings.get_mut(id) else { return; };
+        let Some(b) = self.buildings.get_mut(id) else {
+            return;
+        };
         self.subscribers.dispatch(UpdateType::Building, b);
 
-        let Some(ref mut z) = b.zone else { return; };
+        let Some(ref mut z) = b.zone else {
+            return;
+        };
         f(z);
 
         self.terrain.remove_near(&z.poly, |c| {

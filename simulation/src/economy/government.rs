@@ -31,8 +31,12 @@ impl Government {
                 zone: z,
             } => {
                 let m = sim.map();
-                let Some(b) = m.buildings.get(*bid) else { return Money::ZERO; };
-                let Some(gc) = b.kind.as_goods_company() else { return Money::ZERO; };
+                let Some(b) = m.buildings.get(*bid) else {
+                    return Money::ZERO;
+                };
+                let Some(gc) = b.kind.as_goods_company() else {
+                    return Money::ZERO;
+                };
                 let registry = sim.read::<GoodsCompanyRegistry>();
                 let zonedescr = registry.descriptions[gc].zone.as_ref().unwrap();
 

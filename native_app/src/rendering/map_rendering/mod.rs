@@ -113,7 +113,9 @@ impl MapRenderer {
                     continue;
                 }
             }
-            let Some(lane) = map.lanes().get(lane_id) else { continue };
+            let Some(lane) = map.lanes().get(lane_id) else {
+                continue;
+            };
             Self::render_lane_signals(lane, draw, time);
         }
     }
@@ -131,8 +133,12 @@ impl MapRenderer {
             .spatial_map()
             .query(Circle::new(pos.xy(), 200.0), ProjectFilter::ROAD)
         {
-            let ProjectKind::Road(id) = kind else { continue };
-            let Some(r) = map.roads().get(id) else { continue };
+            let ProjectKind::Road(id) = kind else {
+                continue;
+            };
+            let Some(r) = map.roads().get(id) else {
+                continue;
+            };
             if !frustrum.intersects(&r.points.bbox().expand(r.width)) {
                 continue;
             }

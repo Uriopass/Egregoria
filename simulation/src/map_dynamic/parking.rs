@@ -45,7 +45,9 @@ impl ParkingManagement {
         rng: u64,
     ) -> Option<SpotReservation> {
         for i_try in 0..3 {
-            let Some(spot) = spots.random_spot(rng.wrapping_add(i_try)) else { continue; };
+            let Some(spot) = spots.random_spot(rng.wrapping_add(i_try)) else {
+                continue;
+            };
             if self.reserved_spots.insert(spot) {
                 return Some(SpotReservation(spot));
             }

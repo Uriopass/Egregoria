@@ -94,7 +94,9 @@ impl InstancedRender {
 
         self.path_not_found.clear();
         for (_, (trans, itin)) in sim.world().query_trans_itin() {
-            let Some(wait) = itin.is_wait_for_reroute() else { continue };
+            let Some(wait) = itin.is_wait_for_reroute() else {
+                continue;
+            };
             if wait == 0 {
                 continue;
             }

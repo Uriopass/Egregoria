@@ -114,7 +114,7 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
             .min_by_key(move |p| OrderedFloat(p.points().project_dist2(mpos)));
         let Some(closest_road) = closest_road else {
             *uiworld.write::<ErrorTooltip>() = ErrorTooltip::new(Cow::Borrowed("No road nearby"));
-            return draw(hover_obb, true)
+            return draw(hover_obb, true);
         };
 
         let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);

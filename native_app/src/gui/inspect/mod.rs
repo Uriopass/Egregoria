@@ -37,7 +37,9 @@ pub fn inspector(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
             is_open = inspect_vehicle(uiworld, sim, ui, id);
         }
         AnyEntity::WagonID(id) if !force_debug_inspect => {
-            let Some(w) = sim.world().get(id) else { return; };
+            let Some(w) = sim.world().get(id) else {
+                return;
+            };
             let train_id = w.itfollower.leader;
             uiworld.write::<InspectedEntity>().e = Some(AnyEntity::TrainID(train_id));
         }

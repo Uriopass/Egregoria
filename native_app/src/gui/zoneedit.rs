@@ -24,12 +24,19 @@ pub fn zoneedit(sim: &Simulation, uiworld: &mut UiWorld) {
     let mut state = uiworld.write::<ZoneEditState>();
     let mut potentialcommand = uiworld.write::<PotentialCommands>();
 
-    let Some(bid) = inspected_b.e else { state.offset = None; return; };
+    let Some(bid) = inspected_b.e else {
+        state.offset = None;
+        return;
+    };
 
     let map = sim.map();
-    let Some(b) = map.buildings().get(bid) else { return; };
+    let Some(b) = map.buildings().get(bid) else {
+        return;
+    };
 
-    let Some(ref zone) = b.zone else { return; };
+    let Some(ref zone) = b.zone else {
+        return;
+    };
     let filldir = zone.filldir;
     let zone = &zone.poly;
 

@@ -85,7 +85,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         for (trainid, state) in &mut station.trains {
             let Some(train) = world.trains.get_mut(*trainid) else {
                 to_clean.push(*trainid);
-                continue
+                continue;
             };
             let itin = &mut train.it;
 
@@ -206,7 +206,9 @@ mod tests {
             .kind = HumanDecisionKind::DeliverAtBuilding(station);
 
         let binfos = test.g.read::<BuildingInfos>();
-        let SoulID::FreightStation(stationsoul) = binfos.owner(station).unwrap() else { panic!() };
+        let SoulID::FreightStation(stationsoul) = binfos.owner(station).unwrap() else {
+            panic!()
+        };
         drop(binfos);
 
         for _ in 0..100 {

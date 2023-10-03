@@ -29,8 +29,12 @@ impl LampsRender {
         for chunk in self.lamp_sub.take_updated_chunks() {
             let lamp_chunk_memory = self.lamp_road_memory.entry(chunk).or_default();
             for (chunk_id, lamp) in lamp_chunk_memory.drain(..) {
-                let Some(lamps) = self.lamp_memory.get_mut(&chunk_id) else { continue };
-                let Some(idx) = lamps.iter().position(|x| *x == lamp) else { continue };
+                let Some(lamps) = self.lamp_memory.get_mut(&chunk_id) else {
+                    continue;
+                };
+                let Some(idx) = lamps.iter().position(|x| *x == lamp) else {
+                    continue;
+                };
                 to_reupload.insert(chunk_id);
                 lamps.swap_remove(idx);
             }

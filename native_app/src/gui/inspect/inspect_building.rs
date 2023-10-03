@@ -15,7 +15,9 @@ use simulation::souls::goods_company::{GoodsCompanyRegistry, Recipe};
 /// Inspect a specific building, showing useful information about it
 pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: BuildingID) {
     let map = sim.map();
-    let Some(building) = map.buildings().get(id) else { return; };
+    let Some(building) = map.buildings().get(id) else {
+        return;
+    };
     let gregistry = sim.read::<GoodsCompanyRegistry>();
 
     let title: &str = match building.kind {
@@ -72,8 +74,12 @@ pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, i
 
 fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
     let binfos = sim.read::<BuildingInfos>();
-    let Some(info) = binfos.get(b.id) else { return; };
-    let Some(SoulID::Human(owner)) = info.owner else { return; };
+    let Some(info) = binfos.get(b.id) else {
+        return;
+    };
+    let Some(SoulID::Human(owner)) = info.owner else {
+        return;
+    };
 
     ui.horizontal(|ui| {
         ui.label("Owner");
@@ -82,14 +88,20 @@ fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Buildi
 
     ui.label("Currently in the house:");
     for &soul in info.inside.iter() {
-        let SoulID::Human(soul) = soul else { continue; };
+        let SoulID::Human(soul) = soul else {
+            continue;
+        };
         entity_link(uiworld, sim, ui, soul);
     }
 }
 
 fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
-    let Some(SoulID::FreightStation(owner)) = sim.read::<BuildingInfos>().owner(b.id) else { return; };
-    let Some(freight) = sim.world().get(owner) else { return; };
+    let Some(SoulID::FreightStation(owner)) = sim.read::<BuildingInfos>().owner(b.id) else {
+        return;
+    };
+    let Some(freight) = sim.world().get(owner) else {
+        return;
+    };
 
     ui.label(format!("Waiting cargo: {}", freight.f.waiting_cargo));
     ui.label(format!("Wanted cargo: {}", freight.f.wanted_cargo));
@@ -117,8 +129,12 @@ fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b
 fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
     let owner = sim.read::<BuildingInfos>().owner(b.id);
 
-    let Some(SoulID::GoodsCompany(c_id)) = owner else { return; };
-    let Some(c) = sim.world().companies.get(c_id) else { return; };
+    let Some(SoulID::GoodsCompany(c_id)) = owner else {
+        return;
+    };
+    let Some(c) = sim.world().companies.get(c_id) else {
+        return;
+    };
     let goods = &c.comp;
     let workers = &c.workers;
 
@@ -156,11 +172,15 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
 
     let jobopening = itemregistry.id("job-opening");
     for (&id, m) in market.iter() {
-        let Some(v) = m.capital(c_id.into()) else { continue };
+        let Some(v) = m.capital(c_id.into()) else {
+            continue;
+        };
         if id == jobopening && v == 0 {
             continue;
         }
-        let Some(item) = itemregistry.get(id) else { continue };
+        let Some(item) = itemregistry.get(id) else {
+            continue;
+        };
 
         item_icon(ui, uiworld, item, v);
     }
@@ -179,7 +199,9 @@ fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, recipe: &Reci
         });
         ui.horizontal(|ui| {
             for &(good, amount) in recipe.consumption.iter() {
-                let Some(item) = registry.get(good) else { continue };
+                let Some(item) = registry.get(good) else {
+                    continue;
+                };
                 item_icon(ui, uiworld, item, amount);
             }
         });
@@ -195,7 +217,9 @@ fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, recipe: &Reci
         });
         ui.horizontal(|ui| {
             for &(good, amount) in recipe.production.iter() {
-                let Some(item) = registry.get(good) else { continue };
+                let Some(item) = registry.get(good) else {
+                    continue;
+                };
                 item_icon(ui, uiworld, item, amount);
             }
         });

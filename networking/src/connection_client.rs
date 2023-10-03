@@ -68,7 +68,9 @@ impl ConnectionClient {
 
     pub fn recv_tcp(&mut self) -> Vec<Vec<u8>> {
         let mut packets = Vec::new();
-        let Ok(v) = self.tcp_conn.1.try_recv() else { return packets };
+        let Ok(v) = self.tcp_conn.1.try_recv() else {
+            return packets;
+        };
 
         self.tcp_conn.0.recv(&v, |d| {
             packets.push(d);

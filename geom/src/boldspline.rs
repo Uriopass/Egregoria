@@ -62,7 +62,9 @@ impl Intersect<Polygon> for BoldSpline {
 
         let bbox = p.bbox().expand(self.radius);
         while let Some(v) = points.next() {
-            let Some(&peek) = points.peek() else { return false; };
+            let Some(&peek) = points.peek() else {
+                return false;
+            };
 
             let segment = Segment::new(v, peek);
             if !bbox.intersects(&segment) {

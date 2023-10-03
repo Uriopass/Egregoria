@@ -106,9 +106,13 @@ impl HumanDecisionKind {
                 true
             }
             HumanDecisionKind::DeliverAtBuilding(bid) => {
-                let Some(b) = map.buildings().get(bid) else { return true };
+                let Some(b) = map.buildings().get(bid) else {
+                    return true;
+                };
                 if matches!(b.kind, BuildingKind::RailFreightStation) {
-                    let Some(SoulID::FreightStation(fid)) = binfos.owner(bid) else { return true };
+                    let Some(SoulID::FreightStation(fid)) = binfos.owner(bid) else {
+                        return true;
+                    };
                     cbuf_freight.exec_ent(fid, move |e| {
                         if let Some(f) = e.world.freight_stations.get_mut(fid) {
                             f.f.waiting_cargo += 1;

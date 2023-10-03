@@ -10,7 +10,9 @@ pub fn inspect_vehicle(
     ui: &Context,
     id: VehicleID,
 ) -> bool {
-    let Some(v) = sim.get(id) else { return false; };
+    let Some(v) = sim.get(id) else {
+        return false;
+    };
 
     let name = format!("{:?}", v.vehicle.kind);
 

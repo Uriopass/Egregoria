@@ -6,7 +6,7 @@ use crate::map::{BuildingID, LanePatternBuilder, ProjectFilter};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
-use crate::{SimulationOptions, Simulation};
+use crate::{Simulation, SimulationOptions};
 use common::logger::MyLog;
 use common::saveload::Encoder;
 use geom::{Vec2, Vec3};

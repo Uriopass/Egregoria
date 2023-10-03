@@ -12,7 +12,9 @@ use crate::uiworld::UiWorld;
 
 /// Inspect a specific building, showing useful information about it
 pub fn inspect_human(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: HumanID) -> bool {
-    let Some(human) = sim.get(id) else { return false; };
+    let Some(human) = sim.get(id) else {
+        return false;
+    };
 
     let mut is_open = true;
     egui::Window::new("Human")
@@ -100,11 +102,15 @@ pub fn inspect_human(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: 
 
             let jobopening = itemregistry.id("job-opening");
             for (&item_id, m) in market.iter() {
-                let Some(v) = m.capital(id.into()) else { continue };
+                let Some(v) = m.capital(id.into()) else {
+                    continue;
+                };
                 if item_id == jobopening {
                     continue;
                 }
-                let Some(item) = itemregistry.get(item_id) else { continue };
+                let Some(item) = itemregistry.get(item_id) else {
+                    continue;
+                };
 
                 item_icon(ui, uiworld, item, v);
             }

@@ -21,7 +21,7 @@ use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::transportation::{spawn_parked_vehicle_with_spot, unpark, VehicleKind};
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::{GameTime, Tick};
-use crate::{SimulationOptions, Replay, Simulation};
+use crate::{Replay, Simulation, SimulationOptions};
 
 #[derive(Clone, Default)]
 pub struct WorldCommands {
@@ -314,11 +314,17 @@ impl WorldCommand {
                     let map = sim.map();
                     let mut rng = sim.write::<RandProvider>();
 
-                    let Some(spot) = pm.reserve_random_free_spot(&map.parking, rng.next_u64()) else { continue; };
+                    let Some(spot) = pm.reserve_random_free_spot(&map.parking, rng.next_u64())
+                    else {
+                        continue;
+                    };
 
                     drop((map, pm, rng));
 
-                    let Some(v_id) = spawn_parked_vehicle_with_spot(sim, VehicleKind::Car, spot) else { continue; };
+                    let Some(v_id) = spawn_parked_vehicle_with_spot(sim, VehicleKind::Car, spot)
+                    else {
+                        continue;
+                    };
                     unpark(sim, v_id);
 
                     sim.write::<RandomVehicles>().vehicles.insert(v_id);

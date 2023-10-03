@@ -59,7 +59,10 @@ fn handle_singleplayer(state: &mut State) {
     let mut net_state = state.uiw.write::<NetworkState>();
 
     #[allow(irrefutable_let_patterns)]
-    let NetworkState::Singleplayer(ref mut step) = *net_state else { return; };
+    let NetworkState::Singleplayer(ref mut step) = *net_state
+    else {
+        return;
+    };
 
     let mut commands_once = Some(commands.clone());
     step.prepare_frame(timewarp);

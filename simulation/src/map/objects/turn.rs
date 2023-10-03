@@ -87,8 +87,12 @@ impl Turn {
     }
 
     pub fn make_points(&mut self, lanes: &Lanes, parent: &Intersection) {
-        let Some(src_lane) = lanes.get(self.id.src) else { return; };
-        let Some(dst_lane) = lanes.get(self.id.dst) else { return; };
+        let Some(src_lane) = lanes.get(self.id.src) else {
+            return;
+        };
+        let Some(dst_lane) = lanes.get(self.id.dst) else {
+            return;
+        };
 
         let pos_src = src_lane.get_inter_node_pos(self.id.parent);
         let pos_dst = dst_lane.get_inter_node_pos(self.id.parent);

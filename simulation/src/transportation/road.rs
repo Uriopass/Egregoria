@@ -18,7 +18,9 @@ pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
     let rc = &*resources.read();
 
     world.vehicles.iter_mut().for_each(|(ent, v)| {
-        let Some(ref coll) = v.collider else { return; };
+        let Some(ref coll) = v.collider else {
+            return;
+        };
 
         vehicle_decision(
             ra,

@@ -108,13 +108,17 @@ impl Dispatcher {
     pub fn free(&mut self, ent: impl Into<DispatchID>) {
         let ent: DispatchID = ent.into();
         let kind: DispatchKind = ent.into();
-        let Some(disp) = self.dispatches.get_mut(&kind) else { return };
+        let Some(disp) = self.dispatches.get_mut(&kind) else {
+            return;
+        };
         disp.reserved_by.remove(&ent);
     }
 
     pub fn unregister(&mut self, id: DispatchID) {
         let kind = id.into();
-        let Some(disp) = self.dispatches.get_mut(&kind) else { return };
+        let Some(disp) = self.dispatches.get_mut(&kind) else {
+            return;
+        };
         disp.unregister(id);
     }
 
@@ -204,7 +208,9 @@ impl DispatchOne {
     }
 
     pub fn unregister(&mut self, id: DispatchID) {
-        let Some(pos) = self.positions.remove(&id) else { return };
+        let Some(pos) = self.positions.remove(&id) else {
+            return;
+        };
         self.reserved_by.remove(&id);
         self.lanes.get_mut(&pos.lane).unwrap().retain(|e| *e != id);
     }
@@ -256,7 +262,9 @@ impl DispatchOne {
                 TraverseDirection::Backward => tid.dst,
             })
         }) {
-            let Some(ents) = self.lanes.get(&lane) else { continue };
+            let Some(ents) = self.lanes.get(&lane) else {
+                continue;
+            };
             for ent in ents {
                 if self.reserved_by.contains(ent) {
                     continue;
