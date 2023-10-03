@@ -1,6 +1,8 @@
 use common::descriptions::{BuildingGen, CompanyKind};
 use egui::{Color32, Ui};
-use egui_dock::{DockArea, NodeIndex, Style, TabStyle, Tree};
+use egui_dock::{
+    DockArea, DockState, NodeIndex, Style, TabBodyStyle, TabInteractionStyle, TabStyle,
+};
 use egui_inspect::{Inspect, InspectArgs};
 
 use engine::meshload::MeshProperties;
@@ -34,7 +36,7 @@ pub enum Shown {
 }
 
 pub struct Gui {
-    pub tree: Option<Tree<Tab>>,
+    pub tree: Option<DockState<Tab>>,
     pub companies: Companies,
     pub inspected: Inspected,
     pub shown: Shown,
@@ -42,12 +44,17 @@ pub struct Gui {
 
 impl Gui {
     pub fn new() -> Self {
-        let mut tree = Tree::new(vec![Tab::View]);
+        let mut tree = DockState::new(vec![Tab::View]);
 
         let view = NodeIndex::root();
-        let [view, _] = tree.split_left(view, 0.2, vec![Tab::Explorer]);
-        let [view, _] = tree.split_right(view, 0.8, vec![Tab::Properties]);
-        tree.split_below(view, 0.8, vec![Tab::ModelProperties]);
+        let [view, _] = tree
+            .main_surface_mut()
+            .split_left(view, 0.2, vec![Tab::Explorer]);
+        let [view, _] = tree
+            .main_surface_mut()
+            .split_right(view, 0.8, vec![Tab::Properties]);
+        tree.main_surface_mut()
+            .split_below(view, 0.8, vec![Tab::ModelProperties]);
 
         Self {
             tree: Some(tree),
@@ -299,7 +306,26 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
     fn tab_style_override(&self, tab: &Self::Tab, global_style: &TabStyle) -> Option<TabStyle> {
         if matches!(tab, Tab::View) {
             return Some(TabStyle {
-                bg_fill: Color32::TRANSPARENT,
+                active: TabInteractionStyle {
+                    bg_fill: Color32::TRANSPARENT,
+                    ..global_style.active
+                },
+                focused: TabInteractionStyle {
+                    bg_fill: Color32::TRANSPARENT,
+                    ..global_style.focused
+                },
+                hovered: TabInteractionStyle {
+                    bg_fill: Color32::TRANSPARENT,
+                    ..global_style.hovered
+                },
+                inactive: TabInteractionStyle {
+                    bg_fill: Color32::TRANSPARENT,
+                    ..global_style.inactive
+                },
+                tab_body: TabBodyStyle {
+                    bg_fill: Color32::TRANSPARENT,
+                    ..global_style.tab_body
+                },
                 hline_below_active_tab_name: false,
                 ..global_style.clone()
             });

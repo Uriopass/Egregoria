@@ -11,6 +11,7 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::descriptions::BuildingGen;
 use common::saveload::Encoder;
+use egui::load::SizedTexture;
 use egui::{
     Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
     Widget, Window,
@@ -205,10 +206,10 @@ impl Gui {
                 let cur_tab = *uiworld.read::<Tab>();
 
                 for (name, tab, default_tool) in &tools {
-                    if egui::ImageButton::new(
+                    if egui::ImageButton::new(SizedTexture::new(
                         uiworld.read::<UiTextures>().get(name),
                         [toolbox_w, 30.0],
-                    )
+                    ))
                     .selected(std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab))
                     .ui(ui)
                     .clicked()
@@ -629,7 +630,7 @@ impl Gui {
             let p = ui.layer_painter(LayerId::background());
             p.rect(
                 ui.screen_rect(),
-                Rounding::none(),
+                Rounding::ZERO,
                 Color32::from_rgba_premultiplied(0, 0, 0, 0),
                 Stroke {
                     width: 7.0,
@@ -785,9 +786,9 @@ pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier: i32) -
             .read::<UiTextures>()
             .try_get(&format!("icon/{}", item.name))
         {
-            if ui.image(id, (32.0, 32.0)).hovered() {
+            if ui.image(SizedTexture::new(id, (32.0, 32.0))).hovered() {
                 egui::show_tooltip(ui.ctx(), ui.make_persistent_id("icon tooltip"), |ui| {
-                    ui.image(id, (64.0, 64.0));
+                    ui.image(SizedTexture::new(id, (64.0, 64.0)));
                     ui.label(format!("{} x{}", item.name, multiplier));
                 });
             }

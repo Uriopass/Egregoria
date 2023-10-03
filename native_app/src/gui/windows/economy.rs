@@ -1,7 +1,7 @@
 use crate::uiworld::UiWorld;
 use common::timestep::UP_DT;
-use egui::plot::{Line, PlotPoints};
 use egui::{Align2, Color32, Ui};
+use egui_plot::{Line, PlotPoints};
 use geom::Color;
 use simulation::economy::{
     EcoStats, ItemHistories, ItemRegistry, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
@@ -114,7 +114,7 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                     d.get_temp_mut_or_insert_with(filterid, HashSet::new)
                         .clone()
                 });
-                egui::plot::Plot::new("ecoplot")
+                egui_plot::Plot::new("ecoplot")
                     .height(200.0)
                     .allow_boxed_zoom(false)
                     .include_y(0.0)

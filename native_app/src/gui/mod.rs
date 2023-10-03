@@ -1,6 +1,7 @@
 use common::FastMap;
 use std::borrow::Cow;
 use std::path::Path;
+use std::sync::Arc;
 
 use egui::{ColorImage, ImageData, TextureHandle, TextureId, TextureOptions};
 use serde::{Deserialize, Serialize};
@@ -159,10 +160,10 @@ impl UiTextures {
 
             let h = ctx.load_texture(
                 &name,
-                ImageData::Color(ColorImage::from_rgba_unmultiplied(
+                ImageData::Color(Arc::new(ColorImage::from_rgba_unmultiplied(
                     [width as usize, height as usize],
                     &img,
-                )),
+                ))),
                 TextureOptions::LINEAR,
             );
 

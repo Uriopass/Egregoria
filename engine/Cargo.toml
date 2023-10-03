@@ -15,7 +15,7 @@ egui          = { workspace = true }
 winit         = { workspace = true }
 oddio         = { workspace = true }
 derive_more   = { workspace = true }
-wgpu          = { version = "0.16.0", default-features = false, features=["wgsl"] }
+wgpu          = { version = "0.17.0", default-features = false, features=["wgsl"] }
 bytemuck      = "1.7.2"
 image         = { version = "0.24.3", default-features = false, features = ["png"] }
 log           = "0.4.11"
@@ -28,7 +28,7 @@ beul          = "1.0.0"
 slotmapd      = "1.0"
 smallvec      = "1.10.0"
 inline_tweak  = "1.0.8"
-egui-wgpu     = { version = "0.22.0" }
+egui-wgpu     = { version = "0.23.0" }
 cpal          = "0.15.0"
 lewton        = "0.10.2"
 serde         = { version = "1.0.183", features = ["derive"] }
