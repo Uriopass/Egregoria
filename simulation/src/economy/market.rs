@@ -439,9 +439,10 @@ fn calculate_prices(
 mod tests {
     use super::Market;
     use crate::economy::{ItemRegistry, WORKER_CONSUMPTION_PER_SECOND};
-    use crate::souls::goods_company::{CompanyKind, GoodsCompanyDescription, Recipe};
+    use crate::souls::goods_company::{GoodsCompanyDescription, Recipe};
     use crate::world::CompanyID;
-    use crate::{map::BuildingGen, GoodsCompanyRegistry, SoulID};
+    use crate::{GoodsCompanyRegistry, SoulID};
+    use common::descriptions::{BuildingGen, CompanyKind};
     use geom::{vec2, Vec2};
 
     fn mk_ent(id: u64) -> CompanyID {

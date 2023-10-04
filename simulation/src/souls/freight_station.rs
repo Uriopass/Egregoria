@@ -163,11 +163,11 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
 
 #[cfg(test)]
 mod tests {
-    use crate::map::BuildingGen;
     use crate::map_dynamic::BuildingInfos;
     use crate::souls::human::{spawn_human, HumanDecisionKind};
     use crate::tests::TestCtx;
     use crate::{BuildingKind, SoulID, WorldCommand};
+    use common::descriptions::BuildingGen;
     use geom::{vec2, vec3, OBB};
 
     #[test]
