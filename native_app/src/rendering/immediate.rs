@@ -265,8 +265,6 @@ impl ImmediateDraw {
                         dir,
                         tint: color.a(1.0),
                     });
-
-                    ctx.objs.push(Box::new(i.build(ctx.gfx).unwrap()))
                 }
             }
         }
