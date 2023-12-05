@@ -1,3 +1,4 @@
+#![allow(clippy::redundant_closure_call)]
 use crate::gui::windows::settings::Settings;
 use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;

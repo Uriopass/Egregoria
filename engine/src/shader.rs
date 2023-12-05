@@ -1,3 +1,5 @@
+#![allow(clippy::redundant_pattern_matching)]
+
 use crate::wgpu::ShaderSource;
 use common::FastMap;
 use std::borrow::Cow;
