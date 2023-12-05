@@ -122,6 +122,7 @@ impl OrbitCamera {
         settings: &Settings,
         height: impl Fn(Vec2) -> Option<f32>,
     ) {
+        // edge cases (NaN, inf, etc)
         if !self.camera.pos.is_finite() {
             self.camera.pos = Vec3::ZERO;
         }
@@ -136,11 +137,14 @@ impl OrbitCamera {
         }
 
         self.save();
+
+        // prepare useful variables
         let delta = delta.min(0.1);
         let off = self.camera.offset();
         let d = off.xy().try_normalize().unwrap_or(Vec2::ZERO) * self.camera.dist;
         let screenpos = ctx.input.mouse.screen;
 
+        // handle inputs
         if inps.act.contains(&InputAction::GoRight) {
             self.targetpos += -delta * d.perpendicular().z0();
         }
@@ -195,10 +199,17 @@ impl OrbitCamera {
                     .cap_magnitude(50.0 * delta * self.camera.eye().z)
                     .z0();
             }
+            self.last_pos = unprojected.map(Vec3::xy);
         }
 
+        // make sure things are in reasonable bounds
         self.targetdist = self.targetdist.clamp(5.0, 100000.0);
+        self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
+        self.targetpos.x = self.targetpos.x.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
+        self.targetpos.y = self.targetpos.y.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
+        self.targetpos.z = self.targetpos.z.clamp(0.0, 100000.0);
 
+        // smooth camera movement
         if settings.camera_smooth {
             macro_rules! lerpp {
                 ($a:expr, $b:expr, $amt:expr, $c:expr) => {
@@ -227,13 +238,13 @@ impl OrbitCamera {
             self.camera.dist = self.targetdist;
         }
 
-        self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
+        // update orbit center to be height aware
+        self.camera.pos.z = height(self.camera.pos.xy())
+            .unwrap_or(self.camera.pos.z)
+            .clamp(0.0, 100000.0);
 
-        self.targetpos.x = self.targetpos.x.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
-        self.targetpos.y = self.targetpos.y.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
-
-        self.camera.pos.z = height(self.camera.pos.xy()).unwrap_or(self.camera.pos.z);
+        // update camera
         self.update(ctx);
-        self.last_pos = self.unproject(screenpos, |_| Some(0.0)).map(Vec3::xy);
+        self.save();
     }
 }
