@@ -185,47 +185,10 @@ impl engine::framework::State for State {
         self.instanced_renderer
             .render(&self.sim.read().unwrap(), ctx);
 
-        {
-            let objs = self.uiw.read::<DebugObjs>();
-            for (val, _, obj) in &objs.0 {
-                if *val {
-                    obj(&mut self.immtess, &sim, &self.uiw);
-                }
-            }
-        }
+        drop(sim);
+        drop(camera);
 
-        {
-            let immediate = &mut *self.uiw.write::<ImmediateDraw>();
-
-            let mut col = LinearColor::WHITE;
-            col.a = 1.0;
-            unsafe {
-                for v in &geom::DEBUG_OBBS {
-                    immediate.obb(*v, 3.0).color(col);
-                }
-                for v in &geom::DEBUG_SPLINES {
-                    immediate
-                        .polyline(
-                            v.smart_points(1.0, 0.0, 1.0)
-                                .map(|x| x.z(10.0))
-                                .collect::<Vec<_>>(),
-                            5.0,
-                            false,
-                        )
-                        .color(col);
-                }
-                geom::DEBUG_OBBS.clear();
-                geom::DEBUG_SPLINES.clear();
-            }
-
-            immediate.apply(&mut self.immtess, ctx);
-            immediate.orders.clear();
-        }
-
-        if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx) {
-            x.skip_depth = true;
-            ctx.draw(x)
-        }
+        self.immediate_draw(ctx);
 
         self.uiw
             .write::<Timings>()
@@ -316,6 +279,54 @@ impl State {
         *self.uiw.write::<Camera>() = self.uiw.read::<OrbitCamera>().camera;
 
         drop(map);
+    }
+
+    fn immediate_draw(&mut self, ctx: &mut FrameContext) {
+        profiling::scope!("immediate_draw");
+
+        {
+            profiling::scope!("debug_objs");
+            let sim = self.sim.read().unwrap();
+            let objs = self.uiw.read::<DebugObjs>();
+            for (val, _, obj) in &objs.0 {
+                if *val {
+                    obj(&mut self.immtess, &sim, &self.uiw);
+                }
+            }
+        }
+
+        {
+            let immediate = &mut *self.uiw.write::<ImmediateDraw>();
+
+            let mut col = LinearColor::WHITE;
+            col.a = 1.0;
+            unsafe {
+                for v in &geom::DEBUG_OBBS {
+                    immediate.obb(*v, 3.0).color(col);
+                }
+                for v in &geom::DEBUG_SPLINES {
+                    immediate
+                        .polyline(
+                            v.smart_points(1.0, 0.0, 1.0)
+                                .map(|x| x.z(10.0))
+                                .collect::<Vec<_>>(),
+                            5.0,
+                            false,
+                        )
+                        .color(col);
+                }
+                geom::DEBUG_OBBS.clear();
+                geom::DEBUG_SPLINES.clear();
+            }
+
+            immediate.apply(&mut self.immtess, ctx);
+            immediate.orders.clear();
+        }
+
+        if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx) {
+            x.skip_depth = true;
+            ctx.draw(x)
+        }
     }
 }
 
