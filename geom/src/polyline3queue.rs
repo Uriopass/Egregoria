@@ -129,9 +129,11 @@ impl Polyline3Queue {
         let mut accdist = self.dh;
         let mut lastp = self.front();
 
-        distances.into_iter().map(move |dist| {
+        distances.into_iter().map_while(move |dist| {
             loop {
-                let newp = *self.data.get(self.frontcounter - counter).unwrap();
+                let Some(newp) = self.data.get(self.frontcounter - counter).copied() else {
+                    return None;
+                };
                 let d = lastp.distance(newp);
                 if accdist + d >= dist {
                     break;
@@ -141,12 +143,12 @@ impl Polyline3Queue {
                 counter -= 1;
             }
 
-            Follower {
+            Some(Follower {
                 counter,
                 headcounter: self.frontcounter,
                 df: accdist - self.dh,
                 dh: dist,
-            }
+            })
         })
     }
 }
@@ -271,7 +273,7 @@ mod tests {
         let p = vec![v(3.0), v(1.0), v(0.0)];
         let queue = Polyline3Queue::new(p.clone().into_iter(), v(3.25), 10.0);
         let mut followers =
-            queue.mk_followers(vec![0.0, 0.125, 0.125, 1.0, 1.5, 3.0, 3.125].into_iter());
+            queue.mk_followers(vec![0.0, 0.125, 0.125, 1.0, 1.5, 3.0, 3.125, 100.0].into_iter());
         assert_eq!(
             followers.next().unwrap(),
             Follower {
@@ -335,5 +337,6 @@ mod tests {
                 dh: 3.125,
             }
         );
+        assert_eq!(followers.next(), None);
     }
 }
