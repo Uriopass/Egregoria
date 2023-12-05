@@ -191,17 +191,21 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
             });
 
             let mut fps_to_show = 0.0;
+            let mut ms_to_show = 0.0;
             ui.data_mut(|data| {
-                let (fps, instant) = data
+                let (fps, ms, instant) = data
                     .get_temp_mut_or_insert_with(ui.make_persistent_id("fps"), || {
-                        (0.0, Instant::now())
+                        (0.0, 0.0, Instant::now())
                     });
+                // only update the fps every 300ms to avoid flickering
                 if *fps == 0.0 || instant.elapsed() > Duration::from_millis(300) {
-                    *fps = 1.0 / uiworld.read::<Timings>().all.avg();
+                    *ms = uiworld.read::<Timings>().all.avg();
+                    *fps = 1.0 / *ms;
                     *instant = Instant::now();
                 }
 
                 fps_to_show = *fps;
+                ms_to_show = *ms;
             });
 
             ui.separator();
@@ -210,7 +214,10 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                 egui::Color32::BROWN,
                 "shouldn't be looking at FPS in debug mode! use --release",
             );
-            ui.label(format!("Graphics - {fps_to_show:.1}FPS"));
+            ui.label(format!(
+                "Graphics - {fps_to_show:.1}FPS - {:.1}ms",
+                1000.0 * ms_to_show
+            ));
 
             ui.checkbox(&mut settings.fullscreen, "Fullscreen");
             ui.checkbox(&mut settings.terrain_grid, "Terrain Grid");
