@@ -130,7 +130,9 @@ impl PartialOrd for Event {
 
 impl Ord for Event {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+        self.distance()
+            .partial_cmp(&other.distance())
+            .unwrap_or(Ordering::Equal)
     }
 }
 
