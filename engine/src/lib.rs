@@ -38,6 +38,7 @@ pub use u8slice::*;
 pub use uniform::*;
 pub use vertex_types::*;
 
-pub use winit::window::CursorGrabMode;
+pub use winit::event::ScanCode;
+pub use winit::window::{CursorGrabMode, Fullscreen};
 
 pub use wgpu;

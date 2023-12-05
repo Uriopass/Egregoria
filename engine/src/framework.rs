@@ -1,5 +1,6 @@
 use crate::egui::EguiWrapper;
 use crate::{AudioContext, FrameContext, GfxContext, InputContext};
+use std::mem::ManuallyDrop;
 use std::time::Instant;
 use winit::window::Window;
 use winit::{
@@ -22,8 +23,9 @@ pub trait State: 'static {
     fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {}
 
     /// Called when the window asks to exit (e.g ALT+F4) to be able to control the flow, for example to ask "save before exit?".
-    fn exit(&mut self, control_flow: &mut ControlFlow) {
-        *control_flow = ControlFlow::Exit;
+    /// Return true to exit, false to cancel.
+    fn exit(&mut self) -> bool {
+        true
     }
 
     /// Called every frame to prepare the gui rendering.
@@ -35,7 +37,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
     let mut state = S::new(&mut ctx);
     ctx.gfx.defines_changed = false;
 
-    let mut frame: Option<_> = None;
+    let mut frame: Option<ManuallyDrop<_>> = None;
     let mut new_size: Option<PhysicalSize<u32>> = None;
     let mut last_update = Instant::now();
 
@@ -59,7 +61,9 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                         frame.take();
                     }
                     WindowEvent::CloseRequested => {
-                        state.exit(control_flow);
+                        if state.exit() {
+                            *control_flow = ControlFlow::Exit;
+                        }
                     },
                     _ => (),
                 }
@@ -86,7 +90,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
 
                     match ctx.gfx.surface.get_current_texture() {
                         Ok(swapchainframe) => {
-                            frame = Some(swapchainframe);
+                            frame = Some(ManuallyDrop::new(swapchainframe));
                         }
                         Err(wgpu::SurfaceError::Outdated)
                         | Err(wgpu::SurfaceError::Lost)
@@ -100,6 +104,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                 }
                 Some(_) if new_size.is_some() => {}
                 Some(sco) => {
+                    let sco = ManuallyDrop::into_inner(sco);
                     profiling::finish_frame!();
                     profiling::scope!("frame");
                     let d = last_update.elapsed();

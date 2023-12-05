@@ -158,6 +158,8 @@ impl GfxContext {
         let instance = wgpu::Instance::new(InstanceDescriptor {
             backends,
             dx12_shader_compiler: Default::default(),
+            flags: wgpu::InstanceFlags::default(),
+            gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
         let surface = unsafe { instance.create_surface(window).unwrap() };
@@ -511,10 +513,12 @@ impl GfxContext {
                     view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.0),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     }),
                     stencil_ops: None,
                 }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             depth_prepass.set_bind_group(0, &self.projection.bindgroup, &[]);
@@ -553,10 +557,12 @@ impl GfxContext {
                         view: &sun_view,
                         depth_ops: Some(wgpu::Operations {
                             load: wgpu::LoadOp::Clear(1.0),
-                            store: true,
+                            store: wgpu::StoreOp::Store,
                         }),
                         stencil_ops: None,
                     }),
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
                 });
 
                 sun_shadow_pass.set_bind_group(0, &u.bindgroup, &[]);
@@ -588,10 +594,12 @@ impl GfxContext {
                             b: 0.0,
                             a: 0.0,
                         }),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             ssao_pass.set_pipeline(pipeline);
@@ -616,7 +624,7 @@ impl GfxContext {
                             b: 0.0,
                             a: 0.0,
                         }),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
@@ -624,6 +632,8 @@ impl GfxContext {
                     depth_ops: None,
                     stencil_ops: None,
                 }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
             render_pass.set_bind_group(0, &self.projection.bindgroup, &[]);
 
@@ -1053,17 +1063,19 @@ fn render_background(gfx: &GfxContext, encs: &mut Encoders, frame: &&TextureView
             resolve_target: Some(frame),
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Load,
-                store: true,
+                store: wgpu::StoreOp::Store,
             },
         })],
         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
             view: &gfx.fbos.depth.view,
             depth_ops: Some(wgpu::Operations {
                 load: wgpu::LoadOp::Load,
-                store: false,
+                store: wgpu::StoreOp::Discard,
             }),
             stencil_ops: None,
         }),
+        timestamp_writes: None,
+        occlusion_query_set: None,
     });
 
     bg_pass.set_pipeline(gfx.get_pipeline(BackgroundPipeline));

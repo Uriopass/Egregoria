@@ -166,6 +166,8 @@ impl PBR {
                     ops: Default::default(),
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
             pass.set_pipeline(pipe);
             pass.set_bind_group(0, &self.environment_uniform.bindgroup, &[]);
@@ -191,10 +193,12 @@ impl PBR {
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Load,
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
             pass.set_pipeline(pipe);
             pass.set_bind_group(0, &self.environment_bg, &[]);
@@ -225,10 +229,12 @@ impl PBR {
                         resolve_target: None,
                         ops: Operations {
                             load: LoadOp::Load,
-                            store: true,
+                            store: wgpu::StoreOp::Store,
                         },
                     })],
                     depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
                 });
                 pass.set_pipeline(pipe);
                 pass.set_bind_group(0, &self.environment_bg, &[]);
@@ -297,6 +303,8 @@ impl PBR {
                 ops: Default::default(),
             })],
             depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
         pass.set_pipeline(&cubemapline);
         pass.draw(0..4, 0..1);

@@ -1,10 +1,10 @@
 use common::{FastMap, FastSet};
+use engine::ScanCode;
 use engine::{InputContext, KeyCode, MouseButton};
 use geom::{Vec2, Vec3};
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
-use winit::event::ScanCode;
 
 // Either combinations can work
 #[derive(Serialize, Deserialize)]

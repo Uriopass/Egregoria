@@ -4,10 +4,10 @@ use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egui::{Align2, Context, Widget};
 use egui_extras::Column;
+use engine::Fullscreen;
 use engine::GfxContext;
 use simulation::Simulation;
 use std::time::{Duration, Instant};
-use winit::window::Fullscreen;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
 

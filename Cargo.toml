@@ -17,13 +17,13 @@ resolver = "2"
 default-members = ["native_app"]
 
 [workspace.dependencies]
-egui          = "0.23.0"
+egui          = "0.24.1"
 flat_spatial  = "0.6"
-egui_extras   = "0.23.0"
-egui-winit    = { version = "0.23.0", default-features = false }
-egui_plot     = "0.23.0"
-ordered-float = { version = "3.4.0", default-features = false }
-winit         = "0.28.6"
+egui_extras   = "0.24.1"
+egui-winit    = { version = "0.24.1", default-features = false }
+egui_plot     = "0.24.1"
+ordered-float = { version = "4.2.0", default-features = false }
+winit         = "0.28.7"
 oddio         = "0.6.2"
 derive_more   = "0.99.17"
 

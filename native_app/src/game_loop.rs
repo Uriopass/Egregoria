@@ -2,8 +2,6 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
-use winit::event_loop::ControlFlow;
-
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use engine::{Context, FrameContext, Tesselator};
@@ -241,10 +239,9 @@ impl engine::framework::State for State {
             .resize(ctx, size.0 as f32, size.1 as f32);
     }
 
-    fn exit(&mut self, control_flow: &mut ControlFlow) {
+    fn exit(&mut self) -> bool {
         if self.gui.last_save.elapsed() < Duration::from_secs(30) {
-            *control_flow = ControlFlow::Exit;
-            return;
+            return true;
         }
         let mut estate = self.uiw.write::<ExitState>();
         match *estate {
@@ -252,10 +249,11 @@ impl engine::framework::State for State {
                 *estate = ExitState::ExitAsk;
             }
             ExitState::ExitAsk => {
-                *control_flow = ControlFlow::Exit;
+                return true;
             }
             ExitState::Saving => {}
         }
+        false
     }
 
     fn render_gui(&mut self, ui: &egui::Context) {

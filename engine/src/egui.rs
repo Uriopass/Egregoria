@@ -21,7 +21,7 @@ impl EguiWrapper {
     pub fn new(gfx: &GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
         let egui = egui::Context::default();
 
-        let platform = egui_winit::State::new(el);
+        let platform = egui_winit::State::new(egui.viewport_id(), el, None, None);
 
         let renderer = renderer::Renderer::new(&gfx.device, gfx.fbos.format, None, 1);
 
@@ -54,12 +54,14 @@ impl EguiWrapper {
                 gfx.size.1 as f32 / self.pixels_per_point,
             ),
         ));
-        rinput.pixels_per_point = Some(self.pixels_per_point);
+        for v in rinput.viewports.values_mut() {
+            v.native_pixels_per_point = Some(self.pixels_per_point);
+        }
 
         let output = self.egui.run(rinput, |ctx| {
             ui_render(ctx);
         });
-        let clipped_primitives = self.egui.tessellate(output.shapes);
+        let clipped_primitives = self.egui.tessellate(output.shapes, self.pixels_per_point);
 
         //let mut rpass = gfx.rpass.take().unwrap();
         for (id, delta) in output.textures_delta.set {
@@ -82,16 +84,18 @@ impl EguiWrapper {
 
         //if !hidden {
         let mut render_pass = gfx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("egui_render"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: gfx.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment: None,
-            label: Some("egui_render"),
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
 
         self.renderer
@@ -117,6 +121,6 @@ impl EguiWrapper {
         {
             return;
         }
-        let _ = self.platform.on_event(&self.egui, e);
+        let _ = self.platform.on_window_event(&self.egui, e);
     }
 }
