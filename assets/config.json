@@ -1,4 +1,5 @@
 {
+  "disable_trees": true,
   "tree_col": {
     "r": 0.17265666,
     "g": 0.40392157,

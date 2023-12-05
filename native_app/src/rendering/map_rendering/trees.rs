@@ -5,6 +5,7 @@ use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
 use geom::{vec3, vec4, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
+use simulation::config;
 use simulation::map::{ChunkID, Map, MapSubscriber, UpdateType, CHUNK_SIZE};
 use std::ops::Mul;
 
@@ -60,6 +61,10 @@ impl TreesRender {
         ctx: &mut FrameContext<'_>,
     ) {
         self.build(map, ctx);
+
+        if config().disable_trees {
+            return;
+        }
 
         let camcenter = cam.pos.xy();
 

@@ -8,7 +8,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 #[derive(Default, Clone, Serialize, Deserialize, Inspect)]
+#[serde(default)]
 pub struct Config {
+    pub disable_trees: bool,
+
     pub tree_col: Color,
 
     pub grass_col: Color,
