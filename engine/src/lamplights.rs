@@ -42,7 +42,7 @@ pub struct LampLights {
 
 impl LampLights {
     pub const LIGHTCHUNK_SIZE: u32 = 32; // in meters, side length of a light chunk, can contain at most 4 lights
-    pub const MAP_SIZE: u32 = 50 * 1024; // in meters, side length of the map
+    pub const MAP_SIZE: u32 = 25 * 1024; // in meters, side length of the map
     pub const LIGHTMAP_SIZE: u32 = Self::MAP_SIZE / Self::LIGHTCHUNK_SIZE; // in light chunks
 
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
