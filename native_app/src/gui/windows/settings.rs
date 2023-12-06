@@ -384,7 +384,7 @@ pub fn manage_settings(ctx: &mut engine::Context, settings: &Settings) {
     ctx.gfx
         .set_define_flag("TERRAIN_GRID", settings.terrain_grid);
 
-    ctx.egui.pixels_per_point = settings.gui_scale;
+    ctx.egui.zoom_factor = settings.gui_scale;
 
     ctx.audio.set_settings(
         settings.master_volume_percent,

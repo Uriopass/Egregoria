@@ -85,7 +85,7 @@ impl engine::framework::State for State {
         fc.draw(self.gui.shown.clone());
     }
 
-    fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {
+    fn resized(&mut self, ctx: &mut Context, size: (u32, u32, f64)) {
         self.camera.resize(ctx, size.0 as f32, size.1 as f32);
     }
 

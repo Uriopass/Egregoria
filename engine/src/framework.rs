@@ -2,9 +2,9 @@ use crate::egui::EguiWrapper;
 use crate::{AudioContext, FrameContext, GfxContext, InputContext};
 use std::mem::ManuallyDrop;
 use std::time::Instant;
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use winit::{
-    dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
@@ -20,7 +20,7 @@ pub trait State: 'static {
     fn render(&mut self, fc: &mut FrameContext);
 
     /// Called when the window is resized.
-    fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {}
+    fn resized(&mut self, ctx: &mut Context, size: (u32, u32, f64)) {}
 
     /// Called when the window asks to exit (e.g ALT+F4) to be able to control the flow, for example to ask "save before exit?".
     /// Return true to exit, false to cancel.
@@ -38,7 +38,9 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
     ctx.gfx.defines_changed = false;
 
     let mut frame: Option<ManuallyDrop<_>> = None;
-    let mut new_size: Option<PhysicalSize<u32>> = None;
+    let mut scale_factor = ctx.window.scale_factor();
+    log::info!("initial scale factor: {:?}", scale_factor);
+    let mut new_size: Option<(PhysicalSize<u32>, f64)> = None;
     let mut last_update = Instant::now();
 
     el.run(move |event, _, control_flow| {
@@ -57,8 +59,17 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                 match event {
                     WindowEvent::Resized(physical_size) => {
                         log::info!("resized: {:?}", physical_size);
-                        new_size = Some(physical_size);
-                        frame.take();
+                        new_size = Some((physical_size, scale_factor));
+                        frame.take().map(|v| ManuallyDrop::into_inner(v));
+                    }
+                    WindowEvent::ScaleFactorChanged {
+                        scale_factor: sf,
+                        new_inner_size
+                    } => {
+                        log::info!("scale_factor: {:?}", scale_factor);
+                        scale_factor = sf;
+                        new_size = Some((*new_inner_size, scale_factor));
+                        frame.take().map(|v| ManuallyDrop::into_inner(v));
                     }
                     WindowEvent::CloseRequested => {
                         if state.exit() {
@@ -70,10 +81,10 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
             }
             Event::MainEventsCleared => match frame.take() {
                 None => {
-                    if let Some(new_size) = new_size.take() {
-                        if new_size.height != 0 ||new_size.width != 0 {
-                            ctx.gfx.resize(new_size.width, new_size.height);
-                            state.resized(&mut ctx, (new_size.width, new_size.height));
+                    if let Some((new_size, sf)) = new_size.take() {
+                        if new_size.height != 0 || new_size.width != 0 {
+                            ctx.gfx.resize(new_size.width, new_size.height, sf);
+                            state.resized(&mut ctx, (new_size.width, new_size.height, sf));
                             ctx.gfx.update_sc = false;
                         }
                     }
@@ -81,7 +92,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     let size = ctx.gfx.size;
                     if ctx.gfx.update_sc {
                         ctx.gfx.update_sc = false;
-                        ctx.gfx.resize(size.0, size.1);
+                        ctx.gfx.resize(size.0, size.1, size.2);
                         state.resized(
                             &mut ctx,
                             size,
@@ -95,7 +106,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                         Err(wgpu::SurfaceError::Outdated)
                         | Err(wgpu::SurfaceError::Lost)
                         | Err(wgpu::SurfaceError::Timeout) => {
-                            ctx.gfx.resize(size.0, size.1);
+                            ctx.gfx.resize(size.0, size.1, size.2);
                             state.resized(&mut ctx, size);
                             log::error!("swapchain has been lost or is outdated, recreating before retrying");
                         }
@@ -186,7 +197,7 @@ pub fn start<S: State>() {
             window = wb;
         }
         let window = window
-            .with_inner_size(winit::dpi::PhysicalSize::new(
+            .with_inner_size(PhysicalSize::new(
                 size.width as f32 * 0.8,
                 size.height as f32 * 0.8,
             ))
@@ -214,6 +225,7 @@ impl Context {
             &window,
             window.inner_size().width,
             window.inner_size().height,
+            window.scale_factor(),
         )
         .await;
         let input = InputContext::default();

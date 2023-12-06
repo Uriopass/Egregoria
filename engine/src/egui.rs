@@ -14,14 +14,15 @@ pub struct EguiWrapper {
     pub last_mouse_captured: bool,
     pub last_kb_captured: bool,
     pub to_remove: Vec<TextureId>,
-    pub pixels_per_point: f32,
+    pub zoom_factor: f32,
 }
 
 impl EguiWrapper {
     pub fn new(gfx: &GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
         let egui = egui::Context::default();
 
-        let platform = egui_winit::State::new(egui.viewport_id(), el, None, None);
+        let platform =
+            egui_winit::State::new(egui.viewport_id(), el, Some(gfx.size.2 as f32), None);
 
         let renderer = renderer::Renderer::new(&gfx.device, gfx.fbos.format, None, 1);
 
@@ -32,7 +33,7 @@ impl EguiWrapper {
             last_kb_captured: false,
             platform,
             to_remove: vec![],
-            pixels_per_point: 1.0,
+            zoom_factor: 1.0,
         }
     }
 
@@ -46,22 +47,15 @@ impl EguiWrapper {
             self.renderer.free_texture(&id);
         }
 
-        let mut rinput = self.platform.take_egui_input(window);
-        rinput.screen_rect = Some(egui::Rect::from_min_size(
-            Default::default(),
-            egui::vec2(
-                gfx.size.0 as f32 / self.pixels_per_point,
-                gfx.size.1 as f32 / self.pixels_per_point,
-            ),
-        ));
-        for v in rinput.viewports.values_mut() {
-            v.native_pixels_per_point = Some(self.pixels_per_point);
-        }
+        let rinput = self.platform.take_egui_input(window);
+        self.egui.set_zoom_factor(self.zoom_factor);
 
         let output = self.egui.run(rinput, |ctx| {
             ui_render(ctx);
         });
-        let clipped_primitives = self.egui.tessellate(output.shapes, self.pixels_per_point);
+        let clipped_primitives = self
+            .egui
+            .tessellate(output.shapes, self.egui.pixels_per_point());
 
         //let mut rpass = gfx.rpass.take().unwrap();
         for (id, delta) in output.textures_delta.set {
@@ -70,7 +64,7 @@ impl EguiWrapper {
         }
         let desc = ScreenDescriptor {
             size_in_pixels: [gfx.size.0, gfx.size.1],
-            pixels_per_point: self.pixels_per_point,
+            pixels_per_point: self.egui.pixels_per_point(),
         };
         self.renderer.update_buffers(
             gfx.device,

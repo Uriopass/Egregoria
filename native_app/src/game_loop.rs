@@ -37,7 +37,7 @@ pub struct State {
 
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
-        let camera = OrbitCamera::load(ctx.gfx.size);
+        let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
 
         Gui::set_style(&ctx.egui.egui);
         log::info!("loaded egui_render");
@@ -196,7 +196,7 @@ impl engine::framework::State for State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    fn resized(&mut self, ctx: &mut Context, size: (u32, u32)) {
+    fn resized(&mut self, ctx: &mut Context, size: (u32, u32, f64)) {
         self.uiw
             .write::<OrbitCamera>()
             .resize(ctx, size.0 as f32, size.1 as f32);

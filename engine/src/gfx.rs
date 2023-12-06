@@ -36,7 +36,7 @@ pub struct GfxContext {
     pub device: Device,
     pub queue: Queue,
     pub fbos: FBOs,
-    pub size: (u32, u32),
+    pub size: (u32, u32, f64),
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
 
@@ -127,7 +127,7 @@ u8slice_impl!(RenderParams);
 pub struct GuiRenderContext<'a, 'b> {
     pub encoder: &'a mut CommandEncoder,
     pub view: &'a TextureView,
-    pub size: (u32, u32),
+    pub size: (u32, u32, f64),
     pub device: &'a Device,
     pub queue: &'a Queue,
     pub rpass: Option<wgpu::RenderPass<'b>>,
@@ -149,6 +149,7 @@ impl GfxContext {
         window: &W,
         win_width: u32,
         win_height: u32,
+        win_scale_factor: f64,
     ) -> Self {
         let mut backends = backend_bits_from_env().unwrap_or_else(Backends::all);
         if std::env::var("RENDERDOC").is_ok() {
@@ -243,7 +244,7 @@ impl GfxContext {
             .build(&device, &queue);
 
         let mut me = Self {
-            size: (win_width, win_height),
+            size: (win_width, win_height, win_scale_factor),
             sc_desc,
             update_sc: false,
             adapter,
@@ -720,8 +721,8 @@ impl GfxContext {
         }
     }
 
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.size = (width, height);
+    pub fn resize(&mut self, width: u32, height: u32, scale_factor: f64) {
+        self.size = (width, height, scale_factor);
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 
