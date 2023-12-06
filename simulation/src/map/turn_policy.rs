@@ -22,7 +22,6 @@ pub struct TurnPolicy {
     pub left_turns: bool,
     pub crosswalks: bool,
     #[inspect(proxy_type = "OptionDefault")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub roundabout: Option<RoundaboutPolicy>,
 }
 
