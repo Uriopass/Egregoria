@@ -28,9 +28,7 @@ jobs:
         uses: hecrj/setup-rust-action@v1
         with:
           rust-version: 'stable'
-      - name: Build
-        run: cargo build --verbose -p native_app
-      - name: Build headless
-        run: cargo build --verbose -p headless
+      - name: Check
+        run: cargo check --verbose --workspace
       - name: Run tests
-        run: cargo test --all --verbose
+        run: cargo test --verbose --workspace
