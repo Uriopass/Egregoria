@@ -52,7 +52,7 @@ impl AudioContext {
         let config = cpal::StreamConfig {
             channels: 2,
             sample_rate,
-            buffer_size: cpal::BufferSize::Default,
+            buffer_size: cpal::BufferSize::Fixed(4096), // Using BufferSize::Default causes 100% cpu usage with ALSA on linux
         };
 
         let (scene_handle, scene) = oddio::split(Mixer::new());
