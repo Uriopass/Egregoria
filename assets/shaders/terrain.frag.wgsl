@@ -127,8 +127,7 @@ fn frag(@location(0) in_normal: vec3<f32>,
     #endif
 
     let grass = (textureNoTile(t_grass, s_grass, in_wpos.xy / 100.0).rgb * 0.3 - c) * 0.5;
-    c = mix(c + grass, c, smoothstep(0.0, 0.1, in_wpos.z));
-
+    c = c + grass;
     c = mix(params.sand_col.rgb, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
