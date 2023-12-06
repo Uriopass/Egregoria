@@ -31,22 +31,31 @@ derive_more   = "0.99.17"
 [profile.dev.build-override]
 opt-level = 1
 
-[profile.dev.package."*"]
+[profile.dev.package."*"] # Only affects dependencies, not workspace members
 opt-level = 2
 
 [profile.dev.package.common]
 opt-level = 2
 
-[profile.dev.package.simulation]
-opt-level = 1
+[profile.dev.package.geom]
+opt-level = 2
 
-[profile.dev.package.native_app]
+[profile.dev.package.engine]
 opt-level = 1
 
 [profile.dev.package.egui-inspect]
 opt-level = 1
 
 [profile.dev.package.egui-inspect-derive]
+opt-level = 1
+
+[profile.dev.package.networking]
+opt-level = 1
+
+[profile.dev.package.simulation]
+opt-level = 1
+
+[profile.dev.package.native_app]
 opt-level = 1
 
 [profile.release]
