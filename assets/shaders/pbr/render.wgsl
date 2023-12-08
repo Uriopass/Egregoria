@@ -71,7 +71,7 @@ fn calc_light(Lo: vec3<f32>,
               ) -> vec3<f32> {
     let H: vec3<f32> = normalize(L + V);
     let NdotL: f32 = max(dot(normal, L), 0.0);
-    let NdotV: f32 = max(dot(normal, V), 0.0);
+    let NdotV: f32 = max(dot(normal, V), 0.001);
 
     let NDF: f32 = DistributionGGX(dot(normal, H), roughness);
     let G: f32   = GeometrySmith(NdotV, NdotL, roughness);
