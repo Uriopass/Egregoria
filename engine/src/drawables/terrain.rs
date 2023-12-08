@@ -1,19 +1,19 @@
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
-    IndexType, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness, PipelineBuilder,
-    RenderParams, TerrainVertex, Texture, Uniform, TL,
+    IndexType, PipelineBuilder, RenderParams, TerrainVertex, Texture, Uniform, TL,
 };
-use geom::{
-    vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Polygon, Vec2, AABB3,
-};
-use std::ops::Sub;
+use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, Matrix4, Vec2, AABB3};
 use std::sync::Arc;
 use wgpu::{
-    BufferUsages, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d,
-    RenderPass, RenderPipeline, TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
+    BindGroupDescriptor, BindGroupLayoutDescriptor, BufferUsages, Extent3d, FilterMode,
+    ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d, RenderPass, RenderPipeline,
+    TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
 };
 
 const LOD: usize = 4;
+const LOD_MIN_DIST_LOG2: f32 = 11.0; // 2^10 = 1024, meaning until 2048m away, we use the highest lod
+const MAX_HEIGHT: f32 = 1024.0;
+const MAX_DIFF: f32 = 32.0;
 
 pub struct TerrainChunk {
     pub dirt_id: u32,
@@ -23,37 +23,28 @@ pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     terrain_tex: Arc<Texture>,
     #[allow(unused)]
     grass_tex: Arc<Texture>, // kept alive
-    borders: Arc<Vec<Mesh>>,
     vertices: [PBuffer; LOD],
     indices: [(PBuffer, u32); LOD],
     instances: [(PBuffer, u32); LOD],
-    bg: Arc<wgpu::BindGroup>,
-    border_col: LinearColor,
-    cell_size: f32,
+    bgs: [Arc<wgpu::BindGroup>; LOD],
     w: u32,
     h: u32,
 }
 
 pub struct TerrainPrepared {
-    terrainbg: Arc<wgpu::BindGroup>,
+    terrainbgs: [Arc<wgpu::BindGroup>; LOD],
     vertices: [PBuffer; LOD],
     indices: [(PBuffer, u32); LOD],
     instances: [(PBuffer, u32); LOD],
 }
 
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
-    pub fn new(
-        gfx: &mut GfxContext,
-        w: u32,
-        h: u32,
-        col: LinearColor,
-        grass: Arc<Texture>,
-    ) -> Self {
+    pub fn new(gfx: &mut GfxContext, w: u32, h: u32, grass: Arc<Texture>) -> Self {
         let (indices, vertices) = Self::generate_indices_mesh(gfx);
         let mut tex = Texture::create_fbo(
             &gfx.device,
-            (w * CRESOLUTION as u32 + 2, h * CRESOLUTION as u32 + 2),
-            TextureFormat::R32Float,
+            (w * CRESOLUTION as u32 + 1, h * CRESOLUTION as u32 + 1),
+            TextureFormat::Rg16Uint,
             TextureUsages::COPY_DST | TextureUsages::TEXTURE_BINDING,
             None,
         );
@@ -67,23 +58,48 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             ..Default::default()
         });
 
+        let mut bgs = vec![];
+        for lod in 0..LOD {
+            let uni = Uniform::new(
+                LevelData {
+                    lod: lod as u32,
+                    resolution: 1 + CRESOLUTION as u32 / (1 << lod as u32),
+                    distance_lod_cutoff: 2.0f32.powf(1.0 + LOD_MIN_DIST_LOG2 + lod as f32)
+                        - std::f32::consts::SQRT_2 * CSIZE as f32,
+                    cell_size: CSIZE as f32 / CRESOLUTION as f32,
+                    inv_cell_size: CRESOLUTION as f32 / CSIZE as f32,
+                },
+                &gfx.device,
+            );
+
+            let texs = &[&tex, &grass];
+            let mut bg_entries = Vec::with_capacity(3);
+            bg_entries.extend(Texture::multi_bindgroup_entries(0, texs));
+            bg_entries.push(uni.bindgroup_entry(4));
+            bgs.push(Arc::new(
+                gfx.device.create_bind_group(&BindGroupDescriptor {
+                    layout: &gfx
+                        .get_pipeline(TerrainPipeline {
+                            depth: false,
+                            smap: false,
+                        })
+                        .get_bind_group_layout(2),
+                    entries: &bg_entries,
+                    label: Some("terrain bindgroup"),
+                }),
+            ));
+        }
+
         defer!(log::info!("finished init of terrain render"));
         Self {
-            bg: Arc::new(Texture::multi_bindgroup(
-                &[&tex, &grass],
-                &gfx.device,
-                &Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat, TL::Float]),
-            )),
+            bgs: collect_arrlod(bgs),
             terrain_tex: Arc::new(tex),
             grass_tex: grass,
-            borders: Arc::new(vec![]),
             indices,
             vertices,
-            cell_size: CSIZE as f32 / CRESOLUTION as f32,
             w,
             h,
             instances: collect_arrlod((0..LOD).map(|_| (PBuffer::new(BufferUsages::VERTEX), 0))),
-            border_col: col,
         }
     }
 
@@ -92,35 +108,77 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         gfx: &mut GfxContext,
         cell: (u32, u32),
         chunk: &[[f32; CRESOLUTION]; CRESOLUTION],
+        get_up: impl Fn(usize) -> Option<f32>,
+        get_down: impl Fn(usize) -> Option<f32>,
+        get_right: impl Fn(usize) -> Option<f32>,
+        get_left: impl Fn(usize) -> Option<f32>,
     ) -> bool {
-        let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
+        fn pack(height: f32, diffx: f32, diffy: f32) -> [u8; 4] {
+            let a = ((height.clamp(-MAX_HEIGHT, MAX_HEIGHT) / MAX_HEIGHT * i16::MAX as f32
+                + 32768.0) as u16)
+                .to_le_bytes();
 
+            if height >= MAX_HEIGHT || height <= -MAX_HEIGHT {
+                return [a[0], a[1], 128, 128]; // normal is zero if we hit max height
+            }
+
+            let b = (diffx.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
+            let c = (diffy.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
+            [a[0], a[1], b, c]
+        }
+
+        // Need to add one more vertex on the edge of the map because when rendering a chunk
+        // we render "to the next chunk", which doesn't exist on the edge
         let extrax = cell.0 + 1 == self.w;
         let extray = cell.1 + 1 == self.h;
+        let mut contents =
+            Vec::with_capacity((CRESOLUTION + extrax as usize) * (CRESOLUTION + extray as usize));
 
-        let w = CRESOLUTION as u32 + 2 * extrax as u32;
-        let h = CRESOLUTION as u32 + 2 * extray as u32;
+        let mut holder_y_edge: [f32; CRESOLUTION] = [0.0; CRESOLUTION];
+        let mut j = 0;
+        let mut last_ys = &[(); CRESOLUTION].map(|_| {
+            let height_down = get_down(j).unwrap_or(chunk[0][j]);
+            j += 1;
+            height_down
+        });
+        for i in 0..CRESOLUTION {
+            let ys = &chunk[i];
+            let next_ys = chunk.get(i + 1).unwrap_or_else(|| {
+                for j in 0..CRESOLUTION {
+                    holder_y_edge[j] = get_up(j).unwrap_or(ys[j]);
+                }
+                &holder_y_edge
+            });
 
-        for y in chunk
-            .iter()
-            .chain(extray.then(|| &chunk[CRESOLUTION - 1]).into_iter())
-            .chain(extray.then(|| &chunk[CRESOLUTION - 1]).into_iter())
-        {
-            for x in y {
-                contents.extend(x.to_le_bytes());
+            let mut last_height = get_left(i).unwrap_or(ys[0]);
+            for j in 0..CRESOLUTION {
+                let height = ys[j];
+                let dh_x = last_height
+                    - ys.get(j + 1)
+                        .copied()
+                        .unwrap_or_else(|| get_right(i).unwrap_or(height));
+                let dh_y = last_ys[j] - next_ys[j];
+
+                contents.extend(pack(height, dh_x, dh_y));
+                last_height = height;
             }
             if extrax {
-                contents.extend(y[y.len() - 1].to_le_bytes());
-                contents.extend(y[y.len() - 1].to_le_bytes());
+                contents.extend(pack(ys[ys.len() - 1], 0.0, 0.0));
             }
 
-            if w * 4 < wgpu::COPY_BYTES_PER_ROW_ALIGNMENT {
-                contents.resize(
-                    contents.len() + wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize - w as usize * 4,
-                    0,
-                );
+            last_ys = ys;
+        }
+        if extray {
+            for i in 0..CRESOLUTION {
+                contents.extend(pack(chunk[CRESOLUTION - 1][i], 0.0, 0.0));
+            }
+            if extrax {
+                contents.extend(pack(chunk[CRESOLUTION - 1][CRESOLUTION - 1], 0.0, 0.0));
             }
         }
+
+        let w = CRESOLUTION as u32 + extrax as u32;
+        let h = CRESOLUTION as u32 + extray as u32;
 
         gfx.queue.write_texture(
             ImageCopyTexture {
@@ -136,7 +194,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             &contents,
             ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some((w * 4).max(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)),
+                bytes_per_row: Some(w * 4),
                 rows_per_image: Some(h),
             },
             Extent3d {
@@ -156,28 +214,28 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         fctx: &mut FrameContext<'_>,
     ) {
         profiling::scope!("terrain::draw_terrain");
-        for b in self.borders.iter() {
-            fctx.objs.push(Box::new(b.clone()));
-        }
-
         let eye = cam.eye();
 
         let mut instances = vec![Vec::<TerrainInstance>::new(); LOD];
         for y in 0..self.h {
             for x in 0..self.w {
-                let p = vec2(x as f32, y as f32) * CSIZE as f32;
+                let chunk_corner = vec2(x as f32, y as f32) * CSIZE as f32;
+                let chunk_center = chunk_corner + Vec2::splat(CSIZE as f32 * 0.5);
 
                 if !frustrum.intersects(&AABB3::centered(
-                    (p + Vec2::splat(CSIZE as f32 * 0.5)).z(0.0),
-                    vec3(CSIZE as f32, CSIZE as f32, 1000.0),
+                    chunk_center.z0(),
+                    vec3(CSIZE as f32, CSIZE as f32, 2000.0),
                 )) {
                     continue;
                 }
 
-                let lod = eye.distance(p.z0()).log2().sub(10.0).max(0.0) as usize;
+                let lod =
+                    (eye.distance(chunk_center.z0()).log2() - LOD_MIN_DIST_LOG2).max(0.0) as usize;
                 let lod = lod.min(LOD - 1);
 
-                instances[lod].push(TerrainInstance { offset: p })
+                instances[lod].push(TerrainInstance {
+                    offset: chunk_corner,
+                })
             }
         }
 
@@ -189,94 +247,11 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         }
 
         fctx.objs.push(Box::new(TerrainPrepared {
-            terrainbg: self.bg.clone(),
+            terrainbgs: self.bgs.clone(),
             vertices: self.vertices.clone(),
             indices: self.indices.clone(),
             instances: self.instances.clone(),
         }));
-    }
-
-    pub fn update_borders(
-        &mut self,
-        min: (u32, u32),
-        max: (u32, u32),
-        gfx: &mut GfxContext,
-        height: &dyn Fn(Vec2) -> Option<f32>,
-    ) {
-        let minx = min.0;
-        let maxx = min.1 + 1;
-        let miny = max.0;
-        let maxy = max.1 + 1;
-        let cell_size = self.cell_size;
-        let mut mk_bord = |start, end, c, is_x, rev| {
-            let c = c as f32 * CSIZE as f32;
-            let flip = move |v: Vec2| {
-                if is_x {
-                    v
-                } else {
-                    vec2(v.y, v.x)
-                }
-            };
-
-            let mut poly = Polygon(vec![]);
-            poly.0.push(vec2(start as f32 * CSIZE as f32, -3000.0));
-            for along in start * CRESOLUTION as u32..=end * CRESOLUTION as u32 {
-                let along = along as f32 * cell_size;
-                let p = flip(vec2(along, c));
-                let height = unwrap_cont!(height(p - (p - Vec2::splat(3.0)).sign() * 1.0));
-                poly.0.push(vec2(along, height + 1.5));
-            }
-            poly.0.push(vec2(end as f32 * CSIZE as f32, -3000.0));
-
-            poly.simplify();
-
-            let mut indices = vec![];
-            crate::earcut::earcut(&poly.0, &[], |mut a, b, mut c| {
-                if rev {
-                    std::mem::swap(&mut a, &mut c);
-                }
-                indices.push(a as IndexType);
-                indices.push(b as IndexType);
-                indices.push(c as IndexType);
-            });
-            let mat = gfx.register_material(Material::new(
-                gfx,
-                gfx.palette(),
-                MetallicRoughness {
-                    metallic: 0.0,
-                    roughness: 1.0,
-                    tex: None,
-                },
-                None,
-            ));
-            let mut mb = MeshBuilder::<false>::new(mat);
-            mb.indices = indices;
-            mb.vertices = poly
-                .0
-                .into_iter()
-                .map(|p| MeshVertex {
-                    position: if is_x {
-                        vec3(p.x, c, p.y)
-                    } else {
-                        vec3(c, p.x, p.y)
-                    }
-                    .into(),
-                    normal: if rev ^ !is_x { 1.0 } else { -1.0 }
-                        * vec3(!is_x as i32 as f32, is_x as i32 as f32, 0.0),
-                    uv: [0.0, 0.0],
-                    color: self.border_col.into(),
-                    tangent: [0.0; 4],
-                })
-                .collect();
-            mb.build(gfx)
-        };
-
-        let borders = Arc::get_mut(&mut self.borders).unwrap();
-        borders.clear();
-        borders.extend(mk_bord(minx, maxx, miny, true, false));
-        borders.extend(mk_bord(minx, maxx, maxy, true, true));
-        borders.extend(mk_bord(miny, maxy, minx, false, true));
-        borders.extend(mk_bord(miny, maxy, maxx, false, false));
     }
 
     fn generate_indices_mesh(gfx: &GfxContext) -> ([(PBuffer, u32); LOD], [PBuffer; LOD]) {
@@ -335,11 +310,21 @@ struct TerrainPipeline {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct TerrainInstance {
+pub(crate) struct TerrainInstance {
     pub offset: Vec2,
 }
-
 u8slice_impl!(TerrainInstance);
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub(crate) struct LevelData {
+    lod: u32,                 // 0 = highest resolution, 1 = half resolution, etc.
+    resolution: u32,          // width of the vertex grid
+    distance_lod_cutoff: f32, // max distance at which to switch to the next lod to have smooth transitions
+    cell_size: f32,
+    inv_cell_size: f32,
+}
+u8slice_impl!(LevelData);
 
 const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![1 => Float32x2];
 
@@ -356,14 +341,15 @@ impl TerrainInstance {
 impl TerrainPrepared {
     fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
         for lod in 0..LOD {
-            let (ind, n_indices) = &self.indices[lod];
-            let vertices = &self.vertices[lod];
             let (instances, n_instances) = &self.instances[lod];
-
             if *n_instances == 0 {
                 continue;
             }
 
+            let (ind, n_indices) = &self.indices[lod];
+            let vertices = &self.vertices[lod];
+
+            rp.set_bind_group(2, &self.terrainbgs[lod], &[]);
             rp.set_vertex_buffer(0, vertices.slice().unwrap());
             rp.set_vertex_buffer(1, instances.slice().unwrap());
             rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
@@ -378,8 +364,16 @@ impl PipelineBuilder for TerrainPipeline {
         gfx: &GfxContext,
         mut mk_module: impl FnMut(&str) -> CompiledModule,
     ) -> RenderPipeline {
-        let terrainlayout =
-            Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat, TL::Float]);
+        let terrainlayout = gfx
+            .device
+            .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                entries: &Texture::bindgroup_layout_entries(0, [TL::UInt, TL::Float].into_iter())
+                    .chain(std::iter::once(
+                        Uniform::<LevelData>::bindgroup_layout_entry(4),
+                    ))
+                    .collect::<Vec<_>>(),
+                label: Some("terrain bindgroup layout"),
+            });
         let vert = &mk_module("terrain.vert");
 
         if !self.depth {
@@ -423,7 +417,6 @@ impl Drawable for TerrainPrepared {
         rp.set_pipeline(pipeline);
 
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &self.terrainbg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
 
         self.set_buffers(rp);
@@ -443,7 +436,6 @@ impl Drawable for TerrainPrepared {
             smap: false,
         }));
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &self.terrainbg, &[]);
 
         self.set_buffers(rp);
     }

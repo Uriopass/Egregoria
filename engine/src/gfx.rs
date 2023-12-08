@@ -57,8 +57,8 @@ pub struct GfxContext {
     pub sun_shadowmap: Texture,
     pub pbr: PBR,
     pub lamplights: LampLights,
-    pub defines: FastMap<String, String>,
-    pub defines_changed: bool,
+    pub(crate) defines: FastMap<String, String>,
+    pub(crate) defines_changed: bool,
 
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,

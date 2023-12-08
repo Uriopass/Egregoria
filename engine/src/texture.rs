@@ -8,9 +8,10 @@ use std::io;
 use std::io::Read;
 use std::path::Path;
 use wgpu::{
-    BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerDescriptor, TextureFormat,
-    TextureSampleType, TextureUsages, TextureViewDescriptor, TextureViewDimension,
+    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor,
+    Device, Extent3d, ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor,
+    SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsages, TextureViewDescriptor,
+    TextureViewDimension,
 };
 
 pub struct Texture {
@@ -32,6 +33,7 @@ pub enum TL {
     NonfilterableFloatMultisampled,
     Cube,
     UInt,
+    SInt,
 }
 
 impl Texture {
@@ -122,57 +124,59 @@ impl Texture {
         self.texture.mip_level_count()
     }
 
-    pub fn bindgroup_layout(device: &Device, it: impl IntoIterator<Item = TL>) -> BindGroupLayout {
-        let entries: Vec<BindGroupLayoutEntry> = it
-            .into_iter()
-            .enumerate()
-            .flat_map(|(i, bgtype)| {
-                vec![
-                    BindGroupLayoutEntry {
-                        binding: (i * 2) as u32,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: matches!(
+    pub fn bindgroup_layout_entries(
+        binding_offset: u32,
+        it: impl Iterator<Item = TL>,
+    ) -> impl Iterator<Item = BindGroupLayoutEntry> {
+        it.enumerate().flat_map(move |(i, bgtype)| {
+            std::iter::once(BindGroupLayoutEntry {
+                binding: binding_offset + (i * 2) as u32,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: matches!(
+                        bgtype,
+                        TL::NonfilterableFloatMultisampled | TL::DepthMultisampled
+                    ),
+                    view_dimension: match bgtype {
+                        TL::Cube => TextureViewDimension::Cube,
+                        TL::DepthArray => TextureViewDimension::D2Array,
+                        _ => TextureViewDimension::D2,
+                    },
+                    sample_type: match bgtype {
+                        TL::Depth | TL::DepthMultisampled | TL::DepthArray => {
+                            TextureSampleType::Depth
+                        }
+                        TL::UInt => TextureSampleType::Uint,
+                        TL::SInt => TextureSampleType::Sint,
+                        _ => TextureSampleType::Float {
+                            filterable: !matches!(
                                 bgtype,
-                                TL::NonfilterableFloatMultisampled | TL::DepthMultisampled
+                                TL::NonfilterableFloat | TL::NonfilterableFloatMultisampled
                             ),
-                            view_dimension: match bgtype {
-                                TL::Cube => TextureViewDimension::Cube,
-                                TL::DepthArray => TextureViewDimension::D2Array,
-                                _ => TextureViewDimension::D2,
-                            },
-                            sample_type: match bgtype {
-                                TL::Depth | TL::DepthMultisampled | TL::DepthArray => {
-                                    TextureSampleType::Depth
-                                }
-                                TL::UInt => TextureSampleType::Uint,
-                                _ => TextureSampleType::Float {
-                                    filterable: !matches!(
-                                        bgtype,
-                                        TL::NonfilterableFloat | TL::NonfilterableFloatMultisampled
-                                    ),
-                                },
-                            },
                         },
-                        count: None,
                     },
-                    BindGroupLayoutEntry {
-                        binding: (i * 2 + 1) as u32,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(
-                            if matches!(bgtype, TL::Depth | TL::DepthMultisampled | TL::DepthArray)
-                            {
-                                wgpu::SamplerBindingType::Comparison
-                            } else {
-                                wgpu::SamplerBindingType::Filtering
-                            },
-                        ),
-                        count: None,
-                    },
-                ]
-                .into_iter()
+                },
+                count: None,
             })
-            .collect::<Vec<_>>();
+            .chain(std::iter::once(BindGroupLayoutEntry {
+                binding: binding_offset + (i * 2 + 1) as u32,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Sampler(
+                    if matches!(bgtype, TL::Depth | TL::DepthMultisampled | TL::DepthArray) {
+                        wgpu::SamplerBindingType::Comparison
+                    } else {
+                        wgpu::SamplerBindingType::Filtering
+                    },
+                ),
+                count: None,
+            }))
+            .into_iter()
+        })
+    }
+
+    pub fn bindgroup_layout(device: &Device, it: impl IntoIterator<Item = TL>) -> BindGroupLayout {
+        let entries: Vec<BindGroupLayoutEntry> =
+            Self::bindgroup_layout_entries(0, it.into_iter()).collect();
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &entries,
             label: Some("Texture bindgroup layout"),
@@ -196,27 +200,28 @@ impl Texture {
         })
     }
 
+    pub fn multi_bindgroup_entries<'a>(
+        binding_offset: u32,
+        texs: &'a [&Texture],
+    ) -> impl Iterator<Item = BindGroupEntry<'a>> {
+        texs.iter().enumerate().flat_map(move |(i, tex)| {
+            std::iter::once(BindGroupEntry {
+                binding: binding_offset + (i * 2) as u32,
+                resource: wgpu::BindingResource::TextureView(&tex.view),
+            })
+            .chain(std::iter::once(BindGroupEntry {
+                binding: binding_offset + (i * 2 + 1) as u32,
+                resource: wgpu::BindingResource::Sampler(&tex.sampler),
+            }))
+        })
+    }
+
     pub fn multi_bindgroup(
         texs: &[&Texture],
         device: &Device,
         layout: &BindGroupLayout,
     ) -> BindGroup {
-        let entries = texs
-            .iter()
-            .enumerate()
-            .flat_map(|(i, tex)| {
-                vec![
-                    wgpu::BindGroupEntry {
-                        binding: (i * 2) as u32,
-                        resource: wgpu::BindingResource::TextureView(&tex.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: (i * 2 + 1) as u32,
-                        resource: wgpu::BindingResource::Sampler(&tex.sampler),
-                    },
-                ]
-            })
-            .collect::<Vec<_>>();
+        let entries = Self::multi_bindgroup_entries(0, texs).collect::<Vec<_>>();
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             entries: &entries,

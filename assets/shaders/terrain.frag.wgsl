@@ -6,12 +6,18 @@ struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
 }
 
+struct LevelData {
+    lod: u32,
+    resolution: u32,
+}
+
 @group(1) @binding(0) var<uniform> params: RenderParams;
 
 @group(2) @binding(0) var t_terraindata: texture_2d<f32>;
 @group(2) @binding(1) var s_terraindata: sampler;
 @group(2) @binding(2) var t_grass: texture_2d<f32>;
 @group(2) @binding(3) var s_grass: sampler;
+@group(2) @binding(4) var<uniform> ldata: LevelData;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;
@@ -108,9 +114,13 @@ fn textureNoTile(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32
 }
 
 @fragment
-fn frag(@location(0) in_normal: vec3<f32>,
+fn frag(@builtin(position) position: vec4<f32>,
+        @location(0) in_normal: vec3<f32>,
         @location(1) in_wpos: vec3<f32>,
-        @builtin(position) position: vec4<f32>) -> FragmentOutput {
+#ifdef DEBUG
+        @location(2) debug: f32,
+#endif
+        ) -> FragmentOutput {
     var ssao = 1.0;
     #ifdef SSAO
     ssao = textureSample(t_ssao, s_ssao, position.xy / params.viewport).r;
@@ -139,6 +149,10 @@ fn frag(@location(0) in_normal: vec3<f32>,
     let roughness: f32 = 1.0;
     let normal: vec3<f32> = normalize(in_normal);
     let F_spec: vec3<f32> = F0; // simplified with constant folding: fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+
+    #ifdef DEBUG
+    c = 0.05 * vec3(0.0, 0.0, debug);
+    #endif
 
     let final_rgb: vec3<f32> = render(params.sun,
                                       V,

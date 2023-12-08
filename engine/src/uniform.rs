@@ -1,7 +1,7 @@
 use crate::ToU8Slice;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{BufferBinding, BufferBindingType, ShaderStages};
+use wgpu::{BindGroupEntry, BufferBinding, BufferBindingType, ShaderStages};
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -26,7 +26,7 @@ where
 
         let bindgroup = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layout,
-            entries: &[wgpu::BindGroupEntry {
+            entries: &[BindGroupEntry {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer(BufferBinding {
                     buffer: &buffer,
@@ -49,6 +49,17 @@ where
             value,
             changed: AtomicBool::from(true),
             layout,
+        }
+    }
+
+    pub(crate) fn bindgroup_entry(&self, binding: u32) -> BindGroupEntry {
+        BindGroupEntry {
+            binding,
+            resource: wgpu::BindingResource::Buffer(BufferBinding {
+                buffer: &self.buffer,
+                offset: 0,
+                size: None,
+            }),
         }
     }
 
@@ -77,18 +88,22 @@ where
 }
 
 impl<T> Uniform<T> {
-    pub fn bindgroup_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    pub(crate) fn bindgroup_layout_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty: BufferBindingType::Uniform,
+                has_dynamic_offset: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
+                min_binding_size: None,
+            },
+            count: None,
+        }
+    }
+
+    pub(crate) fn bindgroup_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
+            entries: &[Self::bindgroup_layout_entry(0)],
             label: Some(format!("bglayout for {}", std::any::type_name::<T>()).as_ref()),
         })
     }

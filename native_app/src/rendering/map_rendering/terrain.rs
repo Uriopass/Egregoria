@@ -19,8 +19,7 @@ impl TerrainRender {
 
         let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
 
-        let terrain =
-            EngineTerrainRender::new(gfx, w, h, simulation::config().border_col.into(), grass);
+        let terrain = EngineTerrainRender::new(gfx, w, h, grass);
 
         /*
         let ter = &sim.map().terrain;
@@ -46,10 +45,17 @@ impl TerrainRender {
         while let Some(cell) = self.terrain_sub.take_one_updated_chunk() {
             let chunk = unwrap_retlog!(ter.chunks.get(&cell), "trying to update nonexistent chunk");
 
-            if self
-                .terrain
-                .update_chunk(&mut ctx.gfx, cell, &chunk.heights)
-            {
+            if self.terrain.update_chunk(
+                &mut ctx.gfx,
+                cell,
+                &chunk.heights,
+                &|i: usize| None,
+                &|i: usize| None,
+                &|i: usize| None,
+                &|i: usize| {
+                    None // TODO
+                },
+            ) {
                 update_count += 1;
                 #[cfg(not(debug_assertions))]
                 const UPD_PER_FRAME: usize = 20;

@@ -48,6 +48,12 @@ impl ToU8Slice for f32 {
     }
 }
 
+impl ToU8Slice for u32 {
+    fn cast_slice(self_slice: &[u32]) -> &[u8] {
+        bytemuck::cast_slice(self_slice)
+    }
+}
+
 impl ToU8Slice for [f32; 4] {
     fn cast_slice(self_slice: &[[f32; 4]]) -> &[u8] {
         bytemuck::cast_slice(self_slice)
