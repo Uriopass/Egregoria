@@ -6,12 +6,12 @@ pub const SECONDS_PER_REALTIME_SECOND: u32 = 15;
 pub const SECONDS_PER_HOUR: i32 = 3600;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
-pub const TICKS_PER_SECOND: u32 = 50;
+pub const TICKS_PER_SECOND: u64 = 50;
 
 /// The amount of time the game was updated
 /// Used as a resource
 #[derive(Debug, Default, PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
-pub struct Tick(pub u32);
+pub struct Tick(pub u64);
 
 /// An in-game instant used to measure time differences
 #[derive(Inspect, PartialEq, PartialOrd, Debug, Copy, Clone, Serialize, Deserialize)]

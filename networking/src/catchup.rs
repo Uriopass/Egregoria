@@ -35,7 +35,7 @@ impl CatchUp {
 
     pub fn add_merged_inputs(&mut self, frame: Frame, inp: MergedInputs) {
         for v in self.frame_history.values_mut() {
-            if frame.0 != v.from.0 + 1 + v.inputs.len() as u32 {
+            if frame.0 != v.from.0 + 1 + v.inputs.len() as u64 {
                 log::error!("wrong input for catch up !!!")
             }
             v.inputs.push(inp.clone())
@@ -65,7 +65,7 @@ impl CatchUp {
         let inputs = Vec::from(&state.inputs[state.sent..]);
         state.sent += inputs.len();
 
-        c.ack = state.from + Frame(state.sent as u32);
+        c.ack = state.from + Frame(state.sent as u64);
 
         if diff <= 30 {
             log::info!("{}: sending final catch up", c.name);

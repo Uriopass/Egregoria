@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 pub const HISTORY_SIZE: usize = 128;
 /// Tick to wait before the new bin
 /// Which can be recovred from FREQ * HISTORY_SIZZ / TICK_RATE
-pub const LEVEL_FREQS: [u32; 4] = [250, 1500, 15000, 75000];
+pub const LEVEL_FREQS: [u64; 4] = [250, 1500, 15000, 75000];
 pub const LEVEL_NAMES: [&str; 4] = ["10m", "1h", "10h", "50h"];
 
 /// One history of one item at one frequency level
@@ -86,7 +86,7 @@ impl ItemHistories {
         }
     }
 
-    pub fn advance(&mut self, tick: u32) {
+    pub fn advance(&mut self, tick: u64) {
         for (c_i, (c, freq)) in self.cursors.iter_mut().zip(&LEVEL_FREQS).enumerate() {
             if tick % *freq == 0 {
                 *c = (*c + 1) % HISTORY_SIZE;
@@ -108,7 +108,7 @@ impl EcoStats {
         }
     }
 
-    pub fn advance(&mut self, tick: u32, trades: &[Trade]) {
+    pub fn advance(&mut self, tick: u64, trades: &[Trade]) {
         self.exports.advance(tick);
         self.imports.advance(tick);
         self.internal_trade.advance(tick);

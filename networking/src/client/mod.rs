@@ -69,7 +69,7 @@ pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned +
     state: ClientState<WORLD, INPUT>,
 
     pub step: Timestep,
-    lag_compensate: u32,
+    lag_compensate: u64,
 
     _phantom: PhantomSendSync<(INPUT, WORLD)>,
 }
@@ -78,7 +78,7 @@ pub struct ConnectConf {
     pub name: String,
     pub addr: IpAddr,
     pub port: Option<u16>,
-    pub frame_buffer_advance: u32,
+    pub frame_buffer_advance: u64,
     pub version: String,
 }
 
@@ -323,7 +323,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 {
                     assert_eq!(
                         final_consumed_frame,
-                        Frame(consumed_frame.0 + final_inputs.len() as u32)
+                        Frame(consumed_frame.0 + final_inputs.len() as u64)
                     );
                     self.state = ClientState::Playing {
                         id,

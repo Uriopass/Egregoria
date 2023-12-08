@@ -1,7 +1,7 @@
 use crate::DemoElement;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext};
-use geom::{vec2, Camera, InfiniteFrustrum, LinearColor};
+use geom::{vec2, Camera, InfiniteFrustrum};
 
 const CSIZE: usize = 256;
 const CRESO: usize = 32;

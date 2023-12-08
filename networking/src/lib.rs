@@ -28,7 +28,7 @@ pub(crate) const DEFAULT_PORT: u16 = 23019;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash, Debug, Serialize, Deserialize)]
 #[repr(transparent)]
-pub struct Frame(pub u32);
+pub struct Frame(pub u64);
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash, Serialize, Deserialize)]
 #[repr(transparent)]

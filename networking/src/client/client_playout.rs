@@ -40,20 +40,20 @@ impl ClientPlayoutBuffer {
         if frame <= self.consumed_frame {
             return InsertResult::Ok; // already consumed, safely ignore
         }
-        if frame.0 > self.consumed_frame.0 + self.future.len() {
+        if frame.0 > self.consumed_frame.0 + self.future.len() as u64 {
             return InsertResult::TooFarAhead;
         }
         *self.future.get_mut(frame) = Some(input);
         InsertResult::Ok
     }
 
-    pub fn advance(&self) -> u32 {
+    pub fn advance(&self) -> u64 {
         let mut advance = 0;
         while self
             .future
             .get(Frame(self.consumed_frame.0 + 1 + advance))
             .is_some()
-            && advance < self.future.len()
+            && advance < self.future.len() as u64
         {
             advance += 1;
         }

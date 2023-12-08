@@ -264,7 +264,7 @@ impl Simulation {
         t.elapsed()
     }
 
-    pub fn get_tick(&self) -> u32 {
+    pub fn get_tick(&self) -> u64 {
         self.resources.read::<Tick>().0
     }
 

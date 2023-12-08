@@ -21,8 +21,8 @@ impl<T: Default> Ring<T> {
         &mut self.ring[f.0 as usize % self.ring.len()]
     }
 
-    pub fn len(&self) -> u32 {
-        self.ring.len() as u32
+    pub fn len(&self) -> usize {
+        self.ring.len()
     }
 
     #[allow(dead_code)]

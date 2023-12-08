@@ -32,7 +32,7 @@ impl ServerPlayoutBuffer {
     }
 
     pub fn insert_input(&mut self, auth: AuthentID, frame: Frame, input: PlayerInput) {
-        if frame.0 + self.past.len() <= self.consumed_frame.0 {
+        if frame.0 + self.past.len() as u64 <= self.consumed_frame.0 {
             log::info!("input was far too late");
             return;
         }
@@ -48,9 +48,9 @@ impl ServerPlayoutBuffer {
         }
     }
 
-    pub fn lag(&self, f: Frame) -> Option<u32> {
+    pub fn lag(&self, f: Frame) -> Option<u64> {
         let lag = self.consumed_frame.0 - f.0;
-        if lag < self.past.len() - 1 {
+        if lag < self.past.len() as u64 - 1 {
             Some(lag)
         } else {
             None
