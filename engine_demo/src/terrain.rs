@@ -3,9 +3,9 @@ use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext};
 use geom::{vec2, Camera, InfiniteFrustrum};
 
-const CSIZE: usize = 256;
+const CSIZE: usize = 512;
 const CRESO: usize = 32;
-const MAP_SIZE: usize = 25;
+const MAP_SIZE: usize = 75;
 
 pub struct Terrain {
     terrain: EngineTerrainRender<CSIZE, CRESO>,
@@ -20,8 +20,6 @@ impl DemoElement for Terrain {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        gfx.set_define_flag("DEBUG", true);
-
         let mut heights: Box<[[[[f32; CRESO]; CRESO]; MAP_SIZE]; MAP_SIZE]> =
             vec![[[[0.0; CRESO]; CRESO]; MAP_SIZE]; MAP_SIZE]
                 .into_boxed_slice()
@@ -35,7 +33,7 @@ impl DemoElement for Terrain {
                         heights[y][x][i][j] = 600.0
                             * (0.5
                                 + geom::fnoise(
-                                    0.01 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
+                                    0.005 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
                                 )
                                 .0);
                     }

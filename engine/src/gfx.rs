@@ -6,7 +6,7 @@ use crate::{
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -22,6 +22,7 @@ use wgpu::{
     TextureFormat, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
     VertexBufferLayout, VertexState,
 };
+use winit::window::{Fullscreen, Window};
 
 pub struct FBOs {
     pub(crate) depth: Texture,
@@ -32,6 +33,7 @@ pub struct FBOs {
 }
 
 pub struct GfxContext {
+    pub window: Window,
     pub surface: Surface,
     pub device: Device,
     pub queue: Queue,
@@ -39,6 +41,7 @@ pub struct GfxContext {
     pub size: (u32, u32, f64),
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
+    settings: GfxSettings,
 
     pub(crate) materials: MaterialMap,
     pub(crate) default_material: Material,
@@ -65,6 +68,75 @@ pub struct GfxContext {
     pub sky_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
+}
+
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
+pub enum ShadowQuality {
+    NoShadows,
+    Low,
+    Medium,
+    High,
+    TooHigh,
+}
+
+impl AsRef<str> for ShadowQuality {
+    fn as_ref(&self) -> &str {
+        match self {
+            ShadowQuality::NoShadows => "No Shadows",
+            ShadowQuality::Low => "Low",
+            ShadowQuality::Medium => "Medium",
+            ShadowQuality::High => "High",
+            ShadowQuality::TooHigh => "Too High",
+        }
+    }
+}
+
+impl From<u8> for ShadowQuality {
+    fn from(v: u8) -> Self {
+        match v {
+            0 => ShadowQuality::NoShadows,
+            1 => ShadowQuality::Low,
+            2 => ShadowQuality::Medium,
+            3 => ShadowQuality::High,
+            4 => ShadowQuality::TooHigh,
+            _ => ShadowQuality::High,
+        }
+    }
+}
+
+impl ShadowQuality {
+    pub fn size(&self) -> Option<u32> {
+        match self {
+            ShadowQuality::Low => Some(512),
+            ShadowQuality::Medium => Some(1024),
+            ShadowQuality::High => Some(2048),
+            ShadowQuality::TooHigh => Some(4096),
+            ShadowQuality::NoShadows => None,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct GfxSettings {
+    pub vsync: bool,
+    pub fullscreen: bool,
+    pub shadows: ShadowQuality,
+    pub fog: bool,
+    pub ssao: bool,
+    pub terrain_grid: bool,
+}
+
+impl Default for GfxSettings {
+    fn default() -> Self {
+        Self {
+            vsync: true,
+            fullscreen: false,
+            shadows: ShadowQuality::High,
+            fog: true,
+            ssao: true,
+            terrain_grid: true,
+        }
+    }
 }
 
 pub struct Encoders {
@@ -125,6 +197,7 @@ impl Default for RenderParams {
 u8slice_impl!(RenderParams);
 
 pub struct GuiRenderContext<'a, 'b> {
+    pub window: &'a Window,
     pub encoder: &'a mut CommandEncoder,
     pub view: &'a TextureView,
     pub size: (u32, u32, f64),
@@ -145,12 +218,7 @@ impl<'a> FrameContext<'a> {
 }
 
 impl GfxContext {
-    pub async fn new<W: HasRawWindowHandle + HasRawDisplayHandle>(
-        window: &W,
-        win_width: u32,
-        win_height: u32,
-        win_scale_factor: f64,
-    ) -> Self {
+    pub async fn new(window: Window) -> Self {
         let mut backends = backend_bits_from_env().unwrap_or_else(Backends::all);
         if std::env::var("RENDERDOC").is_ok() {
             backends = Backends::VULKAN;
@@ -163,7 +231,7 @@ impl GfxContext {
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
-        let surface = unsafe { instance.create_surface(window).unwrap() };
+        let surface = unsafe { instance.create_surface(&window).unwrap() };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -194,6 +262,10 @@ impl GfxContext {
             .iter()
             .find(|x| x.is_srgb())
             .unwrap_or_else(|| &capabilities.formats[0]);
+
+        let win_width = window.inner_size().width;
+        let win_height = window.inner_size().height;
+        let win_scale_factor = window.scale_factor();
 
         let sc_desc = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
@@ -244,6 +316,7 @@ impl GfxContext {
             .build(&device, &queue);
 
         let mut me = Self {
+            window,
             size: (win_width, win_height, win_scale_factor),
             sc_desc,
             update_sc: false,
@@ -273,6 +346,7 @@ impl GfxContext {
             pbr,
             defines: Default::default(),
             defines_changed: false,
+            settings: GfxSettings::default(),
         };
 
         me.update_simplelit_bg();
@@ -404,8 +478,20 @@ impl GfxContext {
             .expect("palette not loaded")
     }
 
-    pub fn set_vsync(&mut self, vsync: bool) {
-        let present_mode = if vsync {
+    pub fn update_settings(&mut self, settings: GfxSettings) {
+        if self.settings == settings {
+            return;
+        }
+
+        if settings.fullscreen != self.settings.fullscreen {
+            self.window.set_fullscreen(
+                settings
+                    .fullscreen
+                    .then(|| Fullscreen::Borderless(self.window.current_monitor())),
+            )
+        }
+
+        let present_mode = if settings.vsync {
             wgpu::PresentMode::AutoVsync
         } else {
             wgpu::PresentMode::AutoNoVsync
@@ -414,6 +500,22 @@ impl GfxContext {
             self.sc_desc.present_mode = present_mode;
             self.update_sc = true;
         }
+
+        let params = self.render_params.value_mut();
+        params.shadow_mapping_resolution = settings.shadows.size().unwrap_or(0) as i32;
+
+        if let Some(v) = settings.shadows.size() {
+            if self.sun_shadowmap.extent.width != v {
+                self.sun_shadowmap = GfxContext::mk_shadowmap(&self.device, v);
+                self.update_simplelit_bg();
+            }
+        }
+
+        self.set_define_flag("FOG", settings.fog);
+        self.set_define_flag("SSAO", settings.ssao);
+        self.set_define_flag("TERRAIN_GRID", settings.terrain_grid);
+
+        self.settings = settings;
     }
 
     pub fn set_time(&mut self, time: f32) {
@@ -654,6 +756,7 @@ impl GfxContext {
     ) {
         profiling::scope!("gfx::render_gui");
         render_gui(GuiRenderContext {
+            window: &self.window,
             encoder: &mut encoders.end,
             view: frame,
             size: self.size,

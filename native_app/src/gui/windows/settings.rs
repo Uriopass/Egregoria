@@ -4,58 +4,12 @@ use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egui::{Align2, Context, Widget};
 use egui_extras::Column;
-use engine::Fullscreen;
-use engine::GfxContext;
+use engine::GfxSettings;
+use engine::ShadowQuality;
 use simulation::Simulation;
 use std::time::{Duration, Instant};
 
 const SETTINGS_SAVE_NAME: &str = "settings";
-
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
-pub enum ShadowQuality {
-    NoShadows,
-    Low,
-    Medium,
-    High,
-    TooHigh,
-}
-
-impl AsRef<str> for ShadowQuality {
-    fn as_ref(&self) -> &str {
-        match self {
-            ShadowQuality::NoShadows => "No Shadows",
-            ShadowQuality::Low => "Low",
-            ShadowQuality::Medium => "Medium",
-            ShadowQuality::High => "High",
-            ShadowQuality::TooHigh => "Too High",
-        }
-    }
-}
-
-impl From<u8> for ShadowQuality {
-    fn from(v: u8) -> Self {
-        match v {
-            0 => ShadowQuality::NoShadows,
-            1 => ShadowQuality::Low,
-            2 => ShadowQuality::Medium,
-            3 => ShadowQuality::High,
-            4 => ShadowQuality::TooHigh,
-            _ => ShadowQuality::High,
-        }
-    }
-}
-
-impl ShadowQuality {
-    pub fn size(&self) -> Option<u32> {
-        match self {
-            ShadowQuality::Low => Some(512),
-            ShadowQuality::Medium => Some(1024),
-            ShadowQuality::High => Some(2048),
-            ShadowQuality::TooHigh => Some(4096),
-            ShadowQuality::NoShadows => None,
-        }
-    }
-}
 
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
@@ -65,12 +19,7 @@ pub struct Settings {
     pub camera_smooth_tightness: f32,
     pub camera_fov: f32,
 
-    pub fullscreen: bool,
-    pub vsync: bool,
-    pub ssao: bool,
-    pub shadows: ShadowQuality,
-    pub terrain_grid: bool,
-    pub fog: bool,
+    pub gfx: GfxSettings,
 
     pub gui_scale: f32,
 
@@ -93,17 +42,12 @@ impl Default for Settings {
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
-            fullscreen: false,
-            vsync: true,
             time_warp: 1,
             auto_save_every: AutoSaveEvery::FiveMinutes,
-            ssao: true,
-            shadows: ShadowQuality::High,
             camera_smooth_tightness: 1.0,
             camera_fov: 60.0,
-            terrain_grid: true,
-            fog: true,
             gui_scale: 1.0,
+            gfx: GfxSettings::default(),
         }
     }
 }
@@ -219,19 +163,19 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                 1000.0 * ms_to_show
             ));
 
-            ui.checkbox(&mut settings.fullscreen, "Fullscreen");
-            ui.checkbox(&mut settings.terrain_grid, "Terrain Grid");
-            ui.checkbox(&mut settings.fog, "Fog");
-            ui.checkbox(&mut settings.ssao, "Ambient Occlusion (SSAO)");
+            ui.checkbox(&mut settings.gfx.fullscreen, "Fullscreen");
+            ui.checkbox(&mut settings.gfx.terrain_grid, "Terrain Grid");
+            ui.checkbox(&mut settings.gfx.fog, "Fog");
+            ui.checkbox(&mut settings.gfx.ssao, "Ambient Occlusion (SSAO)");
 
             // shadow quality combobox
-            let mut id = settings.shadows as u8 as usize;
+            let mut id = settings.gfx.shadows as u8 as usize;
             egui::ComboBox::from_label("Shadow Quality").show_index(ui, &mut id, 5, |i| {
                 ShadowQuality::from(i as u8).as_ref().to_string()
             });
-            settings.shadows = ShadowQuality::from(id as u8);
+            settings.gfx.shadows = ShadowQuality::from(id as u8);
 
-            ui.checkbox(&mut settings.vsync, "VSync");
+            ui.checkbox(&mut settings.gfx.vsync, "VSync");
 
             ui.separator();
             ui.label("GUI");
@@ -360,29 +304,7 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
 }
 
 pub fn manage_settings(ctx: &mut engine::Context, settings: &Settings) {
-    if settings.fullscreen && ctx.window.fullscreen().is_none() {
-        ctx.window
-            .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))
-    }
-    if !settings.fullscreen && ctx.window.fullscreen().is_some() {
-        ctx.window.set_fullscreen(None);
-    }
-
-    ctx.gfx.set_vsync(settings.vsync);
-    let params = ctx.gfx.render_params.value_mut();
-    params.shadow_mapping_resolution = settings.shadows.size().unwrap_or(0) as i32;
-
-    if let Some(v) = settings.shadows.size() {
-        if ctx.gfx.sun_shadowmap.extent.width != v {
-            ctx.gfx.sun_shadowmap = GfxContext::mk_shadowmap(&ctx.gfx.device, v);
-            ctx.gfx.update_simplelit_bg();
-        }
-    }
-
-    ctx.gfx.set_define_flag("FOG", settings.fog);
-    ctx.gfx.set_define_flag("SSAO", settings.ssao);
-    ctx.gfx
-        .set_define_flag("TERRAIN_GRID", settings.terrain_grid);
+    ctx.gfx.update_settings(settings.gfx);
 
     ctx.egui.zoom_factor = settings.gui_scale;
 

@@ -39,6 +39,6 @@ pub use uniform::*;
 pub use vertex_types::*;
 
 pub use winit::event::ScanCode;
-pub use winit::window::{CursorGrabMode, Fullscreen};
+pub use winit::window::CursorGrabMode;
 
 pub use wgpu;

@@ -44,7 +44,6 @@ impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        gfx.set_vsync(false);
         gfx.render_params.value_mut().shadow_mapping_resolution = 2048;
         gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
         gfx.update_simplelit_bg();
@@ -92,20 +91,23 @@ impl engine::framework::State for State {
         self.ms_hist.add_value(ctx.delta);
 
         if ctx.input.mouse.pressed.contains(&MouseButton::Left) {
-            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::Confined);
-            ctx.window.set_cursor_visible(false);
+            let _ = ctx
+                .gfx
+                .window
+                .set_cursor_grab(engine::CursorGrabMode::Confined);
+            ctx.gfx.window.set_cursor_visible(false);
             self.is_captured = true;
         }
 
         if ctx.input.cursor_left {
-            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::None);
-            ctx.window.set_cursor_visible(true);
+            let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
+            ctx.gfx.window.set_cursor_visible(true);
             self.is_captured = false;
         }
 
         if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
-            let _ = ctx.window.set_cursor_grab(engine::CursorGrabMode::None);
-            ctx.window.set_cursor_visible(true);
+            let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
+            ctx.gfx.window.set_cursor_visible(true);
             self.is_captured = false;
         }
 

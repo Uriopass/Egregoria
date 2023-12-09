@@ -873,7 +873,6 @@ dependencies = [
  "oddio",
  "ordered-float",
  "profiling",
- "raw-window-handle",
  "rayon",
  "serde",
  "slotmapd",

@@ -38,7 +38,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
     ctx.gfx.defines_changed = false;
 
     let mut frame: Option<ManuallyDrop<_>> = None;
-    let mut scale_factor = ctx.window.scale_factor();
+    let mut scale_factor = ctx.gfx.window.scale_factor();
     log::info!("initial scale factor: {:?}", scale_factor);
     let mut new_size: Option<(PhysicalSize<u32>, f64)> = None;
     let mut last_update = Instant::now();
@@ -126,10 +126,9 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     let (mut enc, view) = ctx.gfx.start_frame(&sco);
                     ctx.gfx.render_objs(&mut enc, &view, |fc| state.render(fc));
 
-                    let window = &ctx.window;
                         ctx.gfx
                         .render_gui(&mut enc, &view, |gctx| {
-                            ctx.egui.render(gctx, window, |ui| {
+                            ctx.egui.render(gctx, |ui| {
                                 state.render_gui(ui);
                             });
                         });
@@ -214,20 +213,13 @@ pub struct Context {
     pub gfx: GfxContext,
     pub input: InputContext,
     pub audio: AudioContext,
-    pub window: Window,
     pub delta: f32,
     pub egui: EguiWrapper,
 }
 
 impl Context {
     pub async fn new(window: Window, el: &EventLoop<()>) -> Self {
-        let gfx = GfxContext::new(
-            &window,
-            window.inner_size().width,
-            window.inner_size().height,
-            window.scale_factor(),
-        )
-        .await;
+        let gfx = GfxContext::new(window).await;
         let input = InputContext::default();
         let audio = AudioContext::new();
         let egui = EguiWrapper::new(&gfx, el);
@@ -236,7 +228,6 @@ impl Context {
             gfx,
             input,
             audio,
-            window,
             delta: 0.0,
             egui,
         }

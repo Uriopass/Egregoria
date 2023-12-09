@@ -3,7 +3,6 @@ use egui::TextureId;
 use egui_wgpu::renderer;
 use egui_wgpu::renderer::ScreenDescriptor;
 use winit::event_loop::EventLoopWindowTarget;
-use winit::window::Window;
 
 /// EguiWrapper is a wrapper around egui and egui_wgpu
 /// It handles the rendering of the UI
@@ -40,14 +39,13 @@ impl EguiWrapper {
     pub fn render(
         &mut self,
         gfx: GuiRenderContext<'_, '_>,
-        window: &Window,
         ui_render: impl for<'ui> FnOnce(&'ui egui::Context),
     ) {
         for id in self.to_remove.drain(..) {
             self.renderer.free_texture(&id);
         }
 
-        let rinput = self.platform.take_egui_input(window);
+        let rinput = self.platform.take_egui_input(gfx.window);
         self.egui.set_zoom_factor(self.zoom_factor);
 
         let output = self.egui.run(rinput, |ctx| {
@@ -97,7 +95,7 @@ impl EguiWrapper {
         //}
 
         self.platform
-            .handle_platform_output(window, &self.egui, output.platform_output);
+            .handle_platform_output(gfx.window, &self.egui, output.platform_output);
 
         self.last_mouse_captured = self.egui.wants_pointer_input();
         self.last_kb_captured = self.egui.wants_keyboard_input();
