@@ -5,7 +5,6 @@ use common::saveload::Encoder;
 use engine::{Context, Tesselator};
 use geom::{vec4, Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use simulation::map::pathfinding_crate::num_traits::Pow;
-use simulation::map::CHUNK_SIZE;
 
 /// CameraHandler3D is the camera handler for the 3D view
 /// It controls the camera using an orbit view
@@ -120,6 +119,7 @@ impl OrbitCamera {
         delta: f32,
         inps: &InputMap,
         settings: &Settings,
+        map_bounds: AABB,
         height: impl Fn(Vec2) -> Option<f32>,
     ) {
         // edge cases (NaN, inf, etc)
@@ -205,8 +205,8 @@ impl OrbitCamera {
         // make sure things are in reasonable bounds
         self.targetdist = self.targetdist.clamp(5.0, 100000.0);
         self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
-        self.targetpos.x = self.targetpos.x.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
-        self.targetpos.y = self.targetpos.y.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
+        self.targetpos.x = self.targetpos.x.clamp(map_bounds.ll.x, map_bounds.ur.x);
+        self.targetpos.y = self.targetpos.y.clamp(map_bounds.ll.y, map_bounds.ur.y);
         self.targetpos.z = self.targetpos.z.clamp(0.0, 100000.0);
 
         // smooth camera movement

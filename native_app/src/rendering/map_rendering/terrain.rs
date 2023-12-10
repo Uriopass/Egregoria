@@ -21,13 +21,6 @@ impl TerrainRender {
 
         let terrain = EngineTerrainRender::new(gfx, w, h, grass);
 
-        /*
-        let ter = &sim.map().terrain;
-        let minchunk = *ter.chunks.keys().min().unwrap();
-        let maxchunk = *ter.chunks.keys().max().unwrap();
-        terrain.update_borders(minchunk, maxchunk, gfx, &|p| ter.height(p));
-         */
-
         Self {
             terrain,
             terrain_sub: sim.map().subscribe(UpdateType::Terrain),
@@ -45,23 +38,42 @@ impl TerrainRender {
         while let Some(cell) = self.terrain_sub.take_one_updated_chunk() {
             let chunk = unwrap_retlog!(ter.chunks.get(&cell), "trying to update nonexistent chunk");
 
+            let chunk_up = ter.chunks.get(&(cell.0, cell.1 + 1));
+            let chunk_down = ter.chunks.get(&(cell.0, cell.1.wrapping_sub(1)));
+            let chunk_left = ter.chunks.get(&(cell.0.wrapping_sub(1), cell.1));
+            let chunk_right = ter.chunks.get(&(cell.0 + 1, cell.1));
+
             if self.terrain.update_chunk(
                 &mut ctx.gfx,
                 cell,
                 &chunk.heights,
-                &|i: usize| None,
-                &|i: usize| None,
-                &|i: usize| None,
-                &|i: usize| {
-                    None // TODO
+                |i: usize| {
+                    if i >= CRESO {
+                        return None;
+                    }
+                    return Some(chunk_up?.heights[0][i]);
+                },
+                |i: usize| {
+                    if i >= CRESO {
+                        return None;
+                    }
+                    return Some(chunk_down?.heights[CRESO - 1][i]);
+                },
+                |i: usize| {
+                    if i >= CRESO {
+                        return None;
+                    }
+                    return Some(chunk_right?.heights[i][0]);
+                },
+                |i: usize| {
+                    if i >= CRESO {
+                        return None;
+                    }
+                    return Some(chunk_left?.heights[i][CRESO - 1]);
                 },
             ) {
                 update_count += 1;
-                #[cfg(not(debug_assertions))]
                 const UPD_PER_FRAME: usize = 20;
-
-                #[cfg(debug_assertions)]
-                const UPD_PER_FRAME: usize = 8;
                 if update_count > UPD_PER_FRAME {
                     break;
                 }
