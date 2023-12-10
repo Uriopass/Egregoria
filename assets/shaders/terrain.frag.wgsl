@@ -6,7 +6,7 @@ struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
 }
 
-struct LevelData {
+struct ChunkData {
     lod: u32,
     resolution: u32,
 }
@@ -17,7 +17,7 @@ struct LevelData {
 @group(2) @binding(1) var s_terraindata: sampler;
 @group(2) @binding(2) var t_grass: texture_2d<f32>;
 @group(2) @binding(3) var s_grass: sampler;
-@group(2) @binding(4) var<uniform> ldata: LevelData;
+@group(2) @binding(4) var<uniform> cdata: ChunkData;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;

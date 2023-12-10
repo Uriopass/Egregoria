@@ -61,7 +61,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         let mut bgs = vec![];
         for lod in 0..LOD {
             let uni = Uniform::new(
-                LevelData {
+                TerrainChunkData {
                     lod: lod as u32,
                     resolution: 1 + CRESOLUTION as u32 / (1 << lod as u32),
                     distance_lod_cutoff: 2.0f32.powf(1.0 + LOD_MIN_DIST_LOG2 + lod as f32)
@@ -317,14 +317,14 @@ u8slice_impl!(TerrainInstance);
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub(crate) struct LevelData {
+pub struct TerrainChunkData {
     lod: u32,                 // 0 = highest resolution, 1 = half resolution, etc.
     resolution: u32,          // width of the vertex grid
     distance_lod_cutoff: f32, // max distance at which to switch to the next lod to have smooth transitions
     cell_size: f32,
     inv_cell_size: f32,
 }
-u8slice_impl!(LevelData);
+u8slice_impl!(TerrainChunkData);
 
 const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![1 => Float32x2];
 
@@ -369,7 +369,7 @@ impl PipelineBuilder for TerrainPipeline {
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
                 entries: &Texture::bindgroup_layout_entries(0, [TL::UInt, TL::Float].into_iter())
                     .chain(std::iter::once(
-                        Uniform::<LevelData>::bindgroup_layout_entry(4),
+                        Uniform::<TerrainChunkData>::bindgroup_layout_entry(4),
                     ))
                     .collect::<Vec<_>>(),
                 label: Some("terrain bindgroup layout"),

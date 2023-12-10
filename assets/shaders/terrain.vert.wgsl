@@ -13,7 +13,7 @@ struct VertexOutput {
     @builtin(position) member: vec4<f32>,
 }
 
-struct LevelData {
+struct ChunkData {
     lod: u32,
     resolution: u32,
     distance_lod_cutoff: f32, // max distance at which to switch to the next lod to have smooth transitions
@@ -27,7 +27,7 @@ struct LevelData {
 
 @group(2) @binding(0) var t_terraindata: texture_2d<u32>;
 @group(2) @binding(1) var s_terraindata: sampler;
-@group(2) @binding(4) var<uniform> ldata: LevelData;
+@group(2) @binding(4) var<uniform> cdata: ChunkData;
 
 /*
 normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)
@@ -51,29 +51,29 @@ fn unpack_diffs(v: u32) -> vec2<f32> {
 
 @vertex
 fn vert(@builtin(vertex_index) vid: u32, @location(0) in_position: vec2<f32>, @location(1) in_off: vec2<f32>) -> VertexOutput {
-    let tpos: vec2<i32> =  vec2<i32>((in_position + in_off) * ldata.inv_cell_size);
+    let tpos: vec2<i32> =  vec2<i32>((in_position + in_off) * cdata.inv_cell_size);
 
     let texLoad: vec2<u32> = textureLoad(t_terraindata, tpos, 0).rg;
 
     let height: f32 = unpack_height(texLoad.r);
     let diffs: vec2<f32> = unpack_diffs(texLoad.g);
 
-    let step: i32 = i32(pow(2.0, f32(ldata.lod)));
+    let step: i32 = i32(pow(2.0, f32(cdata.lod)));
 
-    let zf_off: vec2<i32> =  vec2( step * (i32(vid % ldata.resolution) % 2),
-                                   step * (i32(vid / ldata.resolution) % 2));
+    let zf_off: vec2<i32> =  vec2( step * (i32(vid % cdata.resolution) % 2),
+                                   step * (i32(vid / cdata.resolution) % 2));
 
     let world_pos: vec3<f32> = vec3(in_position + in_off, height);
 
     //let dist_to_cam: f32 = length(params.cam_pos.xyz - vec3(pos.xy, 0.0));
-    //let transition_alpha: f32 = smoothstep(ldata.distance_lod_cutoff * 0.8, ldata.distance_lod_cutoff, dist_to_cam);
+    //let transition_alpha: f32 = smoothstep(cdata.distance_lod_cutoff * 0.8, cdata.distance_lod_cutoff, dist_to_cam);
 
-    var out_normal: vec3<f32> = normalize(vec3(diffs.x, diffs.y, ldata.cell_size * 2.0)); // https://stackoverflow.com/questions/49640250/calculate-normals-from-heightmap
+    var out_normal: vec3<f32> = normalize(vec3(diffs.x, diffs.y, cdata.cell_size * 2.0)); // https://stackoverflow.com/questions/49640250/calculate-normals-from-heightmap
 
     let position: vec4<f32> = global.u_view_proj * vec4(world_pos, 1.0);
 
 #ifdef DEBUG
-    var debug = f32(ldata.lod);
+    var debug = f32(cdata.lod);
 
     if(height >= MAX_HEIGHT) {
         debug = diffs.x;
