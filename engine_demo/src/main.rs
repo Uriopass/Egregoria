@@ -277,7 +277,8 @@ impl engine::framework::State for State {
                 ui.add(egui::Slider::new(&mut self.camera_speed, 1.0..=100.0).text("Camera speed"));
                 ui.checkbox(&mut self.freeze_cam, "Freeze camera");
 
-                ui.checkbox(&mut self.settings.vsync, "Vsync");
+                ui.checkbox(&mut self.settings.fullscreen, "Fullscreen");
+                ui.checkbox(&mut self.settings.vsync, "VSync");
                 ui.checkbox(&mut self.settings.fog, "Fog");
                 ui.checkbox(&mut self.settings.ssao, "SSAO");
                 ui.checkbox(&mut self.settings.terrain_grid, "Terrain grid");
