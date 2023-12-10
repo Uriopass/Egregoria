@@ -41,7 +41,7 @@ pub struct GfxContext {
     pub size: (u32, u32, f64),
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
-    settings: GfxSettings,
+    settings: Option<GfxSettings>,
 
     pub(crate) materials: MaterialMap,
     pub(crate) default_material: Material,
@@ -346,7 +346,7 @@ impl GfxContext {
             pbr,
             defines: Default::default(),
             defines_changed: false,
-            settings: GfxSettings::default(),
+            settings: None,
         };
 
         me.update_simplelit_bg();
@@ -479,11 +479,11 @@ impl GfxContext {
     }
 
     pub fn update_settings(&mut self, settings: GfxSettings) {
-        if self.settings == settings {
+        if self.settings == Some(settings) {
             return;
         }
 
-        if settings.fullscreen != self.settings.fullscreen {
+        if Some(settings.fullscreen) != self.settings.map(|s| s.fullscreen) {
             self.window.set_fullscreen(
                 settings
                     .fullscreen
@@ -515,7 +515,7 @@ impl GfxContext {
         self.set_define_flag("SSAO", settings.ssao);
         self.set_define_flag("TERRAIN_GRID", settings.terrain_grid);
 
-        self.settings = settings;
+        self.settings = Some(settings);
     }
 
     pub fn set_time(&mut self, time: f32) {

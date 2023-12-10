@@ -429,11 +429,13 @@ impl Drawable for TerrainPrepared {
         shadow_cascade: Option<&Matrix4>,
     ) {
         if shadow_cascade.is_some() {
+            // Terrain don't cast shadows for now as they are hard to do properly
+            // It needs separate frustrum culling + actual good shadow acne fix
             return;
         }
         rp.set_pipeline(gfx.get_pipeline(TerrainPipeline {
             depth: true,
-            smap: false,
+            smap: shadow_cascade.is_some(),
         }));
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
 

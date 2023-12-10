@@ -423,14 +423,15 @@ impl Vec3 {
         }
     }
 
+    /// dir is the rotation such as X is sent to it and Z doesn't move
     #[inline]
     pub fn rotate_up(self, dir: Vec3) -> Self {
         let y = dir.cross(Vec3::Z).try_normalize().unwrap_or(Vec3::Y);
         let z = dir.cross(y).try_normalize().unwrap_or(Vec3::Z);
         vec3(
-            self.x * (dir.x + y.x + z.x),
-            self.y * (dir.y + y.y + z.y),
-            self.z * (dir.z + y.z + z.z),
+            self.x * dir.x + self.y * y.x + self.z * z.x,
+            self.x * dir.y + self.y * y.y + self.z * z.y,
+            self.x * dir.z + self.y * y.z + self.z * z.z,
         )
     }
 

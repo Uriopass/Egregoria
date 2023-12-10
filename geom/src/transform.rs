@@ -61,3 +61,27 @@ impl Transform {
         point.rotate_up(self.dir) + self.position
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{vec3, Transform, Vec3};
+
+    #[test]
+    fn test_rotation_matrix_is_same() {
+        let t = Transform::new_dir(Vec3::ZERO, Vec3::Y);
+        let m = t.to_matrix4();
+
+        for v in [
+            vec3(1.0, 1.0, 1.0),
+            vec3(1.0, 1.0, -1.0),
+            vec3(1.0, -1.0, 1.0),
+            vec3(1.0, -1.0, -1.0),
+            vec3(-1.0, 1.0, 1.0),
+            vec3(-1.0, 1.0, -1.0),
+            vec3(-1.0, -1.0, 1.0),
+            vec3(-1.0, -1.0, -1.0),
+        ] {
+            assert_eq!(t.apply_rotation(v), (m * v.w(0.0)).xyz(), "{}", v);
+        }
+    }
+}

@@ -5,7 +5,7 @@ use geom::{vec2, Camera, InfiniteFrustrum};
 
 const CSIZE: usize = 512;
 const CRESO: usize = 32;
-const MAP_SIZE: usize = 75;
+const MAP_SIZE: usize = 25;
 
 pub struct Terrain {
     terrain: EngineTerrainRender<CSIZE, CRESO>,

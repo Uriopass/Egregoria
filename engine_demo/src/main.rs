@@ -1,9 +1,12 @@
 use common::{AudioKind, History};
 use engine::meshload::load_mesh;
 use engine::{
-    Context, FrameContext, GfxContext, InstancedMeshBuilder, KeyCode, MeshInstance, MouseButton,
+    Context, FrameContext, GfxContext, GfxSettings, InstancedMeshBuilder, KeyCode, MeshInstance,
+    MouseButton, ShadowQuality,
 };
-use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3};
+use geom::{
+    vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3,
+};
 
 use crate::helmet::Helmet;
 use crate::spheres::Spheres;
@@ -38,6 +41,9 @@ struct State {
     play_queue: Vec<&'static str>,
 
     ms_hist: History,
+
+    settings: GfxSettings,
+    sun_angle: Degrees,
 }
 
 impl engine::framework::State for State {
@@ -82,12 +88,15 @@ impl engine::framework::State for State {
             last_cam: camera,
             freeze_cam: false,
             ms_hist: History::new(128),
+            settings: Default::default(),
+            sun_angle: Degrees(0.0),
         }
     }
 
     fn update(&mut self, ctx: &mut Context) {
         self.delta = ctx.delta;
 
+        ctx.gfx.update_settings(self.settings);
         self.ms_hist.add_value(ctx.delta);
 
         if ctx.input.mouse.pressed.contains(&MouseButton::Left) {
@@ -172,7 +181,10 @@ impl engine::framework::State for State {
             self.camera.pitch.0 = self.camera.pitch.0.clamp(-1.5, 1.5);
         }
 
-        let sun = vec3(1.0, -1.0, 1.0).normalize();
+        let sun = Vec2::from_angle(self.sun_angle.into())
+            .z0()
+            .rotate_up(vec3(1.0, 0.0, 1.0).normalize())
+            .normalize();
 
         let gfx = &mut ctx.gfx;
 
@@ -203,7 +215,6 @@ impl engine::framework::State for State {
             .try_into()
             .unwrap();
         self.camera.dist = 0.0;
-        params.shadow_mapping_resolution = 2048;
 
         for (de, enabled) in &mut self.demo_elements {
             if !*enabled {
@@ -239,25 +250,46 @@ impl engine::framework::State for State {
     }
 
     fn render_gui(&mut self, ui: &egui::Context) {
-        egui::Window::new("Hello world!").show(ui, |ui| {
-            let avg_ms = self.ms_hist.avg();
-            ui.label(format!(
-                "Avg (128 frames): {:.1}ms {:.0}FPS",
-                1000.0 * avg_ms,
-                1.0 / avg_ms
-            ));
+        egui::Window::new("Demo elements")
+            .resizable(true)
+            .show(ui, |ui| {
+                ui.add(egui::Slider::new(&mut self.sun_angle.0, 0.0..=360.0).text("Sun angle"));
 
-            ui.add(egui::Slider::new(&mut self.camera_speed, 1.0..=100.0).text("Camera speed"));
-            ui.checkbox(&mut self.freeze_cam, "Freeze camera");
+                for (de, enabled) in &mut self.demo_elements {
+                    ui.checkbox(enabled, de.name());
+                }
 
-            for (de, enabled) in &mut self.demo_elements {
-                ui.checkbox(enabled, de.name());
-            }
+                if ui.button("play sound: road_lay").clicked() {
+                    self.play_queue.push("road_lay");
+                }
+            });
 
-            if ui.button("play sound: road_lay").clicked() {
-                self.play_queue.push("road_lay");
-            }
-        });
+        egui::Window::new("Settings")
+            .resizable(true)
+            .show(ui, |ui| {
+                let avg_ms = self.ms_hist.avg();
+                ui.label(format!(
+                    "Avg (128 frames): {:.1}ms {:.0}FPS",
+                    1000.0 * avg_ms,
+                    1.0 / avg_ms
+                ));
+
+                ui.add(egui::Slider::new(&mut self.camera_speed, 1.0..=100.0).text("Camera speed"));
+                ui.checkbox(&mut self.freeze_cam, "Freeze camera");
+
+                ui.checkbox(&mut self.settings.vsync, "Vsync");
+                ui.checkbox(&mut self.settings.fog, "Fog");
+                ui.checkbox(&mut self.settings.ssao, "SSAO");
+                ui.checkbox(&mut self.settings.terrain_grid, "Terrain grid");
+
+                let mut shadows = self.settings.shadows.size().is_some();
+                ui.checkbox(&mut shadows, "Shadows");
+                self.settings.shadows = if shadows {
+                    ShadowQuality::High
+                } else {
+                    ShadowQuality::NoShadows
+                };
+            });
     }
 }
 
