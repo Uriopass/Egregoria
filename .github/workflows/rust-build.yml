@@ -29,6 +29,6 @@ jobs:
         with:
           rust-version: 'stable'
       - name: Check
-        run: cargo check --verbose --workspace
+        run: cargo check --verbose --workspace --tests --examples --all-features
       - name: Run tests
-        run: cargo test --verbose --workspace
+        run: cargo test --verbose --workspace --all-features

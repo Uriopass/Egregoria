@@ -9,9 +9,9 @@ use Action::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 struct World {
-    incr_a: u32,
-    incr_b: u32,
-    tick: u32,
+    incr_a: u64,
+    incr_b: u64,
+    tick: u64,
     pad: Vec<u8>,
 }
 
