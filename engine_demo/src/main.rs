@@ -99,87 +99,7 @@ impl engine::framework::State for State {
         ctx.gfx.update_settings(self.settings);
         self.ms_hist.add_value(ctx.delta);
 
-        if ctx.input.mouse.pressed.contains(&MouseButton::Left) {
-            let _ = ctx
-                .gfx
-                .window
-                .set_cursor_grab(engine::CursorGrabMode::Confined);
-            ctx.gfx.window.set_cursor_visible(false);
-            self.is_captured = true;
-        }
-
-        if ctx.input.cursor_left {
-            let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
-            ctx.gfx.window.set_cursor_visible(true);
-            self.is_captured = false;
-        }
-
-        if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
-            let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
-            ctx.gfx.window.set_cursor_visible(true);
-            self.is_captured = false;
-        }
-
-        let delta = ctx.delta;
-        let cam_speed = if ctx.input.keyboard.pressed_scancode.contains(&42) {
-            3.0
-        } else {
-            30.0
-        } * delta
-            * self.camera_speed;
-
-        if ctx.input.keyboard.pressed_scancode.contains(&17) {
-            self.camera.pos -= self
-                .camera
-                .dir()
-                .xy()
-                .z0()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&31) {
-            self.camera.pos += self
-                .camera
-                .dir()
-                .xy()
-                .z0()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&30) {
-            self.camera.pos += self
-                .camera
-                .dir()
-                .perp_up()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&32) {
-            self.camera.pos -= self
-                .camera
-                .dir()
-                .perp_up()
-                .try_normalize()
-                .unwrap_or(Vec3::ZERO)
-                * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&57) {
-            self.camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
-        }
-        if ctx.input.keyboard.pressed_scancode.contains(&29) {
-            self.camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
-        }
-
-        if self.is_captured {
-            let delta = ctx.input.mouse.screen_delta;
-
-            self.camera.yaw.0 -= 0.001 * delta.x;
-            self.camera.pitch.0 += 0.001 * delta.y;
-            self.camera.pitch.0 = self.camera.pitch.0.clamp(-1.5, 1.5);
-        }
+        let delta = self.camera_movement(ctx);
 
         let sun = Vec2::from_angle(self.sun_angle.into())
             .z0()
@@ -291,6 +211,93 @@ impl engine::framework::State for State {
                     ShadowQuality::NoShadows
                 };
             });
+    }
+}
+
+impl State {
+    fn camera_movement(&mut self, ctx: &mut Context) -> f32 {
+        if ctx.input.mouse.pressed.contains(&MouseButton::Left) {
+            let _ = ctx
+                .gfx
+                .window
+                .set_cursor_grab(engine::CursorGrabMode::Confined);
+            ctx.gfx.window.set_cursor_visible(false);
+            self.is_captured = true;
+        }
+
+        if ctx.input.cursor_left {
+            let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
+            ctx.gfx.window.set_cursor_visible(true);
+            self.is_captured = false;
+        }
+
+        if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
+            let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
+            ctx.gfx.window.set_cursor_visible(true);
+            self.is_captured = false;
+        }
+
+        let delta = ctx.delta;
+        let cam_speed = if ctx.input.keyboard.pressed_scancode.contains(&42) {
+            3.0
+        } else {
+            30.0
+        } * delta
+            * self.camera_speed;
+
+        if ctx.input.keyboard.pressed_scancode.contains(&17) {
+            self.camera.pos -= self
+                .camera
+                .dir()
+                .xy()
+                .z0()
+                .try_normalize()
+                .unwrap_or(Vec3::ZERO)
+                * cam_speed;
+        }
+        if ctx.input.keyboard.pressed_scancode.contains(&31) {
+            self.camera.pos += self
+                .camera
+                .dir()
+                .xy()
+                .z0()
+                .try_normalize()
+                .unwrap_or(Vec3::ZERO)
+                * cam_speed;
+        }
+        if ctx.input.keyboard.pressed_scancode.contains(&30) {
+            self.camera.pos += self
+                .camera
+                .dir()
+                .perp_up()
+                .try_normalize()
+                .unwrap_or(Vec3::ZERO)
+                * cam_speed;
+        }
+        if ctx.input.keyboard.pressed_scancode.contains(&32) {
+            self.camera.pos -= self
+                .camera
+                .dir()
+                .perp_up()
+                .try_normalize()
+                .unwrap_or(Vec3::ZERO)
+                * cam_speed;
+        }
+        if ctx.input.keyboard.pressed_scancode.contains(&57) {
+            self.camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
+        }
+        if ctx.input.keyboard.pressed_scancode.contains(&29) {
+            self.camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
+        }
+
+        if self.is_captured {
+            let delta = ctx.input.mouse.screen_delta;
+
+            self.camera.yaw.0 -= 0.001 * delta.x;
+            self.camera.pitch.0 += 0.001 * delta.y;
+            self.camera.pitch.0 = self.camera.pitch.0.clamp(-1.5, 1.5);
+        }
+        delta
     }
 }
 
