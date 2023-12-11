@@ -14,11 +14,12 @@ struct VertexOutput {
 }
 
 struct ChunkData {
-    lod: u32,
-    resolution: u32,
+    lod: u32,                 // 0 = most details, 1 = half details, 2 = quarter details, etc.
+    lod_pow2: f32,            // 2^lod
+    resolution: u32,          // number of vertices per side
     distance_lod_cutoff: f32, // max distance at which to switch to the next lod to have smooth transitions
-    cell_size: f32,
-    inv_cell_size: f32,
+    cell_size: f32,           // size of a cell in world space at lod0
+    inv_cell_size: f32,       // 1 / cell_size
 }
 
 @group(0) @binding(0) var<uniform> global: Uniforms;
@@ -50,7 +51,33 @@ fn unpack_diffs(v: u32) -> vec2<f32> {
 }
 
 @vertex
-fn vert(@builtin(vertex_index) vid: u32, @location(0) in_position: vec2<f32>, @location(1) in_off: vec2<f32>) -> VertexOutput {
+fn vert(@builtin(vertex_index) vid: u32,
+        @location(0) in_off: vec2<f32>,
+        @location(1) stitch_dir_flags: u32,    // 4 lowest bits are 1 if we need to stitch in that direction. 0 = x+, 1 = y+, 2 = x-, 3 = y-
+        ) -> VertexOutput {
+    let idx_x: u32 = vid % cdata.resolution;
+    let idx_y: u32 = vid / cdata.resolution;
+
+    var in_position: vec2<f32> = vec2(f32(idx_x), f32(idx_y)) * cdata.cell_size * cdata.lod_pow2;
+
+    let stitch_x_pos: bool = (stitch_dir_flags & 1u) != 0u;
+    let stitch_y_pos: bool = (stitch_dir_flags & 2u) != 0u;
+    let stitch_x_neg: bool = (stitch_dir_flags & 4u) != 0u;
+    let stitch_y_neg: bool = (stitch_dir_flags & 8u) != 0u;
+
+    if (stitch_x_pos && idx_x == cdata.resolution - 1u && (idx_y % 2u) == 1u) {
+        in_position = in_position - vec2<f32>(0.0, cdata.cell_size * cdata.lod_pow2);
+    }
+    if (stitch_x_neg && idx_x == 0u && (idx_y % 2u) == 1u) {
+        in_position = in_position - vec2<f32>(0.0, cdata.cell_size * cdata.lod_pow2);
+    }
+    if (stitch_y_pos && (vid >= (cdata.resolution * (cdata.resolution - 1u))) && ((idx_x) % 2u) == 1u) {
+        in_position = in_position - vec2<f32>(cdata.cell_size * cdata.lod_pow2, 0.0);
+    }
+    if (stitch_y_neg && (vid < cdata.resolution) && ((idx_x) % 2u) == 1u) {
+        in_position = in_position - vec2<f32>(cdata.cell_size * cdata.lod_pow2, 0.0);
+    }
+
     let tpos: vec2<i32> =  vec2<i32>((in_position + in_off) * cdata.inv_cell_size);
 
     let texLoad: vec2<u32> = textureLoad(t_terraindata, tpos, 0).rg;
@@ -60,8 +87,8 @@ fn vert(@builtin(vertex_index) vid: u32, @location(0) in_position: vec2<f32>, @l
 
     let step: i32 = i32(pow(2.0, f32(cdata.lod)));
 
-    let zf_off: vec2<i32> =  vec2( step * (i32(vid % cdata.resolution) % 2),
-                                   step * (i32(vid / cdata.resolution) % 2));
+    let zf_off: vec2<i32> =  vec2( step * (i32(idx_x) % 2),
+                                   step * (i32(idx_y) % 2));
 
     let world_pos: vec3<f32> = vec3(in_position + in_off, height);
 
@@ -73,7 +100,8 @@ fn vert(@builtin(vertex_index) vid: u32, @location(0) in_position: vec2<f32>, @l
     let position: vec4<f32> = global.u_view_proj * vec4(world_pos, 1.0);
 
 #ifdef DEBUG
-    var debug = f32(cdata.lod);
+    var debug = 0.0;
+    debug = f32(cdata.lod);
 
     if(height >= MAX_HEIGHT) {
         debug = diffs.x;

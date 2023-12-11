@@ -33,9 +33,10 @@ impl DemoElement for Terrain {
                         heights[y][x][i][j] = 600.0
                             * (0.5
                                 + geom::fnoise(
-                                    0.005 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
+                                    0.01 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
                                 )
-                                .0);
+                                .0
+                                .powi(2));
                     }
                 }
             }

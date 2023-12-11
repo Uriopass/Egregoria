@@ -124,6 +124,8 @@ pub struct GfxSettings {
     pub fog: bool,
     pub ssao: bool,
     pub terrain_grid: bool,
+    pub shader_debug: bool,
+    pub pbr_enabled: bool,
 }
 
 impl Default for GfxSettings {
@@ -135,6 +137,8 @@ impl Default for GfxSettings {
             fog: true,
             ssao: true,
             terrain_grid: true,
+            shader_debug: false,
+            pbr_enabled: true,
         }
     }
 }
@@ -514,6 +518,8 @@ impl GfxContext {
         self.set_define_flag("FOG", settings.fog);
         self.set_define_flag("SSAO", settings.ssao);
         self.set_define_flag("TERRAIN_GRID", settings.terrain_grid);
+        self.set_define_flag("DEBUG", settings.shader_debug);
+        self.set_define_flag("PBR_ENABLED", settings.pbr_enabled);
 
         self.settings = Some(settings);
     }
@@ -592,7 +598,7 @@ impl GfxContext {
         let enc_dep_ext = &mut encs.depth_prepass;
         let enc_smap_ext = &mut encs.smap;
 
-        {
+        if self.defines.contains_key("PBR_ENABLED") {
             profiling::scope!("pbr prepass");
             let mut pbr_enc = self
                 .device

@@ -210,6 +210,9 @@ impl engine::framework::State for State {
                 } else {
                     ShadowQuality::NoShadows
                 };
+
+                ui.checkbox(&mut self.settings.shader_debug, "Shader debug");
+                ui.checkbox(&mut self.settings.pbr_enabled, "PBR Environment Update");
             });
     }
 }

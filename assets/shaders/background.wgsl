@@ -31,7 +31,7 @@ fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
         3.40282347E+38,
     );
 
-    //color = textureSampleLevel(t_environment, s_environment, pos, 0.0).rgb;
+    //var color: vec3<f32> = textureSampleLevel(t_environment, s_environment, pos, 0.0).rgb;
 
     color = color + max(pos.z + 0.1, 0.0) * 5.0 * textureSample(t_starfield, s_starfield, vec2(longitude, pos.z)).rgb; // starfield
     color = color + max(pos.z, 0.0) * 10000.0 * smoothstep(0.99993, 1.0, dot(fsun, pos)); // sun
