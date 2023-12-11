@@ -1,6 +1,6 @@
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
-    IndexType, PipelineBuilder, RenderParams, Texture, Uniform, TL,
+    IndexType, PipelineBuilder, RenderParams, Texture, TextureBuilder, Uniform, TL,
 };
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, Matrix4, Vec2, AABB3};
 use std::sync::Arc;
@@ -38,23 +38,33 @@ pub struct TerrainPrepared {
 
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
     pub fn new(gfx: &mut GfxContext, w: u32, h: u32, grass: Arc<Texture>) -> Self {
-        let indices = Self::generate_indices_mesh(gfx);
-        let mut tex = Texture::create_fbo(
-            &gfx.device,
-            (w * CRESOLUTION as u32 + 1, h * CRESOLUTION as u32 + 1),
-            TextureFormat::Rg16Uint,
-            TextureUsages::COPY_DST | TextureUsages::TEXTURE_BINDING,
-            None,
+        debug_assert!(
+            CRESOLUTION >= 1 << LOD,
+            "TERRAIN RESOLUTION must be >= {}",
+            1 << LOD
         );
-        tex.sampler = gfx.device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("texture sampler"),
+
+        let indices = Self::generate_indices_mesh(gfx);
+
+        let tex = TextureBuilder::empty(
+            w * CRESOLUTION as u32,
+            h * CRESOLUTION as u32,
+            1,
+            TextureFormat::Rg16Uint,
+        )
+        .with_usage(TextureUsages::COPY_DST | TextureUsages::TEXTURE_BINDING)
+        .with_fixed_mipmaps(LOD as u32)
+        .with_sampler(wgpu::SamplerDescriptor {
+            label: Some("terrain sampler"),
             mag_filter: FilterMode::Linear,
             min_filter: FilterMode::Linear,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             ..Default::default()
-        });
+        })
+        .with_no_anisotropy()
+        .build(&gfx.device, &gfx.queue);
 
         let mut bgs = vec![];
         for lod in 0..LOD {
@@ -126,12 +136,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             [a[0], a[1], b, c]
         }
 
-        // Need to add one more vertex on the edge of the map because when rendering a chunk
-        // we render "to the next chunk", which doesn't exist on the edge
-        let extrax = cell.0 + 1 == self.w;
-        let extray = cell.1 + 1 == self.h;
-        let mut contents =
-            Vec::with_capacity((CRESOLUTION + extrax as usize) * (CRESOLUTION + extray as usize));
+        let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
 
         let mut holder_y_edge: [f32; CRESOLUTION] = [0.0; CRESOLUTION];
         let mut j = 0;
@@ -161,23 +166,12 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 contents.extend(pack(height, dh_x, dh_y));
                 last_height = height;
             }
-            if extrax {
-                contents.extend(pack(ys[ys.len() - 1], 0.0, 0.0));
-            }
 
             last_ys = ys;
         }
-        if extray {
-            for i in 0..CRESOLUTION {
-                contents.extend(pack(chunk[CRESOLUTION - 1][i], 0.0, 0.0));
-            }
-            if extrax {
-                contents.extend(pack(chunk[CRESOLUTION - 1][CRESOLUTION - 1], 0.0, 0.0));
-            }
-        }
 
-        let w = CRESOLUTION as u32 + extrax as u32;
-        let h = CRESOLUTION as u32 + extray as u32;
+        let h = CRESOLUTION as u32;
+        let w = CRESOLUTION as u32;
 
         gfx.queue.write_texture(
             ImageCopyTexture {

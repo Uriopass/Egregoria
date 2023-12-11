@@ -287,6 +287,8 @@ pub struct TextureBuilder<'a> {
     mipmaps: Option<CompiledModule>,
     mipmaps_no_gen: bool,
     fixed_mipmaps: Option<u32>,
+    usage: TextureUsages,
+    no_anisotropy: bool,
 }
 
 impl<'a> TextureBuilder<'a> {
@@ -295,8 +297,18 @@ impl<'a> TextureBuilder<'a> {
         self
     }
 
+    pub fn with_usage(mut self, usage: TextureUsages) -> Self {
+        self.usage = usage;
+        self
+    }
+
     pub fn with_sampler(mut self, sampler: SamplerDescriptor<'static>) -> Self {
         self.sampler = sampler;
+        self
+    }
+
+    pub fn with_no_anisotropy(mut self) -> Self {
+        self.no_anisotropy = true;
         self
     }
 
@@ -377,6 +389,10 @@ impl<'a> TextureBuilder<'a> {
             mipmaps: None,
             mipmaps_no_gen: false,
             fixed_mipmaps: None,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+            no_anisotropy: false,
         }
     }
 
@@ -391,6 +407,10 @@ impl<'a> TextureBuilder<'a> {
             mipmaps: None,
             mipmaps_no_gen: false,
             fixed_mipmaps: None,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+            no_anisotropy: false,
         }
     }
 
@@ -461,9 +481,7 @@ impl<'a> TextureBuilder<'a> {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
+            usage: self.usage,
             view_formats: &[],
         });
 
@@ -512,6 +530,7 @@ impl<'a> TextureBuilder<'a> {
         if mip_level_count > 1
             && (sampl.min_filter == wgpu::FilterMode::Linear
                 || sampl.mag_filter == wgpu::FilterMode::Linear)
+            && !self.no_anisotropy
         {
             sampl.anisotropy_clamp = 16;
         }
