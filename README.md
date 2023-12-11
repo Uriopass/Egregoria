@@ -6,11 +6,6 @@
 [![Build status](https://github.com/Uriopass/Egregoria/workflows/rust-build/badge.svg)](#)
 [![Discord](https://img.shields.io/discord/709730057949544488?label=discord)](https://discord.gg/CAaZhUJ)
 
-### No activity?
-
-I am currently on a long (3 months) trip around Europe. I have quit my job and will start working full-time on this project in January.
-
-
 # Egregoria
 
 Egregoria is an indie city builder, mostly inspired by Cities:Skylines.  
