@@ -62,7 +62,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             let uni = Uniform::new(
                 TerrainChunkData {
                     lod: lod as u32,
-                    lod_pow2: scale as f32,
+                    lod_pow2: scale,
                     resolution: 1 + CRESOLUTION as u32 / scale,
                     distance_lod_cutoff: 2.0f32.powf(1.0 + LOD_MIN_DIST_LOG2 + lod as f32)
                         - std::f32::consts::SQRT_2 * CSIZE as f32,
@@ -338,7 +338,7 @@ u8slice_impl!(TerrainInstance);
 #[repr(C)]
 pub struct TerrainChunkData {
     lod: u32,                 // 0 = highest resolution, 1 = half resolution, etc.*
-    lod_pow2: f32,            // 2^lod
+    lod_pow2: u32,            // 2^lod
     resolution: u32,          // width of the vertex grid
     distance_lod_cutoff: f32, // max distance at which to switch to the next lod to have smooth transitions
     cell_size: f32,
