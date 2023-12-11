@@ -1,4 +1,5 @@
-#include "render_params.wgsl"
+#include "../render_params.wgsl"
+#include "unpack.wgsl"
 
 struct Uniforms {
     u_view_proj: mat4x4<f32>,
@@ -36,20 +37,6 @@ normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)
                             .normalize(),
 */
 
-const MAX_HEIGHT: f32 = 1024.0;
-const MAX_DIFF: f32 = 32.0;
-
-fn unpack_height(h: u32) -> f32 {
-    return ((f32(h) - 32768.0) / 32767.0 ) * MAX_HEIGHT;
-}
-
-fn unpack_diffs(v: u32) -> vec2<f32> {
-    let x = v & 0xFFu;
-    let y = (v & 0xFF00u) >> 8u;
-    return vec2<f32>((f32(x) - 128.0) / 127.0 * MAX_DIFF,
-                     (f32(y) - 128.0) / 127.0 * MAX_DIFF);
-}
-
 @vertex
 fn vert(@builtin(vertex_index) vid: u32,
         @location(0) in_off: vec2<f32>,
@@ -75,19 +62,15 @@ fn vert(@builtin(vertex_index) vid: u32,
 
     let tpos: vec2<i32> = in_position * i32(cdata.lod_pow2) + vec2<i32>(in_off * cdata.inv_cell_size);
 
-    let texLoad: vec2<u32> = textureLoad(t_terraindata, tpos, 0).rg;
+    let h_dx_dy: vec3<f32> = unpack(textureLoad(t_terraindata, tpos, 0).r, 1.0);
 
-    let height: f32 = unpack_height(texLoad.r);
-    let diffs: vec2<f32> = unpack_diffs(texLoad.g);
-
-    let world_pos: vec3<f32> = vec3(vec2<f32>(in_position * i32(cdata.lod_pow2)) * cdata.cell_size + in_off, height);
+    let world_pos: vec3<f32> = vec3(vec2<f32>(in_position * i32(cdata.lod_pow2)) * cdata.cell_size + in_off, h_dx_dy.x);
+    let clip_pos: vec4<f32> = global.u_view_proj * vec4(world_pos, 1.0);
 
     //let dist_to_cam: f32 = length(params.cam_pos.xyz - vec3(pos.xy, 0.0));
     //let transition_alpha: f32 = smoothstep(cdata.distance_lod_cutoff * 0.8, cdata.distance_lod_cutoff, dist_to_cam);
 
-    var out_normal: vec3<f32> = normalize(vec3(diffs.x, diffs.y, cdata.cell_size * 2.0)); // https://stackoverflow.com/questions/49640250/calculate-normals-from-heightmap
-
-    let position: vec4<f32> = global.u_view_proj * vec4(world_pos, 1.0);
+    var out_normal: vec3<f32> = normalize(vec3(h_dx_dy.yz, cdata.cell_size * 2.0)); // https://stackoverflow.com/questions/49640250/calculate-normals-from-heightmap
 
 #ifdef DEBUG
     var debug = 0.0;
@@ -104,5 +87,5 @@ fn vert(@builtin(vertex_index) vid: u32,
                         #ifdef DEBUG
                         debug,
                         #endif
-                        position);
+                        clip_pos);
 }

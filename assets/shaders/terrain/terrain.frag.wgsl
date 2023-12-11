@@ -1,6 +1,6 @@
-#include "render_params.wgsl"
-#include "shadow.wgsl"
-#include "pbr/render.wgsl"
+#include "../render_params.wgsl"
+#include "../shadow.wgsl"
+#include "../pbr/render.wgsl"
 
 struct FragmentOutput {
     @location(0) out_color: vec4<f32>,

@@ -50,7 +50,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             w * CRESOLUTION as u32,
             h * CRESOLUTION as u32,
             1,
-            TextureFormat::Rg16Uint,
+            TextureFormat::R32Uint,
         )
         .with_usage(TextureUsages::COPY_DST | TextureUsages::TEXTURE_BINDING)
         .with_fixed_mipmaps(LOD as u32)
@@ -123,17 +123,24 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         get_left: impl Fn(usize) -> Option<f32>,
     ) -> bool {
         fn pack(height: f32, diffx: f32, diffy: f32) -> [u8; 4] {
-            let a = ((height.clamp(-MAX_HEIGHT, MAX_HEIGHT) / MAX_HEIGHT * i16::MAX as f32
-                + 32768.0) as u16)
-                .to_le_bytes();
+            let h_encoded = ((height.clamp(-MAX_HEIGHT, MAX_HEIGHT) / MAX_HEIGHT * i16::MAX as f32
+                + 32768.0) as u16);
+
+            let dx_encoded: u8;
+            let dy_encoded: u8;
 
             if height >= MAX_HEIGHT || height <= -MAX_HEIGHT {
-                return [a[0], a[1], 128, 128]; // normal is zero if we hit max height
+                dx_encoded = 128;
+                dy_encoded = 128; // normal is zero if we hit max height
+            } else {
+                dx_encoded =
+                    (diffx.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
+                dy_encoded =
+                    (diffy.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
             }
 
-            let b = (diffx.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
-            let c = (diffy.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
-            [a[0], a[1], b, c]
+            let packed = (dx_encoded as u32) << 24 | (dy_encoded as u32) << 16 | h_encoded as u32;
+            packed.to_le_bytes()
         }
 
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
@@ -386,10 +393,10 @@ impl PipelineBuilder for TerrainPipeline {
                     .collect::<Vec<_>>(),
                 label: Some("terrain bindgroup layout"),
             });
-        let vert = &mk_module("terrain.vert");
+        let vert = &mk_module("terrain/terrain.vert");
 
         if !self.depth {
-            let frag = &mk_module("terrain.frag");
+            let frag = &mk_module("terrain/terrain.frag");
 
             return gfx.color_pipeline(
                 "terrain",
