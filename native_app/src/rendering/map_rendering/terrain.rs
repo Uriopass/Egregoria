@@ -43,7 +43,7 @@ impl TerrainRender {
             let chunk_left = ter.chunks.get(&(cell.0.wrapping_sub(1), cell.1));
             let chunk_right = ter.chunks.get(&(cell.0 + 1, cell.1));
 
-            if self.terrain.update_chunk(
+            self.terrain.update_chunk(
                 &mut ctx.gfx,
                 cell,
                 &chunk.heights,
@@ -71,12 +71,11 @@ impl TerrainRender {
                     }
                     return Some(chunk_left?.heights[i][CRESO - 1]);
                 },
-            ) {
-                update_count += 1;
-                const UPD_PER_FRAME: usize = 20;
-                if update_count > UPD_PER_FRAME {
-                    break;
-                }
+            );
+
+            update_count += 1;
+            if update_count > 20 {
+                break;
             }
         }
     }

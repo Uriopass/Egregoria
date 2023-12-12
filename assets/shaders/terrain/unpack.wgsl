@@ -1,8 +1,10 @@
-const MAX_HEIGHT: f32 = 1024.0;
-const MAX_DIFF: f32 = 32.0;
+const MAX_HEIGHT:   f32 = 2008.0;
+const MIN_HEIGHT:   f32 = -40.0;
+const HEIGHT_RANGE: f32 = MAX_HEIGHT - MIN_HEIGHT;
+const MAX_DIFF:     f32 = 32.0;
 
 fn unpack_height(h: u32) -> f32 {
-    return ((f32(h) - 32768.0) / 32767.0 ) * MAX_HEIGHT;
+    return (f32(h) / 65535.0) * HEIGHT_RANGE + MIN_HEIGHT;
 }
 
 fn unpack_diffs(v: u32, lod_pow2: f32) -> vec2<f32> {

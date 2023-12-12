@@ -12,7 +12,8 @@ use wgpu::{
 
 const LOD: usize = 4;
 const LOD_MIN_DIST_LOG2: f32 = 11.0; // 2^10 = 1024, meaning until 2048m away, we use the highest lod
-const MAX_HEIGHT: f32 = 1024.0;
+const MAX_HEIGHT: f32 = 2008.0;
+const MIN_HEIGHT: f32 = -40.0;
 const MAX_DIFF: f32 = 32.0;
 
 pub struct TerrainChunk {
@@ -121,17 +122,18 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         get_down: impl Fn(usize) -> Option<f32>,
         get_right: impl Fn(usize) -> Option<f32>,
         get_left: impl Fn(usize) -> Option<f32>,
-    ) -> bool {
+    ) {
         fn pack(height: f32, diffx: f32, diffy: f32) -> [u8; 4] {
-            let h_encoded = ((height.clamp(-MAX_HEIGHT, MAX_HEIGHT) / MAX_HEIGHT * i16::MAX as f32
-                + 32768.0) as u16);
+            let h_encoded = ((height.clamp(MIN_HEIGHT, MAX_HEIGHT) - MIN_HEIGHT)
+                / (MAX_HEIGHT - MIN_HEIGHT)
+                * u16::MAX as f32) as u16;
 
             let dx_encoded: u8;
             let dy_encoded: u8;
 
-            if height >= MAX_HEIGHT || height <= -MAX_HEIGHT {
+            if height >= MAX_HEIGHT || height <= MIN_HEIGHT {
                 dx_encoded = 128;
-                dy_encoded = 128; // normal is zero if we hit max height
+                dy_encoded = 128; // normal is zero if we hit height bounds
             } else {
                 dx_encoded =
                     (diffx.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
@@ -203,8 +205,6 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 depth_or_array_layers: 1,
             },
         );
-
-        true
     }
 
     pub fn draw_terrain(
