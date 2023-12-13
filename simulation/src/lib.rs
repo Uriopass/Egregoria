@@ -121,7 +121,7 @@ pub struct SimulationOptions {
 impl Default for SimulationOptions {
     fn default() -> Self {
         SimulationOptions {
-            terrain_size: 25,
+            terrain_size: 50,
             save_replay: true,
         }
     }
@@ -141,7 +141,7 @@ impl Simulation {
 
     pub fn new(gen_terrain: bool) -> Simulation {
         Self::new_with_options(SimulationOptions {
-            terrain_size: if gen_terrain { 25 } else { 0 },
+            terrain_size: if gen_terrain { 50 } else { 0 },
             ..Default::default()
         })
     }

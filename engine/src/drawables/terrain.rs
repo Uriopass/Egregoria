@@ -12,7 +12,7 @@ use wgpu::{
 };
 
 const LOD: usize = 5;
-const LOD_MIN_DIST_LOG2: f32 = 9.5; // 2^10 = 1024, meaning until 2048m away, we use the highest lod
+const LOD_MIN_DIST_LOG2: f32 = 9.0; // 2^9 = 512, meaning until 1048m away, we use the highest lod
 const MAX_HEIGHT: f32 = 2008.0;
 const MIN_HEIGHT: f32 = -40.0;
 const UPSCALE_LOD: usize = 2; // amount of LOD that are superior to base terrain data

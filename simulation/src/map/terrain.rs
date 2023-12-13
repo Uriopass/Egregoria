@@ -5,7 +5,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-pub const CHUNK_SIZE: u32 = 1024;
+pub const CHUNK_SIZE: u32 = 512;
 pub const CHUNK_RESOLUTION: usize = 32;
 pub const CELL_SIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
 
