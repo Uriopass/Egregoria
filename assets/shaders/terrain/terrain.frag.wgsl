@@ -13,11 +13,9 @@ struct ChunkData {
 
 @group(1) @binding(0) var<uniform> params: RenderParams;
 
-@group(2) @binding(0) var t_terraindata: texture_2d<f32>;
-@group(2) @binding(1) var s_terraindata: sampler;
-@group(2) @binding(2) var t_grass: texture_2d<f32>;
-@group(2) @binding(3) var s_grass: sampler;
-@group(2) @binding(4) var<uniform> cdata: ChunkData;
+@group(2) @binding(4) var t_grass: texture_2d<f32>;
+@group(2) @binding(5) var s_grass: sampler;
+@group(2) @binding(6) var<uniform> cdata: ChunkData;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;
@@ -145,8 +143,8 @@ fn frag(@builtin(position) position: vec4<f32>,
     let V_denorm: vec3<f32> = params.cam_pos.xyz - in_wpos;
     let depth: f32 = length(V_denorm);
     let V: vec3<f32> = V_denorm / depth;
-    let F0: vec3<f32> = vec3(0.02);
-    let roughness: f32 = 1.0;
+    let F0: vec3<f32> = vec3(0.00);
+    let roughness: f32 = 1.3; // avoid specular highlights which look weird on terrain
     let normal: vec3<f32> = normalize(in_normal);
     let F_spec: vec3<f32> = F0; // simplified with constant folding: fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
 

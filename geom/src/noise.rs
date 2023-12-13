@@ -61,14 +61,14 @@ pub fn simplex_noise(pos: Vec2) -> (f32, Vec2) {
 const FBM_MAG: f32 = 0.4;
 
 #[inline]
-pub fn fnoise(in_wv: Vec2) -> (f32, Vec2) {
+pub fn fnoise<const LAYERS: usize>(in_wv: Vec2) -> (f32, Vec2) {
     let mut dec = in_wv;
 
     let mut noise: f32 = 0.0;
     let mut amplitude: f32 = 1.0;
     let mut grad: Vec2 = Vec2::ZERO;
 
-    for _ in 0..4 {
+    for _ in 0..LAYERS {
         let (n, g) = simplex_noise(dec);
         noise += amplitude * n;
         grad += g;

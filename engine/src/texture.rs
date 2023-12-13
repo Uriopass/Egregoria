@@ -269,6 +269,19 @@ impl Texture {
             ..Default::default()
         }
     }
+
+    pub fn mip_view(&self, mip_level: u32) -> wgpu::TextureView {
+        self.texture.create_view(&TextureViewDescriptor {
+            label: Some("texture mip"),
+            format: None,
+            dimension: None,
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: mip_level,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: None,
+        })
+    }
 }
 
 #[derive(Debug, Display, From)]
@@ -277,6 +290,7 @@ pub enum TextureBuildError {
     Image(image::ImageError),
 }
 
+#[derive(Clone)]
 pub struct TextureBuilder<'a> {
     img: Option<DynamicImage>,
     dimensions: (u32, u32, u32),
@@ -626,11 +640,11 @@ fn generate_mipmaps(
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
             entries: &[
-                wgpu::BindGroupEntry {
+                BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(&views[target_mip - 1]),
                 },
-                wgpu::BindGroupEntry {
+                BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },

@@ -1,7 +1,7 @@
 use geom::{fnoise, simplex_noise, vec2, Vec2};
 
 pub(crate) fn height(p: Vec2) -> (f32, Vec2) {
-    let (noise, mut grad) = fnoise(Vec2::splat(70.69) + 0.00006 * p);
+    let (noise, mut grad) = fnoise::<4>(Vec2::splat(70.69) + 0.00006 * p);
     grad *= 0.00006;
 
     let ratio = 0.00005;

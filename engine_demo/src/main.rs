@@ -23,6 +23,7 @@ trait DemoElement {
         Self: Sized;
     fn update(&mut self, ctx: &mut Context);
     fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum);
+    fn render_gui(&mut self, _ui: &mut egui::Ui) {}
 }
 
 struct State {
@@ -42,7 +43,7 @@ struct State {
 
     ms_hist: History,
 
-    settings: GfxSettings,
+    gfx_settings: GfxSettings,
     sun_angle: Degrees,
 }
 
@@ -73,6 +74,9 @@ impl engine::framework::State for State {
 
         ctx.audio.set_settings(100.0, 100.0, 100.0, 100.0);
 
+        let mut gfx_settings = GfxSettings::default();
+        gfx_settings.shader_debug = true;
+
         Self {
             demo_elements: vec![
                 (Box::new(Spheres::init(ctx)), true),
@@ -88,7 +92,7 @@ impl engine::framework::State for State {
             last_cam: camera,
             freeze_cam: false,
             ms_hist: History::new(128),
-            settings: Default::default(),
+            gfx_settings,
             sun_angle: Degrees(0.0),
         }
     }
@@ -96,7 +100,7 @@ impl engine::framework::State for State {
     fn update(&mut self, ctx: &mut Context) {
         self.delta = ctx.delta;
 
-        ctx.gfx.update_settings(self.settings);
+        ctx.gfx.update_settings(self.gfx_settings);
         self.ms_hist.add_value(ctx.delta);
 
         let delta = self.camera_movement(ctx);
@@ -177,6 +181,7 @@ impl engine::framework::State for State {
 
                 for (de, enabled) in &mut self.demo_elements {
                     ui.checkbox(enabled, de.name());
+                    de.render_gui(ui);
                 }
 
                 if ui.button("play sound: road_lay").clicked() {
@@ -197,22 +202,22 @@ impl engine::framework::State for State {
                 ui.add(egui::Slider::new(&mut self.camera_speed, 1.0..=100.0).text("Camera speed"));
                 ui.checkbox(&mut self.freeze_cam, "Freeze camera");
 
-                ui.checkbox(&mut self.settings.fullscreen, "Fullscreen");
-                ui.checkbox(&mut self.settings.vsync, "VSync");
-                ui.checkbox(&mut self.settings.fog, "Fog");
-                ui.checkbox(&mut self.settings.ssao, "SSAO");
-                ui.checkbox(&mut self.settings.terrain_grid, "Terrain grid");
+                ui.checkbox(&mut self.gfx_settings.fullscreen, "Fullscreen");
+                ui.checkbox(&mut self.gfx_settings.vsync, "VSync");
+                ui.checkbox(&mut self.gfx_settings.fog, "Fog");
+                ui.checkbox(&mut self.gfx_settings.ssao, "SSAO");
+                ui.checkbox(&mut self.gfx_settings.terrain_grid, "Terrain grid");
 
-                let mut shadows = self.settings.shadows.size().is_some();
+                let mut shadows = self.gfx_settings.shadows.size().is_some();
                 ui.checkbox(&mut shadows, "Shadows");
-                self.settings.shadows = if shadows {
+                self.gfx_settings.shadows = if shadows {
                     ShadowQuality::High
                 } else {
                     ShadowQuality::NoShadows
                 };
 
-                ui.checkbox(&mut self.settings.shader_debug, "Shader debug");
-                ui.checkbox(&mut self.settings.pbr_enabled, "PBR Environment Update");
+                ui.checkbox(&mut self.gfx_settings.shader_debug, "Shader debug");
+                ui.checkbox(&mut self.gfx_settings.pbr_enabled, "PBR Environment Update");
             });
     }
 }
@@ -287,10 +292,10 @@ impl State {
                 * cam_speed;
         }
         if ctx.input.keyboard.pressed_scancode.contains(&57) {
-            self.camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
+            self.camera.pos += vec3(0.0, 0.0, 0.5) * cam_speed;
         }
         if ctx.input.keyboard.pressed_scancode.contains(&29) {
-            self.camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
+            self.camera.pos -= vec3(0.0, 0.0, 0.5) * cam_speed;
         }
 
         if self.is_captured {

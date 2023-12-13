@@ -5,30 +5,37 @@ use crate::{
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, Matrix4, Vec2, AABB3};
 use std::sync::Arc;
 use wgpu::{
-    BindGroupDescriptor, BindGroupLayoutDescriptor, BufferUsages, Extent3d, FilterMode,
-    ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d, RenderPass, RenderPipeline,
-    TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
+    BindGroupDescriptor, BindGroupLayoutDescriptor, BufferUsages, CommandEncoder,
+    CommandEncoderDescriptor, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat,
+    Origin3d, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, TextureView,
+    VertexAttribute, VertexBufferLayout,
 };
 
-const LOD: usize = 4;
-const LOD_MIN_DIST_LOG2: f32 = 11.0; // 2^10 = 1024, meaning until 2048m away, we use the highest lod
+const LOD: usize = 5;
+const LOD_MIN_DIST_LOG2: f32 = 9.5; // 2^10 = 1024, meaning until 2048m away, we use the highest lod
 const MAX_HEIGHT: f32 = 2008.0;
 const MIN_HEIGHT: f32 = -40.0;
-const MAX_DIFF: f32 = 32.0;
+const UPSCALE_LOD: usize = 2; // amount of LOD that are superior to base terrain data
 
 pub struct TerrainChunk {
     pub dirt_id: u32,
 }
 
+/// CSIZE is the size of a chunk in meters
+/// CRESOLUTION is the resolution of a chunk, in vertices, at the chunk data level (not LOD0 since we upsample)
 pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     terrain_tex: Arc<Texture>,
-    #[allow(unused)]
-    grass_tex: Arc<Texture>, // kept alive
+    normal_tex: Arc<Texture>,
+
     indices: [(PBuffer, u32); LOD],
     instances: [(PBuffer, u32); LOD],
     bgs: Arc<[wgpu::BindGroup; LOD]>,
     w: u32,
     h: u32,
+
+    normal_pipeline: RenderPipeline,
+    downsample_pipeline: RenderPipeline,
+    upsample_pipeline: RenderPipeline,
 }
 
 pub struct TerrainPrepared {
@@ -38,25 +45,45 @@ pub struct TerrainPrepared {
 }
 
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
+    const LOD0_RESOLUTION: usize = CRESOLUTION * (1 << UPSCALE_LOD);
+
     pub fn new(gfx: &mut GfxContext, w: u32, h: u32, grass: Arc<Texture>) -> Self {
         debug_assert!(
-            CRESOLUTION >= 1 << LOD,
-            "TERRAIN RESOLUTION must be >= {}",
+            Self::LOD0_RESOLUTION >= 1 << LOD,
+            "LOD0 TERRAIN RESOLUTION must be >= {}",
             1 << LOD
         );
 
         let indices = Self::generate_indices_mesh(gfx);
 
-        let tex = TextureBuilder::empty(
-            w * CRESOLUTION as u32,
-            h * CRESOLUTION as u32,
+        let terrain_tex = TextureBuilder::empty(
+            w * Self::LOD0_RESOLUTION as u32,
+            h * Self::LOD0_RESOLUTION as u32,
             1,
-            TextureFormat::R32Uint,
+            TextureFormat::R16Uint,
         )
-        .with_usage(TextureUsages::COPY_DST | TextureUsages::TEXTURE_BINDING)
         .with_fixed_mipmaps(LOD as u32)
         .with_sampler(wgpu::SamplerDescriptor {
             label: Some("terrain sampler"),
+            mag_filter: FilterMode::Linear,
+            min_filter: FilterMode::Linear,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            ..Default::default()
+        })
+        .with_no_anisotropy()
+        .build(&gfx.device, &gfx.queue);
+
+        let normals_tex = TextureBuilder::empty(
+            w * Self::LOD0_RESOLUTION as u32,
+            h * Self::LOD0_RESOLUTION as u32,
+            1,
+            TextureFormat::R16Uint,
+        )
+        .with_fixed_mipmaps(LOD as u32)
+        .with_sampler(wgpu::SamplerDescriptor {
+            label: Some("terrain normals sampler"),
             mag_filter: FilterMode::Linear,
             min_filter: FilterMode::Linear,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -74,19 +101,19 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 TerrainChunkData {
                     lod: lod as u32,
                     lod_pow2: scale,
-                    resolution: 1 + CRESOLUTION as u32 / scale,
+                    resolution: 1 + Self::LOD0_RESOLUTION as u32 / scale,
                     distance_lod_cutoff: 2.0f32.powf(1.0 + LOD_MIN_DIST_LOG2 + lod as f32)
-                        - std::f32::consts::SQRT_2 * CSIZE as f32,
-                    cell_size: CSIZE as f32 / CRESOLUTION as f32,
-                    inv_cell_size: CRESOLUTION as f32 / CSIZE as f32,
+                        - std::f32::consts::FRAC_1_SQRT_2 * CSIZE as f32,
+                    cell_size: CSIZE as f32 / Self::LOD0_RESOLUTION as f32,
+                    inv_cell_size: Self::LOD0_RESOLUTION as f32 / CSIZE as f32,
                 },
                 &gfx.device,
             );
 
-            let texs = &[&tex, &grass];
+            let texs = &[&terrain_tex, &normals_tex, &grass];
             let mut bg_entries = Vec::with_capacity(3);
             bg_entries.extend(Texture::multi_bindgroup_entries(0, texs));
-            bg_entries.push(uni.bindgroup_entry(4));
+            bg_entries.push(uni.bindgroup_entry(6));
             bgs.push(
                 gfx.device.create_bind_group(&BindGroupDescriptor {
                     layout: &gfx
@@ -103,9 +130,13 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         defer!(log::info!("finished init of terrain render"));
         Self {
+            normal_pipeline: normal_pipeline(&gfx, &normals_tex),
+            downsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "downsample"),
+            upsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "upsample"),
+
             bgs: Arc::new(collect_arrlod(bgs)),
-            terrain_tex: Arc::new(tex),
-            grass_tex: grass,
+            terrain_tex: Arc::new(terrain_tex),
+            normal_tex: Arc::new(normals_tex),
             indices,
             w,
             h,
@@ -118,65 +149,22 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         gfx: &mut GfxContext,
         cell: (u32, u32),
         chunk: &[[f32; CRESOLUTION]; CRESOLUTION],
-        get_up: impl Fn(usize) -> Option<f32>,
-        get_down: impl Fn(usize) -> Option<f32>,
-        get_right: impl Fn(usize) -> Option<f32>,
-        get_left: impl Fn(usize) -> Option<f32>,
     ) {
-        fn pack(height: f32, diffx: f32, diffy: f32) -> [u8; 4] {
+        fn pack(height: f32) -> [u8; 2] {
             let h_encoded = ((height.clamp(MIN_HEIGHT, MAX_HEIGHT) - MIN_HEIGHT)
                 / (MAX_HEIGHT - MIN_HEIGHT)
                 * u16::MAX as f32) as u16;
-
-            let dx_encoded: u8;
-            let dy_encoded: u8;
-
-            if height >= MAX_HEIGHT || height <= MIN_HEIGHT {
-                dx_encoded = 128;
-                dy_encoded = 128; // normal is zero if we hit height bounds
-            } else {
-                dx_encoded =
-                    (diffx.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
-                dy_encoded =
-                    (diffy.clamp(-MAX_DIFF, MAX_DIFF) / MAX_DIFF * i8::MAX as f32 + 128.0) as u8;
-            }
-
-            let packed = (dx_encoded as u32) << 24 | (dy_encoded as u32) << 16 | h_encoded as u32;
-            packed.to_le_bytes()
+            h_encoded.to_le_bytes()
         }
 
-        let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
+        let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION * 2);
 
-        let mut holder_y_edge: [f32; CRESOLUTION] = [0.0; CRESOLUTION];
-        let mut j = 0;
-        let mut last_ys = &[(); CRESOLUTION].map(|_| {
-            let height_down = get_down(j).unwrap_or(chunk[0][j]);
-            j += 1;
-            height_down
-        });
         for i in 0..CRESOLUTION {
-            let ys = &chunk[i];
-            let next_ys = chunk.get(i + 1).unwrap_or_else(|| {
-                for j in 0..CRESOLUTION {
-                    holder_y_edge[j] = get_up(j).unwrap_or(ys[j]);
-                }
-                &holder_y_edge
-            });
+            let ys: &[f32; CRESOLUTION] = &chunk[i];
 
-            let mut last_height = get_left(i).unwrap_or(ys[0]);
             for j in 0..CRESOLUTION {
-                let height = ys[j];
-                let dh_x = last_height
-                    - ys.get(j + 1)
-                        .copied()
-                        .unwrap_or_else(|| get_right(i).unwrap_or(height));
-                let dh_y = last_ys[j] - next_ys[j];
-
-                contents.extend(pack(height, dh_x, dh_y));
-                last_height = height;
+                contents.extend(pack(ys[j]));
             }
-
-            last_ys = ys;
         }
 
         let h = CRESOLUTION as u32;
@@ -185,7 +173,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         gfx.queue.write_texture(
             ImageCopyTexture {
                 texture: &self.terrain_tex.texture,
-                mip_level: 0,
+                mip_level: UPSCALE_LOD as u32,
                 origin: Origin3d {
                     x: cell.0 * CRESOLUTION as u32,
                     y: cell.1 * CRESOLUTION as u32,
@@ -196,7 +184,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             &contents,
             ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(w * 4),
+                bytes_per_row: Some(w * 2),
                 rows_per_image: Some(h),
             },
             Extent3d {
@@ -222,14 +210,15 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         // special: lod 0 = dont render, stored as 1 + lod
         let mut assigned_lod: Vec<u8> = vec![0; (self.h * self.w) as usize];
 
+        // frustrum culling + lod assignment
         for y in 0..self.h {
             for x in 0..self.w {
                 let chunk_corner = vec2(x as f32, y as f32) * CSIZE as f32;
                 let chunk_center = chunk_corner + Vec2::splat(CSIZE as f32 * 0.5);
 
-                if !frustrum.intersects(&AABB3::centered(
-                    chunk_center.z0(),
-                    vec3(CSIZE as f32, CSIZE as f32, 2000.0),
+                if !frustrum.intersects(&AABB3::new(
+                    chunk_corner.z(MIN_HEIGHT),
+                    chunk_corner.z0() + vec3(CSIZE as f32, CSIZE as f32, MAX_HEIGHT + 16.0),
                 )) {
                     continue;
                 }
@@ -289,7 +278,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         for lod in 0..LOD {
             let scale = 1 << lod;
-            let resolution = CRESOLUTION / scale;
+            let resolution = Self::LOD0_RESOLUTION / scale;
 
             let mut indices: Vec<IndexType> = Vec::with_capacity(6 * resolution * resolution);
 
@@ -319,6 +308,249 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         collect_arrlod(indlod)
     }
+
+    /// Updates the normals of the terrain and the height mipmaps
+    pub fn invalidate_height_normals(&mut self, gfx: &GfxContext) {
+        if cfg!(debug_assertions) {
+            self.downsample_pipeline = resample_pipeline(gfx, &self.terrain_tex, "downsample");
+            self.upsample_pipeline = resample_pipeline(gfx, &self.terrain_tex, "upsample");
+            self.normal_pipeline = normal_pipeline(gfx, &self.normal_tex);
+        }
+
+        let mut encoder = gfx
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("terrain invalidate encoder"),
+            });
+
+        // downsample, starting from the base resolution
+        for mip in UPSCALE_LOD as u32..LOD as u32 - 1 {
+            downsample_update(
+                gfx,
+                &self.downsample_pipeline,
+                &mut encoder,
+                &self.terrain_tex,
+                mip,
+            );
+        }
+
+        // upsample
+        for mip in (1..=UPSCALE_LOD as u32).rev() {
+            upsample_update(
+                gfx,
+                &self.upsample_pipeline,
+                &mut encoder,
+                &self.terrain_tex,
+                mip,
+            );
+        }
+
+        // update normals
+        for mip in 0..LOD as u32 {
+            normal_update(
+                gfx,
+                &self.normal_pipeline,
+                &mut encoder,
+                &self.terrain_tex,
+                &self.normal_tex.mip_view(mip),
+            );
+        }
+
+        gfx.queue.submit(std::iter::once(encoder.finish()));
+    }
+}
+
+fn normal_pipeline(gfx: &GfxContext, normals_tex: &Texture) -> RenderPipeline {
+    let normal_module = gfx.get_module("terrain/calc_normals");
+
+    gfx.device
+        .create_render_pipeline(&RenderPipelineDescriptor {
+            label: Some("terrain normals pipeline"),
+            layout: Some(
+                &gfx.device
+                    .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                        label: Some("terrain normals pipeline layout"),
+                        bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device, [TL::UInt])],
+                        push_constant_ranges: &[],
+                    }),
+            ),
+            vertex: wgpu::VertexState {
+                module: &normal_module,
+                entry_point: "vert",
+                buffers: &[],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &normal_module,
+                entry_point: "calc_normals",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: normals_tex.format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                cull_mode: None,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        })
+}
+
+fn normal_update<'a>(
+    gfx: &GfxContext,
+    normal_pipeline: &RenderPipeline,
+    encoder: &'a mut CommandEncoder,
+    height_tex: &'a Texture,
+    normal_view: &TextureView,
+) {
+    let binding = height_tex.bindgroup(&gfx.device, &normal_pipeline.get_bind_group_layout(0));
+    let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some("terrain normals render pass"),
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: &normal_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            },
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+    });
+    rp.set_pipeline(&normal_pipeline);
+    rp.set_bind_group(0, &binding, &[]);
+    rp.draw(0..4, 0..1);
+    drop(rp);
+}
+
+fn resample_pipeline(gfx: &GfxContext, height_tex: &Texture, entry_point: &str) -> RenderPipeline {
+    let resample_module = gfx.get_module("terrain/resample");
+
+    gfx.device
+        .create_render_pipeline(&RenderPipelineDescriptor {
+            label: Some("terrain downsample pipeline"),
+            layout: Some(
+                &gfx.device
+                    .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                        label: Some("terrain downsample pipeline layout"),
+                        bind_group_layouts: &[&gfx.device.create_bind_group_layout(
+                            &BindGroupLayoutDescriptor {
+                                label: None,
+                                entries: &[Texture::bindgroup_layout_entries(
+                                    0,
+                                    [TL::UInt].into_iter(),
+                                )
+                                    // We don't need a sampler
+                                .next()
+                                .unwrap()],
+                            },
+                        )],
+                        push_constant_ranges: &[],
+                    }),
+            ),
+            vertex: wgpu::VertexState {
+                module: &resample_module,
+                entry_point: "vert",
+                buffers: &[],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &resample_module,
+                entry_point,
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: height_tex.format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                cull_mode: None,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        })
+}
+
+/// Downsamples the terrain 1 mip up, the mip argument should be the base level
+fn downsample_update(
+    gfx: &GfxContext,
+    downsample_pipeline: &RenderPipeline,
+    encoder: &mut CommandEncoder,
+    height_tex: &Texture,
+    mip: u32,
+) {
+    let bg = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &downsample_pipeline.get_bind_group_layout(0),
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&height_tex.mip_view(mip)),
+        }],
+        label: None,
+    });
+
+    let render_view = height_tex.mip_view(mip + 1);
+    let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some("terrain downsample render pass"),
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: &render_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            },
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+    });
+    rp.set_pipeline(&downsample_pipeline);
+    rp.set_bind_group(0, &bg, &[]);
+    rp.draw(0..4, 0..1);
+    drop(rp);
+}
+
+/// Downsamples the terrain 1 mip down, the mip argument should be the base level
+fn upsample_update(
+    gfx: &GfxContext,
+    upsample_pipeline: &RenderPipeline,
+    encoder: &mut CommandEncoder,
+    height_tex: &Texture,
+    mip: u32,
+) {
+    let bg = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &upsample_pipeline.get_bind_group_layout(0),
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&height_tex.mip_view(mip)),
+        }],
+        label: None,
+    });
+
+    let render_view = height_tex.mip_view(mip - 1);
+    let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some("terrain upsample render pass"),
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: &render_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            },
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+    });
+    rp.set_pipeline(&upsample_pipeline);
+    rp.set_bind_group(0, &bg, &[]);
+    rp.draw(0..4, 0..1);
+    drop(rp);
 }
 
 #[derive(Hash)]
@@ -386,11 +618,14 @@ impl PipelineBuilder for TerrainPipeline {
         let terrainlayout = gfx
             .device
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
-                entries: &Texture::bindgroup_layout_entries(0, [TL::UInt, TL::Float].into_iter())
-                    .chain(std::iter::once(
-                        Uniform::<TerrainChunkData>::bindgroup_layout_entry(4),
-                    ))
-                    .collect::<Vec<_>>(),
+                entries: &Texture::bindgroup_layout_entries(
+                    0,
+                    [TL::UInt, TL::UInt, TL::Float].into_iter(),
+                )
+                .chain(std::iter::once(
+                    Uniform::<TerrainChunkData>::bindgroup_layout_entry(6),
+                ))
+                .collect::<Vec<_>>(),
                 label: Some("terrain bindgroup layout"),
             });
         let vert = &mk_module("terrain/terrain.vert");

@@ -1,15 +1,17 @@
 use crate::DemoElement;
+use engine::image::GenericImageView;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext};
 use geom::{vec2, Camera, InfiniteFrustrum};
 
-const CSIZE: usize = 512;
-const CRESO: usize = 32;
-const MAP_SIZE: usize = 25;
+const CSIZE: usize = 256;
+const CRESO: usize = 8;
+const MAP_SIZE: usize = 100;
 
 pub struct Terrain {
     terrain: EngineTerrainRender<CSIZE, CRESO>,
-    heights: Box<[[[[f32; CRESO]; CRESO]; MAP_SIZE]; MAP_SIZE]>,
+    _heights: Box<[[[[f32; CRESO]; CRESO]; MAP_SIZE]; MAP_SIZE]>,
+    reload: bool,
 }
 
 impl DemoElement for Terrain {
@@ -26,17 +28,18 @@ impl DemoElement for Terrain {
                 .try_into()
                 .unwrap();
 
-        for x in 0..MAP_SIZE {
-            for y in 0..MAP_SIZE {
+        for y in 0..MAP_SIZE {
+            for x in 0..MAP_SIZE {
                 for i in 0..CRESO {
                     for j in 0..CRESO {
-                        heights[y][x][i][j] = 600.0
-                            * (0.5
-                                + geom::fnoise(
-                                    0.01 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
-                                )
-                                .0
-                                .powi(2));
+                        heights[y][x][i][j] = 3000.0
+                            * geom::fnoise::<6>(
+                                0.002 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
+                            )
+                            .0
+                            .powi(2);
+                        //heights[y][x][i][j] =
+                        //    (CSIZE / CRESO * i) as f32 + 0.5 * (CSIZE / CRESO * j) as f32;
                     }
                 }
             }
@@ -48,44 +51,37 @@ impl DemoElement for Terrain {
 
         for x in 0..MAP_SIZE {
             for y in 0..MAP_SIZE {
-                terrain.update_chunk(
-                    gfx,
-                    (x as u32, y as u32),
-                    &heights[y][x],
-                    |j: usize| {
-                        if y + 1 == MAP_SIZE || j >= CRESO {
-                            return None;
-                        }
-                        Some(heights[y + 1][x][0][j])
-                    },
-                    |j: usize| {
-                        if y == 0 || j >= CRESO {
-                            return None;
-                        }
-                        Some(heights[y - 1][x][CRESO - 1][j])
-                    },
-                    |i: usize| {
-                        if x + 1 == MAP_SIZE || i >= CRESO {
-                            return None;
-                        }
-                        Some(heights[y][x + 1][i][0])
-                    },
-                    |i: usize| {
-                        if x == 0 || i >= CRESO {
-                            return None;
-                        }
-                        Some(heights[y][x - 1][i][CRESO - 1])
-                    },
-                );
+                terrain.update_chunk(gfx, (x as u32, y as u32), &heights[y][x]);
             }
         }
 
-        Self { terrain, heights }
+        terrain.invalidate_height_normals(&ctx.gfx);
+
+        Self {
+            terrain,
+            _heights: heights,
+            reload: false,
+        }
     }
 
-    fn update(&mut self, _ctx: &mut Context) {}
+    fn update(&mut self, ctx: &mut Context) {
+        if self.reload {
+            self.reload = false;
+            self.terrain.invalidate_height_normals(&ctx.gfx);
+        }
+    }
 
     fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum) {
         self.terrain.draw_terrain(cam, frustrum, fc);
+    }
+
+    fn render_gui(&mut self, ui: &mut egui::Ui) {
+        ui.indent("terrain", |ui| {
+            if cfg!(debug_assertions) {
+                if ui.button("reload terrain").clicked() {
+                    self.reload = true;
+                }
+            }
+        });
     }
 }
