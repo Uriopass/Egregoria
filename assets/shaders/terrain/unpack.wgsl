@@ -7,8 +7,10 @@ fn unpack_height(h: u32) -> f32 {
     return (f32(h) / 65535.0) * HEIGHT_RANGE + MIN_HEIGHT;
 }
 
-fn unpack_diffs(v: u32, lod_pow2: f32) -> vec2<f32> {
-    let x = (f32(v >> 8u) - 128.0) / 127.0 * (MAX_DIFF * lod_pow2);
-    let y = (f32(v & 0xFFu) - 128.0) / 127.0 * (MAX_DIFF * lod_pow2);
-    return vec2<f32>(x, y);
+fn unpack_normal(v: u32) -> vec3<f32> {
+    let x = f32(v >> 8u) / 128.0 - 1.0;
+    let y = f32(v & 0xFFu) / 128.0 - 1.0;
+    let z = sqrt(1.0 - x * x - y * y);
+
+    return vec3<f32>(x, y, z);
 }

@@ -28,9 +28,12 @@ struct FragmentOutput {
 
 @group(0) @binding(0) var t_terrain: texture_2d<u32>;
 
-fn pack_diffs(diffs: vec2<f32>, lod_pow2: f32) -> u32 {
-    let x = u32((clamp(diffs.x, -MAX_DIFF, MAX_DIFF) / (MAX_DIFF * lod_pow2)) * 127.0 + 128.0);
-    let y = u32((clamp(diffs.y, -MAX_DIFF, MAX_DIFF) / (MAX_DIFF * lod_pow2)) * 127.0 + 128.0);
+@group(1) @binding(0) var<uniform> cell_size: f32;
+
+fn pack_normal(normal: vec2<f32>) -> u32 {
+    // assume normal is [-1, 1] packed into [0, 255]
+    let x = u32(normal.x * 127.0 + 128.0);
+    let y = u32(normal.y * 127.0 + 128.0);
     return (x << 8u) | y;
 }
 
@@ -40,14 +43,14 @@ fn calc_normals(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
 
     let id = vec2<u32>(v_TexCoord * vec2<f32>(dim));
 
-
-
     let hR: f32 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(1u, 0u), 0).r);
     let hL: f32 = unpack_height(textureLoad(t_terrain, id - vec2<u32>(1u, 0u), 0).r);
     let hT: f32 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(0u, 1u), 0).r);
     let hB: f32 = unpack_height(textureLoad(t_terrain, id - vec2<u32>(0u, 1u), 0).r);
 
-    let diffs = vec2<f32>((hL - hR), (hB - hT));
+    // We only need xy. We assume positive-z normal as it's from a heightmap
+    // We can reconstruct z later because it's a unit vector
+    let normal = normalize(vec3(hL - hR, hB - hT, 2.0 * cell_size)).xy;
 
-    return FragmentOutput(pack_diffs(diffs, 1.0));
+    return FragmentOutput(pack_normal(normal));
 }

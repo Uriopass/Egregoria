@@ -34,6 +34,7 @@ pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     h: u32,
 
     normal_pipeline: RenderPipeline,
+    normal_unis: [Uniform<f32>; LOD],
     downsample_pipeline: RenderPipeline,
     upsample_pipeline: RenderPipeline,
 }
@@ -131,6 +132,12 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         defer!(log::info!("finished init of terrain render"));
         Self {
             normal_pipeline: normal_pipeline(&gfx, &normals_tex),
+            normal_unis: collect_arrlod((0..LOD).map(|lod| {
+                Uniform::new(
+                    (CSIZE << lod) as f32 / Self::LOD0_RESOLUTION as f32,
+                    &gfx.device,
+                )
+            })),
             downsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "downsample"),
             upsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "upsample"),
 
@@ -351,8 +358,9 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 gfx,
                 &self.normal_pipeline,
                 &mut encoder,
-                &self.terrain_tex,
+                &self.terrain_tex.mip_view(mip),
                 &self.normal_tex.mip_view(mip),
+                &self.normal_unis[mip as usize],
             );
         }
 
@@ -370,7 +378,20 @@ fn normal_pipeline(gfx: &GfxContext, normals_tex: &Texture) -> RenderPipeline {
                 &gfx.device
                     .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: Some("terrain normals pipeline layout"),
-                        bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device, [TL::UInt])],
+                        bind_group_layouts: &[
+                            &gfx.device
+                                .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                                    label: None,
+                                    entries: &[Texture::bindgroup_layout_entries(
+                                        0,
+                                        [TL::UInt].into_iter(),
+                                    )
+                                        // We don't need a sampler
+                                        .next()
+                                        .unwrap()],
+                                }),
+                            &Uniform::<f32>::bindgroup_layout(&gfx.device),
+                        ],
                         push_constant_ranges: &[],
                     }),
             ),
@@ -403,10 +424,19 @@ fn normal_update<'a>(
     gfx: &GfxContext,
     normal_pipeline: &RenderPipeline,
     encoder: &'a mut CommandEncoder,
-    height_tex: &'a Texture,
+    height_tex: &TextureView,
     normal_view: &TextureView,
+    uni: &Uniform<f32>,
 ) {
-    let binding = height_tex.bindgroup(&gfx.device, &normal_pipeline.get_bind_group_layout(0));
+    let bg = gfx.device.create_bind_group(&BindGroupDescriptor {
+        layout: &normal_pipeline.get_bind_group_layout(0),
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&height_tex),
+        }],
+        label: None,
+    });
+
     let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("terrain normals render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -422,7 +452,8 @@ fn normal_update<'a>(
         occlusion_query_set: None,
     });
     rp.set_pipeline(&normal_pipeline);
-    rp.set_bind_group(0, &binding, &[]);
+    rp.set_bind_group(0, &bg, &[]);
+    rp.set_bind_group(1, &uni.bindgroup, &[]);
     rp.draw(0..4, 0..1);
     drop(rp);
 }

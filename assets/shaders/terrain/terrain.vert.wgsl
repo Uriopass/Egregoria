@@ -39,10 +39,10 @@ normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)
                             .normalize(),
 */
 
-fn sampleHeightDxDy(pos: vec2<i32>, lod: i32) -> vec3<f32> {
+fn sampleHeightDxDy(pos: vec2<i32>, lod: i32) -> vec4<f32> {
     let height: f32 = unpack_height(textureLoad(t_terrain, pos, lod).r);
-    let diffs: vec2<f32> = unpack_diffs(textureLoad(t_normals, pos, lod).r, 1.0);
-    return vec3<f32>(height, diffs);
+    let normal: vec3<f32> = unpack_normal(textureLoad(t_normals, pos, lod).r);
+    return vec4<f32>(height, normal);
 }
 
 @vertex
@@ -70,31 +70,30 @@ fn vert(@builtin(vertex_index) vid: u32,
 
     let tpos: vec2<i32> = in_position + vec2<i32>(in_off * cdata.inv_cell_size / f32(cdata.lod_pow2));
 
-    let height_dx_dy: vec3<f32> = sampleHeightDxDy(tpos, i32(cdata.lod));
+    let height_normal: vec4<f32> = sampleHeightDxDy(tpos, i32(cdata.lod));
+    var normal: vec3<f32> = height_normal.yzw;
 
-    var normal: vec3<f32> = normalize(vec3(height_dx_dy.yz, cdata.cell_size * 2.0)); // https://stackoverflow.com/questions/49640250/calculate-normals-from-heightmap
+    var world_pos: vec3<f32> = vec3(vec2<f32>(in_position * i32(cdata.lod_pow2)) * cdata.cell_size + in_off, height_normal.x);
 
-    var world_pos: vec3<f32> = vec3(vec2<f32>(in_position * i32(cdata.lod_pow2)) * cdata.cell_size + in_off, height_dx_dy.x);
+    let height_normal_next: vec4<f32> = sampleHeightDxDy(tpos / 2, i32(cdata.lod) + 1);
 
-    let height_dx_dy_next: vec3<f32> = sampleHeightDxDy(tpos / 2, i32(cdata.lod) + 1);
-    let normal_next: vec3<f32> = normalize(vec3(height_dx_dy_next.yz, cdata.cell_size * 2.0));
-
-    var debug = 0.0;
+#ifdef DEBUG
+    var debug = 1.0;
+#endif
 
     if (cdata.lod < 4u) {
         let dist_to_cam: f32 = length(params.cam_pos.xyz - vec3(world_pos.xy, 0.0));
         let transition_alpha: f32 = smoothstep(cdata.distance_lod_cutoff * 0.8, cdata.distance_lod_cutoff, dist_to_cam);
 
 #ifdef DEBUG
-    debug = (f32(cdata.lod) + transition_alpha + 1.0) / 5.0;
+//    debug = (f32(cdata.lod) + transition_alpha + 1.0) / 5.0;
+    debug = f32(cdata.lod);
 #endif
 
-        var world_pos_next: vec3<f32> = vec3(vec2<f32>(in_position / 2 * i32(cdata.lod_pow2)) * cdata.cell_size * 2.0 + in_off, height_dx_dy_next.x);
+        var world_pos_next: vec3<f32> = vec3(vec2<f32>(in_position / 2 * i32(cdata.lod_pow2)) * cdata.cell_size * 2.0 + in_off, height_normal_next.x);
 
-        normal = mix(normal, normal_next, transition_alpha);
+        normal = normalize(mix(normal, height_normal_next.yzw, transition_alpha));
         world_pos = mix(world_pos, world_pos_next, transition_alpha);
-    } else {
-        debug = 1.0;
     }
 
     let clip_pos: vec4<f32> = global.u_view_proj * vec4(world_pos, 1.0);

@@ -1,5 +1,4 @@
 use crate::DemoElement;
-use engine::image::GenericImageView;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext};
 use geom::{vec2, Camera, InfiniteFrustrum};
