@@ -124,8 +124,8 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
             self.height_nearest(p + Vec2::y(Self::CELL_SIZE)),
             self.height_nearest(p + vec2(Self::CELL_SIZE, Self::CELL_SIZE)),
         ) {
-            let x = (p.x % Self::CELL_SIZE) / Self::CELL_SIZE;
-            let y = (p.y % Self::CELL_SIZE) / Self::CELL_SIZE;
+            let x = (p.x / Self::CELL_SIZE).fract();
+            let y = (p.y / Self::CELL_SIZE).fract();
 
             let h01 = ll + x * (lr - ll);
             let h23 = ul + x * (ur - ul);
