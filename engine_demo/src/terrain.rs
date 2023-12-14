@@ -3,9 +3,9 @@ use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext};
 use geom::{vec2, Camera, InfiniteFrustrum};
 
-const CSIZE: usize = 256;
-const CRESO: usize = 8;
-const MAP_SIZE: usize = 100;
+const CSIZE: usize = 512;
+const CRESO: usize = 16;
+const MAP_SIZE: usize = 50;
 
 pub struct Terrain {
     terrain: EngineTerrainRender<CSIZE, CRESO>,
