@@ -52,15 +52,16 @@ impl MapSubscribers {
     }
 
     pub fn dispatch(&mut self, update_type: UpdateType, p: &impl CanonicalPosition) {
-        let chunk_id = ChunkID::new(p.canonical_position());
+        let chunk_id = SubscriberChunkID::new(p.canonical_position());
         self.dispatch_chunk(update_type, chunk_id);
     }
 
-    pub fn dispatch_chunk(&mut self, update_type: UpdateType, chunk_id: SubscriberChunkID) {
-        let mut me = self.0.lock().unwrap();
-        for sub in me.iter_mut() {
-            sub.dispatch(update_type, chunk_id);
-        }
+    pub fn dispatch_chunk<const LEVEL: u16>(
+        &mut self,
+        update_type: UpdateType,
+        chunk_id: ChunkID<LEVEL>,
+    ) {
+        self.dispatch_chunks(update_type, chunk_id.convert());
     }
 
     pub fn dispatch_chunks(

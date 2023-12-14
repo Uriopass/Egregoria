@@ -24,7 +24,7 @@ use crate::{
     Replay, RunnableSystem, Simulation, SimulationOptions, RNG_SEED, SECONDS_PER_DAY,
     SECONDS_PER_HOUR,
 };
-use common::saveload::{Bincode, Encoder};
+use common::saveload::{Bincode, Encoder, JSON};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -75,7 +75,7 @@ pub fn init() {
     register_resource::<CollisionWorld, Bincode>("coworld", || CollisionWorld::new(100));
     register_resource::<RandProvider, Bincode>("randprovider", || RandProvider::new(RNG_SEED));
     register_resource_default::<Dispatcher, Bincode>("dispatcher");
-    register_resource_default::<Replay, Bincode>("replay");
+    register_resource_default::<Replay, JSON>("replay");
 }
 
 pub struct InitFunc {
@@ -161,9 +161,12 @@ fn register_resource_noinit<T: 'static + Send + Sync + Serialize + DeserializeOw
         SAVELOAD_FUNCS.push(SaveLoadFunc {
             name,
             save: Box::new(move |uiworld| E::encode(&*uiworld.read::<T>()).unwrap()),
-            load: Box::new(move |uiworld, data| {
-                if let Ok(res) = E::decode::<T>(&data) {
+            load: Box::new(move |uiworld, data| match E::decode::<T>(&data) {
+                Ok(res) => {
                     uiworld.insert(res);
+                }
+                Err(e) => {
+                    log::error!("Error loading resource {}: {}", name, e);
                 }
             }),
         });

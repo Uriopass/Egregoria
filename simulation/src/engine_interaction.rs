@@ -11,7 +11,7 @@ use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
     BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder, LightPolicy,
-    LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
+    LotID, Map, MapProject, ProjectKind, RoadID, TerraformKind, Terrain, TurnPolicy, Zone,
 };
 use crate::map_dynamic::{BuildingInfos, ParkingManagement};
 use crate::multiplayer::chat::Message;
@@ -37,6 +37,12 @@ pub enum WorldCommand {
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
+    Terraform {
+        kind: TerraformKind,
+        center: Vec2,
+        radius: f32,
+        amount: f32,
+    },
     SendMessage {
         message: Message,
     },
@@ -334,6 +340,14 @@ impl WorldCommand {
                 sim.write::<MultiplayerState>()
                     .chat
                     .add_message(message.clone());
+            }
+            Terraform {
+                kind,
+                amount,
+                center,
+                radius,
+            } => {
+                sim.map_mut().terraform(kind, center, radius, amount);
             }
         }
     }

@@ -5,6 +5,7 @@ use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadbuild::RoadBuildResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
+use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
 use crate::gui::windows::settings::Settings;
 use crate::gui::zoneedit::ZoneEditState;
@@ -31,6 +32,7 @@ pub fn init() {
     register_resource::<LotBrushResource>("lot_brush");
     register_resource::<Bindings>("bindings");
 
+    register_resource_noserialize::<TerraformingResource>();
     register_resource_noserialize::<BulldozerState>();
     register_resource_noserialize::<DebugObjs>();
     register_resource_noserialize::<DebugState>();

@@ -4,6 +4,7 @@ use crate::gui::inspect::inspector;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
+use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
 use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTextures};
@@ -162,6 +163,7 @@ impl Gui {
             Roadbuilding,
             Bulldozer,
             Train,
+            Terraforming,
         }
         uiworld.check_present(|| Tab::Hand);
 
@@ -190,6 +192,7 @@ impl Gui {
             ("buildings", Tab::Roadbuilding, Tool::SpecialBuilding),
             ("bulldozer", Tab::Bulldozer, Tool::Bulldozer),
             ("traintool", Tab::Train, Tool::Train),
+            ("terraform", Tab::Terraforming, Tool::Terraforming),
         ];
 
         Window::new("Toolbox")
@@ -501,6 +504,31 @@ impl Gui {
                     <BulldozerState as Inspect<BulldozerState>>::render_mut(
                         &mut *state,
                         "Bulldozer",
+                        ui,
+                        &InspectArgs {
+                            header: Some(false),
+                            indent_children: Some(false),
+                            ..Default::default()
+                        },
+                    );
+                });
+        }
+
+        if matches!(*uiworld.read::<Tab>(), Tab::Terraforming) {
+            let lbw = 120.0;
+            Window::new("Terraforming")
+                .min_width(lbw)
+                .auto_sized()
+                .fixed_pos([w - toolbox_w - lbw, h * 0.5 - 30.0])
+                .hscroll(false)
+                .title_bar(true)
+                .collapsible(false)
+                .resizable(false)
+                .show(ui, |ui| {
+                    let mut state = uiworld.write::<TerraformingResource>();
+                    <TerraformingResource as Inspect<TerraformingResource>>::render_mut(
+                        &mut *state,
+                        "Terraforming",
                         ui,
                         &InspectArgs {
                             header: Some(false),

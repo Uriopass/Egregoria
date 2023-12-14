@@ -3,7 +3,7 @@ use crate::map::{
     Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
     LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID, ParkingSpots,
     ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, SubscriberChunkID,
-    Terrain, UpdateType, Zone,
+    TerraformKind, Terrain, UpdateType, Zone,
 };
 use common::descriptions::BuildingGen;
 use geom::OBB;
@@ -178,7 +178,7 @@ impl Map {
 
         self.terrain.remove_trees_near(&z.poly, |tree_chunk| {
             self.subscribers
-                .dispatch_chunks(UpdateType::Terrain, tree_chunk.convert())
+                .dispatch_chunk(UpdateType::Terrain, tree_chunk)
         });
 
         self.spatial_map.insert(id, z.poly.clone());
@@ -216,7 +216,7 @@ impl Map {
         self.terrain
             .remove_trees_near(obb.expand(10.0), |tree_chunk| {
                 self.subscribers
-                    .dispatch_chunks(UpdateType::Terrain, tree_chunk.convert())
+                    .dispatch_chunk(UpdateType::Terrain, tree_chunk)
             });
 
         let v = Building::make(
@@ -323,6 +323,14 @@ impl Map {
                 self.subscribers.dispatch(UpdateType::Road, lot);
             }
             None => log::warn!("trying to set kind of non-existing lot {:?}", lot),
+        }
+    }
+
+    pub fn terraform(&mut self, kind: TerraformKind, center: Vec2, radius: f32, amount: f32) {
+        let modified = self.terrain.terraform(kind, center, radius, amount);
+
+        for id in modified {
+            self.subscribers.dispatch_chunk(UpdateType::Terrain, id);
         }
     }
 
@@ -546,7 +554,7 @@ impl Map {
         b.expand(40.0);
         self.terrain.remove_trees_near(&b, |tree_chunk| {
             self.subscribers
-                .dispatch_chunks(UpdateType::Terrain, tree_chunk.convert())
+                .dispatch_chunk(UpdateType::Terrain, tree_chunk)
         });
 
         Some(id)

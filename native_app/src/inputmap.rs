@@ -1,7 +1,7 @@
 use common::{FastMap, FastSet};
 use engine::ScanCode;
 use engine::{InputContext, KeyCode, MouseButton};
-use geom::{Vec2, Vec3};
+use geom::{Ray3, Vec2, Vec3};
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
@@ -53,10 +53,19 @@ struct InputTree {
 
 #[derive(Default)]
 pub struct InputMap {
+    /// Actions that were just pressed this frame
     pub just_act: FastSet<InputAction>,
+    /// Actions that are currently pressed
     pub act: FastSet<InputAction>,
+    /// Mouse wheel delta
     pub wheel: f32,
+    /// Mouse position in world space on the terrain
     pub unprojected: Option<Vec3>,
+
+    pub unprojected_normal: Option<Vec3>,
+    /// Ray from camera to mouse
+    pub ray: Option<Ray3>,
+    /// Mouse position in screen space
     pub screen: Vec2,
     input_tree: InputTree,
 }

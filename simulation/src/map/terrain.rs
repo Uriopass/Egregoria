@@ -1,7 +1,7 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
 use flat_spatial::Grid;
-use geom::{vec2, Intersect, Radians, Vec2, AABB};
+use geom::{vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -30,6 +30,13 @@ pub struct Terrain {
     heightmap: Heightmap,
     pub trees: Grid<Tree, Vec2>,
 }
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum TerraformKind {
+    Raise,
+}
+
+debug_inspect_impl!(TerraformKind);
 
 defer_serialize!(Terrain, SerializedTerrain);
 
@@ -109,6 +116,45 @@ impl Terrain {
         self.heightmap
             .chunks()
             .map(|((x, y), c)| (TerrainChunkID::new_i16(x as i16, y as i16), c))
+    }
+
+    pub fn raycast(&self, ray: Ray3) -> Option<(Vec3, Vec3)> {
+        self.heightmap.raycast(ray)
+    }
+
+    /// Applies a function to the heightmap
+    /// Returns the chunks that were modified
+    pub fn terrain_apply(
+        &mut self,
+        bounds: AABB,
+        f: impl FnMut(Vec3) -> f32,
+    ) -> Vec<TerrainChunkID> {
+        self.heightmap
+            .apply(bounds, f)
+            .into_iter()
+            .map(|(x, y)| TerrainChunkID::new_i16(x as i16, y as i16))
+            .collect()
+    }
+
+    pub fn terraform(
+        &mut self,
+        kind: TerraformKind,
+        center: Vec2,
+        radius: f32,
+        amount: f32,
+    ) -> Vec<TerrainChunkID> {
+        match kind {
+            TerraformKind::Raise => {
+                self.terrain_apply(AABB::centered(center, Vec2::splat(radius * 2.0)), |pos| {
+                    let dist = pos.xy().distance(center) / radius;
+                    if dist >= 1.0 {
+                        return pos.z;
+                    }
+                    let phi = (-1.0 / (1.0 - dist * dist)).exp();
+                    pos.z + amount * phi
+                })
+            }
+        }
     }
 
     fn generate_chunk(&self, (x, y): (u16, u16)) -> Option<(Chunk, Vec<Tree>)> {

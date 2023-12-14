@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub type HeightmapChunkID = (u16, u16);
 
 const MIN_HEIGHT: f32 = -40.0;
+const MAX_HEIGHT: f32 = 2008.0;
 
 #[derive(Clone)]
 pub struct HeightmapChunk<const RESOLUTION: usize, const SIZE: u32> {
@@ -36,12 +37,14 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
         }
     }
 
+    #[inline]
     pub fn rect(id: HeightmapChunkID) -> AABB {
         let ll = vec2(id.0 as f32 * SIZE as f32, id.1 as f32 * SIZE as f32);
         let ur = ll + vec2(SIZE as f32, SIZE as f32);
         AABB::new(ll, ur)
     }
 
+    #[inline]
     pub fn id(v: Vec2) -> HeightmapChunkID {
         let x = v.x / SIZE as f32;
         let x = x.clamp(0.0, u16::MAX as f32) as u16;
@@ -50,6 +53,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
         (x, y)
     }
 
+    #[inline]
     pub fn bbox(&self, origin: Vec2) -> AABB3 {
         AABB3::new(
             vec3(origin.x, origin.y, MIN_HEIGHT),
@@ -62,18 +66,21 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
     }
 
     /// assume p is in chunk-space and in-bounds
+    #[inline]
     pub fn height_unchecked(&self, p: Vec2) -> f32 {
         let v = p / SIZE as f32;
         let v = v * RESOLUTION as f32;
         self.heights[v.y as usize][v.x as usize]
     }
 
+    #[inline]
     pub fn height(&self, p: Vec2) -> Option<f32> {
         let v = p / SIZE as f32;
         let v = v * RESOLUTION as f32;
         self.heights.get(v.y as usize)?.get(v.x as usize).copied()
     }
 
+    #[inline]
     pub fn heights(&self) -> &[[f32; RESOLUTION]; RESOLUTION] {
         &self.heights
     }
@@ -99,6 +106,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         }
     }
 
+    #[inline]
     pub fn bounds(&self) -> AABB {
         AABB::new(
             vec2(0.0, 0.0),
@@ -106,10 +114,12 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         )
     }
 
+    #[inline]
     fn check_valid(&self, id: HeightmapChunkID) -> bool {
         id.0 < self.w && id.1 < self.h
     }
 
+    #[inline]
     pub fn set_chunk(&mut self, id: HeightmapChunkID, chunk: HeightmapChunk<RESOLUTION, SIZE>) {
         if !self.check_valid(id) {
             return;
@@ -117,11 +127,65 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         self.chunks[(id.0 + id.1 * self.w) as usize] = chunk;
     }
 
+    #[inline]
     pub fn get_chunk(&self, id: HeightmapChunkID) -> Option<&HeightmapChunk<RESOLUTION, SIZE>> {
         if !self.check_valid(id) {
             return None;
         }
         unsafe { Some(self.chunks.get_unchecked((id.0 + id.1 * self.w) as usize)) }
+    }
+
+    fn get_chunk_mut(
+        &mut self,
+        id: HeightmapChunkID,
+    ) -> Option<&mut HeightmapChunk<RESOLUTION, SIZE>> {
+        if !self.check_valid(id) {
+            return None;
+        }
+        unsafe {
+            Some(
+                self.chunks
+                    .get_unchecked_mut((id.0 + id.1 * self.w) as usize),
+            )
+        }
+    }
+
+    /// Applies a function to every point in the heightmap in the given bounds
+    pub fn apply(&mut self, bounds: AABB, mut f: impl FnMut(Vec3) -> f32) -> Vec<HeightmapChunkID> {
+        let ll = bounds.ll / SIZE as f32;
+        let ur = bounds.ur / SIZE as f32;
+        let ll = vec2(ll.x.floor(), ll.y.floor());
+        let ur = vec2(ur.x.ceil(), ur.y.ceil());
+
+        let mut modified = Vec::with_capacity(((ur.x - ll.x) * (ur.y - ll.y)) as usize);
+
+        for x in ll.x as u16..ur.x as u16 {
+            for y in ll.y as u16..ur.y as u16 {
+                let id = (x, y);
+                let Some(chunk) = self.get_chunk_mut(id) else {
+                    continue;
+                };
+                modified.push(id);
+                let corner = vec2(x as f32, y as f32) * SIZE as f32;
+                let mut max_height: f32 = 0.0;
+                for i in 0..RESOLUTION {
+                    for j in 0..RESOLUTION {
+                        let p = corner + vec2(j as f32, i as f32) * Self::CELL_SIZE;
+                        let h = chunk.heights[i][j];
+                        max_height = max_height.max(h);
+                        if !bounds.contains(p) {
+                            continue;
+                        }
+                        let new_h = f(p.z(h)).clamp(MIN_HEIGHT, MAX_HEIGHT);
+                        chunk.heights[i][j] = new_h;
+                        max_height = max_height.max(new_h);
+                    }
+                }
+                chunk.max_height = max_height;
+            }
+        }
+
+        modified
     }
 
     pub fn chunks(
@@ -281,7 +345,7 @@ fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
 
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut seq = serializer.serialize_seq(Some(RESOLUTION * RESOLUTION))?;
+        let mut seq = serializer.serialize_seq(Some(1 + RESOLUTION * RESOLUTION))?;
         seq.serialize_element(&self.max_height)?;
         for row in &self.heights {
             for height in row {
@@ -315,8 +379,8 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
     }
 
     fn visit_seq<A: serde::de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-        let len = seq.size_hint().unwrap_or(RESOLUTION * RESOLUTION);
-        if len != RESOLUTION * RESOLUTION {
+        let len = seq.size_hint().unwrap_or(1 + RESOLUTION * RESOLUTION);
+        if len != 1 + RESOLUTION * RESOLUTION {
             return Err(serde::de::Error::invalid_length(len, &""));
         }
         let max_height = seq

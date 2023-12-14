@@ -23,6 +23,7 @@ pub mod roadbuild;
 pub mod roadeditor;
 pub mod selectable;
 pub mod specialbuilding;
+pub mod terraforming;
 pub mod topgui;
 pub mod windows;
 pub mod zoneedit;
@@ -40,6 +41,7 @@ pub fn run_ui_systems(sim: &Simulation, uiworld: &mut UiWorld) {
     specialbuilding::specialbuilding(sim, uiworld);
     addtrain::addtrain(sim, uiworld);
     zoneedit::zoneedit(sim, uiworld);
+    terraforming::terraforming(sim, uiworld);
 
     // run last so other systems can have the chance to cancel select
     selectable::selectable(sim, uiworld);
@@ -105,7 +107,6 @@ impl Default for InspectedEntity {
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Tool {
-    #[default]
     Hand,
     RoadbuildStraight,
     RoadbuildCurved,
@@ -114,6 +115,8 @@ pub enum Tool {
     LotBrush,
     SpecialBuilding,
     Train,
+    #[default]
+    Terraforming,
 }
 
 impl Tool {

@@ -113,14 +113,19 @@ impl engine::framework::State for State {
         if !ctx.egui.last_mouse_captured {
             let sim = self.sim.read().unwrap();
             let map = sim.map();
-            let unproj = self
+            let ray = self
                 .uiw
                 .read::<OrbitCamera>()
-                .unproject(ctx.input.mouse.screen, |p| {
-                    map.terrain.height(p).map(|x| x + 0.01)
-                });
+                .camera
+                .unproj_ray(ctx.input.mouse.screen);
+            self.uiw.write::<InputMap>().ray = ray;
 
-            self.uiw.write::<InputMap>().unprojected = unproj;
+            if let Some(ray) = ray {
+                let cast = map.terrain.raycast(ray);
+
+                self.uiw.write::<InputMap>().unprojected = cast.map(|x| x.0);
+                self.uiw.write::<InputMap>().unprojected_normal = cast.map(|x| x.1);
+            }
         }
 
         self.uiw.write::<InputMap>().prepare_frame(
