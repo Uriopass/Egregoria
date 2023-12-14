@@ -3,12 +3,12 @@ use engine::{Context, LampLights, LightChunkID};
 use flat_spatial::AABBGrid;
 use geom::{Vec3, AABB3, V3};
 use simulation::map::{
-    chunk_id, Chunk, ChunkID, Map, MapSubscriber, ProjectFilter, ProjectKind, UpdateType,
+    Map, MapSubscriber, ProjectFilter, ProjectKind, SubscriberChunkID, UpdateType,
 };
 
 pub struct LampsRender {
     lamp_memory: FastMap<LightChunkID, Vec<Vec3>>,
-    lamp_road_memory: FastMap<ChunkID, Vec<(LightChunkID, Vec3)>>,
+    lamp_road_memory: FastMap<SubscriberChunkID, Vec<(LightChunkID, Vec3)>>,
     lamp_sub: MapSubscriber,
 }
 
@@ -50,12 +50,9 @@ impl LampsRender {
             let mut chunk_inter = vec![];
 
             map.spatial_map()
-                .query(
-                    Chunk::rect(chunk),
-                    ProjectFilter::ROAD | ProjectFilter::INTER,
-                )
+                .query(chunk.bbox(), ProjectFilter::ROAD | ProjectFilter::INTER)
                 .for_each(|proj| {
-                    if chunk_id(proj.canonical_position(map)) != chunk {
+                    if SubscriberChunkID::new(proj.canonical_position(map)) != chunk {
                         return;
                     }
                     match proj {

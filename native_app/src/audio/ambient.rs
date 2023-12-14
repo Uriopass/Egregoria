@@ -1,9 +1,8 @@
 use crate::uiworld::UiWorld;
 use common::AudioKind;
 use engine::{AudioContext, ControlHandle, Stereo};
-use geom::{lerp, vec2, Camera, Vec2, AABB};
+use geom::{lerp, Camera, Vec2, AABB};
 use oddio::{Cycle, Gain};
-use simulation::map::Terrain;
 use simulation::Simulation;
 
 /// Ambient sounds
@@ -52,32 +51,18 @@ impl Ambient {
 
         // Forest
         let bbox = AABB::new(eye.xy() - Vec2::splat(100.0), eye.xy() + Vec2::splat(100.0));
-        let mut volume = lerp(1.0, 0.0, h / 600.0);
-
-        let ll = bbox.ll;
-        let ur = bbox.ur;
-        let ul = vec2(ll.x, ur.y);
-        let lr = vec2(ur.x, ll.y);
-        let tree_check = [
-            ll.lerp(ur, 0.25),
-            ll.lerp(ur, 0.75),
-            ul.lerp(lr, 0.25),
-            ul.lerp(lr, 0.75),
-        ];
+        let mut volume = lerp(1.0, 0.0, h / 300.0);
 
         if volume > 0.0 {
-            let matches = tree_check
-                .iter()
-                .filter(|&&p| {
-                    map.terrain
-                        .chunks
-                        .get(&Terrain::cell(p))
-                        .map(|x| x.trees.len() > 10)
-                        .unwrap_or_default()
-                })
-                .count();
+            let mut matches = 0;
 
-            volume *= matches as f32 / 4.0;
+            for _ in map.terrain.trees.query(bbox.ll, bbox.ur) {
+                matches += 1;
+                if matches > 50 {
+                    break;
+                }
+            }
+            volume *= matches as f32 / 50.0;
         }
         if let Some(ref mut forest) = self.forest {
             forest.control::<Gain<_>, _>().set_amplitude_ratio(volume);

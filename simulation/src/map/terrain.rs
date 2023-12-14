@@ -1,30 +1,21 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
+use flat_spatial::Grid;
 use geom::{vec2, Intersect, Radians, Vec2, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::HashSet;
 
-pub const CHUNK_SIZE: u32 = 512;
-pub const CHUNK_RESOLUTION: usize = 32;
-pub const CELL_SIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
+pub type TerrainChunkID = common::ChunkID<5>;
 
-#[derive(Default, Clone)]
-pub struct Chunk {
-    pub trees: Vec<Tree>,
-    pub heights: [[f32; CHUNK_RESOLUTION]; CHUNK_RESOLUTION],
-}
+pub const TERRAIN_CHUNK_RESOLUTION: usize = 32;
 
-impl Chunk {
-    pub fn rect(id: ChunkID) -> AABB {
-        let ll = vec2(
-            id.0 as f32 * CHUNK_SIZE as f32,
-            id.1 as f32 * CHUNK_SIZE as f32,
-        );
-        let ur = ll + vec2(CHUNK_SIZE as f32, CHUNK_SIZE as f32);
-        AABB::new(ll, ur)
-    }
-}
+const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32;
+
+const TREE_GRID_SIZE: usize = 256;
+
+pub type Chunk = geom::HeightmapChunk<TERRAIN_CHUNK_RESOLUTION, { TerrainChunkID::SIZE }>;
+pub type Heightmap = geom::Heightmap<TERRAIN_CHUNK_RESOLUTION, { TerrainChunkID::SIZE }>;
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Tree {
@@ -34,20 +25,10 @@ pub struct Tree {
     pub dir: Vec2,
 }
 
-pub type ChunkID = (u32, u32);
-
-pub fn chunk_id(v: Vec2) -> ChunkID {
-    if v.x < 0.0 || v.y < 0.0 {
-        return (0, 0);
-    }
-    (v.x as u32 / CHUNK_SIZE, v.y as u32 / CHUNK_SIZE)
-}
-
 #[derive(Clone)]
 pub struct Terrain {
-    pub chunks: BTreeMap<ChunkID, Chunk>,
-    pub width: u32,
-    pub height: u32,
+    heightmap: Heightmap,
+    pub trees: Grid<Tree, Vec2>,
 }
 
 defer_serialize!(Terrain, SerializedTerrain);
@@ -59,11 +40,10 @@ impl Default for Terrain {
 }
 
 impl Terrain {
-    pub fn new(w: u32, h: u32) -> Self {
+    pub fn new(w: u16, h: u16) -> Self {
         let mut me = Self {
-            chunks: Default::default(),
-            width: w,
-            height: h,
+            heightmap: Heightmap::new(w, h),
+            trees: Grid::new(TREE_GRID_SIZE as i32),
         };
         for y in 0..h {
             let chunks: Vec<_> = (0..w)
@@ -71,74 +51,71 @@ impl Terrain {
                 .map(|x| me.generate_chunk((x, y)))
                 .collect();
             for (x, chunk) in (0..w).zip(chunks) {
-                if let Some(v) = chunk {
-                    me.chunks.insert((x, y), v);
+                if let Some((v, trees)) = chunk {
+                    me.heightmap.set_chunk((x, y), v);
+                    for tree in trees {
+                        me.trees.insert(tree.pos, tree);
+                    }
                 }
             }
         }
         me
     }
 
-    pub fn remove_near(&mut self, obj: impl Intersect<Vec2>, mut f: impl FnMut(ChunkID)) {
-        for cell in self.chunks_iter(obj.bbox()) {
-            let chunk = unwrap_cont!(self.chunks.get_mut(&cell));
-            let mut changed = false;
-            chunk.trees.retain(|t| {
-                let delete_tree = obj.intersects(&t.pos);
-                changed |= delete_tree;
-                !delete_tree
-            });
-            if changed {
-                f(cell);
+    pub fn height(&self, pos: Vec2) -> Option<f32> {
+        self.heightmap.height(pos)
+    }
+
+    pub fn remove_trees_near(
+        &mut self,
+        obj: impl Intersect<Vec2>,
+        mut f: impl FnMut(TerrainChunkID),
+    ) {
+        let mut to_remove = vec![];
+
+        let bbox = obj.bbox();
+        self.trees.query_aabb_visitor(bbox.ll, bbox.ur, |(h, pos)| {
+            if obj.intersects(&pos) {
+                to_remove.push(h);
+            }
+        });
+
+        let mut seen = HashSet::new();
+        for h in to_remove {
+            let Some(tree) = self.trees.remove(h) else {
+                continue;
+            };
+            let id = TerrainChunkID::new(tree.pos);
+            if seen.insert(id) {
+                f(id);
             }
         }
     }
 
-    pub fn cell(p: Vec2) -> (u32, u32) {
-        chunk_id(p)
+    pub fn get_chunk(&self, id: TerrainChunkID) -> Option<&Chunk> {
+        self.heightmap.get_chunk((id.0 as u16, id.1 as u16))
     }
 
-    fn chunks_iter(&self, aabb: AABB) -> impl Iterator<Item = (u32, u32)> {
-        let ll = Self::cell(aabb.ll);
-        let ur = Self::cell(aabb.ur);
-        (ll.1..=ur.1).flat_map(move |y| (ll.0..=ur.0).map(move |x| (x, y)))
+    pub fn bounds(&self) -> AABB {
+        self.heightmap.bounds()
     }
 
-    pub fn height(&self, p: Vec2) -> Option<f32> {
-        let exact = self.height_nearest(p);
-        if let (Some(a), Some(b), Some(c), Some(d)) = (
-            exact,
-            self.height_nearest(p + Vec2::x(CELL_SIZE)),
-            self.height_nearest(p + Vec2::y(CELL_SIZE)),
-            self.height_nearest(p + vec2(CELL_SIZE, CELL_SIZE)),
-        ) {
-            return Some((a + b + c + d) / 4.0);
-        }
-        exact
+    /// Returns the size of the map in chunks
+    pub fn size(&self) -> (u16, u16) {
+        (self.heightmap.w, self.heightmap.h)
     }
 
-    fn height_nearest(&self, p: Vec2) -> Option<f32> {
-        let cell = Self::cell(p);
-        self.chunks.get(&cell).and_then(|chunk| {
-            let v = p / CHUNK_SIZE as f32 - vec2(cell.0 as f32, cell.1 as f32);
-            let v = v * CHUNK_RESOLUTION as f32;
-            chunk
-                .heights
-                .get(v.y as usize)
-                .and_then(|x| x.get(v.x as usize))
-                .copied()
-        })
+    pub fn chunks(&self) -> impl Iterator<Item = (TerrainChunkID, &Chunk)> + '_ {
+        self.heightmap
+            .chunks()
+            .map(|((x, y), c)| (TerrainChunkID::new_i16(x as i16, y as i16), c))
     }
 
-    pub fn generate_chunk(&self, (x, y): (u32, u32)) -> Option<Chunk> {
-        if self.chunks.contains_key(&(x, y)) {
-            return None;
-        }
+    fn generate_chunk(&self, (x, y): (u16, u16)) -> Option<(Chunk, Vec<Tree>)> {
+        let mut heights = [[0.0; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION];
 
-        let mut chunk = Chunk::default();
-
-        let offchunk = vec2(x as f32, y as f32) * CHUNK_SIZE as f32;
-        for (y, l) in chunk.heights.iter_mut().enumerate() {
+        let offchunk = vec2(x as f32, y as f32) * TerrainChunkID::SIZE_F32;
+        for (y, l) in heights.iter_mut().enumerate() {
             for (x, h) in l.iter_mut().enumerate() {
                 let offcell = vec2(x as f32, y as f32) * CELL_SIZE;
                 let mut rh = heightmap::height(offchunk + offcell).0 - 0.12;
@@ -151,11 +128,15 @@ impl Terrain {
             }
         }
 
+        let chunk = Chunk::new(heights);
+
         let rchunk = common::rand::rand2(x as f32, y as f32);
-        let pchunk = CHUNK_SIZE as f32 * vec2(x as f32, y as f32);
+        let pchunk = TerrainChunkID::SIZE_F32 * vec2(x as f32, y as f32);
 
         const RES_TREES: usize = 64;
-        const TCELLW: f32 = CHUNK_SIZE as f32 / RES_TREES as f32;
+        const TCELLW: f32 = TerrainChunkID::SIZE_F32 / RES_TREES as f32;
+
+        let mut trees = Vec::with_capacity(128);
 
         for offx in 0..RES_TREES {
             for offy in 0..RES_TREES {
@@ -170,21 +151,13 @@ impl Terrain {
 
                 let tdens = tree_density(pchunk + sample);
 
-                if dens_test < tdens && chunk.height(sample) >= 0.0 {
-                    chunk.trees.push(Tree::new(pchunk + sample));
+                if dens_test < tdens && chunk.height_unchecked(sample) >= 0.0 {
+                    trees.push(Tree::new(pchunk + sample));
                 }
             }
         }
 
-        Some(chunk)
-    }
-}
-
-impl Chunk {
-    pub fn height(&self, p: Vec2) -> f32 {
-        let v = p / CHUNK_SIZE as f32;
-        let v = v * CHUNK_RESOLUTION as f32;
-        self.heights[v.y as usize][v.x as usize]
+        Some((chunk, trees))
     }
 }
 
@@ -210,82 +183,60 @@ impl Tree {
 type SmolTree = u16;
 
 pub fn new_smoltree(pos: Vec2, chunk: (u32, u32)) -> SmolTree {
-    let diffx = pos.x - (chunk.0 * CHUNK_SIZE) as f32;
-    let diffy = pos.y - (chunk.1 * CHUNK_SIZE) as f32;
+    let diffx = pos.x - (chunk.0 * TREE_GRID_SIZE as u32) as f32;
+    let diffy = pos.y - (chunk.1 * TREE_GRID_SIZE as u32) as f32;
 
-    ((((diffx / CHUNK_SIZE as f32) * 256.0) as u8 as u16) << 8)
-        + ((diffy / CHUNK_SIZE as f32) * 256.0) as u8 as u16
+    ((((diffx / TREE_GRID_SIZE as f32) * 256.0) as u8 as u16) << 8)
+        + ((diffy / TREE_GRID_SIZE as f32) * 256.0) as u8 as u16
 }
 
 pub fn to_pos(encoded: SmolTree, chunk: (u32, u32)) -> Vec2 {
     let diffx = (encoded >> 8) as u8;
     let diffy = (encoded & 0xFF) as u8;
     Vec2 {
-        x: CHUNK_SIZE as f32 * (chunk.0 as f32 + diffx as f32 / 256.0),
-        y: CHUNK_SIZE as f32 * (chunk.1 as f32 + diffy as f32 / 256.0),
+        x: TREE_GRID_SIZE as f32 * (chunk.0 as f32 + diffx as f32 / 256.0),
+        y: TREE_GRID_SIZE as f32 * (chunk.1 as f32 + diffy as f32 / 256.0),
     }
 }
 
 #[derive(Serialize, Deserialize)]
-struct SerializedChunk {
-    trees: Vec<SmolTree>,
-    heights: [[f32; CHUNK_RESOLUTION]; CHUNK_RESOLUTION],
-}
-
-#[derive(Serialize, Deserialize)]
 struct SerializedTerrain {
-    v: Vec<((u32, u32), SerializedChunk)>,
-    w: u32,
-    h: u32,
+    h: Heightmap,
+    trees: Vec<((u32, u32), Vec<SmolTree>)>,
 }
 
 impl From<SerializedTerrain> for Terrain {
     fn from(ser: SerializedTerrain) -> Self {
-        let mut t = Terrain {
-            width: ser.w,
-            height: ser.h,
+        let mut terrain = Terrain {
+            heightmap: ser.h,
             ..Self::default()
         };
 
-        for (chunk_pos, v) in ser.v {
-            let trees = v
-                .trees
-                .into_iter()
-                .map(|x| Tree::new(to_pos(x, chunk_pos)))
-                .collect();
-
-            t.chunks.insert(
-                chunk_pos,
-                Chunk {
-                    trees,
-                    heights: v.heights,
-                },
-            );
+        for (chunk_id, trees) in ser.trees {
+            for tree in trees {
+                let tree = Tree::new(to_pos(tree, chunk_id));
+                terrain.trees.insert(tree.pos, tree);
+            }
         }
-        t
+        terrain
     }
 }
 
 impl From<&Terrain> for SerializedTerrain {
     fn from(ter: &Terrain) -> Self {
         let mut t = SerializedTerrain {
-            v: vec![],
-            w: ter.width,
-            h: ter.height,
+            h: ter.heightmap.clone(),
+            trees: Vec::new(),
         };
 
-        for (&cell, chunk) in &ter.chunks {
-            t.v.push((
-                cell,
-                SerializedChunk {
-                    trees: chunk
-                        .trees
-                        .iter()
-                        .map(move |tree| new_smoltree(tree.pos, cell))
-                        .collect(),
-                    heights: chunk.heights,
-                },
-            ))
+        for (cell_id, chunk) in ter.trees.storage().cells.iter() {
+            let cell_id = (cell_id.0 as u32, cell_id.1 as u32);
+            let mut smoltrees = Vec::with_capacity(chunk.objs.len());
+            for (_, tree_pos) in chunk.objs.iter() {
+                let smol = new_smoltree(*tree_pos, cell_id);
+                smoltrees.push(smol);
+            }
+            t.trees.push((cell_id, smoltrees));
         }
 
         t

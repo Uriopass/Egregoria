@@ -2,6 +2,7 @@ use crate::{
     CompiledModule, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, PipelineBuilder, Texture,
     TextureBuilder, TL,
 };
+use geom::AABB;
 use std::sync::Arc;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
 
@@ -16,24 +17,24 @@ pub struct Water {
 struct WaterPipeline;
 
 impl Water {
-    pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
+    pub fn new(gfx: &mut GfxContext, bounds: AABB) -> Self {
         let mut mb = MeshBuilder::<false>::new_without_mat();
 
         mb.vertices.extend_from_slice(&[
             MeshVertex {
-                position: [0.0, 0.0, -10.0],
+                position: [bounds.ll.x, bounds.ll.y, -10.0],
                 ..Default::default()
             },
             MeshVertex {
-                position: [w, 0.0, -10.0],
+                position: [bounds.ur.x, bounds.ll.y, -10.0],
                 ..Default::default()
             },
             MeshVertex {
-                position: [w, h, -10.0],
+                position: [bounds.ur.x, bounds.ur.y, -10.0],
                 ..Default::default()
             },
             MeshVertex {
-                position: [0.0, h, -10.0],
+                position: [bounds.ll.x, bounds.ur.y, -10.0],
                 ..Default::default()
             },
         ]);

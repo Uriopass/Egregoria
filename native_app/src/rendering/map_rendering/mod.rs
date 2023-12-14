@@ -1,9 +1,7 @@
 use engine::{Context, FrameContext, GfxContext, Water};
 use geom::{Camera, Circle, InfiniteFrustrum, Intersect3};
 use map_mesh::MapMeshHandler;
-use simulation::map::{
-    Lane, LaneID, LaneKind, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE,
-};
+use simulation::map::{Lane, LaneID, LaneKind, Map, ProjectFilter, ProjectKind, TrafficBehavior};
 use simulation::Simulation;
 use terrain::TerrainRender;
 
@@ -32,15 +30,12 @@ pub struct MapRenderOptions {
 
 impl MapRenderer {
     pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
-        let w = sim.map().terrain.width;
-        let h = sim.map().terrain.height;
-
         defer!(log::info!("finished init of road render"));
         MapRenderer {
             meshb: MapMeshHandler::new(gfx, sim),
             trees: TreesRender::new(gfx, &sim.map()),
             terrain: TerrainRender::new(gfx, sim),
-            water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
+            water: Water::new(gfx, sim.map().terrain.bounds()),
             lamps: LampsRender::new(&sim.map()),
         }
     }

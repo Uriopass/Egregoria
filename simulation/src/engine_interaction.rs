@@ -339,7 +339,7 @@ impl WorldCommand {
     }
 }
 
-fn generate_terrain(sim: &mut Simulation, size: u32) {
+fn generate_terrain(sim: &mut Simulation, size: u16) {
     info!("generating terrain..");
     let t = Instant::now();
 

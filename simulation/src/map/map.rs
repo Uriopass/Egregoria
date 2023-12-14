@@ -2,8 +2,8 @@ use crate::map::serializing::SerializedMap;
 use crate::map::{
     Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
     LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID, ParkingSpots,
-    ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, UpdateType,
-    Zone,
+    ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, SubscriberChunkID,
+    Terrain, UpdateType, Zone,
 };
 use common::descriptions::BuildingGen;
 use geom::OBB;
@@ -97,8 +97,16 @@ impl Map {
     }
 
     pub fn dispatch_all(&self) {
-        self.subscribers
-            .dispatch_all(self.terrain.chunks.keys().copied())
+        self.subscribers.dispatch_clear();
+        let bounds = self.terrain.bounds();
+        let ll = SubscriberChunkID::new(bounds.ll);
+        let ur = SubscriberChunkID::new(bounds.ur);
+        for x in ll.0..ur.0 {
+            for y in ll.0..ur.0 {
+                self.subscribers
+                    .dispatch_all(std::iter::once(SubscriberChunkID::new_i16(x, y)))
+            }
+        }
     }
 
     pub fn remove_building(&mut self, b: BuildingID) -> Option<Building> {
@@ -168,8 +176,9 @@ impl Map {
         };
         f(z);
 
-        self.terrain.remove_near(&z.poly, |c| {
-            self.subscribers.dispatch_chunk(UpdateType::Terrain, c)
+        self.terrain.remove_trees_near(&z.poly, |tree_chunk| {
+            self.subscribers
+                .dispatch_chunks(UpdateType::Terrain, tree_chunk.convert())
         });
 
         self.spatial_map.insert(id, z.poly.clone());
@@ -204,9 +213,11 @@ impl Map {
 
         self.clean_lots_inner(self.spatial_map.query(obb, ProjectFilter::LOT).collect());
 
-        self.terrain.remove_near(obb.expand(10.0), |c| {
-            self.subscribers.dispatch_chunk(UpdateType::Terrain, c)
-        });
+        self.terrain
+            .remove_trees_near(obb.expand(10.0), |tree_chunk| {
+                self.subscribers
+                    .dispatch_chunks(UpdateType::Terrain, tree_chunk.convert())
+            });
 
         let v = Building::make(
             &mut self.buildings,
@@ -533,8 +544,9 @@ impl Map {
         let r = &self.roads[id];
         let mut b = r.boldline();
         b.expand(40.0);
-        self.terrain.remove_near(&b, |c| {
-            self.subscribers.dispatch_chunk(UpdateType::Terrain, c)
+        self.terrain.remove_trees_near(&b, |tree_chunk| {
+            self.subscribers
+                .dispatch_chunks(UpdateType::Terrain, tree_chunk.convert())
         });
 
         Some(id)

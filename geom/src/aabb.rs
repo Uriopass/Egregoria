@@ -2,7 +2,7 @@ use super::Vec2;
 use crate::{Circle, Intersect, Polygon, Segment, Shape, OBB};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(C)]
 pub struct AABB {
     pub ll: Vec2,

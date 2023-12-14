@@ -8,8 +8,8 @@ use engine::{
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
 use simulation::map::{
-    chunk_id, Building, BuildingKind, CanonicalPosition, Chunk, ChunkID, Intersection, LaneKind,
-    Lanes, LotKind, Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads,
+    Building, BuildingKind, CanonicalPosition, Intersection, LaneKind, Lanes, LotKind, Map,
+    MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
     Terrain, Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
@@ -22,7 +22,7 @@ use std::rc::Rc;
 /// That is, the mostly static things (roads, intersections, lights, buildings).
 pub struct MapMeshHandler {
     builders: MapBuilders,
-    cache: FastMap<ChunkID, CachedObj>,
+    cache: FastMap<SubscriberChunkID, CachedObj>,
     road_sub: MapSubscriber,
     building_sub: MapSubscriber,
 }
@@ -330,7 +330,7 @@ impl MapBuilders {
         }
     }
 
-    fn buildings_mesh(&mut self, map: &Map, chunk: ChunkID) {
+    fn buildings_mesh(&mut self, map: &Map, chunk: SubscriberChunkID) {
         for v in self.buildsprites.values_mut() {
             v.clear();
         }
@@ -346,7 +346,7 @@ impl MapBuilders {
         let buildings = &map.buildings();
         for building in map
             .spatial_map()
-            .query(Chunk::rect(chunk), ProjectFilter::BUILDING)
+            .query(chunk.bbox(), ProjectFilter::BUILDING)
             .map(|p| {
                 if let ProjectKind::Building(b) = p {
                     b
@@ -356,7 +356,7 @@ impl MapBuilders {
             })
         {
             let building = &buildings[building];
-            if chunk_id(building.canonical_position()) != chunk {
+            if SubscriberChunkID::new(building.canonical_position()) != chunk {
                 continue;
             }
             self.zone_mesh(building);
@@ -550,7 +550,7 @@ impl MapBuilders {
         }
     }
 
-    fn map_mesh(&mut self, map: &Map, chunk: ChunkID) {
+    fn map_mesh(&mut self, map: &Map, chunk: SubscriberChunkID) {
         self.arrow_builder.clear();
         self.crosswalk_builder.clear();
         self.tess_map.meshbuilder.clear();
@@ -562,7 +562,7 @@ impl MapBuilders {
         let line_col: LinearColor = simulation::config().road_line_col.into();
 
         let objs = map.spatial_map().query(
-            Chunk::rect(chunk),
+            chunk.bbox(),
             ProjectFilter::ROAD | ProjectFilter::LOT | ProjectFilter::INTER,
         );
 
@@ -571,7 +571,7 @@ impl MapBuilders {
         let mut chunk_inters = Vec::new();
 
         for obj in objs {
-            if chunk_id(obj.canonical_position(map)) != chunk {
+            if SubscriberChunkID::new(obj.canonical_position(map)) != chunk {
                 continue;
             }
             match obj {

@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use engine::{Context, FrameContext, Tesselator};
-use geom::{vec2, vec3, Camera, LinearColor, Vec2, AABB};
+use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::utils::time::GameTime;
 use simulation::Simulation;
 
@@ -17,7 +17,6 @@ use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
-use simulation::map::CHUNK_SIZE;
 use simulation::utils::scheduler::SeqSchedule;
 
 pub const VERSION: &str = include_str!("../../VERSION");
@@ -275,10 +274,7 @@ impl State {
             ctx.delta,
             &self.uiw.read::<InputMap>(),
             &self.uiw.read::<Settings>(),
-            AABB::new(
-                Vec2::ZERO,
-                Vec2::splat((map.terrain.width * CHUNK_SIZE) as f32),
-            ),
+            map.terrain.bounds(),
             |p| map.terrain.height(p),
         );
         *self.uiw.write::<Camera>() = self.uiw.read::<OrbitCamera>().camera;

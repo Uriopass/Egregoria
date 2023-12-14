@@ -114,7 +114,7 @@ const VERSION: &str = include_str!("../../VERSION");
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct SimulationOptions {
-    pub terrain_size: u32,
+    pub terrain_size: u16,
     pub save_replay: bool,
 }
 

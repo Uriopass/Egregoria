@@ -2,7 +2,8 @@
 //! This should not be used inside the simulation as change subscribers are not serialized.
 //! It is mostly for rendering purposes by decoupling it from the simulation.
 
-use crate::map::{chunk_id, Building, ChunkID, Intersection, Lot, Road};
+use crate::map::{Building, Intersection, Lot, Road};
+use common::ChunkID;
 use geom::Vec2;
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
@@ -12,6 +13,8 @@ use std::sync::{Arc, Mutex};
 pub trait CanonicalPosition {
     fn canonical_position(&self) -> Vec2;
 }
+
+pub type SubscriberChunkID = ChunkID<5>;
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 pub enum UpdateType {
@@ -30,7 +33,7 @@ impl MapSubscribers {
         sub
     }
 
-    pub fn dispatch_all(&self, chunks: impl Iterator<Item = ChunkID>) {
+    pub fn dispatch_all(&self, chunks: impl Iterator<Item = SubscriberChunkID>) {
         let mut me = self.0.lock().unwrap();
         for chunk in chunks {
             for sub in me.iter_mut() {
@@ -41,7 +44,7 @@ impl MapSubscribers {
         }
     }
 
-    pub fn dispatch_clear(&mut self) {
+    pub fn dispatch_clear(&self) {
         let mut me = self.0.lock().unwrap();
         for sub in me.iter_mut() {
             sub.inner.lock().unwrap().cleared = true;
@@ -49,21 +52,34 @@ impl MapSubscribers {
     }
 
     pub fn dispatch(&mut self, update_type: UpdateType, p: &impl CanonicalPosition) {
-        let chunk_id = chunk_id(p.canonical_position());
+        let chunk_id = ChunkID::new(p.canonical_position());
         self.dispatch_chunk(update_type, chunk_id);
     }
 
-    pub fn dispatch_chunk(&mut self, update_type: UpdateType, chunk_id: ChunkID) {
+    pub fn dispatch_chunk(&mut self, update_type: UpdateType, chunk_id: SubscriberChunkID) {
         let mut me = self.0.lock().unwrap();
         for sub in me.iter_mut() {
             sub.dispatch(update_type, chunk_id);
+        }
+    }
+
+    pub fn dispatch_chunks(
+        &mut self,
+        update_type: UpdateType,
+        chunks: impl Iterator<Item = SubscriberChunkID>,
+    ) {
+        let mut me = self.0.lock().unwrap();
+        for chunk in chunks {
+            for sub in me.iter_mut() {
+                sub.dispatch(update_type, chunk);
+            }
         }
     }
 }
 
 #[derive(Default)]
 pub struct MapSubscriberInner {
-    pub updated_chunks: BTreeSet<ChunkID>,
+    pub updated_chunks: BTreeSet<SubscriberChunkID>,
     pub cleared: bool,
 }
 
@@ -82,12 +98,12 @@ impl MapSubscriber {
         }
     }
 
-    pub fn take_updated_chunks(&mut self) -> impl Iterator<Item = ChunkID> {
+    pub fn take_updated_chunks(&mut self) -> impl Iterator<Item = SubscriberChunkID> {
         let mut inner = self.inner.lock().unwrap();
         std::mem::take(&mut inner.updated_chunks).into_iter()
     }
 
-    pub fn take_one_updated_chunk(&mut self) -> Option<ChunkID> {
+    pub fn take_one_updated_chunk(&mut self) -> Option<SubscriberChunkID> {
         let mut inner = self.inner.lock().unwrap();
         inner.updated_chunks.pop_first()
     }
@@ -97,7 +113,7 @@ impl MapSubscriber {
         std::mem::take(&mut inner.cleared)
     }
 
-    pub fn dispatch(&mut self, update_type: UpdateType, chunk_id: ChunkID) {
+    pub fn dispatch(&mut self, update_type: UpdateType, chunk_id: SubscriberChunkID) {
         if update_type != self.filter {
             return;
         }

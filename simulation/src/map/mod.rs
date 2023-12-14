@@ -34,7 +34,7 @@ mod map;
 mod pathfinding;
 mod serializing;
 mod spatial_map;
-mod terrain;
+pub mod terrain;
 mod traffic_control;
 mod traversable;
 mod turn_policy;
