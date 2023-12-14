@@ -21,7 +21,7 @@ trait DemoElement {
     fn init(ctx: &mut Context) -> Self
     where
         Self: Sized;
-    fn update(&mut self, ctx: &mut Context);
+    fn update(&mut self, ctx: &mut Context, cam: &Camera);
     fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum);
     fn render_gui(&mut self, _ui: &mut egui::Ui) {}
 }
@@ -144,7 +144,7 @@ impl engine::framework::State for State {
             if !*enabled {
                 continue;
             }
-            de.update(ctx);
+            de.update(ctx, &self.camera);
         }
 
         for v in self.play_queue.drain(..) {

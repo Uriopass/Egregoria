@@ -1,25 +1,39 @@
-use crate::{vec2, Vec2, AABB};
+use crate::{vec2, vec3, Ray3, Vec2, Vec3, AABB, AABB3};
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
 
 pub type HeightmapChunkID = (u16, u16);
 
+const MIN_HEIGHT: f32 = -40.0;
+
 #[derive(Clone)]
 pub struct HeightmapChunk<const RESOLUTION: usize, const SIZE: u32> {
     heights: [[f32; RESOLUTION]; RESOLUTION], // TODO: change to RESOLUTION * RESOLUTION when generic_const_exprs is stabilized
+    max_height: f32,
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> Default for HeightmapChunk<RESOLUTION, SIZE> {
     fn default() -> Self {
         Self {
             heights: [[0.0; RESOLUTION]; RESOLUTION],
+            max_height: 0.0,
         }
     }
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> {
     pub fn new(heights: [[f32; RESOLUTION]; RESOLUTION]) -> Self {
-        Self { heights }
+        let mut max_height = heights[0][0];
+        for row in &heights {
+            for height in row {
+                max_height = max_height.max(*height);
+            }
+        }
+
+        Self {
+            heights,
+            max_height,
+        }
     }
 
     pub fn rect(id: HeightmapChunkID) -> AABB {
@@ -29,10 +43,22 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
     }
 
     pub fn id(v: Vec2) -> HeightmapChunkID {
-        if v.x < 0.0 || v.y < 0.0 {
-            return (0, 0);
-        }
-        ((v.x / SIZE as f32) as u16, (v.y / SIZE as f32) as u16)
+        let x = v.x / SIZE as f32;
+        let x = x.clamp(0.0, u16::MAX as f32) as u16;
+        let y = v.y / SIZE as f32;
+        let y = y.clamp(0.0, u16::MAX as f32) as u16;
+        (x, y)
+    }
+
+    pub fn bbox(&self, origin: Vec2) -> AABB3 {
+        AABB3::new(
+            vec3(origin.x, origin.y, MIN_HEIGHT),
+            vec3(
+                origin.x + SIZE as f32,
+                origin.y + SIZE as f32,
+                self.max_height,
+            ),
+        )
     }
 
     /// assume p is in chunk-space and in-bounds
@@ -40,6 +66,12 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
         let v = p / SIZE as f32;
         let v = v * RESOLUTION as f32;
         self.heights[v.y as usize][v.x as usize]
+    }
+
+    pub fn height(&self, p: Vec2) -> Option<f32> {
+        let v = p / SIZE as f32;
+        let v = v * RESOLUTION as f32;
+        self.heights.get(v.y as usize)?.get(v.x as usize).copied()
     }
 
     pub fn heights(&self) -> &[[f32; RESOLUTION]; RESOLUTION] {
@@ -134,11 +166,123 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         }
         exact
     }
+
+    /// Casts a ray on the heightmap, returning the point of intersection and the normal at that point
+    /// We assume height is between [-40.0; 2008]
+    pub fn raycast(&self, ray: Ray3) -> Option<(Vec3, Vec3)> {
+        // Let's build an iterator over the chunks that intersect the ray (from nearest to furthest)
+        let start = ray.from.xy() / SIZE as f32;
+        let end = start + ray.dir.xy().normalize() * self.w.max(self.h) as f32 * 2.0;
+
+        let diff = end - start;
+        let l = diff.mag();
+        let speed = diff / l;
+
+        let mut t = 0.0;
+
+        let mut cur = start;
+
+        let intersecting_chunks = std::iter::once((start.x as isize, start.y as isize))
+            .chain(std::iter::from_fn(|| {
+                let x = cur.x - cur.x.floor();
+                let y = cur.y - cur.y.floor();
+
+                let t_x;
+                let t_y;
+
+                if speed.x >= 0.0 {
+                    t_x = (1.0 - x) / speed.x;
+                } else {
+                    t_x = -x / speed.x;
+                }
+                if speed.y >= 0.0 {
+                    t_y = (1.0 - y) / speed.y;
+                } else {
+                    t_y = -y / speed.y;
+                }
+
+                let min_t = t_x.min(t_y) + 0.0001;
+                t += min_t;
+                if !(t < l) {
+                    // reverse the condition to avoid infinite loop in case of NaN
+                    return None;
+                }
+                cur += min_t * speed;
+                Some((cur.x as isize, cur.y as isize))
+            }))
+            .filter(|&(x, y)| x < self.w as isize && y < self.h as isize && x >= 0 && y >= 0)
+            .filter_map(|(x, y)| {
+                let chunk_id = (x as u16, y as u16);
+                let corner = vec2(x as f32, y as f32) * SIZE as f32;
+                let (t_min, t_max) = self.get_chunk(chunk_id)?.bbox(corner).raycast(ray)?;
+                Some((t_min, t_max))
+            });
+
+        // Now within those chunks, let's try to find the intersection point
+        // h < t * ray.dir.z + ray.from.z
+        for (t_min, t_max) in intersecting_chunks {
+            let mut t = t_min;
+            let t_step = Self::CELL_SIZE;
+
+            loop {
+                let p = ray.from + ray.dir * t;
+                let Some(h) = self.height(p.xy()) else {
+                    if t >= t_max {
+                        break;
+                    }
+                    t += t_step;
+                    continue;
+                };
+                if p.z < h {
+                    // we found a good candidate but we're not there yet
+                    // we still need to do one last binary search
+                    // to find the bilinear-filtered-corrected location
+
+                    let t = binary_search(t - t_step * 2.0, t, |t| {
+                        let p = ray.from + ray.dir * t;
+                        let Some(h) = self.height(p.xy()) else {
+                            return false;
+                        };
+                        p.z < h
+                    });
+
+                    return Some((ray.from + ray.dir * t, vec3(0.0, 0.0, 1.0)));
+                }
+                if t >= t_max {
+                    break;
+                }
+                t += t_step;
+            }
+        }
+
+        None
+    }
+}
+
+/// Does a binary search on the interval [min; max] to find the first value for which f returns true
+fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
+    let mut min = min;
+    let mut max = max;
+    let mut mid = min + (max - min) * 0.5;
+    loop {
+        if f(mid) {
+            max = mid;
+        } else {
+            min = mid;
+        }
+        let new_mid = min + (max - min) * 0.5;
+        if (new_mid - mid).abs() < 0.0001 {
+            break;
+        }
+        mid = new_mid;
+    }
+    mid
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut seq = serializer.serialize_seq(Some(RESOLUTION * RESOLUTION))?;
+        seq.serialize_element(&self.max_height)?;
         for row in &self.heights {
             for height in row {
                 seq.serialize_element(height)?;
@@ -152,15 +296,19 @@ impl<'de, const RESOLUTION: usize, const SIZE: u32> Deserialize<'de>
     for HeightmapChunk<RESOLUTION, SIZE>
 {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let heights = deserializer.deserialize_seq(HeightmapChunkVisitor::<RESOLUTION>)?;
-        Ok(Self { heights })
+        let (heights, max_height) =
+            deserializer.deserialize_seq(HeightmapChunkVisitor::<RESOLUTION>)?;
+        Ok(Self {
+            heights,
+            max_height,
+        })
     }
 }
 
 struct HeightmapChunkVisitor<const RESOLUTION: usize>;
 
 impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVisitor<RESOLUTION> {
-    type Value = [[f32; RESOLUTION]; RESOLUTION];
+    type Value = ([[f32; RESOLUTION]; RESOLUTION], f32);
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a sequence of floats")
@@ -171,6 +319,9 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
         if len != RESOLUTION * RESOLUTION {
             return Err(serde::de::Error::invalid_length(len, &""));
         }
+        let max_height = seq
+            .next_element()?
+            .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
         let mut heights = [[0.0; RESOLUTION]; RESOLUTION];
         for row in &mut heights {
             for height in row {
@@ -179,6 +330,6 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
             }
         }
-        Ok(heights)
+        Ok((heights, max_height))
     }
 }

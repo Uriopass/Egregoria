@@ -3,7 +3,7 @@ use crate::gui::windows::settings::Settings;
 use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;
 use engine::{Context, Tesselator};
-use geom::{vec4, Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
+use geom::{Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Vec2, Vec3, AABB};
 use simulation::map::pathfinding_crate::num_traits::Pow;
 
 /// CameraHandler3D is the camera handler for the 3D view
@@ -58,26 +58,7 @@ impl OrbitCamera {
     }
 
     pub fn unproject(&self, pos: Vec2, height: impl Fn(Vec2) -> Option<f32>) -> Option<Vec3> {
-        let proj = self.camera.build_view_projection_matrix();
-        let inv = proj.invert()?;
-
-        let v = inv
-            * vec4(
-                2.0 * pos.x / self.camera.viewport_w - 1.0,
-                -(2.0 * pos.y / self.camera.viewport_h - 1.0),
-                1.0,
-                1.0,
-            );
-
-        let v = Vec3 {
-            x: v.x / v.w,
-            y: v.y / v.w,
-            z: v.z / v.w,
-        } - self.camera.eye();
-        let r = Ray3 {
-            from: self.camera.eye(),
-            dir: v.normalize(),
-        };
+        let r = self.camera.unproj_ray(pos)?;
 
         let p = Plane { n: Vec3::Z, o: 0.0 };
 

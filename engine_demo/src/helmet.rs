@@ -29,7 +29,7 @@ impl DemoElement for Helmet {
         Self { mesh: Some(mesh) }
     }
 
-    fn update(&mut self, _ctx: &mut Context) {}
+    fn update(&mut self, _ctx: &mut Context, _cam: &Camera) {}
 
     fn render(&mut self, fc: &mut FrameContext, _cam: &Camera, _frustrum: &InfiniteFrustrum) {
         fc.draw(self.mesh.clone());

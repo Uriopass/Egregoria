@@ -54,7 +54,7 @@ impl DemoElement for Spheres {
         Self { meshes }
     }
 
-    fn update(&mut self, _ctx: &mut Context) {}
+    fn update(&mut self, _ctx: &mut Context, _cam: &Camera) {}
 
     fn render(&mut self, fc: &mut FrameContext, _cam: &Camera, _frustrum: &InfiniteFrustrum) {
         fc.draw(self.meshes.clone());

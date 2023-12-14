@@ -1,4 +1,4 @@
-use super::Vec3;
+use super::{Ray3, Vec3};
 use crate::{Intersect3, Shape3, AABB};
 use serde::{Deserialize, Serialize};
 
@@ -105,6 +105,24 @@ impl AABB3 {
             && point.y >= self.ll.y - tolerance
             && point.z <= self.ur.z + tolerance
             && point.z >= self.ll.z - tolerance
+    }
+
+    /// as ray is defined by O + tD, return the t values for the entering and exiting intersections
+    /// Returns a 2-tuple of (t_near, t_far)
+    /// Adapted from https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
+    /// If the ray origin is inside the box, t_near will be zero
+    #[inline]
+    pub fn raycast(&self, ray: Ray3) -> Option<(f32, f32)> {
+        let t_min = (self.ll - ray.from) / ray.dir;
+        let t_max = (self.ur - ray.from) / ray.dir;
+        let t1 = t_min.min(t_max);
+        let t2 = t_min.max(t_max);
+        let t_near = f32::max(f32::max(t1.x, t1.y), t1.z);
+        let t_far = f32::min(f32::min(t2.x, t2.y), t2.z);
+        if t_near >= t_far || t_far < 0.0 {
+            return None;
+        }
+        Some((t_near.max(0.0), t_far))
     }
 }
 

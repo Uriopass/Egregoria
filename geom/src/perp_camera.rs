@@ -15,7 +15,7 @@
 // Modified for the Egregoria project by the Egregoria developers.
 
 use crate::matrix4::Matrix4;
-use crate::{vec2, vec3, InfiniteFrustrum, Radians, Vec3, Vec4};
+use crate::{vec2, vec3, vec4, InfiniteFrustrum, Radians, Ray3, Vec2, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -65,6 +65,29 @@ impl Camera {
 
     pub fn eye(&self) -> Vec3 {
         self.pos + self.offset()
+    }
+
+    pub fn unproj_ray(&self, pos: Vec2) -> Option<Ray3> {
+        let proj = self.build_view_projection_matrix();
+        let inv = proj.invert()?;
+
+        let v = inv
+            * vec4(
+                2.0 * pos.x / self.viewport_w - 1.0,
+                -(2.0 * pos.y / self.viewport_h - 1.0),
+                1.0,
+                1.0,
+            );
+
+        let v = Vec3 {
+            x: v.x / v.w,
+            y: v.y / v.w,
+            z: v.z / v.w,
+        } - self.eye();
+        Some(Ray3 {
+            from: self.eye(),
+            dir: v.normalize(),
+        })
     }
 
     pub fn build_view_projection_matrix(&self) -> Matrix4 {
