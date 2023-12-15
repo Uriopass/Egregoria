@@ -1003,16 +1003,14 @@ impl GfxContext {
     }
 
     pub fn mipmap_module(&self) -> CompiledModule {
-        // Safety: added at startup
-        unsafe {
-            self.pipelines
-                .try_borrow()
-                .unwrap()
-                .shader_cache
-                .get("mipmap")
-                .unwrap_unchecked()
-                .clone()
-        }
+        // unwrap safety: added at startup
+        self.pipelines
+            .try_borrow()
+            .unwrap()
+            .shader_cache
+            .get("mipmap")
+            .unwrap()
+            .clone()
     }
 }
 
