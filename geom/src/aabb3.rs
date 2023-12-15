@@ -21,6 +21,11 @@ impl AABB3 {
     }
 
     #[inline]
+    pub fn new_size(ll: Vec3, size: Vec3) -> Self {
+        Self { ll, ur: ll + size }
+    }
+
+    #[inline]
     pub fn centered(pos: Vec3, size: Vec3) -> Self {
         Self {
             ll: pos - size * 0.5,

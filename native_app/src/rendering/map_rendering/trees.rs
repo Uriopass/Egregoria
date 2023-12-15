@@ -4,7 +4,10 @@ use engine::wgpu::RenderPass;
 use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
-use geom::{vec3, vec4, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
+use geom::{
+    vec3, vec4, Camera, HeightmapChunk, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3,
+    AABB3,
+};
 use simulation::config;
 use simulation::map::{Map, MapSubscriber, SubscriberChunkID, UpdateType};
 use std::ops::Mul;
@@ -104,13 +107,18 @@ impl TreesRender {
 
         for (cid, mesh) in self.trees_cache.iter() {
             let chunkcenter = cid.center().z0();
+            let max_height = cid
+                .convert()
+                .filter_map(|c| map.terrain.get_chunk(c))
+                .map(HeightmapChunk::max_height)
+                .fold(0.0, f32::max);
 
-            if !frustrum.intersects(&AABB3::centered(
-                chunkcenter,
+            if !frustrum.intersects(&AABB3::new_size(
+                cid.corner().z(-40.0),
                 vec3(
                     5.0 + SubscriberChunkID::SIZE_F32,
                     5.0 + SubscriberChunkID::SIZE_F32,
-                    100.0,
+                    40.0 + max_height + 100.0,
                 ),
             )) || camcenter.distance(chunkcenter.xy()) > 5000.0
             {

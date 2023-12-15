@@ -84,6 +84,11 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
     pub fn heights(&self) -> &[[f32; RESOLUTION]; RESOLUTION] {
         &self.heights
     }
+
+    #[inline]
+    pub fn max_height(&self) -> f32 {
+        self.max_height
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
