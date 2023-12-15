@@ -1,5 +1,6 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
+use crate::utils::time::Tick;
 use flat_spatial::Grid;
 use geom::{lerp, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -38,6 +39,7 @@ pub enum TerraformKind {
     Smooth,
     Level,
     Slope,
+    Erode,
 }
 
 debug_inspect_impl!(TerraformKind);
@@ -142,6 +144,7 @@ impl Terrain {
 
     pub fn terraform(
         &mut self,
+        tick: Tick,
         kind: TerraformKind,
         center: Vec2,
         radius: f32,
@@ -212,6 +215,14 @@ impl Terrain {
                 }
                 z
             }),
+            TerraformKind::Erode => {
+                let mut rng = common::rand::gen(tick.0);
+                self.heightmap
+                    .erode(bbox, 100, || rng.next_f32())
+                    .into_iter()
+                    .map(|(x, y)| TerrainChunkID::new_i16(x as i16, y as i16))
+                    .collect()
+            }
         }
     }
 

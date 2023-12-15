@@ -287,6 +287,17 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         Some(chunk.heights[celly][cellx])
     }
 
+    pub fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
+        let chunkx = x / RESOLUTION;
+        let chunky = y / RESOLUTION;
+
+        let cellx = x % RESOLUTION;
+        let celly = y % RESOLUTION;
+
+        let chunk = self.get_chunk_mut((chunkx as u16, chunky as u16))?;
+        Some(&mut chunk.heights[celly][cellx])
+    }
+
     /// Returns height at any point using bilinear interpolation
     pub fn height(&self, p: Vec2) -> Option<f32> {
         let exact = self.height_nearest(p);
@@ -305,6 +316,33 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
             return Some(h01 + y * (h23 - h01));
         }
         exact
+    }
+
+    /// Returns height and gradient at any point using bilinear interpolation
+    /// The gradient is the vector pointing in the direction of the steepest slope (downwards)
+    pub fn height_gradient(&self, p: Vec2) -> Option<(f32, Vec2)> {
+        let exact = self.height_nearest(p);
+        if let (Some(ll), Some(lr), Some(ul), Some(ur)) = (
+            exact,
+            self.height_nearest(p + Vec2::x(Self::CELL_SIZE)),
+            self.height_nearest(p + Vec2::y(Self::CELL_SIZE)),
+            self.height_nearest(p + vec2(Self::CELL_SIZE, Self::CELL_SIZE)),
+        ) {
+            let x = (p.x / Self::CELL_SIZE).fract();
+            let y = (p.y / Self::CELL_SIZE).fract();
+
+            let h01 = ll + x * (lr - ll);
+            let h23 = ul + x * (ur - ul);
+
+            let height = h01 + y * (h23 - h01);
+            let gradient = -vec2(
+                (lr - ll) + y * ((ur - ul) - (lr - ll)),
+                (ul - ll) + x * ((ur - lr) - (ul - ll)),
+            );
+
+            return Some((height, gradient));
+        }
+        exact.zip(Some(Vec2::ZERO))
     }
 
     /// Casts a ray on the heightmap, returning the point of intersection and the normal at that point
@@ -471,5 +509,187 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
             }
         }
         Ok((heights, max_height))
+    }
+}
+
+mod erosion {
+    use crate::{
+        vec2, Heightmap, HeightmapChunk, HeightmapChunkID, Radians, Vec2, AABB, DEBUG_OBBS, OBB,
+    };
+    use std::collections::BTreeSet;
+    use std::ops::Div;
+
+    // taken from https://github.com/SebLague/Hydraulic-Erosion/blob/master/Assets/Scripts/Erosion.cs
+    // Copyright (c) 2019 Sebastian Lague
+    // 2..8
+    const EROSION_RADIUS: isize = 5;
+    // 0..1
+    const INERTIA: f32 = 0.2; // At zero, water will instantly change direction to flow downhill. At 1, water will never change direction.
+    const SEDIMENT_CAPACITY_FACTOR: f32 = 10.0; // Multiplier for how much sediment a droplet can carry
+    const MIN_SEDIMENT_CAPACITY: f32 = 0.01; // Used to prevent carry capacity getting too close to zero on flatter terrain
+
+    // 0..1
+    const ERODE_SPEED: f32 = 0.02;
+
+    // 0..1
+    const DEPOSIT_SPEED: f32 = 0.1;
+    // 0..1
+    const EVAPORATE_SPEED: f32 = 0.01;
+    const GRAVITY: f32 = 1.0;
+    const MAX_DROPLET_LIFETIME: usize = 30;
+
+    const INITIAL_WATER_VOLUME: f32 = 1.0;
+    const INITIAL_SPEED: f32 = 1.0;
+
+    impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
+        #[rustfmt::skip]
+        pub fn erode(
+            &mut self,
+            bounds: AABB,
+            n_particles: usize,
+            mut randgen: impl FnMut() -> f32,
+        ) -> Vec<HeightmapChunkID> {
+            let mut changed = BTreeSet::new();
+
+            let mut erosion_brush_total = 0.0;
+            for y in -EROSION_RADIUS..=EROSION_RADIUS {
+                for x in -EROSION_RADIUS..=EROSION_RADIUS {
+                    let dist2 = x * x + y * y;
+                    if dist2 >= EROSION_RADIUS * EROSION_RADIUS {
+                        continue;
+                    }
+                    erosion_brush_total += 1.0 - f32::sqrt(dist2 as f32) / EROSION_RADIUS as f32;
+                }
+            }
+
+            for _ in 0..n_particles {
+                // Create water droplet at random point in bounds, in a circle
+
+                let d = randgen() * (bounds.size() / 2.0).mag();
+                let angle = Radians(randgen() * std::f32::consts::TAU);
+                let pos = bounds.center() + angle.vec2() * d;
+
+
+                let mut pos = pos / Self::CELL_SIZE;
+
+                let mut dir = Vec2::ZERO;
+
+                let mut speed = INITIAL_SPEED;
+                let mut water = INITIAL_WATER_VOLUME;
+                let mut sediment = 0.0;
+
+                for _ in 0..MAX_DROPLET_LIFETIME {
+                    //dbg!((pos, dir, speed, water, sediment,));
+                    //unsafe {
+                    //    let size = 10.0 * (MAX_DROPLET_LIFETIME as f32 - i as f32)
+                    //        / MAX_DROPLET_LIFETIME as f32;
+                    //    DEBUG_OBBS.push(OBB::new(pos * Self::CELL_SIZE, Vec2::X, size, size));
+                    //}
+                    let cell_offset = pos - pos.floor();
+
+                    // Calculate droplet's height and direction of flow with bilinear interpolation of surrounding heights
+                    let Some((height, gradient)) = self.height_gradient(pos * Self::CELL_SIZE)
+                    else {
+                        break;
+                    };
+
+                    // Update the droplet's direction and position (move position 1 unit regardless of speed)
+                    dir = Vec2::lerp(gradient, dir, INERTIA);
+
+                    // Normalize direction
+                    let dl = dir.mag();
+                    if dl < f32::EPSILON {
+                        dir = Vec2::from_angle(Radians(randgen() * std::f32::consts::TAU));
+                    } else {
+                        dir /= dl;
+                    }
+
+                    // Stop simulating droplet if it's not moving or has flowed over edge of map
+                    if (dir.x == 0.0 && dir.y == 0.0)
+                        || pos.x < 0.0
+                        || pos.x >= self.w as f32 * RESOLUTION as f32
+                        || pos.y < 0.0
+                        || pos.y >= self.h as f32 * RESOLUTION as f32
+                    {
+                        break;
+                    }
+
+                    // Find the droplet's new height and calculate the deltaHeight
+                    let new_height = self.height((pos + dir) * Self::CELL_SIZE).unwrap_or(0.0);
+                    let delta_height = (new_height - height) / Self::CELL_SIZE;
+
+                    // Calculate the droplet's sediment capacity (higher when moving fast down a slope and contains lots of water)
+                    let sediment_capacity =
+                        (-delta_height * speed * water * SEDIMENT_CAPACITY_FACTOR)
+                            .max(MIN_SEDIMENT_CAPACITY);
+
+                    // If carrying more sediment than capacity, or if flowing uphill:
+                    if sediment > sediment_capacity || delta_height > 0.0 {
+                        // If moving uphill (delta_height > 0) try fill up to the current height, otherwise deposit a fraction of the excess sediment
+                        let amount_to_deposit = if delta_height > 0.0 {
+                            f32::min(delta_height, sediment)
+                        } else {
+                            (sediment - sediment_capacity) * DEPOSIT_SPEED
+                        };
+                        sediment -= amount_to_deposit;
+
+                        // Add the sediment to the four nodes of the current cell using bilinear interpolation
+                        // Deposition is not distributed over a radius (like erosion) so that it can fill small pits
+                        changed.insert(HeightmapChunk::<RESOLUTION, SIZE>::id(
+                            pos * Self::CELL_SIZE,
+                        ));
+
+                        let amount_to_deposit = amount_to_deposit * Self::CELL_SIZE;
+                        {
+                            self.height_idx_mut(pos.x as usize    , pos.y as usize)    .map(|v| { *v += amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y) });
+                            self.height_idx_mut(pos.x as usize + 1, pos.y as usize)    .map(|v| { *v += amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y) });
+                            self.height_idx_mut(pos.x as usize    , pos.y as usize + 1).map(|v| { *v += amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y });
+                            self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1).map(|v|   *v += amount_to_deposit * cell_offset.x         * cell_offset.y);
+                        }
+                    } else {
+                        // Erode a fraction of the droplet's current carry capacity.
+                        // Clamp the erosion to the change in height so that it doesn't dig a hole in the terrain behind the droplet
+                        let amount_to_erode =
+                            f32::min((sediment_capacity - sediment) * ERODE_SPEED, -delta_height);
+
+                        // Use erosion brush to erode from all nodes inside the droplet's erosion radius
+
+                        for erode_y in -EROSION_RADIUS..=EROSION_RADIUS {
+                            for erode_x in -EROSION_RADIUS..=EROSION_RADIUS {
+                                let dist2 = erode_x * erode_x + erode_y * erode_y;
+                                if dist2 >= EROSION_RADIUS * EROSION_RADIUS {
+                                    continue;
+                                }
+                                let w = (1.0 - f32::sqrt(dist2 as f32) / EROSION_RADIUS as f32) / erosion_brush_total;
+
+                                let pos_radius = pos + vec2(erode_x as f32, erode_y as f32);
+                                changed.insert(HeightmapChunk::<RESOLUTION, SIZE>::id(pos_radius));
+
+                                let weighed_erode_amount = amount_to_erode * w;
+
+                                let delta_sediment = self
+                                    .height_idx(pos_radius.x as usize, pos_radius.y as usize)
+                                    .unwrap_or(0.0)
+                                    .div(Self::CELL_SIZE)
+                                    .min(weighed_erode_amount);
+
+                                self.height_idx_mut(pos_radius.x as usize, pos_radius.y as usize)
+                                    .map(|v| *v -= delta_sediment * Self::CELL_SIZE);
+
+                                //dbg!(delta_sediment, weighed_erode_amount, amount_to_erode);
+                                sediment += delta_sediment;
+                            }
+                        }
+                    }
+
+                    // Update droplet's speed and water content
+                    speed = f32::sqrt(speed * speed - delta_height * GRAVITY);
+                    water *= 1.0 - EVAPORATE_SPEED;
+                    pos += dir;
+                }
+            }
+
+            changed.into_iter().collect()
+        }
     }
 }

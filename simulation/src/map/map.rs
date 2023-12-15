@@ -5,6 +5,7 @@ use crate::map::{
     ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, SubscriberChunkID,
     TerraformKind, Terrain, UpdateType, Zone,
 };
+use crate::utils::time::Tick;
 use common::descriptions::BuildingGen;
 use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
@@ -328,6 +329,7 @@ impl Map {
 
     pub fn terraform(
         &mut self,
+        tick: Tick,
         kind: TerraformKind,
         center: Vec2,
         radius: f32,
@@ -337,7 +339,7 @@ impl Map {
     ) {
         let modified = self
             .terrain
-            .terraform(kind, center, radius, amount, level, slope);
+            .terraform(tick, kind, center, radius, amount, level, slope);
 
         for id in modified {
             self.subscribers.dispatch_chunk(UpdateType::Terrain, id);

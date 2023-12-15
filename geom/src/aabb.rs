@@ -52,6 +52,10 @@ impl AABB {
         }
     }
 
+    pub fn size(&self) -> Vec2 {
+        self.ur - self.ll
+    }
+
     #[inline]
     pub fn area(&self) -> f32 {
         self.w() * self.h()
@@ -59,7 +63,7 @@ impl AABB {
 
     #[inline]
     pub fn center(&self) -> Vec2 {
-        self.ll * 0.5 + self.ur * 0.5
+        (self.ll + self.ur) * 0.5
     }
 
     #[inline]

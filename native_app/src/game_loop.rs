@@ -302,13 +302,16 @@ impl State {
         }
 
         {
+            let sim = self.sim.read().unwrap();
             let immediate = &mut *self.uiw.write::<ImmediateDraw>();
-
+            let map = sim.map();
             let mut col = LinearColor::WHITE;
-            col.a = 1.0;
+            col.a = 0.2;
             unsafe {
                 for v in &geom::DEBUG_OBBS {
-                    immediate.obb(*v, 3.0).color(col);
+                    immediate
+                        .obb(*v, map.terrain.height(v.center()).unwrap_or(0.0) + 8.0)
+                        .color(col);
                 }
                 for v in &geom::DEBUG_SPLINES {
                     immediate
@@ -321,7 +324,7 @@ impl State {
                         )
                         .color(col);
                 }
-                geom::DEBUG_OBBS.clear();
+                //geom::DEBUG_OBBS.clear();
                 geom::DEBUG_SPLINES.clear();
             }
 

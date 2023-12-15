@@ -54,9 +54,9 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
 impl Default for TerraformingResource {
     fn default() -> Self {
         Self {
-            kind: TerraformKind::Smooth,
-            radius: 200.0,
-            amount: 1.0,
+            kind: TerraformKind::Erode,
+            radius: 500.0,
+            amount: 200.0,
             level: 50.0,
             slope: None,
         }

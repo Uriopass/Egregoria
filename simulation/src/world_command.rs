@@ -351,8 +351,9 @@ impl WorldCommand {
                 level,
                 slope,
             } => {
+                let tick = *sim.read::<Tick>();
                 sim.map_mut()
-                    .terraform(kind, center, radius, amount, level, slope);
+                    .terraform(tick, kind, center, radius, amount, level, slope);
             }
         }
     }
