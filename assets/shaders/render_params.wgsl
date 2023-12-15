@@ -11,7 +11,9 @@ struct RenderParams {
     sand_col: vec4<f32>,
     sea_col: vec4<f32>,
     viewport: vec2<f32>,
+    unproj_pos: vec2<f32>,
     time: f32,
     time_always: f32,
     shadow_mapping_resolution: i32,
+    terraforming_mode_radius: f32,
 }

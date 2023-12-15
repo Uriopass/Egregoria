@@ -10,6 +10,7 @@ use simulation::utils::time::GameTime;
 use simulation::Simulation;
 
 use crate::audio::GameAudio;
+use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::{manage_settings, Settings};
 use crate::gui::{ExitState, FollowEntity, Gui, Tool, UiTextures};
@@ -262,6 +263,15 @@ impl State {
             )
             .try_into()
             .unwrap();
+        params.unproj_pos = self
+            .uiw
+            .read::<InputMap>()
+            .unprojected
+            .unwrap_or_default()
+            .xy();
+        params.terraforming_mode_radius = matches!(*self.uiw.read::<Tool>(), Tool::Terraforming)
+            .then(|| self.uiw.read::<TerraformingResource>().radius)
+            .unwrap_or_default();
         drop(camera);
         let c = simulation::config();
         params.grass_col = c.grass_col.into();

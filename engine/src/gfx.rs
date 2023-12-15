@@ -159,7 +159,7 @@ pub struct RenderParams {
     pub sun_shadow_proj: [Matrix4; N_CASCADES],
     pub cam_pos: Vec3,
     pub _pad: f32,
-    pub cam_dir: Vec3,
+    pub cam_dir: Vec3, // Vec3s need to be 16 aligned
     pub _pad4: f32,
     pub sun: Vec3,
     pub _pad2: f32,
@@ -168,10 +168,21 @@ pub struct RenderParams {
     pub sand_col: LinearColor,
     pub sea_col: LinearColor,
     pub viewport: Vec2,
+    pub unproj_pos: Vec2,
     pub time: f32,
     pub time_always: f32,
     pub shadow_mapping_resolution: i32,
-    pub _pad5: [f32; 3],
+    pub terraforming_mode_radius: f32,
+}
+
+#[cfg(test)]
+#[test]
+fn test_renderparam_size() {
+    println!(
+        "size of RenderParams: {}",
+        std::mem::size_of::<RenderParams>()
+    );
+    assert!(std::mem::size_of::<RenderParams>() < 1024);
 }
 
 impl Default for RenderParams {
@@ -187,13 +198,14 @@ impl Default for RenderParams {
             cam_dir: Default::default(),
             sun: Default::default(),
             viewport: vec2(1000.0, 1000.0),
+            unproj_pos: Default::default(),
             time: 0.0,
             time_always: 0.0,
             shadow_mapping_resolution: 2048,
+            terraforming_mode_radius: 0.0,
             _pad: 0.0,
             _pad2: 0.0,
             _pad4: 0.0,
-            _pad5: Default::default(),
         }
     }
 }

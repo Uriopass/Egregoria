@@ -3,7 +3,7 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egui_inspect::Inspect;
-use geom::{LinearColor, Vec3};
+use geom::Vec3;
 use simulation::map::TerraformKind;
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
@@ -26,7 +26,7 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
     let res = uiworld.write::<TerraformingResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();
-    let mut draw = uiworld.write::<ImmediateDraw>();
+    let _draw = uiworld.write::<ImmediateDraw>();
     let _map = sim.map();
     let commands = &mut *uiworld.commands();
 
@@ -35,8 +35,6 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
     }
 
     let mpos = unwrap_ret!(inp.unprojected);
-    draw.circle(mpos.up(0.8), res.radius)
-        .color(LinearColor::GREEN.a(0.1));
 
     if inp.act.contains(&InputAction::Select) {
         commands.push(WorldCommand::Terraform {

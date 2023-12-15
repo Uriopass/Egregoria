@@ -143,7 +143,7 @@ fn frag(@builtin(position) position: vec4<f32>,
     let V_denorm: vec3<f32> = params.cam_pos.xyz - in_wpos;
     let depth: f32 = length(V_denorm);
     let V: vec3<f32> = V_denorm / depth;
-    let F0: vec3<f32> = vec3(0.00);
+    let F0: vec3<f32> = vec3(0.01);
     let roughness: f32 = 1.3; // avoid specular highlights which look weird on terrain
     let normal: vec3<f32> = normalize(in_normal);
     let F_spec: vec3<f32> = F0; // simplified with constant folding: fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
@@ -151,6 +151,21 @@ fn frag(@builtin(position) position: vec4<f32>,
     #ifdef DEBUG
     c = 0.05 * vec3(0.0, 0.0, debug);
     #endif
+
+    if (params.terraforming_mode_radius > 0.0) {
+        let dist = length(params.unproj_pos - in_wpos.xy);
+        let alpha = smoothstep(params.terraforming_mode_radius, 0.0, dist) * 0.1;
+        let alpha2 = smoothstep(params.terraforming_mode_radius * 0.5, 0.0, dist) * 0.3;
+        let alpha3 = smoothstep(params.terraforming_mode_radius * 0.25, 0.0, dist) * 0.3;
+        var fw = fwidth(in_wpos.z) * 2.5;
+        let alpha4 = smoothstep(fw, 0.0, abs((in_wpos.z % 10.0) - 5.0)) * 0.1;
+        let alpha5 = smoothstep(fw, 0.0, abs((in_wpos.z % 50.0) - 25.0)) * 0.1;
+
+        c = mix(c, vec3(1.0, 0.5, 0.5), alpha);
+        c = mix(c, vec3(0.5, 1.0, 0.5), alpha2);
+        c = mix(c, vec3(0.5, 0.5, 1.0), alpha3);
+        c = mix(c, vec3(0.0, 0.0, 0.0), alpha4 + alpha5);
+    }
 
     let final_rgb: vec3<f32> = render(params.sun,
                                       V,
