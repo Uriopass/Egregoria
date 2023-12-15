@@ -301,10 +301,12 @@ impl Vec2 {
         }
     }
 
+    #[inline]
     pub fn lerp(self, other: Self, coeff: f32) -> Self {
         self * (1.0 - coeff) + other * coeff
     }
 
+    #[inline]
     pub fn snap(self, x_period: f32, y_period: f32) -> Self {
         Self {
             x: (self.x / x_period).round() * x_period,
@@ -312,6 +314,7 @@ impl Vec2 {
         }
     }
 
+    #[inline]
     pub fn sign(self) -> Self {
         Self {
             x: self.x.signum(),
@@ -335,6 +338,7 @@ impl Vec2 {
         }
     }
 
+    #[inline]
     pub fn modulo(self, v: f32) -> Self {
         Self {
             x: self.x % v,
@@ -342,6 +346,7 @@ impl Vec2 {
         }
     }
 
+    #[inline]
     pub fn floor(self) -> Self {
         Self {
             x: self.x.floor(),
@@ -349,10 +354,19 @@ impl Vec2 {
         }
     }
 
+    #[inline]
     pub fn fract(self) -> Self {
         Self {
             x: self.x.fract(),
             y: self.y.fract(),
+        }
+    }
+
+    #[inline]
+    pub fn round(self) -> Self {
+        Self {
+            x: self.x.round(),
+            y: self.y.round(),
         }
     }
 

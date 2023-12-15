@@ -326,8 +326,18 @@ impl Map {
         }
     }
 
-    pub fn terraform(&mut self, kind: TerraformKind, center: Vec2, radius: f32, amount: f32) {
-        let modified = self.terrain.terraform(kind, center, radius, amount);
+    pub fn terraform(
+        &mut self,
+        kind: TerraformKind,
+        center: Vec2,
+        radius: f32,
+        amount: f32,
+        level: f32,
+        slope: Option<(Vec3, Vec3)>,
+    ) {
+        let modified = self
+            .terrain
+            .terraform(kind, center, radius, amount, level, slope);
 
         for id in modified {
             self.subscribers.dispatch_chunk(UpdateType::Terrain, id);

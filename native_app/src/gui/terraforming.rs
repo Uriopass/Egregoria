@@ -4,7 +4,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use common::timestep::UP_DT;
 use egui_inspect::Inspect;
-use geom::LinearColor;
+use geom::{LinearColor, Vec3};
 use simulation::map::TerraformKind;
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
@@ -14,6 +14,10 @@ pub struct TerraformingResource {
     pub kind: TerraformKind,
     pub radius: f32,
     pub amount: f32,
+    #[inspect(skip)]
+    pub level: f32,
+    #[inspect(skip)]
+    pub slope: Option<(Vec3, Vec3)>,
 }
 
 /// Lot brush tool
@@ -40,7 +44,9 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
             center: mpos.xy(),
             radius: res.radius,
             amount: res.amount * UP_DT.as_secs_f32(),
+            level: res.level,
             kind: res.kind,
+            slope: res.slope,
         })
     }
 }
@@ -48,9 +54,11 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
 impl Default for TerraformingResource {
     fn default() -> Self {
         Self {
-            kind: TerraformKind::Raise,
+            kind: TerraformKind::Smooth,
             radius: 200.0,
-            amount: 200.0,
+            amount: 1.0,
+            level: 50.0,
+            slope: None,
         }
     }
 }

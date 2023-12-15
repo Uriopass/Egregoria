@@ -159,8 +159,8 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
     pub fn apply(&mut self, bounds: AABB, mut f: impl FnMut(Vec3) -> f32) -> Vec<HeightmapChunkID> {
         let ll = bounds.ll / SIZE as f32;
         let ur = bounds.ur / SIZE as f32;
-        let ll = vec2(ll.x.floor(), ll.y.floor());
-        let ur = vec2(ur.x.ceil(), ur.y.ceil());
+        let ll = vec2(ll.x.floor(), ll.y.floor()).max(Vec2::ZERO);
+        let ur = vec2(ur.x.ceil(), ur.y.ceil()).min(vec2(self.w as f32, self.h as f32));
 
         let mut modified = Vec::with_capacity(((ur.x - ll.x) * (ur.y - ll.y)) as usize);
 
@@ -193,6 +193,64 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         modified
     }
 
+    /// Applies a convolution to every point in the heightmap in the given bounds
+    /// The function f is called with the point location and the 3x3 grid of heights around it, indexed with (x + y * 3)
+    /// This operation is much slower than apply because a copy of the chunk must be done
+    pub fn apply_convolution(
+        &mut self,
+        bounds: AABB,
+        mut f: impl FnMut(Vec2, [f32; 9]) -> f32,
+    ) -> Vec<HeightmapChunkID> {
+        let ll = bounds.ll / SIZE as f32;
+        let ur = bounds.ur / SIZE as f32;
+        let ll = vec2(ll.x.floor(), ll.y.floor()).max(Vec2::ZERO);
+        let ur = vec2(ur.x.ceil(), ur.y.ceil()).min(vec2(self.w as f32, self.h as f32));
+
+        let mut modified = Vec::with_capacity(((ur.x - ll.x) * (ur.y - ll.y)) as usize);
+
+        let mut new_chunks = Vec::with_capacity(((ur.x - ll.x) * (ur.y - ll.y)) as usize);
+        for y in ll.y as u16..ur.y as u16 {
+            for x in ll.x as u16..ur.x as u16 {
+                let id = (x, y);
+                modified.push(id);
+                let corner = vec2(x as f32, y as f32) * SIZE as f32;
+                let mut max_height: f32 = 0.0;
+                let mut new_heights = [[0.0; RESOLUTION]; RESOLUTION];
+                for i in 0..RESOLUTION {
+                    for j in 0..RESOLUTION {
+                        let p = corner + vec2(j as f32, i as f32) * Self::CELL_SIZE;
+                        let mut conv_heights = [0.0; 9];
+                        for conv_y in 0..3 {
+                            for conv_x in 0..3 {
+                                conv_heights[conv_x + conv_y * 3] = self
+                                    .height_idx(
+                                        (x as usize * RESOLUTION + j + conv_x).saturating_sub(1),
+                                        (y as usize * RESOLUTION + i + conv_y).saturating_sub(1),
+                                    )
+                                    .unwrap_or(0.0);
+                            }
+                        }
+                        let mut new_h = conv_heights[4];
+                        if bounds.contains(p) {
+                            new_h = f(p, conv_heights).clamp(MIN_HEIGHT, MAX_HEIGHT);
+                        }
+                        new_heights[i][j] = new_h;
+                        max_height = max_height.max(new_h);
+                    }
+                }
+                new_chunks.push((id, new_heights, max_height));
+            }
+        }
+
+        for (id, new_heights, max_height) in new_chunks {
+            let chunk = self.get_chunk_mut(id).unwrap();
+            chunk.heights = new_heights;
+            chunk.max_height = max_height;
+        }
+
+        modified
+    }
+
     pub fn chunks(
         &self,
     ) -> impl Iterator<Item = (HeightmapChunkID, &HeightmapChunk<RESOLUTION, SIZE>)> + '_ {
@@ -214,6 +272,19 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
                 .and_then(|x| x.get(v.x as usize))
                 .copied()
         })
+    }
+
+    /// get height by actual cell position
+    #[inline]
+    pub fn height_idx(&self, x: usize, y: usize) -> Option<f32> {
+        let chunkx = x / RESOLUTION;
+        let chunky = y / RESOLUTION;
+
+        let cellx = x % RESOLUTION;
+        let celly = y % RESOLUTION;
+
+        let chunk = self.get_chunk((chunkx as u16, chunky as u16))?;
+        Some(chunk.heights[celly][cellx])
     }
 
     /// Returns height at any point using bilinear interpolation

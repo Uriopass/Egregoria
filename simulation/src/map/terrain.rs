@@ -1,10 +1,11 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
 use flat_spatial::Grid;
-use geom::{vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
+use geom::{lerp, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::ops::Mul;
 
 pub type TerrainChunkID = common::ChunkID<5>;
 
@@ -33,7 +34,10 @@ pub struct Terrain {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum TerraformKind {
-    Raise,
+    Elevation,
+    Smooth,
+    Level,
+    Slope,
 }
 
 debug_inspect_impl!(TerraformKind);
@@ -142,18 +146,72 @@ impl Terrain {
         center: Vec2,
         radius: f32,
         amount: f32,
+        level: f32,
+        slope: Option<(Vec3, Vec3)>,
     ) -> Vec<TerrainChunkID> {
+        let bbox = AABB::centered(center, Vec2::splat(radius * 2.0));
         match kind {
-            TerraformKind::Raise => {
-                self.terrain_apply(AABB::centered(center, Vec2::splat(radius * 2.0)), |pos| {
-                    let dist = pos.xy().distance(center) / radius;
+            TerraformKind::Elevation => self.terrain_apply(bbox, |pos| {
+                let dist = pos.xy().distance(center) / radius;
+                if dist >= 1.0 {
+                    return pos.z;
+                }
+                let phi = (-1.0 / (1.0 - dist * dist)).exp();
+                pos.z + amount * phi
+            }),
+            TerraformKind::Smooth => self
+                .heightmap
+                .apply_convolution(bbox, |pos, vals| {
+                    let dist = pos.distance(center) / radius;
                     if dist >= 1.0 {
-                        return pos.z;
+                        return vals[4];
                     }
                     let phi = (-1.0 / (1.0 - dist * dist)).exp();
-                    pos.z + amount * phi
+
+                    const GAUSSIAN_KERNEL: &[f32; 9] = &[
+                        0.07511361, 0.1238414, 0.07511361, 0.1238414, 0.20417996, 0.1238414,
+                        0.07511361, 0.1238414, 0.07511361,
+                    ];
+                    let mut sum = 0.0;
+                    for (a, b) in vals.iter().zip(GAUSSIAN_KERNEL.iter()) {
+                        sum += a * b;
+                    }
+                    vals[4] + phi * (sum - vals[4])
                 })
-            }
+                .into_iter()
+                .map(|(x, y)| TerrainChunkID::new_i16(x as i16, y as i16))
+                .collect(),
+            TerraformKind::Level => self.terrain_apply(bbox, |pos| {
+                let dist = pos.xy().distance(center) / radius;
+                if dist >= 1.0 {
+                    return pos.z;
+                }
+                let phi = (-1.0 / (1.0 - dist * dist)).exp();
+                pos.z
+                    + amount
+                        * phi
+                        * (level - pos.z).signum()
+                        * (level - pos.z).abs().mul(0.1).clamp(0.0, 1.0)
+            }),
+            TerraformKind::Slope => self.terrain_apply(bbox, |pos| {
+                let dist = pos.xy().distance(center) / radius;
+                if dist >= 1.0 {
+                    return pos.z;
+                }
+                let phi = (-1.0 / (1.0 - dist * dist)).exp();
+                let mut z = pos.z;
+                if let Some((p1, p2)) = slope {
+                    let d = p2.xy() - p1.xy();
+                    let coeff_along_d = (pos.xy() - p1.xy()).dot(d) / d.mag2();
+                    let desired_height = lerp(p1.z, p2.z, coeff_along_d.clamp(0.0, 1.0));
+
+                    z += amount
+                        * phi
+                        * (desired_height - pos.z).signum()
+                        * (desired_height - pos.z).abs().mul(0.1).clamp(0.0, 1.0);
+                }
+                z
+            }),
         }
     }
 

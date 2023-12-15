@@ -4,7 +4,7 @@ use std::time::Instant;
 use common::descriptions::BuildingGen;
 use serde::{Deserialize, Serialize};
 
-use geom::{vec3, Vec2, OBB};
+use geom::{vec3, Vec2, Vec3, OBB};
 use WorldCommand::*;
 
 use crate::economy::Government;
@@ -42,6 +42,8 @@ pub enum WorldCommand {
         center: Vec2,
         radius: f32,
         amount: f32,
+        level: f32,                  // only for flatten
+        slope: Option<(Vec3, Vec3)>, // start and end of slope
     },
     SendMessage {
         message: Message,
@@ -346,8 +348,11 @@ impl WorldCommand {
                 amount,
                 center,
                 radius,
+                level,
+                slope,
             } => {
-                sim.map_mut().terraform(kind, center, radius, amount);
+                sim.map_mut()
+                    .terraform(kind, center, radius, amount, level, slope);
             }
         }
     }
@@ -393,7 +398,10 @@ fn generate_terrain(sim: &mut Simulation, size: u16) {
 impl FromIterator<WorldCommands> for WorldCommands {
     fn from_iter<T: IntoIterator<Item = WorldCommands>>(iter: T) -> Self {
         Self {
-            commands: iter.into_iter().flat_map(|x| x.commands).collect(),
+            commands: iter
+                .into_iter()
+                .flat_map(|x: WorldCommands| x.commands)
+                .collect(),
         }
     }
 }

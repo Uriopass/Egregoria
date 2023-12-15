@@ -46,8 +46,7 @@ impl TerrainRender {
             return;
         }
 
-        let mut update_count = 0;
-
+        let mut changed = false;
         while let Some(cell) = self.terrain_sub.take_one_updated_chunk() {
             for chunkid in cell.convert() {
                 let chunk =
@@ -59,14 +58,10 @@ impl TerrainRender {
                     chunk.heights(),
                 );
             }
-
-            update_count += 1;
-            if update_count > 20 {
-                break;
-            }
+            changed = true;
         }
 
-        if update_count > 0 {
+        if changed {
             self.terrain.invalidate_height_normals(&ctx.gfx);
         }
     }
