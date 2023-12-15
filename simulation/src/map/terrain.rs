@@ -218,7 +218,7 @@ impl Terrain {
             TerraformKind::Erode => {
                 let mut rng = common::rand::gen(tick.0);
                 self.heightmap
-                    .erode(bbox, 100, || rng.next_f32())
+                    .erode(bbox, amount.clamp(0.0, 1000.0) as usize, || rng.next_f32())
                     .into_iter()
                     .map(|(x, y)| TerrainChunkID::new_i16(x as i16, y as i16))
                     .collect()

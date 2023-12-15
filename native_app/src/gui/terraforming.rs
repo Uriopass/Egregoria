@@ -55,7 +55,7 @@ impl Default for TerraformingResource {
     fn default() -> Self {
         Self {
             kind: TerraformKind::Erode,
-            radius: 500.0,
+            radius: 1000.0,
             amount: 200.0,
             level: 50.0,
             slope: None,

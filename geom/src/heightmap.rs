@@ -522,21 +522,21 @@ mod erosion {
     // taken from https://github.com/SebLague/Hydraulic-Erosion/blob/master/Assets/Scripts/Erosion.cs
     // Copyright (c) 2019 Sebastian Lague
     // 2..8
-    const EROSION_RADIUS: isize = 5;
+    const EROSION_RADIUS: isize = 3;
     // 0..1
-    const INERTIA: f32 = 0.2; // At zero, water will instantly change direction to flow downhill. At 1, water will never change direction.
-    const SEDIMENT_CAPACITY_FACTOR: f32 = 10.0; // Multiplier for how much sediment a droplet can carry
-    const MIN_SEDIMENT_CAPACITY: f32 = 0.01; // Used to prevent carry capacity getting too close to zero on flatter terrain
+    const INERTIA: f32 = 0.1; // At zero, water will instantly change direction to flow downhill. At 1, water will never change direction.
+    const SEDIMENT_CAPACITY_FACTOR: f32 = 1.0; // Multiplier for how much sediment a droplet can carry
+    const MIN_SEDIMENT_CAPACITY: f32 = 0.003; // Used to prevent carry capacity getting too close to zero on flatter terrain
 
     // 0..1
-    const ERODE_SPEED: f32 = 0.02;
+    const ERODE_SPEED: f32 = 0.3;
 
     // 0..1
-    const DEPOSIT_SPEED: f32 = 0.1;
+    const DEPOSIT_SPEED: f32 = 0.3;
     // 0..1
     const EVAPORATE_SPEED: f32 = 0.01;
     const GRAVITY: f32 = 1.0;
-    const MAX_DROPLET_LIFETIME: usize = 30;
+    const MAX_DROPLET_LIFETIME: usize = 50;
 
     const INITIAL_WATER_VOLUME: f32 = 1.0;
     const INITIAL_SPEED: f32 = 1.0;
@@ -565,7 +565,7 @@ mod erosion {
             for _ in 0..n_particles {
                 // Create water droplet at random point in bounds, in a circle
 
-                let d = randgen() * (bounds.size() / 2.0).mag();
+                let d = randgen().sqrt() * (bounds.size() / 2.0).mag();
                 let angle = Radians(randgen() * std::f32::consts::TAU);
                 let pos = bounds.center() + angle.vec2() * d;
 
@@ -653,6 +653,7 @@ mod erosion {
                             f32::min((sediment_capacity - sediment) * ERODE_SPEED, -delta_height);
 
                         // Use erosion brush to erode from all nodes inside the droplet's erosion radius
+                        changed.insert(HeightmapChunk::<RESOLUTION, SIZE>::id(pos * Self::CELL_SIZE));
 
                         for erode_y in -EROSION_RADIUS..=EROSION_RADIUS {
                             for erode_x in -EROSION_RADIUS..=EROSION_RADIUS {
@@ -663,7 +664,6 @@ mod erosion {
                                 let w = (1.0 - f32::sqrt(dist2 as f32) / EROSION_RADIUS as f32) / erosion_brush_total;
 
                                 let pos_radius = pos + vec2(erode_x as f32, erode_y as f32);
-                                changed.insert(HeightmapChunk::<RESOLUTION, SIZE>::id(pos_radius));
 
                                 let weighed_erode_amount = amount_to_erode * w;
 
@@ -683,7 +683,7 @@ mod erosion {
                     }
 
                     // Update droplet's speed and water content
-                    speed = f32::sqrt(speed * speed - delta_height * GRAVITY);
+                    speed = f32::sqrt(speed * speed - delta_height * GRAVITY) * 0.98;
                     water *= 1.0 - EVAPORATE_SPEED;
                     pos += dir;
                 }

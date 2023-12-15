@@ -47,7 +47,7 @@ impl TerrainRender {
         }
 
         let mut changed = false;
-        while let Some(cell) = self.terrain_sub.take_one_updated_chunk() {
+        for cell in self.terrain_sub.take_updated_chunks() {
             for chunkid in cell.convert() {
                 let chunk =
                     unwrap_retlog!(ter.get_chunk(chunkid), "trying to update nonexistent chunk");
