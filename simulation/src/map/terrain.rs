@@ -1,6 +1,7 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
 use crate::utils::time::Tick;
+use common::timestep::UP_DT;
 use flat_spatial::Grid;
 use geom::{lerp, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -160,7 +161,7 @@ impl Terrain {
                     return pos.z;
                 }
                 let phi = (-1.0 / (1.0 - dist * dist)).exp();
-                pos.z + amount * phi
+                pos.z + (amount * UP_DT.as_secs_f32()) * phi
             }),
             TerraformKind::Smooth => self
                 .heightmap
@@ -191,7 +192,7 @@ impl Terrain {
                 }
                 let phi = (-1.0 / (1.0 - dist * dist)).exp();
                 pos.z
-                    + amount
+                    + (amount * UP_DT.as_secs_f32())
                         * phi
                         * (level - pos.z).signum()
                         * (level - pos.z).abs().mul(0.1).clamp(0.0, 1.0)
@@ -208,7 +209,7 @@ impl Terrain {
                     let coeff_along_d = (pos.xy() - p1.xy()).dot(d) / d.mag2();
                     let desired_height = lerp(p1.z, p2.z, coeff_along_d.clamp(0.0, 1.0));
 
-                    z += amount
+                    z += (amount * UP_DT.as_secs_f32())
                         * phi
                         * (desired_height - pos.z).signum()
                         * (desired_height - pos.z).abs().mul(0.1).clamp(0.0, 1.0);

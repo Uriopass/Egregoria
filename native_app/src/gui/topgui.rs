@@ -22,7 +22,7 @@ use geom::{Polygon, Vec2};
 use serde::{Deserialize, Serialize};
 use simulation::economy::{Government, Item, ItemRegistry, Money};
 use simulation::map::{
-    BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
+    BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::utils::time::{GameTime, SECONDS_PER_HOUR};
@@ -536,6 +536,22 @@ impl Gui {
                             ..Default::default()
                         },
                     );
+
+                    if ui.button("Lift").clicked() {
+                        state.kind = TerraformKind::Elevation;
+                    }
+                    if ui.button("Smooth").clicked() {
+                        state.kind = TerraformKind::Smooth;
+                    }
+                    if ui.button("Level").clicked() {
+                        state.kind = TerraformKind::Level;
+                    }
+                    if ui.button("Slope").clicked() {
+                        state.kind = TerraformKind::Slope;
+                    }
+                    if ui.button("Erode").clicked() {
+                        state.kind = TerraformKind::Erode;
+                    }
                 });
         }
 

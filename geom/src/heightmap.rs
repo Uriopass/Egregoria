@@ -513,9 +513,8 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
 }
 
 mod erosion {
-    use crate::{
-        vec2, Heightmap, HeightmapChunk, HeightmapChunkID, Radians, Vec2, AABB, DEBUG_OBBS, OBB,
-    };
+    use crate::heightmap::MIN_HEIGHT;
+    use crate::{vec2, Heightmap, HeightmapChunk, HeightmapChunkID, Radians, Vec2, AABB};
     use std::collections::BTreeSet;
     use std::ops::Div;
 
@@ -667,9 +666,9 @@ mod erosion {
 
                                 let weighed_erode_amount = amount_to_erode * w;
 
-                                let delta_sediment = self
+                                let delta_sediment = (self
                                     .height_idx(pos_radius.x as usize, pos_radius.y as usize)
-                                    .unwrap_or(0.0)
+                                    .unwrap_or(0.0) - MIN_HEIGHT)
                                     .div(Self::CELL_SIZE)
                                     .min(weighed_erode_amount);
 

@@ -2,7 +2,6 @@ use super::Tool;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use common::timestep::UP_DT;
 use egui_inspect::Inspect;
 use geom::{LinearColor, Vec3};
 use simulation::map::TerraformKind;
@@ -43,7 +42,7 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
         commands.push(WorldCommand::Terraform {
             center: mpos.xy(),
             radius: res.radius,
-            amount: res.amount * UP_DT.as_secs_f32(),
+            amount: res.amount,
             level: res.level,
             kind: res.kind,
             slope: res.slope,
