@@ -3,8 +3,8 @@ use crate::game_loop::{State, Timings};
 use crate::gui::windows::settings::Settings;
 use crate::uiworld::{ReceivedCommands, SaveLoadState};
 use common::timestep::Timestep;
-use simulation::engine_interaction::{WorldCommand, WorldCommands};
 use simulation::utils::scheduler::SeqSchedule;
+use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::Simulation;
 
 impl Default for NetworkState {
@@ -108,7 +108,7 @@ mod inner {
     use networking::{
         ConnectConf, Frame, PollResult, ServerConfiguration, ServerPollResult, VirtualClientConf,
     };
-    use simulation::engine_interaction::WorldCommands;
+    use simulation::world_command::WorldCommands;
     use simulation::Simulation;
     use std::net::ToSocketAddrs;
     use std::sync::Mutex;

@@ -1,7 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 
-use crate::engine_interaction::WorldCommand;
 use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryLeader};
 use crate::physics::CollisionWorld;
@@ -9,6 +8,7 @@ use crate::physics::Speed;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::goods_company::GoodsCompanyRegistry;
 use crate::utils::resources::{Ref, RefMut, Resources};
+use crate::world_command::WorldCommand;
 use common::saveload::Encoder;
 use derive_more::{From, TryInto};
 use geom::Vec3;
@@ -36,7 +36,6 @@ extern crate egui_inspect;
 extern crate log as extern_log;
 
 pub mod economy;
-pub mod engine_interaction;
 pub mod init;
 pub mod map;
 pub mod map_dynamic;
@@ -48,13 +47,14 @@ mod tests;
 pub mod transportation;
 pub mod utils;
 mod world;
+pub mod world_command;
 
 pub use world::*;
 
-use crate::engine_interaction::WorldCommand::Init;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::{Tick, SECONDS_PER_REALTIME_SECOND};
+use crate::world_command::WorldCommand::Init;
 use common::FastMap;
 pub use utils::config::*;
 pub use utils::par_command_buffer::ParCommandBuffer;

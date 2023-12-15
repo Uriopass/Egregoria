@@ -5,8 +5,8 @@ use crate::uiworld::UiWorld;
 use common::timestep::UP_DT;
 use egui_inspect::Inspect;
 use geom::LinearColor;
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::TerraformKind;
+use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
 #[derive(Inspect)]

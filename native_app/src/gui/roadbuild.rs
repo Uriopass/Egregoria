@@ -5,10 +5,10 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
 use geom::{PolyLine3, Spline3, Vec2, Vec3};
-use simulation::engine_interaction::{WorldCommand, WorldCommands};
 use simulation::map::{
     Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
 };
+use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::Simulation;
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};

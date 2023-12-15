@@ -1,7 +1,7 @@
 use crate::uiworld::UiWorld;
 use egui::{Context, Ui, Widget};
 use simulation::economy::{ItemRegistry, Market};
-use simulation::engine_interaction::WorldCommand;
+use simulation::world_command::WorldCommand;
 use simulation::{Simulation, SoulID};
 
 use crate::gui::inspect::entity_link;

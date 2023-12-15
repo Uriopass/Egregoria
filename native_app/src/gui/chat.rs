@@ -2,10 +2,10 @@ use egui::panel::TopBottomSide;
 use egui::{Align2, Color32, Frame, RichText, ScrollArea, TextBuffer, TopBottomPanel};
 
 use geom::Color;
-use simulation::engine_interaction::WorldCommand;
 use simulation::multiplayer::chat::{Message, MessageKind};
 use simulation::multiplayer::MultiplayerState;
 use simulation::utils::time::{GameInstant, GameTime, SECONDS_PER_REALTIME_SECOND};
+use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
 use crate::inputmap::{InputAction, InputMap};

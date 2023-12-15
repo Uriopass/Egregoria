@@ -1,6 +1,6 @@
-use crate::engine_interaction::WorldCommand;
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
+use crate::world_command::WorldCommand;
 use crate::Simulation;
 use serde::{Deserialize, Serialize};
 

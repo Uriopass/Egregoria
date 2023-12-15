@@ -1,6 +1,6 @@
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
-use simulation::engine_interaction::{WorldCommand, WorldCommands};
 use simulation::utils::resources::{Ref, RefMut, Resources};
+use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::{Simulation, SimulationReplayLoader};
 use std::any::Any;
 use std::sync::atomic::AtomicBool;

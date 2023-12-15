@@ -4,8 +4,8 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use geom::{Polygon, Vec2};
 use ordered_float::OrderedFloat;
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::{ProjectFilter, ProjectKind, Zone, MAX_ZONE_AREA};
+use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::borrow::Cow;
 

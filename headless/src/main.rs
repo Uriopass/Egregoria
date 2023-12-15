@@ -1,7 +1,7 @@
 use common::logger::MyLog;
 use common::unwrap_or;
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
-use simulation::engine_interaction::WorldCommands;
+use simulation::world_command::WorldCommands;
 use simulation::Simulation;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;

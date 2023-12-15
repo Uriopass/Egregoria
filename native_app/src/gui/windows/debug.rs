@@ -12,11 +12,11 @@ use crate::inputmap::InputMap;
 use egui::Widget;
 use engine::Tesselator;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::{
     IntersectionID, Map, MapSubscriber, RoadSegmentKind, TraverseKind, UpdateType,
 };
 use simulation::transportation::train::TrainReservations;
+use simulation::world_command::WorldCommand;
 
 #[derive(Default)]
 pub struct DebugState {

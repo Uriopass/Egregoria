@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 #![cfg(test)]
 
-use crate::engine_interaction::{WorldCommand, WorldCommands};
 use crate::map::{BuildingID, LanePatternBuilder, ProjectFilter};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
+use crate::world_command::{WorldCommand, WorldCommands};
 use crate::{Simulation, SimulationOptions};
 use common::logger::MyLog;
 use common::saveload::Encoder;

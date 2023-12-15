@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
 use roadbuild::RoadBuildResource;
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::BuildingID;
+use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};
 
 pub mod addtrain;

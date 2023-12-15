@@ -1,6 +1,6 @@
 use crate::economy::Money;
-use crate::engine_interaction::WorldCommand;
 use crate::map::{LanePattern, MapProject, MAX_ZONE_AREA};
+use crate::world_command::WorldCommand;
 use crate::{BuildingKind, GoodsCompanyRegistry, Simulation};
 use serde::{Deserialize, Serialize};
 

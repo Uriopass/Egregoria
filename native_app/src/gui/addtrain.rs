@@ -4,9 +4,9 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use geom::{Color, OBB};
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::LaneKind;
 use simulation::transportation::train::{train_length, wagons_positions_for_render};
+use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::option::Option::None;
 

@@ -21,12 +21,12 @@ use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use serde::{Deserialize, Serialize};
 use simulation::economy::{Government, Item, ItemRegistry, Money};
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::{
     BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::utils::time::{GameTime, SECONDS_PER_HOUR};
+use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};

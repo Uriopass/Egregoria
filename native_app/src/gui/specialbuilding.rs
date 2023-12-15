@@ -6,8 +6,8 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
-use simulation::engine_interaction::WorldCommand;
 use simulation::map::{ProjectFilter, ProjectKind};
+use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::borrow::Cow;
 

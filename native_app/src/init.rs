@@ -20,7 +20,7 @@ use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use simulation::engine_interaction::WorldCommands;
+use simulation::world_command::WorldCommands;
 
 /// init is called at the beginning of the program to initialize the globals
 /// It is mostly to register types for serialization and initialization of the engine
