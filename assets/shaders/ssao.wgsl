@@ -55,7 +55,7 @@ var<private> sample_sphere: array<vec3<f32>,16u> = array<vec3<f32>,16u>(
 const samples: i32 = 8;
 const total_strength: f32 = 0.64;
 const radius: f32 = 1.343;
-const falloff: f32 = 0.0008;
+const falloff: f32 = 0.0025;
 const base: f32 = 0.01;
 
 @fragment
