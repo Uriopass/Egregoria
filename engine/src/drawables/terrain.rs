@@ -12,7 +12,7 @@ use wgpu::{
 };
 
 const LOD: usize = 5;
-const LOD_MIN_DIST_LOG2: f32 = 9.0; // 2^9 = 512, meaning until 1048m away, we use the highest lod
+const LOD_MIN_DIST_LOG2: f32 = 9.5; // 2^9 = 512, meaning until 1048m away, we use the highest lod
 const MAX_HEIGHT: f32 = 2008.0;
 const MIN_HEIGHT: f32 = -40.0;
 const UPSCALE_LOD: usize = 2; // amount of LOD that are superior to base terrain data
@@ -296,6 +296,19 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             for y in 0..resolution {
                 for x in 0..resolution {
                     let idx = y * w + x;
+                    // avoid aliasing by alternating the triangles
+                    // alternate at 2 different levels (x + y) and (x / 2 + y / 2)
+                    // because of the LOD interpolation (each rectangle might end up being 2 times smaller)
+                    if (x + y + x / 2 + y / 2) % 2 == 0 {
+                        indices.push(idx);
+                        indices.push(idx + 1);
+                        indices.push(idx + w);
+
+                        indices.push(idx + 1);
+                        indices.push(idx + w + 1);
+                        indices.push(idx + w);
+                        continue;
+                    }
                     indices.push(idx);
                     indices.push(idx + 1);
                     indices.push(idx + w + 1);
