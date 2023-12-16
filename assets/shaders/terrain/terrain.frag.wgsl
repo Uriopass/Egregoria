@@ -154,16 +154,12 @@ fn frag(@builtin(position) position: vec4<f32>,
 
     if (params.terraforming_mode_radius > 0.0) {
         let dist = length(params.unproj_pos - in_wpos.xy);
-        let alpha = smoothstep(params.terraforming_mode_radius, 0.0, dist) * 0.1;
-        let alpha2 = smoothstep(params.terraforming_mode_radius * 0.5, 0.0, dist) * 0.3;
-        let alpha3 = smoothstep(params.terraforming_mode_radius * 0.25, 0.0, dist) * 0.3;
+        let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist);
         var fw = fwidth(in_wpos.z) * 2.5;
         let alpha4 = smoothstep(fw, 0.0, abs((in_wpos.z % 10.0) - 5.0)) * 0.1;
         let alpha5 = smoothstep(fw, 0.0, abs((in_wpos.z % 50.0) - 25.0)) * 0.1;
 
-        c = mix(c, vec3(1.0, 0.5, 0.5), alpha);
-        c = mix(c, vec3(0.5, 1.0, 0.5), alpha2);
-        c = mix(c, vec3(0.5, 0.5, 1.0), alpha3);
+        c = mix(c, vec3(0.7, 0.4, 0.2), alpha * 0.2);
         c = mix(c, vec3(0.0, 0.0, 0.0), alpha4 + alpha5);
     }
 
