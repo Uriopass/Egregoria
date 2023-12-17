@@ -102,6 +102,7 @@ impl Terrain {
                 f(id);
             }
         }
+        self.trees.maintain();
     }
 
     pub fn get_chunk(&self, id: TerrainChunkID) -> Option<&Chunk> {
