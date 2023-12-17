@@ -85,8 +85,8 @@ fn textureNoTile(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32
     var ofc: vec4<f32> = hash4( iuv + vec2(0.0,1.0) );
     var ofd: vec4<f32> = hash4( iuv + vec2(1.0,1.0) );
 
-    let ddx: vec2<f32> = dpdx(uv);
-    let ddy: vec2<f32> = dpdy(uv);
+    let ddx: vec2<f32> = dpdxCoarse(uv);
+    let ddy: vec2<f32> = dpdyCoarse(uv);
 
     // transform per-tile uvs
     ofa.z = sign(ofa.z - 0.5);
@@ -133,7 +133,7 @@ fn frag(@builtin(position) position: vec4<f32>,
 
     var c: vec3<f32> = vec3(0.0, 0.0, 0.0);
     #ifdef TERRAIN_GRID
-    c.g += grid(in_wpos, fwidth(in_wpos.x)) * 0.015;
+    c.g += grid(in_wpos, fwidthCoarse(in_wpos.x)) * 0.015;
     #endif
 
     // tri-planar mapping
@@ -167,7 +167,7 @@ fn frag(@builtin(position) position: vec4<f32>,
 
     if (params.terraforming_mode_radius > 0.0) {
         let dist = length(params.unproj_pos - in_wpos.xy);
-        var fw = fwidth(in_wpos.z) * 2.5;
+        var fw = fwidthCoarse(in_wpos.z) * 2.5;
 
         let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist);
         let alpha4 = smoothstep(fw, 0.0, abs((in_wpos.z % 10.0) - 5.0)) * 0.1;
