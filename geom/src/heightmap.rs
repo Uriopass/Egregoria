@@ -457,13 +457,25 @@ fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
     mid
 }
 
+fn pack_height(height: f32) -> u16 {
+    ((height - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT) * u16::MAX as f32) as u16
+}
+
+fn unpack_height(height: u16) -> f32 {
+    height as f32 / u16::MAX as f32 * (MAX_HEIGHT - MIN_HEIGHT) + MIN_HEIGHT
+}
+
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut seq = serializer.serialize_seq(Some(1 + RESOLUTION * RESOLUTION))?;
         seq.serialize_element(&self.max_height)?;
+        let mut last = 0;
         for row in &self.heights {
-            for height in row {
-                seq.serialize_element(height)?;
+            for &height in row {
+                let packed = pack_height(height);
+                let delta = packed.wrapping_sub(last);
+                seq.serialize_element(&delta)?;
+                last = packed;
             }
         }
         seq.end()
@@ -501,11 +513,15 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
             .next_element()?
             .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
         let mut heights = [[0.0; RESOLUTION]; RESOLUTION];
+        let mut last = 0;
         for row in &mut heights {
             for height in row {
-                *height = seq
+                let delta: u16 = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
+                let packed = delta.wrapping_add(last);
+                *height = unpack_height(packed);
+                last = packed;
             }
         }
         Ok((heights, max_height))
