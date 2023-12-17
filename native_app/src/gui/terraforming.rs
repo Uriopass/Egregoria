@@ -145,7 +145,7 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
 impl Default for TerraformingResource {
     fn default() -> Self {
         Self {
-            kind: TerraformKind::Erode,
+            kind: TerraformKind::Elevation,
             radius: 200.0,
             amount: 200.0,
             level: None,
