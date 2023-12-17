@@ -34,7 +34,7 @@ pub struct Terrain {
     pub trees: Grid<Tree, Vec2>,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum TerraformKind {
     Elevation,
     Smooth,
@@ -42,8 +42,6 @@ pub enum TerraformKind {
     Slope,
     Erode,
 }
-
-debug_inspect_impl!(TerraformKind);
 
 defer_serialize!(Terrain, SerializedTerrain);
 

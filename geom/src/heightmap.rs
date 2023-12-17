@@ -580,7 +580,7 @@ mod erosion {
             for _ in 0..n_particles {
                 // Create water droplet at random point in bounds, in a circle
 
-                let d = randgen().powf(0.8) * (bounds.size() / 2.0).mag();
+                let d = randgen().powf(0.8) * bounds.w() * 0.5;
                 let angle = Radians(randgen() * std::f32::consts::TAU);
                 let pos = bounds.center() + angle.vec2() * d;
 

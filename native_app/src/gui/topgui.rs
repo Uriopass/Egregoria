@@ -515,7 +515,7 @@ impl Gui {
         }
 
         if matches!(*uiworld.read::<Tab>(), Tab::Terraforming) {
-            let lbw = 120.0;
+            let lbw = 150.0;
             Window::new("Terraforming")
                 .min_width(lbw)
                 .auto_sized()
@@ -537,21 +537,11 @@ impl Gui {
                         },
                     );
 
-                    if ui.button("Lift").clicked() {
-                        state.kind = TerraformKind::Elevation;
-                    }
-                    if ui.button("Smooth").clicked() {
-                        state.kind = TerraformKind::Smooth;
-                    }
-                    if ui.button("Level").clicked() {
-                        state.kind = TerraformKind::Level;
-                    }
-                    if ui.button("Slope").clicked() {
-                        state.kind = TerraformKind::Slope;
-                    }
-                    if ui.button("Erode").clicked() {
-                        state.kind = TerraformKind::Erode;
-                    }
+                    ui.radio_value(&mut state.kind, TerraformKind::Elevation, "Raise/Lower");
+                    ui.radio_value(&mut state.kind, TerraformKind::Smooth, "Smooth");
+                    ui.radio_value(&mut state.kind, TerraformKind::Level, "Level");
+                    ui.radio_value(&mut state.kind, TerraformKind::Slope, "Slope");
+                    ui.radio_value(&mut state.kind, TerraformKind::Erode, "Erode");
                 });
         }
 
