@@ -212,6 +212,9 @@ impl OrbitCamera {
                 .0
                 .abs());
             lerpp!(self.camera.dist, self.targetdist, 8.0, |x: f32| x.abs());
+            if (self.targetdist / self.camera.dist - 1.0).abs() < 0.002 {
+                self.camera.dist = self.targetdist;
+            }
         } else {
             self.camera.pos = self.targetpos;
             self.camera.yaw = self.targetyaw;

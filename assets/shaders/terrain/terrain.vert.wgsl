@@ -31,7 +31,7 @@ struct ChunkData {
 @group(2) @binding(1) var s_terrain: sampler;
 @group(2) @binding(2) var t_normals: texture_2d<u32>;
 @group(2) @binding(3) var s_normals: sampler;
-@group(2) @binding(6) var<uniform> cdata: ChunkData;
+@group(2) @binding(8) var<uniform> cdata: ChunkData;
 
 /*
 normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)

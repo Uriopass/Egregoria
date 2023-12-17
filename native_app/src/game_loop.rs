@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
-use engine::{Context, FrameContext, PerfCounters, Tesselator};
+use engine::{Context, FrameContext, Tesselator};
 use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::utils::time::GameTime;
 use simulation::Simulation;

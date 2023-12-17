@@ -49,9 +49,7 @@ impl DemoElement for Terrain {
             }
         }
 
-        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
-
-        let mut terrain = EngineTerrainRender::new(gfx, MAP_SIZE as u32, MAP_SIZE as u32, grass);
+        let mut terrain = EngineTerrainRender::new(gfx, MAP_SIZE as u32, MAP_SIZE as u32);
 
         for x in 0..MAP_SIZE {
             for y in 0..MAP_SIZE {

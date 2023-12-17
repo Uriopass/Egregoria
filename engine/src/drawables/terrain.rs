@@ -48,12 +48,15 @@ pub struct TerrainPrepared {
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
     const LOD0_RESOLUTION: usize = CRESOLUTION * (1 << UPSCALE_LOD);
 
-    pub fn new(gfx: &mut GfxContext, w: u32, h: u32, grass: Arc<Texture>) -> Self {
+    pub fn new(gfx: &mut GfxContext, w: u32, h: u32) -> Self {
         debug_assert!(
             Self::LOD0_RESOLUTION >= 1 << LOD,
             "LOD0 TERRAIN RESOLUTION must be >= {}",
             1 << LOD
         );
+
+        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
+        let cliff = gfx.texture("assets/sprites/cliff.jpg", "cliff");
 
         let indices = Self::generate_indices_mesh(gfx);
 
@@ -111,10 +114,10 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 &gfx.device,
             );
 
-            let texs = &[&terrain_tex, &normals_tex, &grass];
-            let mut bg_entries = Vec::with_capacity(3);
+            let texs = &[&terrain_tex, &normals_tex, &grass, &cliff];
+            let mut bg_entries = Vec::with_capacity(12);
             bg_entries.extend(Texture::multi_bindgroup_entries(0, texs));
-            bg_entries.push(uni.bindgroup_entry(6));
+            bg_entries.push(uni.bindgroup_entry(8));
             bgs.push(
                 gfx.device.create_bind_group(&BindGroupDescriptor {
                     layout: &gfx
@@ -646,10 +649,10 @@ impl PipelineBuilder for TerrainPipeline {
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
                 entries: &Texture::bindgroup_layout_entries(
                     0,
-                    [TL::UInt, TL::UInt, TL::Float].into_iter(),
+                    [TL::UInt, TL::UInt, TL::Float, TL::Float].into_iter(),
                 )
                 .chain(std::iter::once(
-                    Uniform::<TerrainChunkData>::bindgroup_layout_entry(6),
+                    Uniform::<TerrainChunkData>::bindgroup_layout_entry(8),
                 ))
                 .collect::<Vec<_>>(),
                 label: Some("terrain bindgroup layout"),

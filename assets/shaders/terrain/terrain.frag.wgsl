@@ -15,7 +15,9 @@ struct ChunkData {
 
 @group(2) @binding(4) var t_grass: texture_2d<f32>;
 @group(2) @binding(5) var s_grass: sampler;
-@group(2) @binding(6) var<uniform> cdata: ChunkData;
+@group(2) @binding(6) var t_cliff: texture_2d<f32>;
+@group(2) @binding(7) var s_cliff: sampler;
+@group(2) @binding(8) var<uniform> cdata: ChunkData;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;
@@ -129,13 +131,18 @@ fn frag(@builtin(position) position: vec4<f32>,
         shadow_v = sampleShadow(in_wpos);
     }
 
-    var c: vec3<f32> = params.grass_col.rgb;
+    var c: vec3<f32> = vec3(0.0, 0.0, 0.0);
     #ifdef TERRAIN_GRID
     c.g += grid(in_wpos, fwidth(in_wpos.x)) * 0.015;
     #endif
 
-    let grass = (textureNoTile(t_grass, s_grass, in_wpos.xy / 100.0).rgb * 0.3 - c) * 0.5;
-    c = c + grass;
+    let grass = params.grass_col.rgb + (textureSample(t_grass, s_grass, in_wpos.xy / 100.0).rgb * 0.3 - params.grass_col.rgb) * 0.5;
+    let cliff = (textureSample(t_cliff, s_cliff, in_wpos.xy / 100.0).rgb * 0.3 - c) * 0.5;
+
+    let normal_diff: f32 = dot(in_normal, vec3(0.0, 0.0, 1.0));
+    let transition = smoothstep(0.92, 0.85, normal_diff);
+
+    c = c + mix(grass, cliff, transition);
     c = mix(params.sand_col.rgb, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
@@ -154,12 +161,13 @@ fn frag(@builtin(position) position: vec4<f32>,
 
     if (params.terraforming_mode_radius > 0.0) {
         let dist = length(params.unproj_pos - in_wpos.xy);
-        let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist);
         var fw = fwidth(in_wpos.z) * 2.5;
+
+        let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist);
         let alpha4 = smoothstep(fw, 0.0, abs((in_wpos.z % 10.0) - 5.0)) * 0.1;
         let alpha5 = smoothstep(fw, 0.0, abs((in_wpos.z % 50.0) - 25.0)) * 0.1;
 
-        c = mix(c, vec3(0.7, 0.4, 0.2), alpha * 0.2);
+        c = mix(c, vec3(0.7, 0.4, 0.2), alpha * 0.15);
         c = mix(c, vec3(0.0, 0.0, 0.0), alpha4 + alpha5);
     }
 

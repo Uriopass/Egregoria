@@ -16,9 +16,7 @@ impl TerrainRender {
     pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
         let (w, h) = sim.map().terrain.size();
 
-        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
-
-        let terrain = EngineTerrainRender::new(gfx, w as u32, h as u32, grass);
+        let terrain = EngineTerrainRender::new(gfx, w as u32, h as u32);
 
         Self {
             terrain,
