@@ -136,13 +136,19 @@ fn frag(@builtin(position) position: vec4<f32>,
     c.g += grid(in_wpos, fwidth(in_wpos.x)) * 0.015;
     #endif
 
-    let grass = params.grass_col.rgb + (textureSample(t_grass, s_grass, in_wpos.xy / 100.0).rgb * 0.3 - params.grass_col.rgb) * 0.5;
-    let cliff = (textureSample(t_cliff, s_cliff, in_wpos.xy / 100.0).rgb * 0.3 - c) * 0.5;
+    // tri-planar mapping
+    let grass = textureNoTile(t_grass, s_grass, in_wpos.xy / 200.0).rgb;
+    let cliffE = textureSample(t_cliff, s_cliff, in_wpos.xz / 100.0).rgb;
+    let cliffN = textureSample(t_cliff, s_cliff, in_wpos.yz / 100.0).rgb;
 
-    let normal_diff: f32 = dot(in_normal, vec3(0.0, 0.0, 1.0));
-    let transition = smoothstep(0.92, 0.85, normal_diff);
+    let wcliffN = pow(abs(in_normal.x), 16.0);
+    let wcliffE = pow(abs(in_normal.y), 16.0);
+    let wgrass  = pow(abs(in_normal.z)*0.8, 16.0);
 
-    c = c + mix(grass, cliff, transition);
+    let sum = wgrass + wcliffE + wcliffN;
+
+    c = c + (grass * wgrass + cliffE * wcliffE + cliffN * wcliffN) / sum;
+
     c = mix(params.sand_col.rgb, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
