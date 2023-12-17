@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
-use engine::{Context, FrameContext, Tesselator};
+use engine::{Context, FrameContext, PerfCounters, Tesselator};
 use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::utils::time::GameTime;
 use simulation::Simulation;
@@ -239,12 +239,14 @@ impl State {
         ctx.gfx.update_simplelit_bg();
     }
 
-    fn manage_gfx_params(&self, ctx: &mut Context) {
+    fn manage_gfx_params(&mut self, ctx: &mut Context) {
         let t = std::f32::consts::TAU
             * (ctx.gfx.render_params.value().time - 8.0 * GameTime::HOUR as f32)
             / GameTime::DAY as f32;
 
         let sun = vec3(t.cos(), t.sin() * 0.5, t.sin() + 0.5).normalize();
+
+        self.uiw.insert(ctx.gfx.perf.as_static());
 
         let params = ctx.gfx.render_params.value_mut();
         params.time_always = (params.time_always + ctx.delta) % 3600.0;

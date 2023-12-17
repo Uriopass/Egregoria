@@ -104,5 +104,7 @@ impl Drawable for Water {
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
+
+        gfx.perf.drawcall(self.n_indices / 3);
     }
 }

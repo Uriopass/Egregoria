@@ -635,24 +635,6 @@ impl TerrainInstance {
     }
 }
 
-impl TerrainPrepared {
-    fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
-        for lod in 0..LOD {
-            let (instances, n_instances) = &self.instances[lod];
-            if *n_instances == 0 {
-                continue;
-            }
-
-            let (ind, n_indices) = &self.indices[lod];
-
-            rp.set_bind_group(2, &self.terrainbgs[lod], &[]);
-            rp.set_vertex_buffer(0, instances.slice().unwrap());
-            rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
-            rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);
-        }
-    }
-}
-
 impl PipelineBuilder for TerrainPipeline {
     fn build(
         &self,
@@ -718,6 +700,14 @@ impl Drawable for TerrainPrepared {
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
 
         self.set_buffers(rp);
+
+        for lod in 0..LOD {
+            let (_, n_instances) = &self.instances[lod];
+            let (_, n_indices) = &self.indices[lod];
+
+            gfx.perf
+                .terrain_drawcall(*n_indices as usize / 3 * *n_instances as usize)
+        }
     }
 
     fn draw_depth<'a>(
@@ -738,6 +728,34 @@ impl Drawable for TerrainPrepared {
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
 
         self.set_buffers(rp);
+
+        for lod in 0..LOD {
+            let (_, n_instances) = &self.instances[lod];
+            let (_, n_indices) = &self.indices[lod];
+
+            gfx.perf.terrain_depth_drawcall(
+                *n_indices as usize / 3 * *n_instances as usize,
+                shadow_cascade.is_some(),
+            );
+        }
+    }
+}
+
+impl TerrainPrepared {
+    fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
+        for lod in 0..LOD {
+            let (instances, n_instances) = &self.instances[lod];
+            if *n_instances == 0 {
+                continue;
+            }
+
+            let (ind, n_indices) = &self.indices[lod];
+
+            rp.set_bind_group(2, &self.terrainbgs[lod], &[]);
+            rp.set_vertex_buffer(0, instances.slice().unwrap());
+            rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
+            rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);
+        }
     }
 }
 

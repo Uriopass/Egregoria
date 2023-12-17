@@ -1,4 +1,5 @@
 use crate::pbr::PBR;
+use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
     MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError, TextureBuilder, Uniform,
@@ -68,6 +69,8 @@ pub struct GfxContext {
     pub sky_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
+
+    pub perf: PerfCounters,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
@@ -363,6 +366,7 @@ impl GfxContext {
             defines: Default::default(),
             defines_changed: false,
             settings: None,
+            perf: Default::default(),
         };
 
         me.update_simplelit_bg();
@@ -598,6 +602,8 @@ impl GfxContext {
         mut prepare: impl FnMut(&mut FrameContext<'_>),
     ) {
         profiling::scope!("gfx::render_objs");
+        self.perf.clear();
+
         let mut objs = vec![];
         let mut fc = FrameContext {
             objs: &mut objs,

@@ -259,6 +259,8 @@ impl Drawable for Mesh {
             }));
             rp.set_bind_group(2, &mat.bg, &[]);
             rp.draw_indexed(offset..offset + length, 0, 0..1);
+
+            gfx.perf.drawcall(length / 3);
         }
     }
 
@@ -287,6 +289,9 @@ impl Drawable for Mesh {
                 rp.set_bind_group(1, &mat.bg, &[]);
             }
             rp.draw_indexed(offset..offset + length, 0, 0..1);
+
+            gfx.perf
+                .depth_drawcall(length / 3, shadow_cascade.is_some());
         }
     }
 }

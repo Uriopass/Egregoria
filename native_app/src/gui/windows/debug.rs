@@ -10,7 +10,7 @@ use simulation::{Simulation, TrainID};
 
 use crate::inputmap::InputMap;
 use egui::Widget;
-use engine::Tesselator;
+use engine::{PerfCountersStatic, Tesselator};
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use simulation::map::{
     IntersectionID, Map, MapSubscriber, RoadSegmentKind, TraverseKind, UpdateType,
@@ -132,6 +132,43 @@ pub fn debug(
             "Render prepare time: {:.1}ms",
             timings.render.avg() * 1000.0
         ));
+
+        let counters = uiworld.read::<PerfCountersStatic>();
+        ui.label(format!("{}k drawcalls", counters.total_drawcalls / 1000));
+        ui.label(format!("{}k triangles", counters.total_triangles / 1000));
+        ui.add_space(5.0);
+        ui.label(format!(
+            "{}k depth drawcalls",
+            counters.depth_drawcalls / 1000
+        ));
+        ui.label(format!(
+            "{}k depth triangles",
+            counters.depth_triangles / 1000
+        ));
+        ui.add_space(5.0);
+        ui.label(format!(
+            "{}k shadow drawcalls",
+            counters.shadows_drawcalls / 1000
+        ));
+        ui.label(format!(
+            "{}k shadow triangles",
+            counters.shadows_triangles / 1000
+        ));
+        ui.add_space(5.0);
+        ui.label(format!(
+            "{}k terrain triangles",
+            counters.terrain_triangles / 1000
+        ));
+        ui.label(format!(
+            "{}k terrain depth triangles",
+            counters.terrain_depth_triangles / 1000
+        ));
+        ui.label(format!(
+            "{}k terrain shadow triangles",
+            counters.terrain_shadows_triangles / 1000
+        ));
+        drop(counters);
+
         if let Some(mouse) = mouse {
             ui.label(format!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
         }

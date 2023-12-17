@@ -95,6 +95,7 @@ impl Drawable for InstancedMesh {
             rp.set_pipeline(pipeline);
             rp.set_bind_group(2, &mat.bg, &[]);
             rp.draw_indexed(offset..offset + length, 0, 0..self.n_instances);
+            gfx.perf.drawcall(length / 3 * self.n_instances);
         }
     }
 
@@ -121,6 +122,8 @@ impl Drawable for InstancedMesh {
                 rp.set_bind_group(1, &mat.bg, &[]);
             }
             rp.draw_indexed(offset..offset + length, 0, 0..self.n_instances);
+            gfx.perf
+                .depth_drawcall(length / 3 * self.n_instances, shadow_cascade.is_some());
         }
     }
 }
