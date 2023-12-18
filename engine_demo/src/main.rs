@@ -1,8 +1,8 @@
 use common::{AudioKind, History};
 use engine::meshload::load_mesh;
 use engine::{
-    Context, FrameContext, GfxContext, GfxSettings, InstancedMeshBuilder, KeyCode, MeshInstance,
-    MouseButton, ShadowQuality,
+    Context, FrameContext, GfxSettings, InstancedMeshBuilder, KeyCode, MeshInstance, MouseButton,
+    ShadowQuality,
 };
 use geom::{
     vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3,
@@ -50,10 +50,6 @@ struct State {
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
-
-        gfx.render_params.value_mut().shadow_mapping_resolution = 2048;
-        gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
-        gfx.update_simplelit_bg();
 
         let mut meshes = vec![];
 

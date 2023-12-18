@@ -4,7 +4,7 @@ use egui::FontFamily::{Monospace, Proportional};
 use egui::FontId;
 
 use engine::meshload::load_mesh_with_properties;
-use engine::{Context, FrameContext, GfxContext, SpriteBatchBuilder};
+use engine::{Context, FrameContext, GfxContext, GfxSettings, SpriteBatchBuilder};
 use geom::{vec3, InfiniteFrustrum, LinearColor, Plane, Vec2, Vec3};
 
 use crate::gui::{Gui, Inspected, Shown};
@@ -64,7 +64,8 @@ impl engine::framework::State for State {
 
         let sun = vec3(1.0, -1.0, 1.0).normalize();
         params.time_always = (params.time_always + ctx.delta) % 3600.0;
-        params.sun_col = sun.z.max(0.0).sqrt().sqrt()
+        params.sun_col = 4.0
+            * sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
         params.sun = sun;
         params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
@@ -79,6 +80,8 @@ impl engine::framework::State for State {
             )
             .try_into()
             .unwrap();
+
+        gfx.update_settings(GfxSettings::default());
     }
 
     fn render(&mut self, fc: &mut FrameContext) {
