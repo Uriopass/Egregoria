@@ -35,7 +35,7 @@ impl MapRenderer {
             meshb: MapMeshHandler::new(gfx, sim),
             trees: TreesRender::new(gfx, &sim.map()),
             terrain: TerrainRender::new(gfx, sim),
-            water: Water::new(gfx, sim.map().terrain.bounds()),
+            water: Water::new(gfx, sim.map().environment.bounds()),
             lamps: LampsRender::new(&sim.map()),
         }
     }

@@ -29,7 +29,7 @@ pub struct Tree {
 }
 
 #[derive(Clone)]
-pub struct Terrain {
+pub struct Environment {
     heightmap: Heightmap,
     pub trees: Grid<Tree, Vec2>,
 }
@@ -43,15 +43,15 @@ pub enum TerraformKind {
     Erode,
 }
 
-defer_serialize!(Terrain, SerializedTerrain);
+defer_serialize!(Environment, SerializedEnvironment);
 
-impl Default for Terrain {
+impl Default for Environment {
     fn default() -> Self {
         Self::new(0, 0)
     }
 }
 
-impl Terrain {
+impl Environment {
     pub fn new(w: u16, h: u16) -> Self {
         let mut me = Self {
             heightmap: Heightmap::new(w, h),
@@ -315,14 +315,14 @@ pub fn to_pos(encoded: SmolTree, chunk: (u32, u32)) -> Vec2 {
 }
 
 #[derive(Serialize, Deserialize)]
-struct SerializedTerrain {
+struct SerializedEnvironment {
     h: Heightmap,
     trees: Vec<((u32, u32), Vec<SmolTree>)>,
 }
 
-impl From<SerializedTerrain> for Terrain {
-    fn from(ser: SerializedTerrain) -> Self {
-        let mut terrain = Terrain {
+impl From<SerializedEnvironment> for Environment {
+    fn from(ser: SerializedEnvironment) -> Self {
+        let mut terrain = Environment {
             heightmap: ser.h,
             ..Self::default()
         };
@@ -337,9 +337,9 @@ impl From<SerializedTerrain> for Terrain {
     }
 }
 
-impl From<&Terrain> for SerializedTerrain {
-    fn from(ter: &Terrain) -> Self {
-        let mut t = SerializedTerrain {
+impl From<&Environment> for SerializedEnvironment {
+    fn from(ter: &Environment) -> Self {
+        let mut t = SerializedEnvironment {
             h: ter.heightmap.clone(),
             trees: Vec::new(),
         };

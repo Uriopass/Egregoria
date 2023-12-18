@@ -8,9 +8,9 @@ use engine::{
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
 use simulation::map::{
-    Building, BuildingKind, CanonicalPosition, Intersection, LaneKind, Lanes, LotKind, Map,
-    MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
-    Terrain, Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
+    Building, BuildingKind, CanonicalPosition, Environment, Intersection, LaneKind, Lanes, LotKind,
+    Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
+    Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::Simulation;
@@ -586,7 +586,7 @@ impl MapBuilders {
         let lanes = map.lanes();
         let roads = map.roads();
         let lots = map.lots();
-        let terrain = &map.terrain;
+        let env = &map.environment;
 
         for road in chunk_roads {
             let road = &roads[road];
@@ -597,7 +597,7 @@ impl MapBuilders {
             let first_dir = unwrap_cont!(cut.first_dir());
             let last_dir = unwrap_cont!(cut.last_dir());
 
-            road_pylons(&mut self.tess_map.meshbuilder, terrain, road);
+            road_pylons(&mut self.tess_map.meshbuilder, env, road);
 
             self.tess_map.normal.z = -1.0;
             self.tess_map.draw_polyline_full(
@@ -674,7 +674,7 @@ impl MapBuilders {
 
             self.crosswalks(inter, lanes);
 
-            inter_pylon(&mut self.tess_map.meshbuilder, terrain, inter, roads);
+            inter_pylon(&mut self.tess_map.meshbuilder, env, inter, roads);
             intersection_mesh(&mut self.tess_map, &hig_col, inter, roads);
 
             // Walking corners
@@ -819,19 +819,19 @@ fn add_polyon(
     quad(3, 0, 7, 4, d2p);
 }
 
-fn road_pylons(meshb: &mut MeshBuilder<false>, terrain: &Terrain, road: &Road) {
-    for pylon in Road::pylons_positions(road.interfaced_points(), terrain) {
+fn road_pylons(meshb: &mut MeshBuilder<false>, env: &Environment, road: &Road) {
+    for pylon in Road::pylons_positions(road.interfaced_points(), env) {
         add_polyon(meshb, road.width * 0.5, pylon);
     }
 }
 
 fn inter_pylon(
     meshb: &mut MeshBuilder<false>,
-    terrain: &Terrain,
+    env: &Environment,
     inter: &Intersection,
     roads: &Roads,
 ) {
-    let h = unwrap_ret!(terrain.height(inter.pos.xy()));
+    let h = unwrap_ret!(env.height(inter.pos.xy()));
     if (h - inter.pos.z).abs() <= 2.0 {
         return;
     }

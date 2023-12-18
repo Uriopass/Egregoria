@@ -33,7 +33,7 @@ impl Lot {
         axis: Vec2,
         size: f32,
     ) -> Option<LotID> {
-        let height = map.terrain.height(at.xy())?;
+        let height = map.environment.height(at.xy())?;
         if (height - at.z).abs() > 1.0 {
             return None;
         }

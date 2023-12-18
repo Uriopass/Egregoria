@@ -122,7 +122,7 @@ impl engine::framework::State for State {
             self.uiw.write::<InputMap>().ray = ray;
 
             if let Some(ray) = ray {
-                let cast = map.terrain.raycast(ray);
+                let cast = map.environment.raycast(ray);
 
                 self.uiw.write::<InputMap>().unprojected = cast.map(|x| x.0);
                 self.uiw.write::<InputMap>().unprojected_normal = cast.map(|x| x.1);
@@ -291,8 +291,8 @@ impl State {
             ctx.delta,
             &self.uiw.read::<InputMap>(),
             &self.uiw.read::<Settings>(),
-            map.terrain.bounds(),
-            |p| map.terrain.height(p),
+            map.environment.bounds(),
+            |p| map.environment.height(p),
         );
         *self.uiw.write::<Camera>() = self.uiw.read::<OrbitCamera>().camera;
 
@@ -322,7 +322,7 @@ impl State {
             unsafe {
                 for v in &geom::DEBUG_OBBS {
                     immediate
-                        .obb(*v, map.terrain.height(v.center()).unwrap_or(0.0) + 8.0)
+                        .obb(*v, map.environment.height(v.center()).unwrap_or(0.0) + 8.0)
                         .color(col);
                 }
                 for v in &geom::DEBUG_SPLINES {

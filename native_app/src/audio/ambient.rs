@@ -56,7 +56,7 @@ impl Ambient {
         if volume > 0.0 {
             let mut matches = 0;
 
-            for _ in map.terrain.trees.query(bbox.ll, bbox.ur) {
+            for _ in map.environment.trees.query(bbox.ll, bbox.ur) {
                 matches += 1;
                 if matches > 50 {
                     break;

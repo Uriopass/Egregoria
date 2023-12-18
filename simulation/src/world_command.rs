@@ -10,8 +10,8 @@ use WorldCommand::*;
 use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
-    BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder, LightPolicy,
-    LotID, Map, MapProject, ProjectKind, RoadID, TerraformKind, Terrain, TurnPolicy, Zone,
+    BuildingID, BuildingKind, Environment, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
+    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, TerraformKind, TurnPolicy, Zone,
 };
 use crate::map_dynamic::{BuildingInfos, ParkingManagement};
 use crate::multiplayer::chat::Message;
@@ -363,7 +363,7 @@ fn generate_terrain(sim: &mut Simulation, size: u16) {
     info!("generating terrain..");
     let t = Instant::now();
 
-    sim.map_mut().terrain = Terrain::new(size, size);
+    sim.map_mut().environment = Environment::new(size, size);
     info!("took {}s", t.elapsed().as_secs_f32());
 
     let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.3);

@@ -621,7 +621,8 @@ pub fn debug_spatialmap(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWor
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor::BLUE.a(0.1));
         tess.draw_rect_cos_sin(
-            r.center().z(map.terrain.height(r.center()).unwrap_or(0.0)),
+            r.center()
+                .z(map.environment.height(r.center()).unwrap_or(0.0)),
             r.w(),
             r.h(),
             Vec2::X,

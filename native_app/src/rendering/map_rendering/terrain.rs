@@ -14,7 +14,7 @@ pub struct TerrainRender {
 
 impl TerrainRender {
     pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
-        let (w, h) = sim.map().terrain.size();
+        let (w, h) = sim.map().environment.size();
 
         let terrain = EngineTerrainRender::new(gfx, w as u32, h as u32);
 
@@ -29,7 +29,7 @@ impl TerrainRender {
     }
 
     pub fn update(&mut self, ctx: &mut Context, map: &Map) {
-        let ter = &map.terrain;
+        let ter = &map.environment;
 
         if self.terrain_sub.take_cleared() {
             for (chunk_id, chunk) in ter.chunks() {

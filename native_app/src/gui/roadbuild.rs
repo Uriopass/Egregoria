@@ -56,7 +56,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
     let grid_size = 20.0;
     let mousepos = if state.snap_to_grid {
         let v = unproj.xy().snap(grid_size, grid_size);
-        v.z(unwrap_ret!(map.terrain.height(v)) + 0.3 + state.height_offset)
+        v.z(unwrap_ret!(map.environment.height(v)) + 0.3 + state.height_offset)
     } else {
         unproj.up(0.3 + state.height_offset)
     };
@@ -438,7 +438,7 @@ impl RoadBuildResource {
             terrain_height,
             pos,
             ..
-        } in simulation::map::Road::pylons_positions(&p, &map.terrain)
+        } in simulation::map::Road::pylons_positions(&p, &map.environment)
         {
             immdraw
                 .circle(pos.xy().z(terrain_height + 0.1), patwidth * 0.5)

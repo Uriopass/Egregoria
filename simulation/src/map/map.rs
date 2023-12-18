@@ -1,9 +1,9 @@
 use crate::map::serializing::SerializedMap;
 use crate::map::{
-    Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
-    LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID, ParkingSpots,
-    ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, SubscriberChunkID,
-    TerraformKind, Terrain, UpdateType, Zone,
+    Building, BuildingID, BuildingKind, Environment, Intersection, IntersectionID, Lane, LaneID,
+    LaneKind, LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID,
+    ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
+    SubscriberChunkID, TerraformKind, UpdateType, Zone,
 };
 use crate::utils::time::Tick;
 use common::descriptions::BuildingGen;
@@ -34,7 +34,7 @@ pub struct Map {
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
     pub(crate) bkinds: BTreeMap<BuildingKind, Vec<BuildingID>>,
-    pub terrain: Terrain,
+    pub environment: Environment,
     pub parking: ParkingSpots,
     pub subscribers: MapSubscribers,
 }
@@ -57,7 +57,7 @@ impl Map {
             parking: ParkingSpots::default(),
             buildings: Buildings::default(),
             lots: Lots::default(),
-            terrain: Terrain::default(),
+            environment: Environment::default(),
             spatial_map: SpatialMap::default(),
             bkinds: Default::default(),
             subscribers: Default::default(),
@@ -99,7 +99,7 @@ impl Map {
 
     pub fn dispatch_all(&self) {
         self.subscribers.dispatch_clear();
-        let bounds = self.terrain.bounds();
+        let bounds = self.environment.bounds();
         let ll = SubscriberChunkID::new(bounds.ll);
         let ur = SubscriberChunkID::new(bounds.ur);
         for x in ll.0..ur.0 {
@@ -177,7 +177,7 @@ impl Map {
         };
         f(z);
 
-        self.terrain.remove_trees_near(&z.poly, |tree_chunk| {
+        self.environment.remove_trees_near(&z.poly, |tree_chunk| {
             self.subscribers
                 .dispatch_chunk(UpdateType::Terrain, tree_chunk)
         });
@@ -214,7 +214,7 @@ impl Map {
 
         self.clean_lots_inner(self.spatial_map.query(obb, ProjectFilter::LOT).collect());
 
-        self.terrain
+        self.environment
             .remove_trees_near(obb.expand(10.0), |tree_chunk| {
                 self.subscribers
                     .dispatch_chunk(UpdateType::Terrain, tree_chunk)
@@ -223,7 +223,7 @@ impl Map {
         let v = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
-            &self.terrain,
+            &self.environment,
             *obb,
             kind,
             gen,
@@ -255,7 +255,7 @@ impl Map {
         let v = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
-            &self.terrain,
+            &self.environment,
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
@@ -338,7 +338,7 @@ impl Map {
         slope: Option<(Vec3, Vec3)>,
     ) {
         let modified = self
-            .terrain
+            .environment
             .terraform(tick, kind, center, radius, amount, level, slope);
 
         for id in modified {
@@ -349,7 +349,7 @@ impl Map {
     pub fn clear(&mut self) {
         info!("clear");
         let before = std::mem::replace(self, Self::empty());
-        self.terrain = before.terrain;
+        self.environment = before.environment;
         self.subscribers.dispatch_clear();
 
         self.check_invariants();
@@ -564,7 +564,7 @@ impl Map {
         let r = &self.roads[id];
         let mut b = r.boldline();
         b.expand(40.0);
-        self.terrain.remove_trees_near(&b, |tree_chunk| {
+        self.environment.remove_trees_near(&b, |tree_chunk| {
             self.subscribers
                 .dispatch_chunk(UpdateType::Terrain, tree_chunk)
         });
