@@ -166,7 +166,7 @@ fn render(sun: vec3<f32>,
     color += atmo;
     #endif
 
-    let autoexposure = 1.0 + smoothstep(0.0, 0.1, -sun.z) * 5.0;
+    let autoexposure = 1.0 + smoothstep(0.0, 0.1, -sun.z) * 10.0;
 
     color = tonemap(autoexposure * color);
 

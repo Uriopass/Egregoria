@@ -1,23 +1,19 @@
-use std::path::Path;
-
-use egui::FontFamily::{Monospace, Proportional};
-use egui::FontId;
-
 use engine::meshload::load_mesh_with_properties;
 use engine::{Context, FrameContext, GfxContext, GfxSettings, SpriteBatchBuilder};
 use geom::{vec3, InfiniteFrustrum, LinearColor, Plane, Vec2, Vec3};
+use std::path::Path;
 
-use crate::gui::{Gui, Inspected, Shown};
 use crate::orbit_camera::OrbitCamera;
+use crate::yakui_gui::{Gui, Inspected, Shown};
 
 mod companies;
-mod gui;
 mod orbit_camera;
+mod yakui_gui;
 
 struct State {
-    gui: Gui,
     camera: OrbitCamera,
     last_inspect: Inspected,
+    gui: Gui,
 }
 
 impl engine::framework::State for State {
@@ -28,25 +24,29 @@ impl engine::framework::State for State {
         gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
         gfx.update_simplelit_bg();
 
-        let mut style = (*ctx.egui.egui.style()).clone();
-
-        style.text_styles = [
-            (egui::TextStyle::Small, FontId::new(15.0, Proportional)),
-            (egui::TextStyle::Body, FontId::new(18.5, Proportional)),
-            (egui::TextStyle::Button, FontId::new(18.5, Proportional)),
-            (egui::TextStyle::Heading, FontId::new(25.0, Proportional)),
-            (egui::TextStyle::Monospace, FontId::new(18.0, Monospace)),
-        ]
-        .into();
-
-        ctx.egui.egui.set_style(style);
+        //let mut style = (*ctx.egui.egui.style()).clone();
+        //
+        //style.text_styles = [
+        //    (egui::TextStyle::Small, FontId::new(15.0, Proportional)),
+        //    (egui::TextStyle::Body, FontId::new(18.5, Proportional)),
+        //    (egui::TextStyle::Button, FontId::new(18.5, Proportional)),
+        //    (egui::TextStyle::Heading, FontId::new(25.0, Proportional)),
+        //    (egui::TextStyle::Monospace, FontId::new(18.0, Monospace)),
+        //]
+        //.into();
+        //
+        //ctx.egui.egui.set_style(style);
 
         let camera = OrbitCamera::new();
 
+        let mut gui = Gui::new();
+
+        gui.inspected = Inspected::Company(3);
+
         Self {
             camera,
-            gui: Gui::new(),
             last_inspect: Inspected::None,
+            gui,
         }
     }
 
@@ -92,8 +92,8 @@ impl engine::framework::State for State {
         self.camera.resize(ctx, size.0 as f32, size.1 as f32);
     }
 
-    fn render_gui(&mut self, ui: &egui::Context) {
-        self.gui(ui);
+    fn render_yakui(&mut self) {
+        self.gui_yakui();
     }
 }
 

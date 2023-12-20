@@ -215,14 +215,11 @@ impl Default for RenderParams {
 
 u8slice_impl!(RenderParams);
 
-pub struct GuiRenderContext<'a, 'b> {
-    pub window: &'a Window,
+pub struct GuiRenderContext<'a> {
+    pub gfx: &'a mut GfxContext,
     pub encoder: &'a mut CommandEncoder,
     pub view: &'a TextureView,
     pub size: (u32, u32, f64),
-    pub device: &'a Device,
-    pub queue: &'a Queue,
-    pub rpass: Option<wgpu::RenderPass<'b>>,
 }
 
 pub struct FrameContext<'a> {
@@ -776,17 +773,14 @@ impl GfxContext {
         &mut self,
         encoders: &mut Encoders,
         frame: &TextureView,
-        mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
+        mut render_gui: impl FnMut(GuiRenderContext<'_>),
     ) {
         profiling::scope!("gfx::render_gui");
         render_gui(GuiRenderContext {
-            window: &self.window,
+            size: self.size,
+            gfx: self,
             encoder: &mut encoders.end,
             view: frame,
-            size: self.size,
-            device: &self.device,
-            queue: &self.queue,
-            rpass: None,
         });
     }
 

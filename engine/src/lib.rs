@@ -23,6 +23,9 @@ mod texture;
 mod uniform;
 mod vertex_types;
 
+#[cfg(feature = "yakui")]
+pub mod yakui;
+
 pub use audio::*;
 pub use drawables::*;
 pub use framework::Context;
@@ -40,8 +43,8 @@ pub use u8slice::*;
 pub use uniform::*;
 pub use vertex_types::*;
 
-pub use winit::event::ScanCode;
 pub use winit::window::CursorGrabMode;
+pub use winit::window::CursorIcon;
 
 pub use image;
 pub use wgpu;

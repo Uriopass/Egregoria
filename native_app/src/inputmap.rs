@@ -1,6 +1,5 @@
 use common::{FastMap, FastSet};
-use engine::ScanCode;
-use engine::{InputContext, KeyCode, MouseButton};
+use engine::{InputContext, Key, MouseButton};
 use geom::{Ray3, Vec2, Vec3};
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashSet};
@@ -10,16 +9,16 @@ use std::fmt::{Debug, Display, Formatter};
 #[derive(Serialize, Deserialize)]
 pub struct InputCombinations(pub Vec<InputCombination>);
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 enum UnitInput {
-    Key(KeyCode),
-    KeyScan(ScanCode),
+    Key(Key),
+    KeyScan(u32),
     Mouse(MouseButton),
     WheelUp,
     WheelDown,
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum InputAction {
     GoLeft,
     GoRight,
@@ -77,7 +76,7 @@ pub struct InputMap {
 pub struct Bindings(pub BTreeMap<InputAction, InputCombinations>);
 
 use InputAction::*;
-use KeyCode as K;
+use Key as K;
 use MouseButton::*;
 use UnitInput::*;
 
@@ -89,31 +88,31 @@ const DEFAULT_BINDINGS: &[(InputAction, &[&[UnitInput]])] = &[
     (GoLeft,          &[&[KeyScan(30)], &[Key(K::Left)]]),
     (GoRight,         &[&[KeyScan(32)], &[Key(K::Right)]]),
     (CameraRotate,    &[&[Mouse(Right)]]),
-    (CameraMove,      &[&[Key(K::LShift), Mouse(Right)], &[Mouse(Middle)]]),
-    (Zoom,            &[&[Key(K::Plus)], &[WheelUp]]),
-    (Dezoom,          &[&[Key(K::Minus)], &[WheelDown]]),
-    (Rotate,          &[&[Key(K::LControl), WheelUp], &[Key(K::LControl), WheelDown]]),
-    (SizeUp,          &[&[Key(K::LControl), WheelUp]]),
-    (SizeDown,        &[&[Key(K::LControl), WheelDown]]),
+    (CameraMove,      &[&[Key(K::Shift), Mouse(Right)], &[Mouse(Middle)]]),
+    (Zoom,            &[&[Key(K::c("+"))], &[WheelUp]]),
+    (Dezoom,          &[&[Key(K::c("-"))], &[WheelDown]]),
+    (Rotate,          &[&[Key(K::Control), WheelUp], &[Key(K::Control), WheelDown]]),
+    (SizeUp,          &[&[Key(K::Control), WheelUp]]),
+    (SizeDown,        &[&[Key(K::Control), WheelDown]]),
     (Close,           &[&[Key(K::Escape)]]),
     (Select,          &[&[Mouse(Left)]]),
-    (SecondarySelect, &[&[Key(K::LControl), Mouse(Left)]]),
-    (NoSnapping,      &[&[Key(K::LControl)]]),
-    (HideInterface,   &[&[Key(K::H)]]),
-    (UpElevation,     &[&[Key(K::LControl), WheelUp]]),
-    (DownElevation,   &[&[Key(K::LControl), WheelDown]]),
-    (OpenEconomyMenu, &[&[Key(K::E)]]),
+    (SecondarySelect, &[&[Key(K::Control), Mouse(Left)]]),
+    (NoSnapping,      &[&[Key(K::Control)]]),
+    (HideInterface,   &[&[Key(K::c("H"))]]),
+    (UpElevation,     &[&[Key(K::Control), WheelUp]]),
+    (DownElevation,   &[&[Key(K::Control), WheelDown]]),
+    (OpenEconomyMenu, &[&[Key(K::c("E"))]]),
     (PausePlay,       &[&[Key(K::Space)]]),
-    (OpenChat, &[&[Key(K::T)]]),
+    (OpenChat,        &[&[Key(K::c("T"))]]),
 ];
 
 impl Default for Bindings {
     fn default() -> Self {
         let mut m = BTreeMap::default();
 
-        for &(k, v) in DEFAULT_BINDINGS {
+        for (k, v) in DEFAULT_BINDINGS {
             if m.insert(
-                k,
+                k.clone(),
                 InputCombinations(v.iter().map(|&x| InputCombination(x.to_vec())).collect()),
             )
             .is_some()
@@ -157,7 +156,7 @@ impl InputMap {
         std::mem::swap(&mut self.act, &mut acts);
         for v in &self.act {
             if !acts.contains(v) {
-                self.just_act.insert(*v);
+                self.just_act.insert(v.clone());
             }
         }
         self.screen = input.mouse.screen;
@@ -193,14 +192,14 @@ impl Display for UnitInput {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             UnitInput::Key(code) => Debug::fmt(code, f),
-            UnitInput::Mouse(mb) => Debug::fmt(mb, f),
-            UnitInput::WheelUp => {
+            Mouse(mb) => Debug::fmt(mb, f),
+            WheelUp => {
                 write!(f, "Scroll Up")
             }
-            UnitInput::WheelDown => {
+            WheelDown => {
                 write!(f, "Scroll Down")
             }
-            UnitInput::KeyScan(scan) => write!(f, "ScanCode({scan})"),
+            KeyScan(scan) => write!(f, "ScanCode({scan})"),
         }
     }
 }
@@ -237,11 +236,10 @@ impl InputTree {
         };
 
         for (act, combs) in &bindings.0 {
-            log::info!("{} {}", act, combs);
             for comb in &combs.0 {
                 let mut cur: &mut InputTree = &mut root;
                 for inp in &comb.0 {
-                    let ent = cur.childs.entry(*inp);
+                    let ent = cur.childs.entry(inp.clone());
                     match ent {
                         Entry::Occupied(_) => {}
                         Entry::Vacant(v) => {
@@ -253,7 +251,7 @@ impl InputTree {
                     }
                     cur = &mut **cur.childs.get_mut(inp).unwrap();
                 }
-                cur.actions.push(*act);
+                cur.actions.push(act.clone());
             }
         }
 
@@ -262,21 +260,21 @@ impl InputTree {
 
     pub fn query(
         &self,
-        kb: &FastSet<KeyCode>,
-        kb_scans: &FastSet<ScanCode>,
+        kb: &FastSet<Key>,
+        kb_scans: &FastSet<u32>,
         mouse: &FastSet<MouseButton>,
         wheel: f32,
     ) -> impl Iterator<Item = InputAction> + '_ {
         let mut units: HashSet<UnitInput> = HashSet::with_capacity(kb.len() + mouse.len() + 1);
 
-        units.extend(kb.iter().map(|x| UnitInput::Key(*x)));
-        units.extend(mouse.iter().map(|x| UnitInput::Mouse(*x)));
-        units.extend(kb_scans.iter().map(|x| UnitInput::KeyScan(*x)));
+        units.extend(kb.iter().map(|x| UnitInput::Key(x.clone())));
+        units.extend(mouse.iter().map(|x| Mouse(*x)));
+        units.extend(kb_scans.iter().map(|x| KeyScan(*x)));
         if wheel > 0.0 {
-            units.insert(UnitInput::WheelUp);
+            units.insert(WheelUp);
         }
         if wheel < 0.0 {
-            units.insert(UnitInput::WheelDown);
+            units.insert(WheelDown);
         }
 
         let mut matches = vec![];
@@ -284,7 +282,7 @@ impl InputTree {
 
         while !queue.is_empty() {
             for (input_stack, q) in std::mem::take(&mut queue) {
-                for key in units.iter().copied() {
+                for key in units.iter().cloned() {
                     if let Some(inp) = q.childs.get(&key) {
                         let mut newstack = input_stack.clone();
                         newstack.push(key);
@@ -310,7 +308,7 @@ impl InputTree {
                 Some(act)
             })
             .flatten()
-            .copied()
+            .cloned()
     }
 }
 

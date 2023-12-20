@@ -17,6 +17,7 @@ impl Companies {
         })
     }
 
+    #[allow(dead_code)]
     pub fn save(&self) {
         common::saveload::JSONPretty::save(&self.companies, "companies");
     }

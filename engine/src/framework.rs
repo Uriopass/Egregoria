@@ -1,5 +1,5 @@
 use crate::egui::EguiWrapper;
-use crate::{AudioContext, FrameContext, GfxContext, InputContext};
+use crate::{get_cursor_icon, AudioContext, FrameContext, GfxContext, InputContext};
 use std::mem::ManuallyDrop;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
@@ -30,6 +30,10 @@ pub trait State: 'static {
 
     /// Called every frame to prepare the gui rendering.
     fn render_gui(&mut self, ui: &egui::Context) {}
+
+    /// Called every frame to prepare the gui rendering.
+    #[cfg(feature = "yakui")]
+    fn render_yakui(&mut self) {}
 }
 
 async fn run<S: State>(el: EventLoop<()>, window: Window) {
@@ -43,8 +47,13 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
     let mut new_size: Option<(PhysicalSize<u32>, f64)> = None;
     let mut last_update = Instant::now();
 
-    el.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Poll;
+    el.run(move |event, target| {
+        target.set_control_flow(ControlFlow::Poll);
+        #[cfg(feature = "yakui")]
+        if ctx.yakui.handle_event(&event) {
+            return;
+        }
+
         match event {
             Event::DeviceEvent {
                 event,
@@ -53,7 +62,8 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                 ctx.input.handle_device(&event);
             }
             Event::WindowEvent { event, .. } => {
-                ctx.egui.handle_event(&event);
+                ctx.egui.handle_event(&ctx.gfx.window, &event);
+
                 ctx.input.handle(&event);
 
                 match event {
@@ -64,22 +74,22 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     }
                     WindowEvent::ScaleFactorChanged {
                         scale_factor: sf,
-                        new_inner_size
+                        ..
                     } => {
                         log::info!("scale_factor: {:?}", scale_factor);
                         scale_factor = sf;
-                        new_size = Some((*new_inner_size, scale_factor));
+                        new_size = Some((PhysicalSize::new(ctx.gfx.size.0, ctx.gfx.size.1), scale_factor));
                         frame.take().map(|v| ManuallyDrop::into_inner(v));
                     }
                     WindowEvent::CloseRequested => {
                         if state.exit() {
-                            *control_flow = ControlFlow::Exit;
+                            target.exit();
                         }
                     },
                     _ => (),
                 }
             }
-            Event::MainEventsCleared => match frame.take() {
+            Event::AboutToWait => match frame.take() {
                 None => {
                     if let Some((new_size, sf)) = new_size.take() {
                         if new_size.height != 0 || new_size.width != 0 {
@@ -126,8 +136,13 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     let (mut enc, view) = ctx.gfx.start_frame(&sco);
                     ctx.gfx.render_objs(&mut enc, &view, |fc| state.render(fc));
 
-                        ctx.gfx
-                        .render_gui(&mut enc, &view, |gctx| {
+                    #[allow(unused_mut)]
+                    ctx.gfx
+                        .render_gui(&mut enc, &view, |mut gctx| {
+                            #[cfg(feature = "yakui")]
+                            ctx.yakui.render(&mut gctx, || {
+                                state.render_yakui();
+                            });
                             ctx.egui.render(gctx, |ui| {
                                 state.render_gui(ui);
                             });
@@ -135,16 +150,18 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     ctx.gfx.finish_frame(enc);
                     sco.present();
 
+                    ctx.gfx.window.set_cursor_icon(get_cursor_icon());
+
                     ctx.input.end_frame();
                 }
             },
             _ => (),
         }
-    })
+    }).expect("Failed to run event loop");
 }
 
 pub fn start<S: State>() {
-    let el = EventLoop::new();
+    let el = EventLoop::new().expect("Failed to create event loop");
 
     #[cfg(target_arch = "wasm32")]
     {
@@ -215,6 +232,8 @@ pub struct Context {
     pub audio: AudioContext,
     pub delta: f32,
     pub egui: EguiWrapper,
+    #[cfg(feature = "yakui")]
+    pub yakui: crate::yakui::YakuiWrapper,
 }
 
 impl Context {
@@ -225,11 +244,13 @@ impl Context {
         let egui = EguiWrapper::new(&gfx, el);
 
         Self {
-            gfx,
             input,
             audio,
             delta: 0.0,
             egui,
+            #[cfg(feature = "yakui")]
+            yakui: crate::yakui::YakuiWrapper::new(&gfx, &gfx.window),
+            gfx,
         }
     }
 }

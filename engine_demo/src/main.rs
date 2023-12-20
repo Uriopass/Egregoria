@@ -1,7 +1,7 @@
 use common::{AudioKind, History};
 use engine::meshload::load_mesh;
 use engine::{
-    Context, FrameContext, GfxSettings, InstancedMeshBuilder, KeyCode, MeshInstance, MouseButton,
+    Context, FrameContext, GfxSettings, InstancedMeshBuilder, Key, MeshInstance, MouseButton,
     ShadowQuality,
 };
 use geom::{
@@ -235,7 +235,7 @@ impl State {
             self.is_captured = false;
         }
 
-        if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
+        if ctx.input.keyboard.pressed.contains(&Key::Escape) {
             let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
             ctx.gfx.window.set_cursor_visible(true);
             self.is_captured = false;

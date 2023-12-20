@@ -10,12 +10,13 @@ edition = "2021"
 geom          = { path = "../geom" }
 common        = { path = "../common" }
 ordered-float = { workspace = true }
-egui-winit    = { workspace = true, default-features = false }
 egui          = { workspace = true }
-winit         = { workspace = true }
 oddio         = { workspace = true }
 derive_more   = { workspace = true }
 wgpu          = { version = "0.18.0", default-features = false, features=["wgsl"] }
+winit         = { version = "0.29.4" }
+smol_str      = { version = "0.2.0", features = ["serde"]  }
+egui-winit    = { git = "https://github.com/emilk/egui", default-features = false }
 bytemuck      = "1.7.2"
 image         = { version = "0.24.3", default-features = false, features = ["png"] }
 log           = "0.4.11"
@@ -27,7 +28,15 @@ beul          = "1.0.0"
 slotmapd      = "1.0"
 smallvec      = "1.10.0"
 inline_tweak  = "1.0.8"
-egui-wgpu     = { version = "0.24.1" }
+egui-wgpu     = { git = "https://github.com/emilk/egui" }
 cpal          = "0.15.0"
 lewton        = "0.10.2"
 serde         = { version = "1.0.183", features = ["derive"] }
+
+yakui         = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
+yakui-wgpu    = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
+yakui-winit   = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
+lazy_static = "1.4.0"
+
+[features]
+yakui = ["dep:yakui", "dep:yakui-wgpu", "dep:yakui-winit"]

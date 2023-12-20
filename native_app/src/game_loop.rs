@@ -40,7 +40,7 @@ impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
 
-        Gui::set_style(&ctx.egui.egui);
+        Gui::set_style(ctx.egui.platform.egui_ctx());
         log::info!("loaded egui_render");
 
         let sim: Simulation =
@@ -59,7 +59,7 @@ impl engine::framework::State for State {
         uiworld.write::<InputMap>().build_input_tree(&mut bindings);
         drop(bindings);
 
-        uiworld.insert(UiTextures::new(&mut ctx.egui.egui));
+        uiworld.insert(UiTextures::new(&mut ctx.egui.platform.egui_ctx().clone()));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);

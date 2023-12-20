@@ -1,10 +1,25 @@
 use common::FastSet;
 use geom::{vec2, Vec2};
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use winit::event::{
-    ElementState, KeyboardInput, MouseScrollDelta, ScanCode, VirtualKeyCode, WindowEvent,
-};
+use std::sync::{Arc, Mutex};
+use winit::event::{ElementState, KeyEvent, MouseScrollDelta, WindowEvent};
+use winit::keyboard::{NamedKey, PhysicalKey, SmolStr};
+use winit::platform::scancode::PhysicalKeyExtScancode;
+use winit::window::CursorIcon;
+
+lazy_static! {
+    static ref CURSOR_ICON: Arc<Mutex<CursorIcon>> = Arc::new(Mutex::new(CursorIcon::Default));
+}
+
+pub fn set_cursor_icon(icon: CursorIcon) {
+    *CURSOR_ICON.lock().unwrap() = icon;
+}
+
+pub fn get_cursor_icon() -> CursorIcon {
+    *CURSOR_ICON.lock().unwrap()
+}
 
 #[derive(Default)]
 pub struct InputContext {
@@ -31,35 +46,45 @@ impl InputContext {
         }
     }
 
-    pub fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
+    pub fn handle(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::ReceivedCharacter(c) => {
-                self.keyboard.last_characters.push(*c);
-                true
-            }
             WindowEvent::CursorLeft { .. } => {
                 self.cursor_left = true;
                 true
             }
             WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
+                event:
+                    KeyEvent {
+                        text,
+                        logical_key,
+                        physical_key,
                         state,
-                        virtual_keycode: Some(kc),
-                        scancode,
                         ..
                     },
                 ..
             } => {
-                let code = KeyCode::from(*kc);
+                if let Some(k) = text {
+                    self.keyboard.last_characters.extend(k.chars());
+                }
+
+                let code = Key::from(logical_key.clone());
                 match state {
                     ElementState::Pressed => {
                         self.keyboard.pressed.insert(code);
-                        self.keyboard.pressed_scancode.insert(*scancode);
+
+                        if let PhysicalKey::Code(scancode) = physical_key {
+                            self.keyboard
+                                .pressed_scancode
+                                .insert(scancode.to_scancode().unwrap_or(0));
+                        }
                     }
                     ElementState::Released => {
                         self.keyboard.pressed.remove(&code);
-                        self.keyboard.pressed_scancode.remove(scancode);
+                        if let PhysicalKey::Code(scancode) = physical_key {
+                            self.keyboard
+                                .pressed_scancode
+                                .remove(&scancode.to_scancode().unwrap_or(0));
+                        }
                     }
                 };
                 true
@@ -109,8 +134,8 @@ pub struct MouseInfo {
 
 #[derive(Clone, Default)]
 pub struct KeyboardInfo {
-    pub pressed: FastSet<KeyCode>,
-    pub pressed_scancode: FastSet<ScanCode>,
+    pub pressed: FastSet<Key>,
+    pub pressed_scancode: FastSet<u32>,
     pub last_characters: Vec<char>,
 }
 
@@ -121,176 +146,75 @@ impl From<winit::event::MouseButton> for MouseButton {
             winit::event::MouseButton::Right => MouseButton::Right,
             winit::event::MouseButton::Middle => MouseButton::Middle,
             winit::event::MouseButton::Other(v) => MouseButton::Other(v),
+            winit::event::MouseButton::Back => MouseButton::Other(4),
+            winit::event::MouseButton::Forward => MouseButton::Other(5),
         }
     }
 }
 
-impl From<VirtualKeyCode> for KeyCode {
-    fn from(x: VirtualKeyCode) -> KeyCode {
+impl From<winit::keyboard::Key> for Key {
+    fn from(x: winit::keyboard::Key) -> Key {
         match x {
-            VirtualKeyCode::Key1 => KeyCode::Key1,
-            VirtualKeyCode::Key2 => KeyCode::Key2,
-            VirtualKeyCode::Key3 => KeyCode::Key3,
-            VirtualKeyCode::Key4 => KeyCode::Key4,
-            VirtualKeyCode::Key5 => KeyCode::Key5,
-            VirtualKeyCode::Key6 => KeyCode::Key6,
-            VirtualKeyCode::Key7 => KeyCode::Key7,
-            VirtualKeyCode::Key8 => KeyCode::Key8,
-            VirtualKeyCode::Key9 => KeyCode::Key9,
-            VirtualKeyCode::Key0 => KeyCode::Key0,
-            VirtualKeyCode::A => KeyCode::A,
-            VirtualKeyCode::B => KeyCode::B,
-            VirtualKeyCode::C => KeyCode::C,
-            VirtualKeyCode::D => KeyCode::D,
-            VirtualKeyCode::E => KeyCode::E,
-            VirtualKeyCode::F => KeyCode::F,
-            VirtualKeyCode::G => KeyCode::G,
-            VirtualKeyCode::H => KeyCode::H,
-            VirtualKeyCode::I => KeyCode::I,
-            VirtualKeyCode::J => KeyCode::J,
-            VirtualKeyCode::K => KeyCode::K,
-            VirtualKeyCode::L => KeyCode::L,
-            VirtualKeyCode::M => KeyCode::M,
-            VirtualKeyCode::N => KeyCode::N,
-            VirtualKeyCode::O => KeyCode::O,
-            VirtualKeyCode::P => KeyCode::P,
-            VirtualKeyCode::Q => KeyCode::Q,
-            VirtualKeyCode::R => KeyCode::R,
-            VirtualKeyCode::S => KeyCode::S,
-            VirtualKeyCode::T => KeyCode::T,
-            VirtualKeyCode::U => KeyCode::U,
-            VirtualKeyCode::V => KeyCode::V,
-            VirtualKeyCode::W => KeyCode::W,
-            VirtualKeyCode::X => KeyCode::X,
-            VirtualKeyCode::Y => KeyCode::Y,
-            VirtualKeyCode::Z => KeyCode::Z,
-            VirtualKeyCode::Escape => KeyCode::Escape,
-            VirtualKeyCode::F1 => KeyCode::F1,
-            VirtualKeyCode::F2 => KeyCode::F2,
-            VirtualKeyCode::F3 => KeyCode::F3,
-            VirtualKeyCode::F4 => KeyCode::F4,
-            VirtualKeyCode::F5 => KeyCode::F5,
-            VirtualKeyCode::F6 => KeyCode::F6,
-            VirtualKeyCode::F7 => KeyCode::F7,
-            VirtualKeyCode::F8 => KeyCode::F8,
-            VirtualKeyCode::F9 => KeyCode::F9,
-            VirtualKeyCode::F10 => KeyCode::F10,
-            VirtualKeyCode::F11 => KeyCode::F11,
-            VirtualKeyCode::F12 => KeyCode::F12,
-            VirtualKeyCode::F13 => KeyCode::F13,
-            VirtualKeyCode::F14 => KeyCode::F14,
-            VirtualKeyCode::F15 => KeyCode::F15,
-            VirtualKeyCode::F16 => KeyCode::F16,
-            VirtualKeyCode::F17 => KeyCode::F17,
-            VirtualKeyCode::F18 => KeyCode::F18,
-            VirtualKeyCode::F19 => KeyCode::F19,
-            VirtualKeyCode::F20 => KeyCode::F20,
-            VirtualKeyCode::F21 => KeyCode::F21,
-            VirtualKeyCode::F22 => KeyCode::F22,
-            VirtualKeyCode::F23 => KeyCode::F23,
-            VirtualKeyCode::Snapshot => KeyCode::Snapshot,
-            VirtualKeyCode::F24 => KeyCode::F24,
-            VirtualKeyCode::Scroll => KeyCode::Scroll,
-            VirtualKeyCode::Pause => KeyCode::Pause,
-            VirtualKeyCode::Insert => KeyCode::Insert,
-            VirtualKeyCode::Home => KeyCode::Home,
-            VirtualKeyCode::Delete => KeyCode::Delete,
-            VirtualKeyCode::End => KeyCode::End,
-            VirtualKeyCode::PageDown => KeyCode::PageDown,
-            VirtualKeyCode::PageUp => KeyCode::PageUp,
-            VirtualKeyCode::Left => KeyCode::Left,
-            VirtualKeyCode::Up => KeyCode::Up,
-            VirtualKeyCode::Right => KeyCode::Right,
-            VirtualKeyCode::Down => KeyCode::Down,
-            VirtualKeyCode::Back => KeyCode::Backspace,
-            VirtualKeyCode::Return => KeyCode::Return,
-            VirtualKeyCode::Space => KeyCode::Space,
-            VirtualKeyCode::Compose => KeyCode::Compose,
-            VirtualKeyCode::Caret => KeyCode::Caret,
-            VirtualKeyCode::Numlock => KeyCode::Numlock,
-            VirtualKeyCode::Numpad0 => KeyCode::Numpad0,
-            VirtualKeyCode::Numpad1 => KeyCode::Numpad1,
-            VirtualKeyCode::Numpad2 => KeyCode::Numpad2,
-            VirtualKeyCode::Numpad3 => KeyCode::Numpad3,
-            VirtualKeyCode::Numpad4 => KeyCode::Numpad4,
-            VirtualKeyCode::Numpad5 => KeyCode::Numpad5,
-            VirtualKeyCode::Numpad6 => KeyCode::Numpad6,
-            VirtualKeyCode::Numpad7 => KeyCode::Numpad7,
-            VirtualKeyCode::Numpad8 => KeyCode::Numpad8,
-            VirtualKeyCode::Numpad9 => KeyCode::Numpad9,
-            VirtualKeyCode::AbntC1 => KeyCode::AbntC1,
-            VirtualKeyCode::AbntC2 => KeyCode::AbntC2,
-            VirtualKeyCode::NumpadAdd => KeyCode::Add,
-            VirtualKeyCode::Apostrophe => KeyCode::Apostrophe,
-            VirtualKeyCode::Apps => KeyCode::Apps,
-            VirtualKeyCode::At => KeyCode::At,
-            VirtualKeyCode::Ax => KeyCode::Ax,
-            VirtualKeyCode::Backslash => KeyCode::Backslash,
-            VirtualKeyCode::Calculator => KeyCode::Calculator,
-            VirtualKeyCode::Capital => KeyCode::Capital,
-            VirtualKeyCode::Colon => KeyCode::Colon,
-            VirtualKeyCode::Comma => KeyCode::Comma,
-            VirtualKeyCode::Convert => KeyCode::Convert,
-            VirtualKeyCode::NumpadDecimal => KeyCode::Decimal,
-            VirtualKeyCode::NumpadDivide => KeyCode::Divide,
-            VirtualKeyCode::Equals => KeyCode::Equals,
-            VirtualKeyCode::Grave => KeyCode::Grave,
-            VirtualKeyCode::Kana => KeyCode::Kana,
-            VirtualKeyCode::Kanji => KeyCode::Kanji,
-            VirtualKeyCode::LAlt => KeyCode::LAlt,
-            VirtualKeyCode::LBracket => KeyCode::LBracket,
-            VirtualKeyCode::LControl => KeyCode::LControl,
-            VirtualKeyCode::LShift => KeyCode::LShift,
-            VirtualKeyCode::LWin => KeyCode::LWin,
-            VirtualKeyCode::Mail => KeyCode::Mail,
-            VirtualKeyCode::MediaSelect => KeyCode::MediaSelect,
-            VirtualKeyCode::MediaStop => KeyCode::MediaStop,
-            VirtualKeyCode::Minus => KeyCode::Minus,
-            VirtualKeyCode::NumpadMultiply => KeyCode::Multiply,
-            VirtualKeyCode::Mute => KeyCode::Mute,
-            VirtualKeyCode::MyComputer => KeyCode::MyComputer,
-            VirtualKeyCode::NavigateForward => KeyCode::NavigateForward,
-            VirtualKeyCode::NavigateBackward => KeyCode::NavigateBackward,
-            VirtualKeyCode::NextTrack => KeyCode::NextTrack,
-            VirtualKeyCode::NoConvert => KeyCode::NoConvert,
-            VirtualKeyCode::NumpadComma => KeyCode::NumpadComma,
-            VirtualKeyCode::NumpadEnter => KeyCode::NumpadEnter,
-            VirtualKeyCode::NumpadEquals => KeyCode::NumpadEquals,
-            VirtualKeyCode::OEM102 => KeyCode::OEM102,
-            VirtualKeyCode::Period => KeyCode::Period,
-            VirtualKeyCode::PlayPause => KeyCode::PlayPause,
-            VirtualKeyCode::Power => KeyCode::Power,
-            VirtualKeyCode::PrevTrack => KeyCode::PrevTrack,
-            VirtualKeyCode::RAlt => KeyCode::RAlt,
-            VirtualKeyCode::RBracket => KeyCode::RBracket,
-            VirtualKeyCode::RControl => KeyCode::RControl,
-            VirtualKeyCode::RShift => KeyCode::RShift,
-            VirtualKeyCode::RWin => KeyCode::RWin,
-            VirtualKeyCode::Semicolon => KeyCode::Semicolon,
-            VirtualKeyCode::Slash => KeyCode::Slash,
-            VirtualKeyCode::Sleep => KeyCode::Sleep,
-            VirtualKeyCode::Stop => KeyCode::Stop,
-            VirtualKeyCode::NumpadSubtract => KeyCode::Subtract,
-            VirtualKeyCode::Sysrq => KeyCode::Sysrq,
-            VirtualKeyCode::Tab => KeyCode::Tab,
-            VirtualKeyCode::Underline => KeyCode::Underline,
-            VirtualKeyCode::Unlabeled => KeyCode::Unlabeled,
-            VirtualKeyCode::VolumeDown => KeyCode::VolumeDown,
-            VirtualKeyCode::VolumeUp => KeyCode::VolumeUp,
-            VirtualKeyCode::Wake => KeyCode::Wake,
-            VirtualKeyCode::WebBack => KeyCode::WebBack,
-            VirtualKeyCode::WebFavorites => KeyCode::WebFavorites,
-            VirtualKeyCode::WebForward => KeyCode::WebForward,
-            VirtualKeyCode::WebHome => KeyCode::WebHome,
-            VirtualKeyCode::WebRefresh => KeyCode::WebRefresh,
-            VirtualKeyCode::WebSearch => KeyCode::WebSearch,
-            VirtualKeyCode::WebStop => KeyCode::WebStop,
-            VirtualKeyCode::Yen => KeyCode::Yen,
-            VirtualKeyCode::Copy => KeyCode::Copy,
-            VirtualKeyCode::Paste => KeyCode::Paste,
-            VirtualKeyCode::Cut => KeyCode::Cut,
-            VirtualKeyCode::Plus => KeyCode::Plus,
-            VirtualKeyCode::Asterisk => KeyCode::Asterisk,
+            winit::keyboard::Key::Named(named) => match named {
+                NamedKey::Escape => Key::Escape,
+                NamedKey::F1 => Key::F1,
+                NamedKey::F2 => Key::F2,
+                NamedKey::F3 => Key::F3,
+                NamedKey::F4 => Key::F4,
+                NamedKey::F5 => Key::F5,
+                NamedKey::F6 => Key::F6,
+                NamedKey::F7 => Key::F7,
+                NamedKey::F8 => Key::F8,
+                NamedKey::F9 => Key::F9,
+                NamedKey::F10 => Key::F10,
+                NamedKey::F11 => Key::F11,
+                NamedKey::F12 => Key::F12,
+                NamedKey::F13 => Key::F13,
+                NamedKey::F14 => Key::F14,
+                NamedKey::F15 => Key::F15,
+                NamedKey::F16 => Key::F16,
+                NamedKey::F17 => Key::F17,
+                NamedKey::F18 => Key::F18,
+                NamedKey::F19 => Key::F19,
+                NamedKey::F20 => Key::F20,
+                NamedKey::F21 => Key::F21,
+                NamedKey::F22 => Key::F22,
+                NamedKey::F23 => Key::F23,
+                NamedKey::F24 => Key::F24,
+                NamedKey::Pause => Key::Pause,
+                NamedKey::Insert => Key::Insert,
+                NamedKey::Home => Key::Home,
+                NamedKey::Delete => Key::Delete,
+                NamedKey::End => Key::End,
+                NamedKey::PageDown => Key::PageDown,
+                NamedKey::PageUp => Key::PageUp,
+                NamedKey::ArrowLeft => Key::Left,
+                NamedKey::ArrowUp => Key::Up,
+                NamedKey::ArrowRight => Key::Right,
+                NamedKey::ArrowDown => Key::Down,
+                NamedKey::Backspace => Key::Backspace,
+                NamedKey::Enter => Key::Return,
+                NamedKey::Space => Key::Space,
+                NamedKey::Compose => Key::Compose,
+                NamedKey::NumLock => Key::Numlock,
+                NamedKey::Convert => Key::Convert,
+                NamedKey::MediaPlayPause => Key::MediaSelect,
+                NamedKey::MediaStop => Key::MediaStop,
+                NamedKey::Power => Key::Power,
+                NamedKey::Tab => Key::Tab,
+                NamedKey::Copy => Key::Copy,
+                NamedKey::Paste => Key::Paste,
+                NamedKey::Cut => Key::Cut,
+                NamedKey::Control => Key::Control,
+                NamedKey::Shift => Key::Shift,
+                NamedKey::Alt => Key::Alt,
+                NamedKey::PrintScreen => Key::PrintScreen,
+                NamedKey::ScrollLock => Key::ScrollLock,
+                _ => Key::Unlabeled,
+            },
+            winit::keyboard::Key::Character(c) => Key::Char(SmolStr::new(c.to_uppercase())),
+            winit::keyboard::Key::Unidentified(_) => Key::Unlabeled,
+            winit::keyboard::Key::Dead(_) => Key::Unlabeled,
         }
     }
 }
@@ -303,58 +227,25 @@ pub enum MouseButton {
     Other(u16),
 }
 
-impl KeyCode {
+impl Key {
     #[allow(dead_code)]
     fn is_modifier(&self) -> bool {
-        use KeyCode::*;
-        matches!(self, LShift | RShift | LControl | RControl | LAlt | RAlt)
+        use Key::*;
+        matches!(self, Control | Shift | Alt)
+    }
+
+    pub const fn c(s: &str) -> Key {
+        Key::Char(SmolStr::new_inline(s))
     }
 }
 
 /// Symbolic name for a keyboard key.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[repr(u32)]
-#[serde(from = "u32", into = "u32")]
-pub enum KeyCode {
-    Key1,
-    Key2,
-    Key3,
-    Key4,
-    Key5,
-    Key6,
-    Key7,
-    Key8,
-    Key9,
-    Key0,
+/// We copy this from winit because we want to serialize it without implementing serialize for ALL
+/// of winit's structs which would eat up compile time.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum Key {
+    Char(SmolStr),
 
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-    I,
-    J,
-    K,
-    L,
-    M,
-    N,
-    O,
-    P,
-    Q,
-    R,
-    S,
-    T,
-    U,
-    V,
-    W,
-    X,
-    Y,
-    Z,
-
-    /// The Escape key, next to F1.
     Escape,
 
     F1,
@@ -382,14 +273,10 @@ pub enum KeyCode {
     F23,
     F24,
 
-    /// Print Screen/SysRq.
-    Snapshot,
-    /// Scroll Lock.
-    Scroll,
-    /// Pause/Break key, next to Scroll lock.
+    PrintScreen,
+    ScrollLock,
     Pause,
 
-    /// `Insert`, next to Backspace.
     Insert,
     Home,
     Delete,
@@ -402,120 +289,25 @@ pub enum KeyCode {
     Right,
     Down,
 
-    /// The Backspace key, right over Enter.
     Backspace,
-    /// The Enter key.
     Return,
-    /// The space bar.
     Space,
 
-    /// The "Compose" key on Linux.
     Compose,
 
-    Caret,
-
-    Plus,
-    Asterisk,
-
     Numlock,
-    Numpad0,
-    Numpad1,
-    Numpad2,
-    Numpad3,
-    Numpad4,
-    Numpad5,
-    Numpad6,
-    Numpad7,
-    Numpad8,
-    Numpad9,
 
-    AbntC1,
-    AbntC2,
-    Add,
-    Apostrophe,
-    Apps,
-    At,
-    Ax,
-    Backslash,
-    Calculator,
-    Capital,
-    Colon,
-    Comma,
     Convert,
-    Decimal,
-    Divide,
-    Equals,
-    Grave,
-    Kana,
-    Kanji,
-    LAlt,
-    LBracket,
-    LControl,
-    LShift,
-    LWin,
-    Mail,
+    Alt,
+    Control,
+    Shift,
     MediaSelect,
     MediaStop,
-    Minus,
-    Multiply,
     Mute,
-    MyComputer,
-    NavigateForward,  // also called "Prior"
-    NavigateBackward, // also called "Next"
-    NextTrack,
-    NoConvert,
-    NumpadComma,
-    NumpadEnter,
-    NumpadEquals,
-    OEM102,
-    Period,
-    PlayPause,
     Power,
-    PrevTrack,
-    RAlt,
-    RBracket,
-    RControl,
-    RShift,
-    RWin,
-    Semicolon,
-    Slash,
-    Sleep,
-    Stop,
-    Subtract,
-    Sysrq,
     Tab,
-    Underline,
     Unlabeled,
-    VolumeDown,
-    VolumeUp,
-    Wake,
-    WebBack,
-    WebFavorites,
-    WebForward,
-    WebHome,
-    WebRefresh,
-    WebSearch,
-    WebStop,
-    Yen,
     Copy,
     Paste,
     Cut,
-
-    LastValue,
-}
-
-impl From<u32> for KeyCode {
-    fn from(x: u32) -> Self {
-        if x <= KeyCode::LastValue as u32 {
-            unsafe { std::mem::transmute(x) }
-        } else {
-            KeyCode::Unlabeled
-        }
-    }
-}
-
-impl From<KeyCode> for u32 {
-    fn from(x: KeyCode) -> Self {
-        x as u32
-    }
 }
