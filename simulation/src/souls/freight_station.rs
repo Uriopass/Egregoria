@@ -219,6 +219,6 @@ mod tests {
             }
         }
 
-        assert!(false);
+        panic!("should have delivered to freight station")
     }
 }

@@ -70,7 +70,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     WindowEvent::Resized(physical_size) => {
                         log::info!("resized: {:?}", physical_size);
                         new_size = Some((physical_size, scale_factor));
-                        frame.take().map(|v| ManuallyDrop::into_inner(v));
+                        frame.take().map(ManuallyDrop::into_inner);
                     }
                     WindowEvent::ScaleFactorChanged {
                         scale_factor: sf,
@@ -79,7 +79,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                         log::info!("scale_factor: {:?}", scale_factor);
                         scale_factor = sf;
                         new_size = Some((PhysicalSize::new(ctx.gfx.size.0, ctx.gfx.size.1), scale_factor));
-                        frame.take().map(|v| ManuallyDrop::into_inner(v));
+                        frame.take().map(ManuallyDrop::into_inner);
                     }
                     WindowEvent::CloseRequested => {
                         if state.exit() {

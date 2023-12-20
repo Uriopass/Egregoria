@@ -60,7 +60,7 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
         TerraformKind::Smooth => {}
         TerraformKind::Level => {
             // set level on first click
-            if res.level == None && inp.just_act.contains(&InputAction::Select) {
+            if res.level.is_none() && inp.just_act.contains(&InputAction::Select) {
                 res.level = Some(mpos.z);
             }
 
@@ -71,17 +71,16 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
         }
         TerraformKind::Slope => {
             // Set the end slope (second click)
-            if res.slope_start != None
-                && res.slope_end == None
+            if res.slope_start.is_some()
+                && res.slope_end.is_none()
                 && inp.just_act.contains(&InputAction::Select)
+                && !res.slope_start.unwrap().is_close(mpos, 5.0)
             {
-                if !res.slope_start.unwrap().is_close(mpos, 5.0) {
-                    res.slope_end = Some(mpos);
-                }
+                res.slope_end = Some(mpos);
             }
 
             // Set the start slope (first click)
-            if res.slope_start == None && inp.just_act.contains(&InputAction::Select) {
+            if res.slope_start.is_none() && inp.just_act.contains(&InputAction::Select) {
                 res.slope_start = Some(mpos);
             }
 

@@ -134,15 +134,15 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         defer!(log::info!("finished init of terrain render"));
         Self {
-            normal_pipeline: normal_pipeline(&gfx, &normals_tex),
+            normal_pipeline: normal_pipeline(gfx, &normals_tex),
             normal_unis: collect_arrlod((0..LOD).map(|lod| {
                 Uniform::new(
                     (CSIZE << lod) as f32 / Self::LOD0_RESOLUTION as f32,
                     &gfx.device,
                 )
             })),
-            downsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "downsample"),
-            upsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "upsample"),
+            downsample_pipeline: resample_pipeline(gfx, &terrain_tex, "downsample"),
+            upsample_pipeline: resample_pipeline(gfx, &terrain_tex, "upsample"),
 
             bgs: Arc::new(collect_arrlod(bgs)),
             terrain_tex: Arc::new(terrain_tex),
@@ -169,11 +169,9 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION * 2);
 
-        for i in 0..CRESOLUTION {
-            let ys: &[f32; CRESOLUTION] = &chunk[i];
-
-            for j in 0..CRESOLUTION {
-                contents.extend(pack(ys[j]));
+        for ys in chunk.iter() {
+            for &v in ys {
+                contents.extend(pack(v));
             }
         }
 
@@ -436,10 +434,10 @@ fn normal_pipeline(gfx: &GfxContext, normals_tex: &Texture) -> RenderPipeline {
         })
 }
 
-fn normal_update<'a>(
+fn normal_update(
     gfx: &GfxContext,
     normal_pipeline: &RenderPipeline,
-    encoder: &'a mut CommandEncoder,
+    encoder: &mut CommandEncoder,
     height_tex: &TextureView,
     normal_view: &TextureView,
     uni: &Uniform<f32>,
@@ -448,7 +446,7 @@ fn normal_update<'a>(
         layout: &normal_pipeline.get_bind_group_layout(0),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
-            resource: wgpu::BindingResource::TextureView(&height_tex),
+            resource: wgpu::BindingResource::TextureView(height_tex),
         }],
         label: None,
     });
@@ -456,7 +454,7 @@ fn normal_update<'a>(
     let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("terrain normals render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: &normal_view,
+            view: normal_view,
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Load,
@@ -467,7 +465,7 @@ fn normal_update<'a>(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rp.set_pipeline(&normal_pipeline);
+    rp.set_pipeline(normal_pipeline);
     rp.set_bind_group(0, &bg, &[]);
     rp.set_bind_group(1, &uni.bindgroup, &[]);
     rp.draw(0..4, 0..1);
@@ -556,7 +554,7 @@ fn downsample_update(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rp.set_pipeline(&downsample_pipeline);
+    rp.set_pipeline(downsample_pipeline);
     rp.set_bind_group(0, &bg, &[]);
     rp.draw(0..4, 0..1);
     drop(rp);
@@ -594,7 +592,7 @@ fn upsample_update(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rp.set_pipeline(&upsample_pipeline);
+    rp.set_pipeline(upsample_pipeline);
     rp.set_bind_group(0, &bg, &[]);
     rp.draw(0..4, 0..1);
     drop(rp);

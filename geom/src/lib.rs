@@ -1,3 +1,5 @@
+#![allow(clippy::needless_range_loop, clippy::needless_late_init)]
+
 extern crate core;
 macro_rules! defer_inter {
     ($a:ty => $b:ty) => {

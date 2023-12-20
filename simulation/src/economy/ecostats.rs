@@ -132,6 +132,7 @@ mod tests {
     use crate::economy::HISTORY_SIZE;
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn history_is_not_zero() {
         assert!(HISTORY_SIZE > 0);
     }

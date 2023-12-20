@@ -1,39 +1,37 @@
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use engine::{AudioContext, ControlHandle, Stereo};
+use engine::{AudioContext, Gain, GainControl};
 use flat_spatial::grid::GridHandle;
 use geom::{Camera, AABB};
-use oddio::{Cycle, Gain, Seek, Speed, Stop};
+use oddio::{Cycle, Mixed, Seek, Speed, SpeedControl};
 use simulation::physics::CollisionWorld;
 use simulation::Simulation;
 use slotmapd::SecondaryMap;
 
 /// CarSound is the sound of a single car
 pub struct CarSound {
-    road: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
-    engine: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
+    road: Option<(SpeedControl, GainControl, Mixed)>,
+    engine: Option<(SpeedControl, GainControl, Mixed)>,
 }
 
 /// CarSounds are sounds that are played when cars are near the player
 /// They are tied to a car entity
 pub struct CarSounds {
     sounds: SecondaryMap<GridHandle, CarSound>,
-    generic_car_sound: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
+    generic_car_sound: Option<GainControl>,
 }
 
 impl CarSounds {
     pub fn new(ctx: &mut AudioContext) -> Self {
         Self {
             sounds: SecondaryMap::new(),
-            generic_car_sound: ctx.play_with_control(
-                "car_loop",
-                |x| {
-                    let mut g = Gain::new(Cycle::new(x));
-                    g.set_amplitude_ratio(0.0);
-                    g
-                },
-                AudioKind::Effect,
-            ),
+            generic_car_sound: ctx
+                .play_with_control(
+                    "car_loop",
+                    |x| Gain::new(Cycle::new(x), 0.0),
+                    AudioKind::Effect,
+                )
+                .map(|x| x.0),
         }
     }
 
@@ -63,11 +61,11 @@ impl CarSounds {
 
         for h in to_remove {
             let cs = self.sounds.remove(h).unwrap();
-            if let Some(mut road) = cs.road {
-                road.control::<Stop<_>, _>().stop();
+            if let Some((_, _, mut mixed)) = cs.road {
+                mixed.stop();
             }
-            if let Some(mut engine) = cs.engine {
-                engine.control::<Stop<_>, _>().stop();
+            if let Some((_, _, mut mixed)) = cs.engine {
+                mixed.stop();
             }
         }
 
@@ -88,29 +86,33 @@ impl CarSounds {
             }
 
             if !self.sounds.contains_key(h) {
-                let engine = ctx.play_with_control(
-                    "car_engine",
-                    |x| {
-                        let cycle = Cycle::new(x);
-                        cycle.seek(common::rand::rand2(pos.x, pos.y));
-                        let mut g = Gain::new(cycle);
-                        g.set_amplitude_ratio(0.0);
-                        Speed::new(g)
-                    },
-                    AudioKind::Effect,
-                );
+                let engine = ctx
+                    .play_with_control(
+                        "car_engine",
+                        |x| {
+                            let mut cycle = Cycle::new(x);
+                            cycle.seek(common::rand::rand2(pos.x, pos.y));
+                            let (g_control, signal) = Gain::new(cycle, 0.0);
+                            let (speed_control, signal) = Speed::new(signal);
+                            ((speed_control, g_control), signal)
+                        },
+                        AudioKind::Effect,
+                    )
+                    .map(|((a, b), c)| (a, b, c));
 
-                let road = ctx.play_with_control(
-                    "car_loop",
-                    |x| {
-                        let cycle = Cycle::new(x);
-                        cycle.seek(common::rand::rand2(pos.x, pos.y));
-                        let mut g = Gain::new(cycle);
-                        g.set_amplitude_ratio(0.0);
-                        Speed::new(g)
-                    },
-                    AudioKind::Effect,
-                );
+                let road = ctx
+                    .play_with_control(
+                        "car_loop",
+                        |x| {
+                            let mut cycle = Cycle::new(x);
+                            cycle.seek(common::rand::rand2(pos.x, pos.y));
+                            let (g_control, signal) = Gain::new(cycle, 0.0);
+                            let (speed_control, signal) = Speed::new(signal);
+                            ((speed_control, g_control), signal)
+                        },
+                        AudioKind::Effect,
+                    )
+                    .map(|((a, b), c)| (a, b, c));
 
                 self.sounds.insert(h, CarSound { road, engine });
             }
@@ -126,17 +128,14 @@ impl CarSounds {
             let speed_to_me = his_speed.dot(dir_to_me);
             let boost = 300.0 / (300.0 - speed_to_me);
 
-            if let Some(ref mut road) = cs.road {
-                road.control::<Gain<_>, _>()
-                    .set_amplitude_ratio(obj.speed.sqrt() * 3.0 / pos.z0().distance(campos));
-                road.control::<Speed<_>, _>().set_speed(boost)
+            if let Some((ref mut speed, ref mut gain, _)) = cs.road {
+                gain.set_amplitude_ratio(obj.speed.sqrt() * 3.0 / pos.z0().distance(campos));
+                speed.set_speed(boost)
             }
 
-            if let Some(ref mut engine) = cs.road {
-                engine
-                    .control::<Gain<_>, _>()
-                    .set_amplitude_ratio(obj.speed.sqrt() / pos.z0().distance(campos));
-                engine.control::<Speed<_>, _>().set_speed(boost)
+            if let Some((ref mut speed, ref mut gain, _)) = cs.engine {
+                gain.set_amplitude_ratio(obj.speed.sqrt() / pos.z0().distance(campos));
+                speed.set_speed(boost)
             }
         }
 
@@ -147,13 +146,13 @@ impl CarSounds {
                 .filter(|(_, obj)| matches!(obj.group, simulation::physics::PhysicsGroup::Vehicles))
                 .count();
             if let Some(ref mut s) = self.generic_car_sound {
-                s.control::<Gain<_>, _>().set_amplitude_ratio(
+                s.set_amplitude_ratio(
                     ((cars_on_screen as f32).min(100.0) / 100.0 * (1.0 - campos.z / 1000.0))
                         .min(0.03),
                 );
             }
         } else if let Some(ref mut s) = self.generic_car_sound {
-            s.control::<Gain<_>, _>().set_amplitude_ratio(0.0);
+            s.set_amplitude_ratio(0.0);
         }
     }
 }

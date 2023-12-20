@@ -28,17 +28,12 @@ impl World {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug, Default)]
 enum Action {
+    #[default]
     DoNothing,
     IncrA,
     IncrB,
-}
-
-impl Default for Action {
-    fn default() -> Self {
-        DoNothing
-    }
 }
 
 const UP_DT: Duration = Duration::from_millis(50);

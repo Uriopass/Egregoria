@@ -23,6 +23,7 @@ impl DemoElement for Terrain {
         "Terrain"
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
@@ -56,7 +57,7 @@ impl DemoElement for Terrain {
                 terrain.update_chunk(
                     gfx,
                     (x as u32, y as u32),
-                    &h.get_chunk((x as u16, y as u16)).unwrap().heights(),
+                    h.get_chunk((x as u16, y as u16)).unwrap().heights(),
                 );
             }
         }
@@ -118,10 +119,8 @@ impl DemoElement for Terrain {
 
     fn render_gui(&mut self, ui: &mut egui::Ui) {
         ui.indent("terrain", |ui| {
-            if cfg!(debug_assertions) {
-                if ui.button("reload terrain").clicked() {
-                    self.reload = true;
-                }
+            if cfg!(debug_assertions) && ui.button("reload terrain").clicked() {
+                self.reload = true;
             }
         });
     }

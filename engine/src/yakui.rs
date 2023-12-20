@@ -44,7 +44,7 @@ impl YakuiWrapper {
                 format: self.format,
                 sample_count: gfx.gfx.samples,
                 color_attachment: &gfx.gfx.fbos.color_msaa,
-                resolve_target: Some(&gfx.view),
+                resolve_target: Some(gfx.view),
             },
         );
     }

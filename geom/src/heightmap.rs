@@ -381,8 +381,9 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
 
                 let min_t = t_x.min(t_y) + 0.0001;
                 t += min_t;
+                #[allow(clippy::neg_cmp_op_on_partial_ord)]
+                // reverse the condition to avoid infinite loop in case of NaN
                 if !(t < l) {
-                    // reverse the condition to avoid infinite loop in case of NaN
                     return None;
                 }
                 cur += min_t * speed;
@@ -656,10 +657,10 @@ mod erosion {
 
                         let amount_to_deposit = amount_to_deposit * Self::CELL_SIZE;
                         {
-                            self.height_idx_mut(pos.x as usize    , pos.y as usize)    .map(|v| { *v += amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y) });
-                            self.height_idx_mut(pos.x as usize + 1, pos.y as usize)    .map(|v| { *v += amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y) });
-                            self.height_idx_mut(pos.x as usize    , pos.y as usize + 1).map(|v| { *v += amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y });
-                            self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1).map(|v|   *v += amount_to_deposit * cell_offset.x         * cell_offset.y);
+                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize)     { *v += amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize)     { *v += amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize + 1) { *v += amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1) { *v += amount_to_deposit * cell_offset.x         * cell_offset.y };
                         }
                     } else {
                         // Erode a fraction of the droplet's current carry capacity.
@@ -688,8 +689,9 @@ mod erosion {
                                     .div(Self::CELL_SIZE)
                                     .min(weighed_erode_amount);
 
-                                self.height_idx_mut(pos_radius.x as usize, pos_radius.y as usize)
-                                    .map(|v| *v -= delta_sediment * Self::CELL_SIZE);
+                                if let Some(v) = self.height_idx_mut(pos_radius.x as usize, pos_radius.y as usize)
+                                        {  *v -= delta_sediment * Self::CELL_SIZE }
+
 
                                 //dbg!(delta_sediment, weighed_erode_amount, amount_to_erode);
                                 sediment += delta_sediment;

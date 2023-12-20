@@ -36,6 +36,7 @@ impl OrbitCamera {
         self.update(ctx);
     }
 
+    #[allow(clippy::redundant_closure_call)]
     pub fn camera_movement(&mut self, ctx: &mut Context) {
         if !self.camera.pos.is_finite() {
             self.camera.pos = Vec3::ZERO;

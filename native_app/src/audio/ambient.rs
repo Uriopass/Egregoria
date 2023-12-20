@@ -1,16 +1,16 @@
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use engine::{AudioContext, ControlHandle, Stereo};
+use engine::{AudioContext, Gain, GainControl};
 use geom::{lerp, Camera, Vec2, AABB};
-use oddio::{Cycle, Gain};
+use oddio::{Cycle, Mixed};
 use simulation::Simulation;
 
 /// Ambient sounds
 /// These are sounds that are played in the background
 /// They are not tied to any entity
 pub struct Ambient {
-    wind: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
-    forest: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
+    wind: Option<(GainControl, Mixed)>,
+    forest: Option<(GainControl, Mixed)>,
 }
 
 impl Ambient {
@@ -18,18 +18,16 @@ impl Ambient {
         let wind = ctx.play_with_control(
             "calm_wind",
             |s| {
-                let mut g = Gain::new(Cycle::new(s));
-                g.set_amplitude_ratio(0.0);
-                g
+                let (g_control, signal) = Gain::new(Cycle::new(s), 0.0);
+                (g_control, signal)
             },
             AudioKind::Effect,
         );
         let forest = ctx.play_with_control(
             "forest",
             |s| {
-                let mut g = Gain::new(Cycle::new(s));
-                g.set_amplitude_ratio(0.0);
-                g
+                let (g_control, signal) = Gain::new(Cycle::new(s), 0.0);
+                (g_control, signal)
             },
             AudioKind::Effect,
         );
@@ -46,7 +44,7 @@ impl Ambient {
         // Wind
         let volume = lerp(0.1, 0.8, (h - 100.0) / 4000.0);
         if let Some(ref mut wind) = self.wind {
-            wind.control::<Gain<_>, _>().set_amplitude_ratio(volume);
+            wind.0.set_amplitude_ratio(volume);
         }
 
         // Forest
@@ -65,7 +63,7 @@ impl Ambient {
             volume *= matches as f32 / 50.0;
         }
         if let Some(ref mut forest) = self.forest {
-            forest.control::<Gain<_>, _>().set_amplitude_ratio(volume);
+            forest.0.set_amplitude_ratio(volume);
         }
     }
 }

@@ -70,8 +70,10 @@ impl engine::framework::State for State {
 
         ctx.audio.set_settings(100.0, 100.0, 100.0, 100.0);
 
-        let mut gfx_settings = GfxSettings::default();
-        gfx_settings.shader_debug = true;
+        let gfx_settings = GfxSettings {
+            shader_debug: true,
+            ..Default::default()
+        };
 
         Self {
             demo_elements: vec![
@@ -144,7 +146,7 @@ impl engine::framework::State for State {
         }
 
         for v in self.play_queue.drain(..) {
-            ctx.audio.play(&v, AudioKind::Ui);
+            ctx.audio.play(v, AudioKind::Ui);
         }
     }
 

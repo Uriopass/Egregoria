@@ -70,10 +70,8 @@ impl State {
                         l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                         l.show(|| {
                             label("Companies");
-                            if self.gui.companies.changed {
-                                if button("Save").clicked {
-                                    self.gui.companies.save();
-                                }
+                            if self.gui.companies.changed && button("Save").clicked {
+                                self.gui.companies.save();
                             }
                             for (i, comp) in self.gui.companies.companies.iter().enumerate() {
                                 let b = Button::styled(comp.name.to_string());
@@ -250,7 +248,7 @@ impl State {
                                 recipe.consumption.iter().zip(consumption.iter())
                             {
                                 let amount = amount.clone();
-                                props.add(&*name, move || inspect_v(&mut *amount.borrow_mut()));
+                                props.add(name, move || inspect_v(&mut *amount.borrow_mut()));
                             }
 
                             props.add("production", || {
@@ -335,6 +333,7 @@ fn on_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
     }
 }
 
+#[allow(clippy::type_complexity)]
 struct PropertiesBuilder<'a> {
     props: Vec<(&'a str, Box<dyn FnOnce() + 'a>)>,
 }
