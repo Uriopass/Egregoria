@@ -1,0 +1,9 @@
+[package]
+name = "goryak"
+version = "0.1.0"
+edition = "2021"
+description = "Egregoria's yakui component library"
+
+[dependencies]
+yakui-core    = { git = "https://github.com/SecondHalfGames/yakui" }
+yakui-widgets = { git = "https://github.com/SecondHalfGames/yakui" }

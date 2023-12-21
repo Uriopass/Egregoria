@@ -1,21 +1,15 @@
 use common::descriptions::{BuildingGen, CompanyKind};
-use std::rc::Rc;
-use yakui::context::dom;
-use yakui::event::{EventInterest, EventResponse, WidgetEvent};
-use yakui::paint::PaintRect;
-use yakui::widget::{EventContext, Widget};
-use yakui::{
-    Alignment, Color, Constraints, CrossAxisAlignment, Dim2, MainAxisAlignment, Response, Vec2,
-    WidgetId,
-};
-use yakui_widgets::util::widget;
-use yakui_widgets::widgets::{Button, Layer, List, Pad, Slider, StateResponse};
-use yakui_widgets::*;
+use yakui::widgets::*;
+use yakui::*;
 
 use engine::meshload::MeshProperties;
 use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatch};
 use geom::Matrix4;
+use goryak::{
+    center_width, checkbox_value, combo_box, drag_value, is_hovered, use_changed, CountGrid,
+    MainAxisAlignItems,
+};
 
 use crate::companies::Companies;
 use crate::State;
@@ -87,43 +81,7 @@ impl State {
                 });
             },
         );
-        Self::scrollbar(&mut off, false);
-    }
-
-    fn scrollbar(off: &mut Response<StateResponse<f32>>, scrollbar_on_left_side: bool) {
-        colored_box_container(Color::GRAY.adjust(0.5), || {
-            constrained(Constraints::tight(Vec2::new(5.0, f32::INFINITY)), || {
-                let last_val = use_state(|| None);
-                let mut hovered = false;
-                let d = draggable(|| {
-                    hovered = *widget::<IsHovered>(());
-                })
-                .dragging;
-                let delta = d
-                    .map(|v| {
-                        let delta = v.current.x - last_val.get().unwrap_or(v.current.x);
-                        last_val.set(Some(v.current.x));
-                        delta
-                    })
-                    .unwrap_or_else(|| {
-                        last_val.set(None);
-                        0.0
-                    });
-                off.modify(|v| {
-                    if scrollbar_on_left_side {
-                        v - delta
-                    } else {
-                        v + delta
-                    }
-                    .clamp(100.0, 600.0)
-                });
-
-                let should_show_mouse_icon = d.is_some() || hovered;
-                on_changed(should_show_mouse_icon, || {
-                    set_colresize_icon(should_show_mouse_icon);
-                });
-            });
-        });
+        resizebar_vert(&mut off, false);
     }
 
     fn model_properties(&mut self) {
@@ -173,150 +131,132 @@ impl State {
             Inspected::None => {}
             Inspected::Company(i) => {
                 let mut off = use_state(|| 350.0);
-                Self::scrollbar(&mut off, true);
+                resizebar_vert(&mut off, true);
                 constrained(
                     Constraints::loose(Vec2::new(off.get(), f32::INFINITY)),
                     || {
                         colored_box_container(Color::GRAY, || {
-                            let comp = &mut self.gui.companies.companies[i];
-                            let mut props = PropertiesBuilder::new();
+                            CountGrid::col(2)
+                                .main_axis_align_items(MainAxisAlignItems::Center)
+                                .show(|| {
+                                    let comp = &mut self.gui.companies.companies[i];
 
-                            props.add("Name", || text_inp(&mut comp.name));
+                                    let label = |name: &str| {
+                                        pad(Pad::all(3.0), || {
+                                            label(name.to_string());
+                                        });
+                                    };
 
-                            props.add("Kind", || {
-                                let mut selected = match comp.kind {
-                                    CompanyKind::Store => 0,
-                                    CompanyKind::Factory { .. } => 1,
-                                    CompanyKind::Network => 2,
-                                };
+                                    label("Name");
+                                    text_inp(&mut comp.name);
 
-                                if combo_box(&mut selected, &["Store", "Factory", "Network"]) {
-                                    match selected {
-                                        0 => comp.kind = CompanyKind::Store,
-                                        1 => comp.kind = CompanyKind::Factory { n_trucks: 1 },
-                                        2 => comp.kind = CompanyKind::Network,
-                                        _ => unreachable!(),
-                                    }
-                                }
-                            });
-                            props.add("Building generator", || {
-                                let mut selected = match comp.bgen {
-                                    BuildingGen::House => unreachable!(),
-                                    BuildingGen::Farm => 0,
-                                    BuildingGen::CenteredDoor { .. } => 1,
-                                    BuildingGen::NoWalkway { .. } => 2,
-                                };
+                                    label("Kind");
+                                    let mut selected = match comp.kind {
+                                        CompanyKind::Store => 0,
+                                        CompanyKind::Factory { .. } => 1,
+                                        CompanyKind::Network => 2,
+                                    };
 
-                                if combo_box(
-                                    &mut selected,
-                                    &["Farm", "Centered door", "No walkway"],
-                                ) {
-                                    match selected {
-                                        0 => comp.bgen = BuildingGen::Farm,
-                                        1 => {
-                                            comp.bgen = BuildingGen::CenteredDoor {
-                                                vertical_factor: 1.0,
-                                            }
+                                    if combo_box(
+                                        &mut selected,
+                                        &["Store", "Factory", "Network"],
+                                        150.0,
+                                    ) {
+                                        match selected {
+                                            0 => comp.kind = CompanyKind::Store,
+                                            1 => comp.kind = CompanyKind::Factory { n_trucks: 1 },
+                                            2 => comp.kind = CompanyKind::Network,
+                                            _ => unreachable!(),
                                         }
-                                        2 => {
-                                            comp.bgen = BuildingGen::NoWalkway {
-                                                door_pos: geom::Vec2::ZERO,
-                                            }
-                                        }
-                                        _ => unreachable!(),
                                     }
-                                }
-                            });
-                            props.add("Recipe", || {
-                                label(" ");
-                            });
 
-                            let recipe = &mut comp.recipe;
-                            props.add("complexity", || inspect_v(&mut recipe.complexity));
-                            props.add("storage_multiplier", || {
-                                inspect_v(&mut recipe.storage_multiplier)
-                            });
-                            props.add("consumption", || {
-                                label(" ");
-                            });
-                            let consumption: Vec<_> = recipe
-                                .consumption
-                                .iter()
-                                .map(|(_, v)| Rc::new(std::cell::RefCell::new(*v)))
-                                .collect();
-                            for ((name, _), amount) in
-                                recipe.consumption.iter().zip(consumption.iter())
-                            {
-                                let amount = amount.clone();
-                                props.add(name, move || inspect_v(&mut *amount.borrow_mut()));
-                            }
+                                    label("Building generator");
+                                    let mut selected = match comp.bgen {
+                                        BuildingGen::House => unreachable!(),
+                                        BuildingGen::Farm => 0,
+                                        BuildingGen::CenteredDoor { .. } => 1,
+                                        BuildingGen::NoWalkway { .. } => 2,
+                                    };
 
-                            props.add("production", || {
-                                label(" ");
-                            });
-                            //for (name, amount) in recipe.production.iter_mut() {
-                            //    props.add(name, || inspect_v(amount));
-                            //}
+                                    if combo_box(
+                                        &mut selected,
+                                        &["Farm", "Centered door", "No walkway"],
+                                        150.0,
+                                    ) {
+                                        match selected {
+                                            0 => comp.bgen = BuildingGen::Farm,
+                                            1 => {
+                                                comp.bgen = BuildingGen::CenteredDoor {
+                                                    vertical_factor: 1.0,
+                                                }
+                                            }
+                                            2 => {
+                                                comp.bgen = BuildingGen::NoWalkway {
+                                                    door_pos: geom::Vec2::ZERO,
+                                                }
+                                            }
+                                            _ => unreachable!(),
+                                        }
+                                    }
 
-                            props.add("n_workers", || inspect_v(&mut comp.n_workers));
-                            props.add("size", || inspect_v(&mut comp.size));
-                            props.add("asset_location", || text_inp(&mut comp.asset_location));
-                            props.add("price", || inspect_v(&mut comp.price));
+                                    label("Recipe");
+                                    label(" ");
 
-                            let mut v = comp.zone.is_some();
-                            props.add("zone", || {
-                                center(|| {
-                                    v = checkbox(v).checked;
+                                    let recipe = &mut comp.recipe;
+                                    label("complexity");
+                                    drag_value(&mut recipe.complexity);
+                                    label("storage_multiplier");
+                                    drag_value(&mut recipe.storage_multiplier);
+                                    label("consumption");
+                                    label(" ");
+
+                                    for (name, amount) in recipe.consumption.iter_mut() {
+                                        label(name);
+                                        drag_value(amount);
+                                    }
+
+                                    label("production");
+                                    label(" ");
+                                    for (name, amount) in recipe.production.iter_mut() {
+                                        label(name);
+                                        drag_value(amount);
+                                    }
+
+                                    label("n_workers");
+                                    drag_value(&mut comp.n_workers);
+
+                                    label("size");
+                                    drag_value(&mut comp.size);
+
+                                    label("asset_location");
+                                    text_inp(&mut comp.asset_location);
+
+                                    label("price");
+                                    drag_value(&mut comp.price);
+
+                                    label("zone");
+                                    let mut v = comp.zone.is_some();
+                                    center_width(|| checkbox_value(&mut v));
+
+                                    if v != comp.zone.is_some() {
+                                        if v {
+                                            comp.zone = Some(Default::default());
+                                        } else {
+                                            comp.zone = None;
+                                        }
+                                    }
+
+                                    if let Some(ref mut z) = comp.zone {
+                                        label("floor");
+                                        text_inp(&mut z.floor);
+
+                                        label("filler");
+                                        text_inp(&mut z.filler);
+
+                                        label("price_per_area");
+                                        drag_value(&mut z.price_per_area);
+                                    }
                                 });
-                            });
-
-                            if let Some(ref mut z) = comp.zone {
-                                props.add("floor", || text_inp(&mut z.floor));
-                                props.add("filler", || text_inp(&mut z.filler));
-                                props.add("price_per_area", || inspect_v(&mut z.price_per_area));
-                            }
-
-                            props.show();
-
-                            if v != comp.zone.is_some() {
-                                if v {
-                                    comp.zone = Some(Default::default());
-                                } else {
-                                    comp.zone = None;
-                                }
-                            }
-
-                            for ((_, amt), amount_ref) in
-                                recipe.consumption.iter_mut().zip(consumption.iter())
-                            {
-                                *amt = *amount_ref.borrow();
-                            }
-
-                            /*
-                            column(|| {
-                                inspect_v("complexity", &mut comp.recipe.complexity);
-                                inspect_v("storage_multiplier", &mut comp.recipe.storage_multiplier);
-                                label("consumption");
-                                for (name, amount) in comp.recipe.consumption.iter_mut() {
-                                    inspect_v(name, amount);
-                                }
-
-                                label("production");
-                                for (name, amount) in comp.recipe.production.iter_mut() {
-                                    inspect_v(name, amount);
-                                }
-
-                                inspect_v("n_workers", &mut comp.n_workers);
-                                inspect_v("size", &mut comp.size);
-                                text_inp("asset_location", &mut comp.asset_location);
-                                inspect_v("price", &mut comp.price);
-
-                                ui_opt("zone", &mut comp.zone, |zone| {
-                                    text_inp("floor", &mut zone.floor);
-                                    text_inp("filler", &mut zone.filler);
-                                    inspect_v("price_per_area", &mut zone.price_per_area);
-                                });
-                            });*/
                         });
                     },
                 );
@@ -325,118 +265,40 @@ impl State {
     }
 }
 
-fn on_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
-    let old_v = use_state(|| None);
-    if old_v.get() != Some(v) {
-        old_v.set(Some(v));
-        f();
-    }
-}
-
-#[allow(clippy::type_complexity)]
-struct PropertiesBuilder<'a> {
-    props: Vec<(&'a str, Box<dyn FnOnce() + 'a>)>,
-}
-
-impl<'a> PropertiesBuilder<'a> {
-    fn new() -> Self {
-        Self { props: Vec::new() }
-    }
-
-    fn add(&mut self, name: &'a str, f: impl FnOnce() + 'a) {
-        self.props.push((name, Box::new(f)));
-    }
-
-    fn show(self) {
-        row(|| {
-            column(|| {
-                let parent = dom().current();
-                label("Properties");
-                let c = Constraints {
-                    min: Vec2::new(50.0, 50.0),
-                    max: Vec2::new(f32::INFINITY, f32::INFINITY),
-                };
-                Self::horiz_line(parent);
-                for (name, _) in &self.props {
-                    constrained(c, || {
-                        pad(Pad::all(3.0), || {
-                            center(|| {
-                                label(name.to_string());
-                            });
-                        });
-                    });
-                    Self::horiz_line(parent);
+/// A horizontal resize bar.
+pub fn resizebar_vert(off: &mut Response<StateResponse<f32>>, scrollbar_on_left_side: bool) {
+    colored_box_container(Color::GRAY.adjust(0.5), || {
+        constrained(Constraints::tight(Vec2::new(5.0, f32::INFINITY)), || {
+            let last_val = use_state(|| None);
+            let mut hovered = false;
+            let d = draggable(|| {
+                hovered = is_hovered();
+            })
+            .dragging;
+            let delta = d
+                .map(|v| {
+                    let delta = v.current.x - last_val.get().unwrap_or(v.current.x);
+                    last_val.set(Some(v.current.x));
+                    delta
+                })
+                .unwrap_or_else(|| {
+                    last_val.set(None);
+                    0.0
+                });
+            off.modify(|v| {
+                if scrollbar_on_left_side {
+                    v - delta
+                } else {
+                    v + delta
                 }
+                .clamp(100.0, 600.0)
             });
-            let mut c = List::column();
-            c.cross_axis_alignment = CrossAxisAlignment::Stretch;
-            c.show(|| {
-                let parent = dom().current();
-                label(" ");
-                let c = Constraints {
-                    min: Vec2::new(50.0, 50.0),
-                    max: Vec2::new(f32::INFINITY, 50.0),
-                };
-                for (_, f) in self.props {
-                    constrained(c, || {
-                        pad(Pad::all(3.0), || {
-                            f();
-                        });
-                    });
-                    Self::horiz_line(parent);
-                }
+
+            let should_show_mouse_icon = d.is_some() || hovered;
+            use_changed(should_show_mouse_icon, || {
+                set_colresize_icon(should_show_mouse_icon);
             });
         });
-    }
-
-    fn horiz_line(width_id: WidgetId) {
-        canvas(move |ctx| {
-            let w = ctx.layout.get(width_id).unwrap().rect.size().x;
-            let layout = ctx.layout.get(ctx.dom.current()).unwrap();
-
-            let mut r = layout.rect;
-            r.set_size(Vec2::new(w, 3.0));
-            r.set_pos(Vec2::new(r.pos().x, r.pos().y - 3.0 / 2.0));
-            let mut pr = PaintRect::new(r);
-            pr.color = Color::GRAY.adjust(0.8);
-            pr.add(ctx.paint);
-        });
-    }
-}
-
-trait Slidable: Copy {
-    fn to_f64(self) -> f64;
-    fn from_f64(v: f64) -> Self;
-}
-
-macro_rules! impl_slidable {
-    ($($t:ty),*) => {
-        $(
-            impl Slidable for $t {
-                fn to_f64(self) -> f64 {
-                    self as f64
-                }
-
-                fn from_f64(v: f64) -> Self {
-                    v as Self
-                }
-            }
-        )*
-    };
-}
-
-impl_slidable!(i32, u32, i64, u64, f32, f64);
-
-fn inspect_v<T: Slidable>(amount: &mut T) {
-    let mut l = List::column();
-    l.main_axis_alignment = MainAxisAlignment::Center;
-    l.cross_axis_alignment = CrossAxisAlignment::Stretch;
-    l.show(|| {
-        let mut slider = Slider::new((*amount).to_f64(), 1.0, 10.0);
-        slider.step = Some(1.0);
-        if let Some(v) = slider.show().value {
-            *amount = Slidable::from_f64(v);
-        }
     });
 }
 
@@ -477,73 +339,4 @@ fn set_colresize_icon(enabled: bool) {
     } else {
         set_cursor_icon(CursorIcon::Default);
     }
-}
-
-#[derive(Debug)]
-struct IsHovered {
-    hovered: bool,
-}
-
-impl Widget for IsHovered {
-    type Props<'a> = ();
-    type Response = bool;
-
-    fn new() -> Self {
-        Self { hovered: false }
-    }
-
-    fn update(&mut self, _: Self::Props<'_>) -> Self::Response {
-        self.hovered
-    }
-
-    fn event_interest(&self) -> EventInterest {
-        EventInterest::MOUSE_INSIDE
-    }
-
-    fn event(&mut self, _: EventContext<'_>, event: &WidgetEvent) -> EventResponse {
-        match *event {
-            WidgetEvent::MouseEnter => self.hovered = true,
-            WidgetEvent::MouseLeave => self.hovered = false,
-            _ => {}
-        };
-        EventResponse::Bubble
-    }
-}
-
-pub fn combo_box(selected: &mut usize, items: &[&str]) -> bool {
-    let open = use_state(|| false);
-    let mut changed = false;
-
-    center(|| {
-        let mut l = List::column();
-        l.main_axis_alignment = MainAxisAlignment::Center;
-        l.show(|| {
-            if button(items[*selected].to_string()).clicked {
-                open.modify(|x| !x);
-            }
-
-            if open.get() {
-                Layer::new().show(|| {
-                    reflow(Alignment::BOTTOM_LEFT, Dim2::ZERO, || {
-                        column(|| {
-                            for (i, item) in items.iter().enumerate() {
-                                if i == *selected {
-                                    continue;
-                                }
-                                colored_box_container(Color::BLUE, || {
-                                    if button(item.to_string()).clicked {
-                                        *selected = i;
-                                        open.set(false);
-                                        changed = true;
-                                    }
-                                });
-                            }
-                        });
-                    });
-                });
-            }
-        });
-    });
-
-    changed
 }

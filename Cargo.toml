@@ -8,6 +8,7 @@ members = [
     "engine",
     "engine_demo",
     "geom",
+    "goryak",
     "headless",
     "native_app",
     "networking",
@@ -37,6 +38,9 @@ opt-level = 2
 
 [profile.dev.package.geom]
 opt-level = 2
+
+[profile.dev.package.goryak]
+opt-level = 1
 
 [profile.dev.package.engine]
 opt-level = 1

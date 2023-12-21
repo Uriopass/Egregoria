@@ -196,12 +196,10 @@ dependencies = [
  "egui-inspect",
  "engine",
  "geom",
+ "goryak",
  "inline_tweak",
  "log",
  "yakui",
- "yakui-wgpu",
- "yakui-widgets",
- "yakui-winit",
 ]
 
 [[package]]
@@ -1253,6 +1251,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8098adac955faa2d31079b65dc48841251f69efd3ac25477903fc424362ead"
 dependencies = [
  "gl_generator",
+]
+
+[[package]]
+name = "goryak"
+version = "0.1.0"
+dependencies = [
+ "yakui-core",
+ "yakui-widgets",
 ]
 
 [[package]]
@@ -3981,7 +3987,7 @@ checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
 [[package]]
 name = "yakui"
 version = "0.2.0"
-source = "git+https://github.com/SecondHalfGames/yakui#64279098bb16174044d579e4be239ca32c595ee6"
+source = "git+https://github.com/SecondHalfGames/yakui#64859066a8cb39f6dd066227531e87f287e9b33b"
 dependencies = [
  "yakui-core",
  "yakui-widgets",
@@ -3990,7 +3996,7 @@ dependencies = [
 [[package]]
 name = "yakui-core"
 version = "0.2.0"
-source = "git+https://github.com/SecondHalfGames/yakui#64279098bb16174044d579e4be239ca32c595ee6"
+source = "git+https://github.com/SecondHalfGames/yakui#64859066a8cb39f6dd066227531e87f287e9b33b"
 dependencies = [
  "anymap",
  "bitflags 1.3.2",
@@ -4006,7 +4012,7 @@ dependencies = [
 [[package]]
 name = "yakui-wgpu"
 version = "0.2.0"
-source = "git+https://github.com/SecondHalfGames/yakui#64279098bb16174044d579e4be239ca32c595ee6"
+source = "git+https://github.com/SecondHalfGames/yakui#64859066a8cb39f6dd066227531e87f287e9b33b"
 dependencies = [
  "bytemuck",
  "glam",
@@ -4019,7 +4025,7 @@ dependencies = [
 [[package]]
 name = "yakui-widgets"
 version = "0.2.0"
-source = "git+https://github.com/SecondHalfGames/yakui#64279098bb16174044d579e4be239ca32c595ee6"
+source = "git+https://github.com/SecondHalfGames/yakui#64859066a8cb39f6dd066227531e87f287e9b33b"
 dependencies = [
  "fontdue",
  "smol_str 0.1.24",
@@ -4030,7 +4036,7 @@ dependencies = [
 [[package]]
 name = "yakui-winit"
 version = "0.2.0"
-source = "git+https://github.com/SecondHalfGames/yakui#64279098bb16174044d579e4be239ca32c595ee6"
+source = "git+https://github.com/SecondHalfGames/yakui#64859066a8cb39f6dd066227531e87f287e9b33b"
 dependencies = [
  "winit",
  "yakui-core",
