@@ -45,7 +45,7 @@ pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
     let next_dests: Vec<Vec3> = map
         .buildings()
         .values()
-        .map(|building| building.door_pos.up(building.height))
+        .map(|building| building.door_pos.up(-building.height))
         // .chain(
         //     map.terrain
         //         .trees
