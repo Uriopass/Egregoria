@@ -59,6 +59,8 @@ pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
         .for_each(|human| bird_decision(ra, &mut human.it, &mut human.trans, &mut human.speed, &mut human.bird_mob, &next_dests))
 }
 
+const BIRD_WAIT_TIME: f64 = 100.0;
+
 pub fn bird_decision(
     time: &GameTime,
     it: &mut Itinerary,
@@ -73,14 +75,27 @@ pub fn bird_decision(
     bird_mob.walk_anim %= 2.0 * std::f32::consts::PI;
     physics(kin, trans, time, desired_v, desired_dir);
 
-    if let Some(end_pos) = it.end_pos() {
-        if trans.position.is_close(end_pos, 3.0) {
-            // choose a random new destination
-            *it = Itinerary::simple(vec![
-                next_dests[(next_dests.len() as f32
-                    * rand3(trans.position.x, trans.position.y, time.timestamp as f32))
-                    as usize],
-            ]);
+    let get_new_itinerary = || {
+        let n2 = rand3(trans.position.y, trans.position.x, time.timestamp as f32);
+        let n1 = rand3(trans.position.x, trans.position.y, time.timestamp as f32);
+        if n1 > 0.5 {
+            Itinerary::simple(vec![next_dests[(next_dests.len() as f32 * n2) as usize]])
+        } else {
+            Itinerary::wait_until(time.timestamp + BIRD_WAIT_TIME)
+        }
+    };
+
+    // choose a random new destination if the current one has been reached
+    match it.end_pos() {
+        Some(end_pos) => {
+            if trans.position.is_close(end_pos, 3.0) {
+                *it = get_new_itinerary();
+            }
+        }
+        None => {
+            if it.has_ended(time.timestamp) {
+                *it = get_new_itinerary();
+            }
         }
     }
 }
