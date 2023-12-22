@@ -5,8 +5,8 @@ use egui_inspect::{Inspect, InspectArgs};
 use simulation::economy::{ItemRegistry, Market};
 use simulation::transportation::Location;
 use simulation::{
-    AnyEntity, CompanyEnt, FreightStationEnt, HumanEnt, Simulation, SoulID, TrainEnt, VehicleEnt,
-    WagonEnt,
+    AnyEntity, BirdEnt, CompanyEnt, FreightStationEnt, HumanEnt, Simulation, SoulID, TrainEnt,
+    VehicleEnt, WagonEnt,
 };
 
 /// Inspect window
@@ -48,6 +48,9 @@ impl InspectRenderer {
             }
             AnyEntity::HumanID(x) => {
                 <HumanEnt as Inspect<HumanEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
+            }
+            AnyEntity::BirdID(x) => {
+                <BirdEnt as Inspect<BirdEnt>>::render(sim.get(x).unwrap(), "", ui, &args)
             }
         }
 

@@ -14,6 +14,7 @@ pub struct InstancedRender {
     pub wagons_freight: InstancedMeshBuilder<true>,
     pub trucks: InstancedMeshBuilder<true>,
     pub pedestrians: InstancedMeshBuilder<true>,
+    pub birds: InstancedMeshBuilder<true>,
 }
 
 impl InstancedRender {
@@ -32,6 +33,7 @@ impl InstancedRender {
             wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb").unwrap()),
             pedestrians: InstancedMeshBuilder::new(load_mesh(gfx, "pedestrian.glb").unwrap()),
+            birds: InstancedMeshBuilder::new(load_mesh(gfx, "bird.glb").unwrap()),
         }
     }
 
@@ -40,6 +42,7 @@ impl InstancedRender {
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();
+        self.birds.instances.clear();
         for v in sim.world().vehicles.values() {
             let trans = &v.trans;
             let instance = MeshInstance {
@@ -92,6 +95,14 @@ impl InstancedRender {
             }
         }
 
+        for animal in sim.world().birds.values() {
+            self.birds.instances.push(MeshInstance {
+                pos: animal.trans.position,
+                dir: animal.trans.dir.xy().z0(),
+                tint: LinearColor::WHITE,
+            });
+        }
+
         self.path_not_found.clear();
         for (_, (trans, itin)) in sim.world().query_trans_itin() {
             let Some(wait) = itin.is_wait_for_reroute() else {
@@ -123,6 +134,9 @@ impl InstancedRender {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.pedestrians.build(fctx.gfx) {
+            fctx.objs.push(Box::new(x));
+        }
+        if let Some(x) = self.birds.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.locomotives.build(fctx.gfx) {

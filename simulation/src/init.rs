@@ -9,6 +9,7 @@ use crate::physics::coworld_synchronize;
 use crate::souls::freight_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
+use crate::transportation::bird_mob::bird_decision_system;
 use crate::transportation::pedestrian_decision_system;
 use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_system};
 use crate::transportation::testing_vehicles::{random_vehicles_update, RandomVehicles};
@@ -17,6 +18,7 @@ use crate::transportation::train::{
 };
 use crate::utils::resources::Resources;
 use crate::utils::time::Tick;
+use crate::wildlife::add_birds_randomly;
 use crate::world::{CompanyEnt, FreightStationEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
 use crate::World;
 use crate::{
@@ -33,6 +35,7 @@ pub fn init() {
     register_system("update_decision_system", update_decision_system);
     register_system("company_system", company_system);
     register_system("pedestrian_decision_system", pedestrian_decision_system);
+    register_system("bird_decision_system", bird_decision_system);
     register_system("coworld_synchronize", coworld_synchronize);
     register_system("locomotive_system", locomotive_system);
     register_system("vehicle_decision_system", vehicle_decision_system);
@@ -46,6 +49,7 @@ pub fn init() {
     register_system("random_vehicles", random_vehicles_update);
 
     register_system_sim("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
+    register_system_sim("add_birds_randomly", add_birds_randomly);
 
     register_resource_noserialize::<GoodsCompanyRegistry>();
     register_resource_noserialize::<ItemRegistry>();

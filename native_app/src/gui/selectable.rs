@@ -13,6 +13,7 @@ pub fn select_radius(id: AnyEntity) -> f32 {
         AnyEntity::FreightStationID(_) => 0.0,
         AnyEntity::CompanyID(_) => 0.0,
         AnyEntity::HumanID(_) => 3.0,
+        AnyEntity::BirdID(_) => 3.0,
     }
 }
 

@@ -46,6 +46,7 @@ pub mod souls;
 mod tests;
 pub mod transportation;
 pub mod utils;
+pub mod wildlife;
 mod world;
 pub mod world_command;
 

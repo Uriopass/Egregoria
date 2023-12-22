@@ -8,6 +8,7 @@ use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::freight_station::FreightStation;
 use crate::souls::goods_company::GoodsCompany;
 use crate::souls::human::{HumanDecision, PersonalInfo};
+use crate::transportation::bird_mob::BirdMob;
 use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon};
 use crate::transportation::{Location, Pedestrian, Vehicle, VehicleKind, VehicleState};
 use crate::utils::par_command_buffer::SimDrop;
@@ -27,6 +28,7 @@ new_key_type! {
     pub struct WagonID;
     pub struct FreightStationID;
     pub struct CompanyID;
+    pub struct BirdID;
 }
 
 impl_entity!(VehicleID, VehicleEnt, vehicles);
@@ -35,6 +37,7 @@ impl_entity!(TrainID, TrainEnt, trains);
 impl_entity!(WagonID, WagonEnt, wagons);
 impl_entity!(FreightStationID, FreightStationEnt, freight_stations);
 impl_entity!(CompanyID, CompanyEnt, companies);
+impl_entity!(BirdID, BirdEnt, birds);
 
 impl_trans!(HumanID);
 impl_trans!(VehicleID);
@@ -42,6 +45,7 @@ impl_trans!(TrainID);
 impl_trans!(WagonID);
 impl_trans!(FreightStationID);
 impl_trans!(CompanyID);
+impl_trans!(BirdID);
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug, From, TryInto)]
 pub enum AnyEntity {
@@ -51,6 +55,7 @@ pub enum AnyEntity {
     FreightStationID(FreightStationID),
     CompanyID(CompanyID),
     HumanID(HumanID),
+    BirdID(BirdID),
 }
 
 #[derive(Inspect, Serialize, Deserialize)]
@@ -177,6 +182,18 @@ impl SimDrop for CompanyEnt {
     }
 }
 
+#[derive(Inspect, Serialize, Deserialize)]
+pub struct BirdEnt {
+    pub trans: Transform,
+    pub speed: Speed,
+    pub bird_mob: BirdMob,
+    pub it: Itinerary,
+}
+
+impl SimDrop for BirdEnt {
+    fn sim_drop(self, _: BirdID, _: &mut Resources) {}
+}
+
 #[derive(Default, Serialize, Deserialize)]
 pub struct World {
     pub vehicles: HopSlotMap<VehicleID, VehicleEnt>,
@@ -185,6 +202,7 @@ pub struct World {
     pub wagons: HopSlotMap<WagonID, WagonEnt>,
     pub freight_stations: HopSlotMap<FreightStationID, FreightStationEnt>,
     pub companies: HopSlotMap<CompanyID, CompanyEnt>,
+    pub birds: HopSlotMap<BirdID, BirdEnt>,
 }
 
 impl World {
@@ -212,6 +230,7 @@ impl World {
             AnyEntity::FreightStationID(id) => self.storage_id(id).contains_key(id),
             AnyEntity::CompanyID(id) => self.storage_id(id).contains_key(id),
             AnyEntity::HumanID(id) => self.storage_id(id).contains_key(id),
+            AnyEntity::BirdID(id) => self.storage_id(id).contains_key(id),
         }
     }
 
@@ -221,6 +240,7 @@ impl World {
             AnyEntity::TrainID(x) => self.pos(x),
             AnyEntity::WagonID(x) => self.pos(x),
             AnyEntity::HumanID(x) => self.pos(x),
+            AnyEntity::BirdID(x) => self.pos(x),
             _ => None,
         }
     }
@@ -230,6 +250,7 @@ impl World {
             AnyEntity::VehicleID(x) => Some(&self.get(x)?.it),
             AnyEntity::TrainID(x) => Some(&self.get(x)?.it),
             AnyEntity::HumanID(x) => Some(&self.get(x)?.it),
+            AnyEntity::BirdID(x) => Some(&self.get(x)?.it),
             _ => None,
         }
     }
@@ -248,6 +269,7 @@ impl World {
             self.humans  .iter().map(|(id, x)| (AnyEntity::HumanID(id), (&x.trans, &x.it))),
             self.vehicles.iter().map(|(id, x)| (AnyEntity::VehicleID(id), (&x.trans, &x.it))),
             self.trains  .iter().map(|(id, x)| (AnyEntity::TrainID(id), (&x.trans, &x.it))),
+            self.birds .iter().map(|(id, x)| (AnyEntity::BirdID(id), (&x.trans, &x.it))),
         ))
     }
 
@@ -269,6 +291,7 @@ impl World {
             self.humans  .values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
             self.trains  .values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
             self.vehicles.values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
+            self.birds .values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
         ))
     }
 
@@ -433,6 +456,7 @@ impl Display for AnyEntity {
             AnyEntity::WagonID(id) => write!(f, "{:?}", id),
             AnyEntity::FreightStationID(id) => write!(f, "{:?}", id),
             AnyEntity::CompanyID(id) => write!(f, "{:?}", id),
+            AnyEntity::BirdID(id) => write!(f, "{:?}", id),
         }
     }
 }
