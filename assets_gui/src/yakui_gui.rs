@@ -10,10 +10,10 @@ use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatch};
 use geom::Matrix4;
 use goryak::{
-    background, button_primary, button_secondary, center_width, checkbox_value, combo_box,
-    debug_constraints, debug_size, dragvalue, icon, is_hovered, labelc, on_background,
-    on_secondary, outline_variant, scroll_vertical, secondary, secondary_container, set_theme,
-    stretch_width, use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
+    background, button_primary, center_width, checkbox_value, combo_box, dragvalue, icon,
+    interact_box, is_hovered, labelc, on_background, on_secondary, on_surface, outline_variant,
+    scroll_vertical, secondary, secondary_container, set_theme, stretch_width, surface,
+    surface_variant, use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
 };
 
 use crate::companies::Companies;
@@ -114,22 +114,26 @@ impl State {
     }
 
     fn explore_item(indent: usize, name: String, folder: Option<bool>, on_click: impl FnOnce()) {
-        let mut p = Pad::ZERO;
-        p.left = indent as f32 * 4.0 + if folder.is_none() { 12.0 } else { 0.0 };
-        p.top = 4.0;
-        p.show(|| {
-            let mut l = List::row();
-            l.cross_axis_alignment = CrossAxisAlignment::Center;
-            l.show(|| {
-                if let Some(v) = folder {
-                    let triangle = if v { "caret-down" } else { "caret-right" };
-                    icon(on_background(), triangle);
-                }
-                if button_secondary(name).clicked {
-                    on_click();
-                }
+        let r = interact_box(surface(), surface_variant(), surface_variant(), || {
+            let mut p = Pad::ZERO;
+            p.left = indent as f32 * 4.0 + if folder.is_none() { 12.0 } else { 0.0 };
+            p.top = 4.0;
+            p.bottom = 4.0;
+            p.show(|| {
+                let mut l = List::row();
+                l.cross_axis_alignment = CrossAxisAlignment::Center;
+                l.show(|| {
+                    if let Some(v) = folder {
+                        let triangle = if v { "caret-down" } else { "caret-right" };
+                        icon(on_surface(), triangle);
+                    }
+                    labelc(on_surface(), name);
+                });
             });
         });
+        if r.just_clicked {
+            on_click();
+        }
     }
 
     fn model_properties(&mut self) {
