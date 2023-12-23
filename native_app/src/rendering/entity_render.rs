@@ -95,10 +95,14 @@ impl InstancedRender {
             }
         }
 
-        for animal in sim.world().birds.values() {
+        for bird_ent in sim.world().birds.values() {
             self.birds.instances.push(MeshInstance {
-                pos: animal.trans.position,
-                dir: animal.trans.dir.xy().z0(),
+                pos: bird_ent.trans.position.up(if bird_ent.it.is_simple() {
+                    0.5 + 0.4 * bird_ent.bird_mob.fly_anim.cos()
+                } else {
+                    0.0
+                }),
+                dir: bird_ent.trans.dir.xy().z0(),
                 tint: LinearColor::WHITE,
             });
         }

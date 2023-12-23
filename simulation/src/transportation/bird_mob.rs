@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct BirdMob {
     pub walking_speed: f32,
-    pub walk_anim: f32,
+    pub fly_anim: f32,
 }
 
 const PED_SIZE: f32 = 0.5;
@@ -33,7 +33,7 @@ impl BirdMob {
     pub(crate) fn new(r: &mut RandProvider) -> Self {
         Self {
             walking_speed: (10.0 + r.next_f32() * 0.4),
-            walk_anim: 0.0,
+            fly_anim: 0.0,
         }
     }
 }
@@ -71,8 +71,8 @@ pub fn bird_decision(
 ) {
     let (desired_v, desired_dir) = calc_decision(bird_mob, trans, it);
 
-    bird_mob.walk_anim += 7.0 * kin.0 * time.realdelta / bird_mob.walking_speed;
-    bird_mob.walk_anim %= 2.0 * std::f32::consts::PI;
+    bird_mob.fly_anim += 2.0 * kin.0 * time.realdelta / bird_mob.walking_speed;
+    bird_mob.fly_anim %= 2.0 * std::f32::consts::PI;
     physics(kin, trans, time, desired_v, desired_dir);
 
     let get_new_itinerary = || {
