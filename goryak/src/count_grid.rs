@@ -287,6 +287,7 @@ impl Widget for CountGridWidget {
                 MainAxisAlignItems::Start | MainAxisAlignItems::Stretch => cell_main_max,
                 _ => max_sizes[n_cross + main_id],
             };
+            #[allow(unreachable_patterns)]
             let offset_main = match self.props.main_axis_align_items {
                 MainAxisAlignItems::Start | MainAxisAlignItems::Stretch => 0.0,
                 MainAxisAlignItems::Center => ((cell_main_size - child_main_size) / 2.0).max(0.0),

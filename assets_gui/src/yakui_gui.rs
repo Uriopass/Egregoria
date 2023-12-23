@@ -1,14 +1,19 @@
-use common::descriptions::{BuildingGen, CompanyKind};
-use yakui::widgets::*;
-use yakui::*;
+use yakui::widgets::{List, Pad, StateResponse, TextBox};
+use yakui::{
+    align, center, colored_box_container, column, constrained, pad, row, use_state, Alignment,
+    Constraints, CrossAxisAlignment, MainAxisAlignment, MainAxisSize, Response, Vec2,
+};
 
+use common::descriptions::{BuildingGen, CompanyKind};
 use engine::meshload::MeshProperties;
 use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatch};
 use geom::Matrix4;
 use goryak::{
-    center_width, checkbox_value, combo_box, drag_value, is_hovered, use_changed, CountGrid,
-    MainAxisAlignItems,
+    background, button_primary, button_secondary, center_width, checkbox_value, combo_box,
+    debug_constraints, debug_size, dragvalue, is_hovered, labelc, on_background, on_secondary,
+    outline_variant, scroll_vertical, secondary, secondary_container, set_theme, stretch_width,
+    use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
 };
 
 use crate::companies::Companies;
@@ -58,24 +63,43 @@ impl State {
         constrained(
             Constraints::loose(Vec2::new(off.get(), f32::INFINITY)),
             || {
-                colored_box_container(Color::GRAY.with_alpha(0.8), || {
-                    scroll_vertical(|| {
-                        let mut l = List::column();
-                        l.cross_axis_alignment = CrossAxisAlignment::Stretch;
-                        l.show(|| {
-                            label("Companies");
-                            if self.gui.companies.changed && button("Save").clicked {
-                                self.gui.companies.save();
-                            }
-                            for (i, comp) in self.gui.companies.companies.iter().enumerate() {
-                                let b = Button::styled(comp.name.to_string());
-
-                                Pad::all(3.0).show(|| {
-                                    if b.show().clicked {
-                                        self.gui.inspected = Inspected::Company(i);
-                                    }
+                colored_box_container(background(), || {
+                    let mut l = List::column();
+                    l.cross_axis_alignment = CrossAxisAlignment::Stretch;
+                    l.show(|| {
+                        let mut l = List::row();
+                        l.item_spacing = 5.0;
+                        l.main_axis_alignment = MainAxisAlignment::Center;
+                        Pad::all(5.0).show(|| {
+                            l.show(|| {
+                                if button_primary("Dark theme").clicked {
+                                    set_theme(Theme::Dark);
+                                }
+                                if button_primary("Light theme").clicked {
+                                    set_theme(Theme::Light);
+                                }
+                            });
+                        });
+                        scroll_vertical(|| {
+                            let mut l = List::column();
+                            l.cross_axis_alignment = CrossAxisAlignment::Stretch;
+                            l.show(|| {
+                                let companies_open = use_state(|| false);
+                                Self::explore_item(0, "Companies".to_string(), || {
+                                    companies_open.modify(|x| !x);
                                 });
-                            }
+                                if self.gui.companies.changed && button_primary("Save").clicked {
+                                    self.gui.companies.save();
+                                }
+                                if companies_open.get() {
+                                    for (i, comp) in self.gui.companies.companies.iter().enumerate()
+                                    {
+                                        Self::explore_item(4, comp.name.to_string(), || {
+                                            self.gui.inspected = Inspected::Company(i);
+                                        });
+                                    }
+                                }
+                            });
                         });
                     });
                 });
@@ -84,41 +108,52 @@ impl State {
         resizebar_vert(&mut off, false);
     }
 
+    fn explore_item(indent: usize, name: String, on_click: impl FnOnce()) {
+        let mut p = Pad::ZERO;
+        p.left = indent as f32 * 4.0;
+        p.top = 4.0;
+        p.show(|| {
+            if button_secondary(name).clicked {
+                on_click();
+            }
+        });
+    }
+
     fn model_properties(&mut self) {
         let mut l = List::column();
         l.main_axis_alignment = MainAxisAlignment::End;
         l.cross_axis_alignment = CrossAxisAlignment::Stretch;
         l.show(|| {
-            colored_box_container(Color::GRAY, || {
+            colored_box_container(background(), || {
                 column(|| {
-                    label("Model properties");
+                    labelc(on_background(), "Model properties");
                     match &self.gui.shown {
                         Shown::None => {
-                            label("No model selected");
+                            labelc(on_background(), "No model selected");
                         }
                         Shown::Error(e) => {
-                            label(e.clone());
+                            labelc(on_background(), e.clone());
                         }
                         Shown::Model((_, props)) => {
                             row(|| {
                                 column(|| {
-                                    label("Vertices");
-                                    label("Triangles");
-                                    label("Materials");
-                                    label("Textures");
-                                    label("Draw calls");
+                                    labelc(on_background(), "Vertices");
+                                    labelc(on_background(), "Triangles");
+                                    labelc(on_background(), "Materials");
+                                    labelc(on_background(), "Textures");
+                                    labelc(on_background(), "Draw calls");
                                 });
                                 column(|| {
-                                    label(format!("{}", props.n_vertices));
-                                    label(format!("{}", props.n_triangles));
-                                    label(format!("{}", props.n_materials));
-                                    label(format!("{}", props.n_textures));
-                                    label(format!("{}", props.n_draw_calls));
+                                    labelc(on_background(), format!("{}", props.n_vertices));
+                                    labelc(on_background(), format!("{}", props.n_triangles));
+                                    labelc(on_background(), format!("{}", props.n_materials));
+                                    labelc(on_background(), format!("{}", props.n_textures));
+                                    labelc(on_background(), format!("{}", props.n_draw_calls));
                                 });
                             });
                         }
                         Shown::Sprite(_sprite) => {
-                            label("Sprite");
+                            labelc(on_background(), "Sprite");
                         }
                     }
                 });
@@ -130,181 +165,206 @@ impl State {
         match self.gui.inspected {
             Inspected::None => {}
             Inspected::Company(i) => {
-                let mut off = use_state(|| 350.0);
-                resizebar_vert(&mut off, true);
-                constrained(
-                    Constraints::loose(Vec2::new(off.get(), f32::INFINITY)),
-                    || {
-                        colored_box_container(Color::GRAY, || {
-                            CountGrid::col(2)
-                                .main_axis_align_items(MainAxisAlignItems::Center)
-                                .show(|| {
-                                    let comp = &mut self.gui.companies.companies[i];
+                properties_container(|| {
+                    let comp = &mut self.gui.companies.companies[i];
 
-                                    let label = |name: &str| {
-                                        pad(Pad::all(3.0), || {
-                                            label(name.to_string());
-                                        });
-                                    };
-
-                                    label("Name");
-                                    text_inp(&mut comp.name);
-
-                                    label("Kind");
-                                    let mut selected = match comp.kind {
-                                        CompanyKind::Store => 0,
-                                        CompanyKind::Factory { .. } => 1,
-                                        CompanyKind::Network => 2,
-                                    };
-
-                                    if combo_box(
-                                        &mut selected,
-                                        &["Store", "Factory", "Network"],
-                                        150.0,
-                                    ) {
-                                        match selected {
-                                            0 => comp.kind = CompanyKind::Store,
-                                            1 => comp.kind = CompanyKind::Factory { n_trucks: 1 },
-                                            2 => comp.kind = CompanyKind::Network,
-                                            _ => unreachable!(),
-                                        }
-                                    }
-
-                                    label("Building generator");
-                                    let mut selected = match comp.bgen {
-                                        BuildingGen::House => unreachable!(),
-                                        BuildingGen::Farm => 0,
-                                        BuildingGen::CenteredDoor { .. } => 1,
-                                        BuildingGen::NoWalkway { .. } => 2,
-                                    };
-
-                                    if combo_box(
-                                        &mut selected,
-                                        &["Farm", "Centered door", "No walkway"],
-                                        150.0,
-                                    ) {
-                                        match selected {
-                                            0 => comp.bgen = BuildingGen::Farm,
-                                            1 => {
-                                                comp.bgen = BuildingGen::CenteredDoor {
-                                                    vertical_factor: 1.0,
-                                                }
-                                            }
-                                            2 => {
-                                                comp.bgen = BuildingGen::NoWalkway {
-                                                    door_pos: geom::Vec2::ZERO,
-                                                }
-                                            }
-                                            _ => unreachable!(),
-                                        }
-                                    }
-
-                                    label("Recipe");
-                                    label(" ");
-
-                                    let recipe = &mut comp.recipe;
-                                    label("complexity");
-                                    drag_value(&mut recipe.complexity);
-                                    label("storage_multiplier");
-                                    drag_value(&mut recipe.storage_multiplier);
-                                    label("consumption");
-                                    label(" ");
-
-                                    for (name, amount) in recipe.consumption.iter_mut() {
-                                        label(name);
-                                        drag_value(amount);
-                                    }
-
-                                    label("production");
-                                    label(" ");
-                                    for (name, amount) in recipe.production.iter_mut() {
-                                        label(name);
-                                        drag_value(amount);
-                                    }
-
-                                    label("n_workers");
-                                    drag_value(&mut comp.n_workers);
-
-                                    label("size");
-                                    drag_value(&mut comp.size);
-
-                                    label("asset_location");
-                                    text_inp(&mut comp.asset_location);
-
-                                    label("price");
-                                    drag_value(&mut comp.price);
-
-                                    label("zone");
-                                    let mut v = comp.zone.is_some();
-                                    center_width(|| checkbox_value(&mut v));
-
-                                    if v != comp.zone.is_some() {
-                                        if v {
-                                            comp.zone = Some(Default::default());
-                                        } else {
-                                            comp.zone = None;
-                                        }
-                                    }
-
-                                    if let Some(ref mut z) = comp.zone {
-                                        label("floor");
-                                        text_inp(&mut z.floor);
-
-                                        label("filler");
-                                        text_inp(&mut z.filler);
-
-                                        label("price_per_area");
-                                        drag_value(&mut z.price_per_area);
-                                    }
-                                });
+                    let label = |name: &str| {
+                        pad(Pad::all(3.0), || {
+                            labelc(on_background(), name.to_string());
                         });
-                    },
-                );
+                    };
+
+                    fn dragv(v: &mut impl Draggable) {
+                        Pad::all(5.0).show(|| {
+                            stretch_width(|| {
+                                dragvalue().show(v);
+                            });
+                        });
+                    }
+
+                    label("Name");
+                    text_inp(&mut comp.name);
+
+                    label("Kind");
+                    let mut selected = match comp.kind {
+                        CompanyKind::Store => 0,
+                        CompanyKind::Factory { .. } => 1,
+                        CompanyKind::Network => 2,
+                    };
+
+                    if combo_box(&mut selected, &["Store", "Factory", "Network"], 150.0) {
+                        match selected {
+                            0 => comp.kind = CompanyKind::Store,
+                            1 => comp.kind = CompanyKind::Factory { n_trucks: 1 },
+                            2 => comp.kind = CompanyKind::Network,
+                            _ => unreachable!(),
+                        }
+                    }
+
+                    label("Building generator");
+                    let mut selected = match comp.bgen {
+                        BuildingGen::House => unreachable!(),
+                        BuildingGen::Farm => 0,
+                        BuildingGen::CenteredDoor { .. } => 1,
+                        BuildingGen::NoWalkway { .. } => 2,
+                    };
+
+                    if combo_box(
+                        &mut selected,
+                        &["Farm", "Centered door", "No walkway"],
+                        150.0,
+                    ) {
+                        match selected {
+                            0 => comp.bgen = BuildingGen::Farm,
+                            1 => {
+                                comp.bgen = BuildingGen::CenteredDoor {
+                                    vertical_factor: 1.0,
+                                }
+                            }
+                            2 => {
+                                comp.bgen = BuildingGen::NoWalkway {
+                                    door_pos: geom::Vec2::ZERO,
+                                }
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+
+                    label("Recipe");
+                    label(" ");
+
+                    let recipe = &mut comp.recipe;
+
+                    label("complexity");
+                    dragv(&mut recipe.complexity);
+
+                    label("storage_multiplier");
+                    dragv(&mut recipe.storage_multiplier);
+
+                    label("consumption");
+                    label(" ");
+
+                    for (name, amount) in recipe.consumption.iter_mut() {
+                        label(name);
+                        dragv(amount);
+                    }
+
+                    label("production");
+                    label(" ");
+                    for (name, amount) in recipe.production.iter_mut() {
+                        label(name);
+                        dragv(amount);
+                    }
+
+                    label("n_workers");
+                    dragv(&mut comp.n_workers);
+
+                    label("size");
+                    dragv(&mut comp.size);
+
+                    label("asset_location");
+                    text_inp(&mut comp.asset_location);
+
+                    label("price");
+                    dragv(&mut comp.price);
+
+                    label("zone");
+                    let mut v = comp.zone.is_some();
+                    center_width(|| checkbox_value(&mut v));
+
+                    if v != comp.zone.is_some() {
+                        if v {
+                            comp.zone = Some(Default::default());
+                        } else {
+                            comp.zone = None;
+                        }
+                    }
+
+                    if let Some(ref mut z) = comp.zone {
+                        label("floor");
+                        text_inp(&mut z.floor);
+
+                        label("filler");
+                        text_inp(&mut z.filler);
+
+                        label("price_per_area");
+                        dragv(&mut z.price_per_area);
+                    }
+                });
             }
         }
     }
 }
 
+fn properties_container(children: impl FnOnce()) {
+    let mut off = use_state(|| 350.0);
+    resizebar_vert(&mut off, true);
+    constrained(
+        Constraints::loose(Vec2::new(off.get(), f32::INFINITY)),
+        || {
+            colored_box_container(background(), || {
+                align(Alignment::TOP_CENTER, || {
+                    Pad::balanced(5.0, 20.0).show(|| {
+                        RoundRect::new(10.0)
+                            .color(secondary_container())
+                            .show_children(|| {
+                                Pad::all(8.0).show(|| {
+                                    CountGrid::col(2)
+                                        .main_axis_size(MainAxisSize::Min)
+                                        .main_axis_align_items(MainAxisAlignItems::Center)
+                                        .show(children);
+                                });
+                            });
+                    });
+                });
+            });
+        },
+    );
+}
+
 /// A horizontal resize bar.
 pub fn resizebar_vert(off: &mut Response<StateResponse<f32>>, scrollbar_on_left_side: bool) {
-    colored_box_container(Color::GRAY.adjust(0.5), || {
-        constrained(Constraints::tight(Vec2::new(5.0, f32::INFINITY)), || {
-            let last_val = use_state(|| None);
-            let mut hovered = false;
-            let d = draggable(|| {
-                hovered = is_hovered();
+    colored_box_container(outline_variant(), || {
+        let last_val = use_state(|| None);
+        let mut hovered = false;
+        let d = yakui::draggable(|| {
+            constrained(Constraints::tight(Vec2::new(5.0, f32::INFINITY)), || {
+                hovered = *is_hovered();
+            });
+        })
+        .dragging;
+        let delta = d
+            .map(|v| {
+                let delta = v.current.x - last_val.get().unwrap_or(v.current.x);
+                last_val.set(Some(v.current.x));
+                delta
             })
-            .dragging;
-            let delta = d
-                .map(|v| {
-                    let delta = v.current.x - last_val.get().unwrap_or(v.current.x);
-                    last_val.set(Some(v.current.x));
-                    delta
-                })
-                .unwrap_or_else(|| {
-                    last_val.set(None);
-                    0.0
-                });
-            off.modify(|v| {
-                if scrollbar_on_left_side {
-                    v - delta
-                } else {
-                    v + delta
-                }
-                .clamp(100.0, 600.0)
+            .unwrap_or_else(|| {
+                last_val.set(None);
+                0.0
             });
+        off.modify(|v| {
+            if scrollbar_on_left_side {
+                v - delta
+            } else {
+                v + delta
+            }
+            .clamp(100.0, 600.0)
+        });
 
-            let should_show_mouse_icon = d.is_some() || hovered;
-            use_changed(should_show_mouse_icon, || {
-                set_colresize_icon(should_show_mouse_icon);
-            });
+        let should_show_mouse_icon = d.is_some() || hovered;
+        use_changed(should_show_mouse_icon, || {
+            set_colresize_icon(should_show_mouse_icon);
         });
     });
 }
 
 fn text_inp(v: &mut String) {
     center(|| {
-        if let Some(x) = textbox(v.clone()).into_inner().text {
+        let mut t = TextBox::new(v.clone());
+        t.fill = Some(secondary());
+        t.style.color = on_secondary();
+        if let Some(x) = t.show().into_inner().text {
             *v = x;
         }
     });

@@ -1,9 +1,10 @@
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
 use yakui_core::widget::{EventContext, Widget};
+use yakui_core::Response;
 use yakui_widgets::util::widget;
 
-pub fn is_hovered() -> bool {
-    *widget::<IsHovered>(())
+pub fn is_hovered() -> Response<bool> {
+    widget::<IsHovered>(())
 }
 
 #[derive(Debug)]
