@@ -1,4 +1,5 @@
 use yakui_core::geometry::{Color, Constraints, Vec2};
+use yakui_core::paint::PaintRect;
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
 use yakui_core::Response;
 use yakui_widgets::shapes;
@@ -55,6 +56,14 @@ impl RoundRect {
     }
 }
 
+pub fn round_rect(
+    radius: f32,
+    color: Color,
+    children: impl FnOnce(),
+) -> Response<RoundRectResponse> {
+    RoundRect::new(radius).color(color).show_children(children)
+}
+
 #[derive(Debug)]
 pub struct RoundRectWidget {
     props: RoundRect,
@@ -94,17 +103,25 @@ impl Widget for RoundRectWidget {
 
         let thickness = self.props.outline_thickness;
 
-        let mut outer_rect = shapes::RoundedRectangle::new(layout_node.rect, self.props.radius);
-        outer_rect.color = self.props.outline;
-        outer_rect.add(ctx.paint);
+        if thickness > 0.0 {
+            let mut outer_rect = shapes::RoundedRectangle::new(layout_node.rect, self.props.radius);
+            outer_rect.color = self.props.outline;
+            outer_rect.add(ctx.paint);
+        }
 
         let mut inner_rect = layout_node.rect;
         inner_rect.set_size(inner_rect.size() - Vec2::splat(thickness * 2.0));
         inner_rect.set_pos(inner_rect.pos() + Vec2::splat(thickness));
 
-        let mut inner_rect = shapes::RoundedRectangle::new(inner_rect, self.props.radius);
-        inner_rect.color = self.props.color;
-        inner_rect.add(ctx.paint);
+        if self.props.radius > 0.0 {
+            let mut inner_rect = shapes::RoundedRectangle::new(inner_rect, self.props.radius);
+            inner_rect.color = self.props.color;
+            inner_rect.add(ctx.paint);
+        } else {
+            let mut inner_rect = PaintRect::new(inner_rect);
+            inner_rect.color = self.props.color;
+            inner_rect.add(ctx.paint);
+        }
 
         for &child in &node.children {
             ctx.paint(child);

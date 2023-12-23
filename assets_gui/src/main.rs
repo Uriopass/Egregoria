@@ -41,7 +41,7 @@ impl engine::framework::State for State {
 
         let mut gui = Gui::new();
 
-        gui.inspected = Inspected::Company(3);
+        gui.inspected = Inspected::Company(1);
 
         Self {
             camera,

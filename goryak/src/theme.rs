@@ -215,8 +215,8 @@ impl Themer {
         let parsed_schemes: ParsedSchemes = root.schemes.into();
 
         Self {
-            cur_colors: parsed_schemes.light.clone(),
-            cur_theme: Theme::Light,
+            cur_colors: parsed_schemes.dark.clone(),
+            cur_theme: Theme::Dark,
             palettes: parsed_palettes,
             schemes: parsed_schemes,
         }

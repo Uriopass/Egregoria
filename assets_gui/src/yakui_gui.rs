@@ -1,3 +1,4 @@
+use yakui::shapes::RoundedRectangle;
 use yakui::widgets::{List, Pad, StateResponse, TextBox};
 use yakui::{
     align, center, colored_box_container, column, constrained, pad, row, use_state, Alignment,
@@ -11,9 +12,11 @@ use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatc
 use geom::Matrix4;
 use goryak::{
     background, button_primary, center_width, checkbox_value, combo_box, dragvalue, icon,
-    interact_box, is_hovered, labelc, on_background, on_secondary, on_surface, outline_variant,
+    interact_box, is_hovered, labelc, on_background, on_primary_container, on_secondary,
+    on_secondary_container, on_surface, outline, outline_variant, primary_container, round_rect,
     scroll_vertical, secondary, secondary_container, set_theme, stretch_width, surface,
-    surface_variant, use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
+    surface_variant, tertiary, use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect,
+    Theme,
 };
 
 use crate::companies::Companies;
@@ -87,6 +90,7 @@ impl State {
                                 let companies_open = use_state(|| false);
                                 Self::explore_item(
                                     0,
+                                    false,
                                     "Companies".to_string(),
                                     Some(companies_open.get()),
                                     || {
@@ -99,9 +103,15 @@ impl State {
                                 if companies_open.get() {
                                     for (i, comp) in self.gui.companies.companies.iter().enumerate()
                                     {
-                                        Self::explore_item(4, comp.name.to_string(), None, || {
-                                            self.gui.inspected = Inspected::Company(i);
-                                        });
+                                        Self::explore_item(
+                                            4,
+                                            Inspected::Company(i) == self.gui.inspected,
+                                            comp.name.to_string(),
+                                            None,
+                                            || {
+                                                self.gui.inspected = Inspected::Company(i);
+                                            },
+                                        );
                                     }
                                 }
                             });
@@ -113,24 +123,44 @@ impl State {
         resizebar_vert(&mut off, false);
     }
 
-    fn explore_item(indent: usize, name: String, folder: Option<bool>, on_click: impl FnOnce()) {
-        let r = interact_box(surface(), surface_variant(), surface_variant(), || {
-            let mut p = Pad::ZERO;
-            p.left = indent as f32 * 4.0 + if folder.is_none() { 12.0 } else { 0.0 };
-            p.top = 4.0;
-            p.bottom = 4.0;
-            p.show(|| {
-                let mut l = List::row();
-                l.cross_axis_alignment = CrossAxisAlignment::Center;
-                l.show(|| {
-                    if let Some(v) = folder {
-                        let triangle = if v { "caret-down" } else { "caret-right" };
-                        icon(on_surface(), triangle);
-                    }
-                    labelc(on_surface(), name);
+    fn explore_item(
+        indent: usize,
+        selected: bool,
+        name: String,
+        folder: Option<bool>,
+        on_click: impl FnOnce(),
+    ) {
+        let r = interact_box(
+            if selected {
+                surface_variant()
+            } else {
+                surface()
+            },
+            surface_variant(),
+            surface_variant(),
+            || {
+                let mut p = Pad::ZERO;
+                p.left = 4.0;
+                p.show(|| {
+                    let mut l = List::row();
+                    l.cross_axis_alignment = CrossAxisAlignment::Center;
+                    l.show(|| {
+                        RoundRect::new(0.0)
+                            .color(surface_variant())
+                            .min_size(Vec2::new(
+                                indent as f32 * 4.0 + if folder.is_none() { 12.0 } else { 0.0 },
+                                1.0,
+                            ))
+                            .show();
+                        if let Some(v) = folder {
+                            let triangle = if v { "caret-down" } else { "caret-right" };
+                            icon(on_surface(), triangle);
+                        }
+                        labelc(on_surface(), name);
+                    });
                 });
-            });
-        });
+            },
+        );
         if r.just_clicked {
             on_click();
         }
@@ -142,37 +172,59 @@ impl State {
         l.cross_axis_alignment = CrossAxisAlignment::Stretch;
         l.show(|| {
             colored_box_container(background(), || {
-                column(|| {
-                    labelc(on_background(), "Model properties");
-                    match &self.gui.shown {
-                        Shown::None => {
-                            labelc(on_background(), "No model selected");
-                        }
-                        Shown::Error(e) => {
-                            labelc(on_background(), e.clone());
-                        }
-                        Shown::Model((_, props)) => {
-                            row(|| {
-                                column(|| {
-                                    labelc(on_background(), "Vertices");
-                                    labelc(on_background(), "Triangles");
-                                    labelc(on_background(), "Materials");
-                                    labelc(on_background(), "Textures");
-                                    labelc(on_background(), "Draw calls");
-                                });
-                                column(|| {
-                                    labelc(on_background(), format!("{}", props.n_vertices));
-                                    labelc(on_background(), format!("{}", props.n_triangles));
-                                    labelc(on_background(), format!("{}", props.n_materials));
-                                    labelc(on_background(), format!("{}", props.n_textures));
-                                    labelc(on_background(), format!("{}", props.n_draw_calls));
-                                });
+                Pad::all(8.0).show(|| {
+                    round_rect(10.0, secondary_container(), || {
+                        Pad::all(5.0).show(|| {
+                            let tc = on_secondary_container(); // text color
+                            column(|| {
+                                labelc(tc, "Model properties");
+                                match &self.gui.shown {
+                                    Shown::None => {
+                                        labelc(tc, "No model selected");
+                                    }
+                                    Shown::Error(e) => {
+                                        labelc(tc, e.clone());
+                                    }
+                                    Shown::Model((_, props)) => {
+                                        row(|| {
+                                            column(|| {
+                                                labelc(tc, "Vertices");
+                                                labelc(tc, "Triangles");
+                                                labelc(tc, "Materials");
+                                                labelc(tc, "Textures");
+                                                labelc(tc, "Draw calls");
+                                            });
+                                            column(|| {
+                                                labelc(
+                                                    on_background(),
+                                                    format!("{}", props.n_vertices),
+                                                );
+                                                labelc(
+                                                    on_background(),
+                                                    format!("{}", props.n_triangles),
+                                                );
+                                                labelc(
+                                                    on_background(),
+                                                    format!("{}", props.n_materials),
+                                                );
+                                                labelc(
+                                                    on_background(),
+                                                    format!("{}", props.n_textures),
+                                                );
+                                                labelc(
+                                                    on_background(),
+                                                    format!("{}", props.n_draw_calls),
+                                                );
+                                            });
+                                        });
+                                    }
+                                    Shown::Sprite(_sprite) => {
+                                        labelc(tc, "Sprite");
+                                    }
+                                }
                             });
-                        }
-                        Shown::Sprite(_sprite) => {
-                            labelc(on_background(), "Sprite");
-                        }
-                    }
+                        });
+                    });
                 });
             });
         });
