@@ -1,6 +1,7 @@
 use crate::{GfxContext, GuiRenderContext};
 use wgpu::TextureFormat;
 use winit::window::Window;
+use yakui::font::{Font, FontSettings, Fonts};
 use yakui::Yakui;
 
 pub struct YakuiWrapper {
@@ -14,6 +15,15 @@ pub struct YakuiWrapper {
 impl YakuiWrapper {
     pub fn new(gfx: &GfxContext, el: &Window) -> Self {
         let yakui = Yakui::new();
+
+        let fonts = yakui.dom().get_global_or_init(Fonts::default);
+        let font = Font::from_bytes(
+            include_bytes!("../../assets/font_awesome_solid_900.otf").as_slice(),
+            FontSettings::default(),
+        )
+        .unwrap();
+
+        fonts.add(font, Some("icons"));
 
         let platform = yakui_winit::YakuiWinit::new(el);
 

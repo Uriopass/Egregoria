@@ -11,9 +11,9 @@ use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatc
 use geom::Matrix4;
 use goryak::{
     background, button_primary, button_secondary, center_width, checkbox_value, combo_box,
-    debug_constraints, debug_size, dragvalue, is_hovered, labelc, on_background, on_secondary,
-    outline_variant, scroll_vertical, secondary, secondary_container, set_theme, stretch_width,
-    use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
+    debug_constraints, debug_size, dragvalue, icon, is_hovered, labelc, on_background,
+    on_secondary, outline_variant, scroll_vertical, secondary, secondary_container, set_theme,
+    stretch_width, use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
 };
 
 use crate::companies::Companies;
@@ -85,16 +85,21 @@ impl State {
                             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                             l.show(|| {
                                 let companies_open = use_state(|| false);
-                                Self::explore_item(0, "Companies".to_string(), || {
-                                    companies_open.modify(|x| !x);
-                                });
+                                Self::explore_item(
+                                    0,
+                                    "Companies".to_string(),
+                                    Some(companies_open.get()),
+                                    || {
+                                        companies_open.modify(|x| !x);
+                                    },
+                                );
                                 if self.gui.companies.changed && button_primary("Save").clicked {
                                     self.gui.companies.save();
                                 }
                                 if companies_open.get() {
                                     for (i, comp) in self.gui.companies.companies.iter().enumerate()
                                     {
-                                        Self::explore_item(4, comp.name.to_string(), || {
+                                        Self::explore_item(4, comp.name.to_string(), None, || {
                                             self.gui.inspected = Inspected::Company(i);
                                         });
                                     }
@@ -108,14 +113,22 @@ impl State {
         resizebar_vert(&mut off, false);
     }
 
-    fn explore_item(indent: usize, name: String, on_click: impl FnOnce()) {
+    fn explore_item(indent: usize, name: String, folder: Option<bool>, on_click: impl FnOnce()) {
         let mut p = Pad::ZERO;
-        p.left = indent as f32 * 4.0;
+        p.left = indent as f32 * 4.0 + if folder.is_none() { 12.0 } else { 0.0 };
         p.top = 4.0;
         p.show(|| {
-            if button_secondary(name).clicked {
-                on_click();
-            }
+            let mut l = List::row();
+            l.cross_axis_alignment = CrossAxisAlignment::Center;
+            l.show(|| {
+                if let Some(v) = folder {
+                    let triangle = if v { "caret-down" } else { "caret-right" };
+                    icon(on_background(), triangle);
+                }
+                if button_secondary(name).clicked {
+                    on_click();
+                }
+            });
         });
     }
 

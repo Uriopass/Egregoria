@@ -4,9 +4,12 @@ use std::panic::Location;
 use yakui_core::geometry::{Color, Constraints, Vec2};
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
 use yakui_core::{Response, WidgetId};
+use yakui_widgets::font::FontName;
 use yakui_widgets::util::widget;
 use yakui_widgets::widgets::{Button, ButtonResponse, Text};
+use yakui_widgets::{center, constrained, max_width};
 
+use crate::icon::ICON_NAME_MAPPING;
 use crate::{on_primary, on_secondary, primary, secondary, Scrollable, ScrollableResponse};
 
 pub fn scroll_vertical(children: impl FnOnce()) -> Response<ScrollableResponse> {
@@ -25,8 +28,8 @@ pub fn use_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
     }
 }
 
-pub fn labelc(c: Color, text: impl Into<String>) {
-    let mut t = Text::label(Cow::Owned(text.into()));
+pub fn labelc(c: Color, text: impl Into<Cow<'static, str>>) {
+    let mut t = Text::label(text.into());
     t.style.color = c;
     t.show();
 }
