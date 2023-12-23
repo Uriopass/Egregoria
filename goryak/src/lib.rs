@@ -1,6 +1,6 @@
 mod combo_box;
 mod count_grid;
-mod decoration;
+mod divider;
 mod dragvalue;
 mod hovered;
 mod icon;
@@ -13,7 +13,7 @@ mod util;
 
 pub use combo_box::*;
 pub use count_grid::*;
-pub use decoration::*;
+pub use divider::*;
 pub use dragvalue::*;
 pub use hovered::*;
 pub use icon::icon;

@@ -1,4 +1,3 @@
-use yakui::shapes::RoundedRectangle;
 use yakui::widgets::{List, Pad, StateResponse, TextBox};
 use yakui::{
     align, center, colored_box_container, column, constrained, pad, row, use_state, Alignment,
@@ -11,12 +10,11 @@ use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatch};
 use geom::Matrix4;
 use goryak::{
-    background, button_primary, center_width, checkbox_value, combo_box, dragvalue, icon,
-    interact_box, is_hovered, labelc, on_background, on_primary_container, on_secondary,
-    on_secondary_container, on_surface, outline, outline_variant, primary_container, round_rect,
-    scroll_vertical, secondary, secondary_container, set_theme, stretch_width, surface,
-    surface_variant, tertiary, use_changed, CountGrid, Draggable, MainAxisAlignItems, RoundRect,
-    Theme,
+    background, button_primary, center_width, checkbox_value, combo_box, divider, dragvalue, icon,
+    interact_box_radius, is_hovered, labelc, on_background, on_secondary, on_secondary_container,
+    on_surface, outline, outline_variant, round_rect, scroll_vertical, secondary,
+    secondary_container, set_theme, stretch_width, surface, surface_variant, use_changed,
+    CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
 };
 
 use crate::companies::Companies;
@@ -130,7 +128,8 @@ impl State {
         folder: Option<bool>,
         on_click: impl FnOnce(),
     ) {
-        let r = interact_box(
+        divider(outline_variant(), 3.0, 1.0);
+        let r = interact_box_radius(
             if selected {
                 surface_variant()
             } else {
@@ -138,6 +137,7 @@ impl State {
             },
             surface_variant(),
             surface_variant(),
+            0.0,
             || {
                 let mut p = Pad::ZERO;
                 p.left = 4.0;
@@ -161,7 +161,7 @@ impl State {
                 });
             },
         );
-        if r.just_clicked {
+        if r.clicked {
             on_click();
         }
     }

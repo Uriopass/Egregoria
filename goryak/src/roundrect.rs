@@ -114,7 +114,8 @@ impl Widget for RoundRectWidget {
         inner_rect.set_pos(inner_rect.pos() + Vec2::splat(thickness));
 
         if self.props.radius > 0.0 {
-            let mut inner_rect = shapes::RoundedRectangle::new(inner_rect, self.props.radius);
+            let mut inner_rect =
+                shapes::RoundedRectangle::new(inner_rect, self.props.radius - thickness);
             inner_rect.color = self.props.color;
             inner_rect.add(ctx.paint);
         } else {

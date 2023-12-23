@@ -5,6 +5,7 @@ use yakui_core::paint::PaintRect;
 use yakui_core::widget::{EventContext, LayoutContext, PaintContext, Widget};
 use yakui_core::Response;
 use yakui_widgets::shapes::RoundedRectangle;
+use yakui_widgets::widgets::{Pad, PadWidget};
 
 /**
 A colored box that can contain children.
@@ -15,8 +16,9 @@ Responds with [InteractBoxResponse].
 pub struct InteractBox {
     pub color: Color,
     pub hover_color: Color,
-    pub click_color: Color,
+    pub active_color: Color,
     pub border_radius: f32,
+    pub padding: Pad,
 }
 
 impl InteractBox {
@@ -24,8 +26,9 @@ impl InteractBox {
         Self {
             color: Color::WHITE,
             hover_color: Color::WHITE,
-            click_color: Color::WHITE,
+            active_color: Color::WHITE,
             border_radius: 0.0,
+            padding: Pad::ZERO,
         }
     }
 
@@ -41,15 +44,16 @@ impl InteractBox {
 pub fn interact_box_radius(
     color: Color,
     hover_color: Color,
-    click_color: Color,
+    active_color: Color,
     border_radius: f32,
     children: impl FnOnce(),
 ) -> Response<InteractBoxResponse> {
     InteractBox {
         color,
         hover_color,
-        click_color,
+        active_color,
         border_radius,
+        padding: Pad::ZERO,
     }
     .show_children(children)
 }
@@ -57,14 +61,15 @@ pub fn interact_box_radius(
 pub fn interact_box(
     color: Color,
     hover_color: Color,
-    click_color: Color,
+    active_color: Color,
     children: impl FnOnce(),
 ) -> Response<InteractBoxResponse> {
     InteractBox {
         color,
         hover_color,
-        click_color,
+        active_color,
         border_radius: 0.0,
+        padding: Pad::ZERO,
     }
     .show_children(children)
 }
@@ -77,10 +82,10 @@ pub struct InteractBoxWidget {
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct InteractBoxResponse {
-    pub hovered: bool,
-    pub mousedown: bool,
-    pub just_hovered: bool,
-    pub just_clicked: bool,
+    pub hovering: bool,
+    pub mouse_down: bool,
+    pub mouse_entered: bool,
+    pub clicked: bool,
 }
 
 impl Widget for InteractBoxWidget {
@@ -97,8 +102,8 @@ impl Widget for InteractBoxWidget {
     fn update(&mut self, props: Self::Props<'_>) -> Self::Response {
         self.props = props;
         let resp = self.resp;
-        self.resp.just_hovered = false;
-        self.resp.just_clicked = false;
+        self.resp.mouse_entered = false;
+        self.resp.clicked = false;
         resp
     }
 
@@ -106,9 +111,9 @@ impl Widget for InteractBoxWidget {
         let node = ctx.dom.get_current();
         let layout_node = ctx.layout.get(ctx.dom.current()).unwrap();
 
-        let curcolor = if self.resp.mousedown {
-            self.props.click_color
-        } else if self.resp.hovered {
+        let curcolor = if self.resp.mouse_down {
+            self.props.active_color
+        } else if self.resp.hovering {
             self.props.hover_color
         } else {
             self.props.color
@@ -133,15 +138,21 @@ impl Widget for InteractBoxWidget {
         EventInterest::MOUSE_ALL
     }
 
+    fn layout(&self, ctx: LayoutContext<'_>, constraints: Constraints) -> Vec2 {
+        let mut p = PadWidget::new();
+        p.update(self.props.padding);
+        p.layout(ctx, constraints)
+    }
+
     fn event(&mut self, _: EventContext<'_>, event: &WidgetEvent) -> EventResponse {
         match event {
             WidgetEvent::MouseEnter => {
-                self.resp.just_hovered = true;
-                self.resp.hovered = true;
+                self.resp.mouse_entered = true;
+                self.resp.hovering = true;
                 EventResponse::Bubble
             }
             WidgetEvent::MouseLeave => {
-                self.resp.hovered = false;
+                self.resp.hovering = false;
                 EventResponse::Bubble
             }
             WidgetEvent::MouseButtonChanged {
@@ -151,10 +162,10 @@ impl Widget for InteractBoxWidget {
                 ..
             } => {
                 if *down && *inside {
-                    self.resp.just_clicked = true;
-                    self.resp.mousedown = true;
+                    self.resp.clicked = true;
+                    self.resp.mouse_down = true;
                 } else {
-                    self.resp.mousedown = false;
+                    self.resp.mouse_down = false;
                 }
                 EventResponse::Bubble
             }
