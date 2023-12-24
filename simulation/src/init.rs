@@ -9,7 +9,6 @@ use crate::physics::coworld_synchronize;
 use crate::souls::freight_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
-use crate::transportation::bird_mob::bird_decision_system;
 use crate::transportation::pedestrian_decision_system;
 use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_system};
 use crate::transportation::testing_vehicles::{random_vehicles_update, RandomVehicles};
@@ -19,6 +18,7 @@ use crate::transportation::train::{
 use crate::utils::resources::Resources;
 use crate::utils::time::Tick;
 use crate::wildlife::add_birds_randomly;
+use crate::wildlife::bird::bird_decision_system;
 use crate::world::{CompanyEnt, FreightStationEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
 use crate::World;
 use crate::{

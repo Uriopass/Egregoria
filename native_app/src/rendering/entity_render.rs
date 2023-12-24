@@ -97,11 +97,10 @@ impl InstancedRender {
 
         for bird_ent in sim.world().birds.values() {
             self.birds.instances.push(MeshInstance {
-                pos: bird_ent.trans.position.up(if bird_ent.it.is_simple() {
-                    0.5 + 0.4 * bird_ent.bird_mob.fly_anim.cos()
-                } else {
-                    0.0
-                }),
+                pos: bird_ent
+                    .trans
+                    .position
+                    .up(0.5 + 0.4 * bird_ent.bird_mob.fly_anim.cos()),
                 dir: bird_ent.trans.dir.xy().z0(),
                 tint: LinearColor::WHITE,
             });

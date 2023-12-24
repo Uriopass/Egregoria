@@ -1,7 +1,6 @@
 use crate::map::BuildingID;
 use serde::{Deserialize, Serialize};
 
-pub mod bird_mob;
 pub mod pedestrian;
 pub mod road;
 pub mod testing_vehicles;
