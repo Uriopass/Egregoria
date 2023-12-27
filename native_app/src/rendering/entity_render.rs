@@ -33,7 +33,7 @@ impl InstancedRender {
             wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb").unwrap()),
             pedestrians: InstancedMeshBuilder::new(load_mesh(gfx, "pedestrian.glb").unwrap()),
-            birds: InstancedMeshBuilder::new(load_mesh(gfx, "bird.glb").unwrap()),
+            birds: InstancedMeshBuilder::new(load_mesh(gfx, "rail_freight_station.glb").unwrap()),
         }
     }
 

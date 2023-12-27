@@ -7,22 +7,23 @@ use crate::utils::time::GameTime;
 use crate::Simulation;
 use crate::World;
 use crate::{BirdEnt, BirdID};
-use common::rand::rand3;
+use common::rand::rand2;
 use egui_inspect::Inspect;
 use geom::angle_lerpxy;
+use geom::AABB;
 use geom::{Transform, Vec3};
 use serde::{Deserialize, Serialize};
 
 pub fn spawn_bird(sim: &mut Simulation, home_pos: Vec3) -> Option<BirdID> {
     profiling::scope!("spawn_bird");
 
-    log::info!("added bird at {}", home_pos);
+    // log::info!("added bird at {}", home_pos);
 
-    let a = BirdMob::new(&mut sim.write::<RandProvider>());
+    let mob = BirdMob::new(&mut sim.write::<RandProvider>());
 
     let id = sim.world.insert(BirdEnt {
         trans: Transform::new(home_pos),
-        bird_mob: a,
+        bird_mob: mob,
         it: Itinerary::simple(vec![Vec3 {
             x: home_pos.x,
             y: home_pos.y,
@@ -38,39 +39,58 @@ pub fn spawn_bird(sim: &mut Simulation, home_pos: Vec3) -> Option<BirdID> {
 pub struct BirdMob {
     pub flying_speed: f32,
     pub fly_anim: f32,
+    pub flock_id: u32,
 }
+
+pub const NUM_FLOCKS: u32 = 10;
 
 impl BirdMob {
     pub(crate) fn new(r: &mut RandProvider) -> Self {
         Self {
             flying_speed: (10.0 + r.next_f32() * 0.4),
             fly_anim: 0.0,
+            flock_id: (NUM_FLOCKS as f32 * r.next_f32()) as u32,
         }
     }
 }
 
 pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
-    profiling::scope!("transportation::animal_decision_system");
-    let ra = &*resources.read();
+    profiling::scope!("wildlife::animal_decision_system");
+    let ra = &*resources.read::<GameTime>();
     let map = &*resources.read::<Map>();
-    let next_dests: Vec<Vec3> = map
-        .buildings()
-        .values()
-        .map(|building| building.door_pos.up(-building.height))
-        // .chain(
-        //     map.terrain
-        //         .trees
-        //         .objects()
-        //         .map(|tree| vec3(tree.1.pos.x, tree.1.pos.y, tree.1.size)),
-        // )
-        .collect();
+
+    let aabb = map.terrain.bounds();
+    let r = &mut RandProvider::new(ra.timestamp as u64);
+
     world.birds
         .values_mut()
         //.par_bridge()
-        .for_each(|human| bird_decision(ra, &mut human.it, &mut human.trans, &mut human.speed, &mut human.bird_mob, &next_dests))
+        .for_each(|bird| bird_decision(ra, &mut bird.it, &mut bird.trans, &mut bird.speed, &mut bird.bird_mob, aabb, r))
 }
 
 const BIRD_WAIT_TIME: f64 = 100.0;
+
+pub fn get_random_bird_pos(aabb: AABB, r1: f32, r2: f32, r3: f32) -> Vec3 {
+    let AABB { ll, ur } = aabb;
+    Vec3 {
+        x: ll.x + (ur.x - ll.x) * r1,
+        y: ll.y + (ur.y - ll.y) * r2,
+        z: 2.0 + 10.0 * r3,
+    }
+}
+
+pub fn get_random_pos_from_center(center: Vec3, radius: f32, r1: f32, r2: f32, r3: f32) -> Vec3 {
+    Vec3 {
+        x: center.x + radius * (r1 - 0.5),
+        y: center.y + radius * (r2 - 0.5),
+        z: 2.0 + 10.0 * r3,
+    }
+}
+
+// amount of time per each flock itinerary
+const FLOCK_IT_PERIOD: f32 = 100000.0;
+// likelihood the bird will stray from the flock itinerary
+const DISTRACTED_PROB: f32 = 0.5;
 
 pub fn bird_decision(
     time: &GameTime,
@@ -78,7 +98,8 @@ pub fn bird_decision(
     trans: &mut Transform,
     kin: &mut Speed,
     bird_mob: &mut BirdMob,
-    next_dests: &Vec<Vec3>,
+    aabb: AABB,
+    r: &mut RandProvider,
 ) {
     let (desired_v, desired_dir) = calc_decision(bird_mob, trans, it);
 
@@ -86,19 +107,41 @@ pub fn bird_decision(
     bird_mob.fly_anim %= 2.0 * std::f32::consts::PI;
     physics(kin, trans, time, desired_v, desired_dir);
 
-    let get_new_itinerary = || {
-        let n2 = rand3(trans.position.y, trans.position.x, time.timestamp as f32);
-        let n1 = rand3(trans.position.x, trans.position.y, time.timestamp as f32);
-        if n1 > 0.5 {
-            Itinerary::simple(vec![next_dests[(next_dests.len() as f32 * n2) as usize]])
-        } else {
-            Itinerary::wait_until(time.timestamp + BIRD_WAIT_TIME)
-        }
-    };
+    // a random nearby location to hang around
+    let random_itinerary = Itinerary::simple(vec![get_random_pos_from_center(
+        trans.position,
+        5.0,
+        r.next_f32(),
+        r.next_f32(),
+        r.next_f32(),
+    )]);
+
+    // every bird in the flock should have the same itinerary during the same flock period
+    let flock_itinerary = Itinerary::simple(vec![get_random_bird_pos(
+        aabb,
+        rand2(
+            bird_mob.flock_id as f32,
+            (time.timestamp as f32 / FLOCK_IT_PERIOD).floor(),
+        ),
+        rand2(
+            (time.timestamp as f32 / FLOCK_IT_PERIOD).floor(),
+            bird_mob.flock_id as f32,
+        ),
+        r.next_f32(),
+    )]);
 
     // choose a random new destination if the current one has been reached
     if it.has_ended(time.timestamp) {
-        *it = get_new_itinerary();
+        if it.is_none_or_wait() {
+            *it = if r.next_f32() < DISTRACTED_PROB {
+                random_itinerary
+            } else {
+                flock_itinerary
+            };
+        } else {
+            // wait a bit before continuing
+            *it = Itinerary::wait_until(time.timestamp + BIRD_WAIT_TIME);
+        }
     }
 }
 
