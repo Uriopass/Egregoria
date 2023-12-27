@@ -19,7 +19,7 @@ impl DemoElement for Spheres {
         let gfx = &mut ctx.gfx;
 
         let mesh = load_mesh(gfx, "sphere.glb").unwrap();
-        let alb = gfx.material(mesh.materials[0].0).albedo.clone();
+        let alb = gfx.material(mesh.lods[0].primitives[0].0).albedo.clone();
 
         let mut meshes = vec![];
 
@@ -30,7 +30,7 @@ impl DemoElement for Spheres {
             for z in 0..N_MET {
                 let mut c = mesh.clone();
 
-                c.materials[0].0 = gfx.register_material(Material::new_raw(
+                c.lods[0].primitives[0].0 = gfx.register_material(Material::new_raw(
                     &gfx.device,
                     alb.clone(),
                     MetallicRoughness {

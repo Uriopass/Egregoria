@@ -1,5 +1,5 @@
 use engine::{Context, MouseButton};
-use geom::{Camera, Matrix4, Radians, Vec2, Vec3};
+use geom::{Camera, Radians, Vec2, Vec3};
 
 pub struct OrbitCamera {
     pub camera: Camera,
@@ -21,11 +21,8 @@ impl OrbitCamera {
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
-        let viewproj = self.camera.build_view_projection_matrix();
-        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
+        ctx.gfx.set_camera(self.camera);
 
-        ctx.gfx.set_proj(viewproj);
-        ctx.gfx.set_inv_proj(inv_viewproj);
         let params = ctx.gfx.render_params.value_mut();
         params.cam_pos = self.camera.eye();
         params.cam_dir = -self.camera.dir();

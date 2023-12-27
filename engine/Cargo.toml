@@ -20,13 +20,12 @@ egui-winit    = { git = "https://github.com/emilk/egui", default-features = fals
 bytemuck      = "1.7.2"
 image         = { version = "0.24.3", default-features = false, features = ["png"] }
 log           = "0.4.11"
-gltf          = { version = "1.2.0", default-features=false, features=["import", "utils", "names"] }
+gltf          = { version = "1.2.0", default-features=false, features=["import", "utils", "names", "extensions", "extras"] }
 itertools     = { version = "0.11.0", default-features = false }
 profiling     = { version = "1.0.1", default-features = false  }
 rayon         = "1.6"
 beul          = "1.0.0"
 slotmapd      = "1.0"
-smallvec      = "1.10.0"
 inline_tweak  = "1.0.8"
 egui-wgpu     = { git = "https://github.com/emilk/egui" }
 cpal          = "0.15.0"

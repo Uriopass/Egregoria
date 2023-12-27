@@ -5,20 +5,21 @@ use yakui::{
 };
 
 use common::descriptions::{BuildingGen, CompanyKind};
-use engine::meshload::MeshProperties;
+use engine::meshload::CPUMesh;
 use engine::wgpu::RenderPass;
-use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, Mesh, SpriteBatch};
+use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, InstancedMesh, Mesh, SpriteBatch};
 use geom::Matrix4;
 use goryak::{
     background, button_primary, center_width, checkbox_value, combo_box, divider, dragvalue, icon,
     interact_box_radius, is_hovered, labelc, on_background, on_secondary, on_secondary_container,
-    on_surface, outline, outline_variant, round_rect, scroll_vertical, secondary,
-    secondary_container, set_theme, stretch_width, surface, surface_variant, use_changed,
-    CountGrid, Draggable, MainAxisAlignItems, RoundRect, Theme,
+    on_surface, outline_variant, round_rect, scroll_vertical, secondary, secondary_container,
+    set_theme, stretch_width, surface, surface_variant, use_changed, CountGrid, Draggable,
+    MainAxisAlignItems, RoundRect, Theme,
 };
 
 use crate::companies::Companies;
-use crate::State;
+use crate::lod::LodGenerateParams;
+use crate::{GUIAction, State};
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub enum Inspected {
@@ -30,7 +31,7 @@ pub enum Inspected {
 pub enum Shown {
     None,
     Error(String),
-    Model((Mesh, MeshProperties)),
+    Model((Mesh, Vec<InstancedMesh>, CPUMesh)),
     Sprite(SpriteBatch),
 }
 
@@ -167,6 +168,89 @@ impl State {
     }
 
     fn model_properties(&mut self) {
+        Self::model_properties_container(|| {
+            let tc = on_secondary_container(); // text color
+            labelc(tc, "Model properties");
+            match self.gui.shown {
+                Shown::None => {
+                    labelc(tc, "No model selected");
+                }
+                Shown::Error(ref e) => {
+                    labelc(tc, e.clone());
+                }
+                Shown::Model((ref mesh, _, ref mut props)) => {
+                    let params = use_state(|| LodGenerateParams {
+                        n_lods: 3,
+                        quality: 0.9,
+                        sloppy: false,
+                    });
+
+                    row(|| {
+                        let mut c = List::column();
+                        c.main_axis_size = MainAxisSize::Min;
+                        c.show(|| {
+                            CountGrid::col(2)
+                                .main_axis_size(MainAxisSize::Min)
+                                .show(|| {
+                                    params.modify(|mut params| {
+                                        labelc(tc, "n_lods");
+                                        dragvalue().min(1.0).max(4.0).show(&mut params.n_lods);
+
+                                        labelc(tc, "quality");
+                                        dragvalue().min(0.0).max(1.0).show(&mut params.quality);
+
+                                        labelc(tc, "sloppy");
+                                        checkbox_value(&mut params.sloppy);
+
+                                        params
+                                    });
+                                });
+                            if button_primary("Generate LODs").clicked {
+                                let asset_path = &props.asset_path;
+
+                                self.actions
+                                    .push(GUIAction::GenerateLOD(asset_path.clone(), params.get()));
+                            }
+                        });
+
+                        let mut lod_details = CountGrid::col(1 + mesh.lods.len());
+                        lod_details.main_axis_size = MainAxisSize::Min;
+                        lod_details.show(|| {
+                            labelc(tc, "");
+                            for (i, _) in mesh.lods.iter().enumerate() {
+                                labelc(tc, format!("LOD{}", i));
+                            }
+
+                            labelc(tc, "Vertices");
+                            for lod in &*mesh.lods {
+                                labelc(tc, format!("{}", lod.n_vertices));
+                            }
+
+                            labelc(tc, "Triangles");
+                            for lod in &*mesh.lods {
+                                labelc(tc, format!("{}", lod.n_indices / 3));
+                            }
+
+                            labelc(tc, "Draw calls");
+                            for lod in &*mesh.lods {
+                                labelc(tc, format!("{}", lod.primitives.len()));
+                            }
+
+                            labelc(tc, "Coverage");
+                            for lod in &*mesh.lods {
+                                labelc(tc, format!("{:.3}", lod.screen_coverage));
+                            }
+                        });
+                    });
+                }
+                Shown::Sprite(ref _sprite) => {
+                    labelc(tc, "Sprite");
+                }
+            }
+        });
+    }
+
+    fn model_properties_container(children: impl FnOnce()) {
         let mut l = List::column();
         l.main_axis_alignment = MainAxisAlignment::End;
         l.cross_axis_alignment = CrossAxisAlignment::Stretch;
@@ -175,54 +259,7 @@ impl State {
                 Pad::all(8.0).show(|| {
                     round_rect(10.0, secondary_container(), || {
                         Pad::all(5.0).show(|| {
-                            let tc = on_secondary_container(); // text color
-                            column(|| {
-                                labelc(tc, "Model properties");
-                                match &self.gui.shown {
-                                    Shown::None => {
-                                        labelc(tc, "No model selected");
-                                    }
-                                    Shown::Error(e) => {
-                                        labelc(tc, e.clone());
-                                    }
-                                    Shown::Model((_, props)) => {
-                                        row(|| {
-                                            column(|| {
-                                                labelc(tc, "Vertices");
-                                                labelc(tc, "Triangles");
-                                                labelc(tc, "Materials");
-                                                labelc(tc, "Textures");
-                                                labelc(tc, "Draw calls");
-                                            });
-                                            column(|| {
-                                                labelc(
-                                                    on_background(),
-                                                    format!("{}", props.n_vertices),
-                                                );
-                                                labelc(
-                                                    on_background(),
-                                                    format!("{}", props.n_triangles),
-                                                );
-                                                labelc(
-                                                    on_background(),
-                                                    format!("{}", props.n_materials),
-                                                );
-                                                labelc(
-                                                    on_background(),
-                                                    format!("{}", props.n_textures),
-                                                );
-                                                labelc(
-                                                    on_background(),
-                                                    format!("{}", props.n_draw_calls),
-                                                );
-                                            });
-                                        });
-                                    }
-                                    Shown::Sprite(_sprite) => {
-                                        labelc(tc, "Sprite");
-                                    }
-                                }
-                            });
+                            column(children);
                         });
                     });
                 });
@@ -443,7 +480,7 @@ impl Drawable for Shown {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         match self {
             Shown::None | Shown::Error(_) => {}
-            Shown::Model((mesh, _)) => mesh.draw(gfx, rp),
+            Shown::Model((_, mesh, _)) => mesh.draw(gfx, rp),
             Shown::Sprite(sprite) => sprite.draw(gfx, rp),
         }
     }
@@ -456,7 +493,7 @@ impl Drawable for Shown {
     ) {
         match self {
             Shown::None | Shown::Error(_) => {}
-            Shown::Model((mesh, _)) => mesh.draw_depth(gfx, rp, shadow_cascade),
+            Shown::Model((_, mesh, _)) => mesh.draw_depth(gfx, rp, shadow_cascade),
             Shown::Sprite(sprite) => sprite.draw_depth(gfx, rp, shadow_cascade),
         }
     }

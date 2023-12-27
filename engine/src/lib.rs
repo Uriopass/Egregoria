@@ -23,6 +23,7 @@ mod texture;
 mod uniform;
 mod vertex_types;
 
+mod meshbuild;
 #[cfg(feature = "yakui")]
 pub mod yakui;
 
@@ -34,6 +35,7 @@ pub use gfx::*;
 pub use input::*;
 pub use lamplights::*;
 pub use material::*;
+pub use meshbuild::*;
 pub use pbr::*;
 pub use perf_counters::*;
 pub use pipelines::*;
@@ -46,5 +48,6 @@ pub use vertex_types::*;
 pub use winit::window::CursorGrabMode;
 pub use winit::window::CursorIcon;
 
+pub use gltf;
 pub use image;
 pub use wgpu;

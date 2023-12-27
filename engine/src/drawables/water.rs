@@ -1,5 +1,6 @@
+use crate::meshbuild::MeshBuilder;
 use crate::{
-    CompiledModule, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, PipelineBuilder, Texture,
+    CompiledModule, Drawable, GfxContext, Mesh, MeshVertex, PipelineBuilder, Texture,
     TextureBuilder, TL,
 };
 use geom::AABB;
@@ -20,26 +21,28 @@ impl Water {
     pub fn new(gfx: &mut GfxContext, bounds: AABB) -> Self {
         let mut mb = MeshBuilder::<false>::new_without_mat();
 
-        mb.vertices.extend_from_slice(&[
-            MeshVertex {
-                position: [bounds.ll.x, bounds.ll.y, -10.0],
-                ..Default::default()
-            },
-            MeshVertex {
-                position: [bounds.ur.x, bounds.ll.y, -10.0],
-                ..Default::default()
-            },
-            MeshVertex {
-                position: [bounds.ur.x, bounds.ur.y, -10.0],
-                ..Default::default()
-            },
-            MeshVertex {
-                position: [bounds.ll.x, bounds.ur.y, -10.0],
-                ..Default::default()
-            },
-        ]);
-
-        mb.indices.extend_from_slice(&[0, 1, 2, 2, 3, 0]);
+        mb.extend(
+            None,
+            &[
+                MeshVertex {
+                    position: [bounds.ll.x, bounds.ll.y, -10.0],
+                    ..Default::default()
+                },
+                MeshVertex {
+                    position: [bounds.ur.x, bounds.ll.y, -10.0],
+                    ..Default::default()
+                },
+                MeshVertex {
+                    position: [bounds.ur.x, bounds.ur.y, -10.0],
+                    ..Default::default()
+                },
+                MeshVertex {
+                    position: [bounds.ll.x, bounds.ur.y, -10.0],
+                    ..Default::default()
+                },
+            ],
+            &[0, 1, 2, 2, 3, 0],
+        );
 
         // unwrap ok: we just added vertices
         let mesh = mb.build(gfx).unwrap();

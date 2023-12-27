@@ -1,8 +1,8 @@
-use super::{Ray3, Vec3};
+use super::{Ray3, Sphere, Vec3};
 use crate::{Intersect3, Shape3, AABB};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct AABB3 {
     pub ll: Vec3,
     pub ur: Vec3,
@@ -68,6 +68,14 @@ impl AABB3 {
     }
 
     #[inline]
+    pub fn union_vec(self, other: Vec3) -> Self {
+        Self {
+            ll: self.ll.min(other),
+            ur: self.ur.max(other),
+        }
+    }
+
+    #[inline]
     pub fn center(&self) -> Vec3 {
         self.ll * 0.5 + self.ur * 0.5
     }
@@ -78,6 +86,13 @@ impl AABB3 {
             ll: self.ll - Vec3::splat(w),
             ur: self.ur + Vec3::splat(w),
         }
+    }
+
+    #[inline]
+    pub fn bounding_sphere(&self) -> Sphere {
+        let center = self.center();
+        let radius = (self.ur - center).mag();
+        Sphere { center, radius }
     }
 
     #[inline(always)]

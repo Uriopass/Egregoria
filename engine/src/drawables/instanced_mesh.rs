@@ -1,4 +1,5 @@
 #![allow(clippy::collapsible_else_if)]
+
 use crate::pbuffer::PBuffer;
 use crate::{Drawable, GfxContext, Mesh, MeshPipeline};
 use geom::{LinearColor, Matrix4, Vec3};
@@ -30,7 +31,7 @@ impl MeshInstance {
 
 pub struct InstancedMeshBuilder<const PERSISTENT: bool> {
     mesh: Mesh,
-    ibuffer: Option<Box<PBuffer>>,
+    ibuffer: PBuffer,
     pub instances: Vec<MeshInstance>,
 }
 
@@ -39,7 +40,7 @@ impl<const PERSISTENT: bool> InstancedMeshBuilder<PERSISTENT> {
         InstancedMeshBuilder {
             mesh,
             instances: Vec::with_capacity(4),
-            ibuffer: PERSISTENT.then(|| Box::new(PBuffer::new(BufferUsages::VERTEX))),
+            ibuffer: PBuffer::new(BufferUsages::VERTEX),
         }
     }
 
@@ -51,9 +52,7 @@ impl<const PERSISTENT: bool> InstancedMeshBuilder<PERSISTENT> {
         let mut temp;
         let ibuffer;
         if PERSISTENT {
-            unsafe {
-                ibuffer = self.ibuffer.as_deref_mut().unwrap_unchecked();
-            }
+            ibuffer = &mut self.ibuffer;
         } else {
             temp = PBuffer::new(BufferUsages::VERTEX);
             ibuffer = &mut temp;
@@ -78,14 +77,18 @@ pub struct InstancedMesh {
 
 impl Drawable for InstancedMesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        let Some(lod_select) = self.mesh.lods.first() else {
+            return;
+        };
+
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
 
-        for (mat, offset, length) in self.mesh.iter_materials() {
-            let mat = gfx.material(mat);
+        for (mat, indices) in &lod_select.primitives {
+            let mat = gfx.material(*mat);
             let pipeline = gfx.get_pipeline(MeshPipeline {
                 instanced: true,
                 alpha: false,
@@ -94,8 +97,9 @@ impl Drawable for InstancedMesh {
             });
             rp.set_pipeline(pipeline);
             rp.set_bind_group(2, &mat.bg, &[]);
-            rp.draw_indexed(offset..offset + length, 0, 0..self.n_instances);
-            gfx.perf.drawcall(length / 3 * self.n_instances);
+            rp.draw_indexed(indices.clone(), 0, 0..self.n_instances);
+            gfx.perf
+                .drawcall((indices.end - indices.start) / 3 * self.n_instances);
         }
     }
 
@@ -105,12 +109,16 @@ impl Drawable for InstancedMesh {
         rp: &mut RenderPass<'a>,
         shadow_cascade: Option<&Matrix4>,
     ) {
+        let Some(lod_select) = self.mesh.lods.first() else {
+            return;
+        };
+
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
 
-        for (mat, offset, length) in self.mesh.iter_materials() {
-            let mat = gfx.material(mat);
+        for (mat, indices) in &lod_select.primitives {
+            let mat = gfx.material(*mat);
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
                 instanced: true,
                 alpha: mat.transparent,
@@ -121,9 +129,11 @@ impl Drawable for InstancedMesh {
             if mat.transparent {
                 rp.set_bind_group(1, &mat.bg, &[]);
             }
-            rp.draw_indexed(offset..offset + length, 0, 0..self.n_instances);
-            gfx.perf
-                .depth_drawcall(length / 3 * self.n_instances, shadow_cascade.is_some());
+            rp.draw_indexed(indices.clone(), 0, 0..self.n_instances);
+            gfx.perf.depth_drawcall(
+                (indices.end - indices.start) / 3 * self.n_instances,
+                shadow_cascade.is_some(),
+            );
         }
     }
 }

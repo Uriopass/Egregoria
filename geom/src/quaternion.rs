@@ -21,6 +21,24 @@ impl Mul<Vec3> for Quaternion {
     }
 }
 
+impl Mul<Quaternion> for Quaternion {
+    type Output = Quaternion;
+
+    #[inline]
+    fn mul(self, rhs: Quaternion) -> Quaternion {
+        let q1 = vec3(self.x, self.y, self.z);
+        let q2 = vec3(rhs.x, rhs.y, rhs.z);
+        let w1 = self.w;
+        let w2 = rhs.w;
+        Quaternion {
+            x: w1 * q2.x + w2 * q1.x + q1.cross(q2).x,
+            y: w1 * q2.y + w2 * q1.y + q1.cross(q2).y,
+            z: w1 * q2.z + w2 * q1.z + q1.cross(q2).z,
+            w: w1 * w2 - q1.dot(q2),
+        }
+    }
+}
+
 impl From<[f32; 4]> for Quaternion {
     #[inline]
     fn from(x: [f32; 4]) -> Self {

@@ -6,7 +6,7 @@ use crate::{
     UvVertex, TL,
 };
 use common::FastMap;
-use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
+use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -49,6 +49,7 @@ pub struct GfxContext {
     pub tick: u64,
     pub(crate) pipelines: RefCell<Pipelines>,
     pub(crate) projection: Uniform<Matrix4>,
+    pub(crate) frustrum: InfiniteFrustrum,
     pub(crate) sun_projection: [Uniform<Matrix4>; N_CASCADES],
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
@@ -344,6 +345,7 @@ impl GfxContext {
             default_material: Material::new_default(&device, &queue, &null_texture),
             tick: 0,
             projection,
+            frustrum: InfiniteFrustrum::new([Plane::X; 5]),
             sun_projection: [(); 4].map(|_| Uniform::new(Matrix4::zero(), &device)),
             render_params: Uniform::new(Default::default(), &device),
             texture_cache_paths: textures,
@@ -541,12 +543,14 @@ impl GfxContext {
         self.render_params.value_mut().time = time;
     }
 
-    pub fn set_proj(&mut self, proj: Matrix4) {
-        *self.projection.value_mut() = proj;
-    }
+    pub fn set_camera(&mut self, cam: Camera) {
+        let viewproj = cam.build_view_projection_matrix();
+        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
 
-    pub fn set_inv_proj(&mut self, proj: Matrix4) {
-        self.render_params.value_mut().inv_proj = proj;
+        *self.projection.value_mut() = viewproj;
+        self.render_params.value_mut().inv_proj = inv_viewproj;
+
+        self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(cam.eye(), inv_viewproj);
     }
 
     pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {

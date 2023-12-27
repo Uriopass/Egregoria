@@ -1,10 +1,12 @@
 #![allow(clippy::redundant_closure_call)]
-use crate::gui::windows::settings::Settings;
-use crate::inputmap::{InputAction, InputMap};
+
 use common::saveload::Encoder;
 use engine::{Context, Tesselator};
-use geom::{Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Vec2, Vec3, AABB};
+use geom::{Camera, InfiniteFrustrum, Plane, Radians, Vec2, Vec3, AABB};
 use simulation::map::pathfinding_crate::num_traits::Pow;
+
+use crate::gui::windows::settings::Settings;
+use crate::inputmap::{InputAction, InputMap};
 
 /// CameraHandler3D is the camera handler for the 3D view
 /// It controls the camera using an orbit view
@@ -21,17 +23,7 @@ pub struct OrbitCamera {
 
 impl OrbitCamera {
     pub fn update(&mut self, ctx: &mut Context) {
-        let viewproj = self.camera.build_view_projection_matrix();
-        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
-
-        if inline_tweak::tweak!(true) {
-            self.frustrum =
-                InfiniteFrustrum::from_reversez_invviewproj(self.camera.eye(), inv_viewproj);
-        }
-
-        ctx.gfx.set_proj(viewproj);
-        ctx.gfx.set_inv_proj(inv_viewproj);
-
+        ctx.gfx.set_camera(self.camera);
         let params = ctx.gfx.render_params.value_mut();
         params.cam_pos = self.camera.eye();
         params.cam_dir = -self.camera.dir();

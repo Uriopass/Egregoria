@@ -1,5 +1,5 @@
 use yakui_core::geometry::Vec2;
-use yakui_core::MainAxisAlignment;
+use yakui_core::{CrossAxisAlignment, MainAxisSize};
 use yakui_widgets::widgets::{List, Pad};
 use yakui_widgets::{draggable, pad, use_state};
 
@@ -41,10 +41,16 @@ macro_rules! impl_slidable {
     };
 }
 
-impl_slidable!(i32; 1.0,
-               u32; 1.0, 
+impl_slidable!(u8; 1.0,
+               i8; 1.0,
+               u16; 1.0,
+               i16; 1.0,
+               u32; 1.0,
+               i32; 1.0, 
+               u64; 1.0,
                i64; 1.0,
-               u64; 1.0, 
+               usize; 1.0,
+               isize; 1.0,
                f32; 0.01, 
                f64; 0.01);
 
@@ -79,31 +85,31 @@ impl DragValue {
     pub fn show<T: Draggable>(self, value: &mut T) -> bool {
         let mut changed = false;
 
-        RoundRect::new(2.0)
-            .outline(outline(), 2.0)
-            .color(secondary())
-            .show_children(|| {
-                let dragged = draggable_delta(|| {
-                    pad(Pad::horizontal(10.0), || {
-                        let mut l = List::row();
-                        l.main_axis_alignment = MainAxisAlignment::Center;
-                        l.show(|| {
-                            labelc(on_primary(), format!("{}", T::to_f64(*value)));
+        let mut l = List::column();
+        l.cross_axis_alignment = CrossAxisAlignment::Center;
+        l.main_axis_size = MainAxisSize::Min;
+        l.show(|| {
+            let dragged = draggable_delta(|| {
+                RoundRect::new(2.0)
+                    .outline(outline(), 2.0)
+                    .color(secondary())
+                    .show_children(|| {
+                        pad(Pad::horizontal(10.0), || {
+                            labelc(on_primary(), format!("{:.3}", T::to_f64(*value)));
                         });
                     });
-                });
-
-                if let Some(dragged) = dragged {
-                    let oldv = T::to_f64(*value);
-                    let newv = oldv + dragged.x as f64 * self.step.unwrap_or(T::default_step());
-
-                    *value = T::from_f64(newv.clamp(
-                        self.min.unwrap_or(T::DEFAULT_MIN),
-                        self.max.unwrap_or(T::DEFAULT_MAX),
-                    ));
-                    changed = true;
-                }
             });
+            if let Some(dragged) = dragged {
+                let oldv = T::to_f64(*value);
+                let newv = oldv + dragged.x as f64 * self.step.unwrap_or(T::default_step());
+
+                *value = T::from_f64(newv.clamp(
+                    self.min.unwrap_or(T::DEFAULT_MIN),
+                    self.max.unwrap_or(T::DEFAULT_MAX),
+                ));
+                changed = true;
+            }
+        });
 
         changed
     }
@@ -117,7 +123,7 @@ fn draggable_delta(children: impl FnOnce()) -> Option<Vec2> {
     };
 
     let last_val = last_val_state.get().unwrap_or(d.current);
-    let mut delta = d.current - last_val;
+    let mut delta = (d.current - last_val) / 10.0;
     if delta.x.abs() < 1.0 {
         d.current.x = last_val.x;
         delta.x = 0.0;

@@ -13,3 +13,4 @@ inline_tweak = "1.0.8"
 egui         = { workspace = true }
 yakui        = { git = "https://github.com/SecondHalfGames/yakui" }
 goryak       = { path = "../goryak" }
+meshopt2     = "0.2.0"

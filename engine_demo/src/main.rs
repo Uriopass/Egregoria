@@ -4,9 +4,7 @@ use engine::{
     Context, FrameContext, GfxSettings, InstancedMeshBuilder, Key, MeshInstance, MouseButton,
     ShadowQuality,
 };
-use geom::{
-    vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3,
-};
+use geom::{vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Plane, Radians, Vec2, Vec3};
 
 use crate::helmet::Helmet;
 use crate::spheres::Spheres;
@@ -110,10 +108,7 @@ impl engine::framework::State for State {
 
         let gfx = &mut ctx.gfx;
 
-        let viewproj = self.camera.build_view_projection_matrix();
-        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
-        gfx.set_proj(viewproj);
-        gfx.set_inv_proj(inv_viewproj);
+        gfx.set_camera(self.camera);
 
         let params = gfx.render_params.value_mut();
         params.time_always = (params.time_always + delta) % 3600.0;
