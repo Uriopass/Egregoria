@@ -12,7 +12,6 @@ use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon}
 use crate::transportation::{Location, Pedestrian, Vehicle, VehicleKind, VehicleState};
 use crate::utils::par_command_buffer::SimDrop;
 use crate::utils::resources::Resources;
-use crate::wildlife::bird::BirdMob;
 use crate::{impl_entity, impl_trans, SoulID};
 use derive_more::{From, TryInto};
 use geom::{Transform, Vec2, Vec3};
@@ -188,8 +187,6 @@ impl SimDrop for CompanyEnt {
 pub struct BirdEnt {
     pub trans: Transform,
     pub speed: Speed,
-    pub bird_mob: BirdMob,
-    pub it: Itinerary,
 }
 
 impl SimDrop for BirdEnt {
@@ -258,7 +255,6 @@ impl World {
             AnyEntity::VehicleID(x) => Some(&self.get(x)?.it),
             AnyEntity::TrainID(x) => Some(&self.get(x)?.it),
             AnyEntity::HumanID(x) => Some(&self.get(x)?.it),
-            AnyEntity::BirdID(x) => Some(&self.get(x)?.it),
             _ => None,
         }
     }
@@ -277,7 +273,6 @@ impl World {
             self.humans  .iter().map(|(id, x)| (AnyEntity::HumanID(id), (&x.trans, &x.it))),
             self.vehicles.iter().map(|(id, x)| (AnyEntity::VehicleID(id), (&x.trans, &x.it))),
             self.trains  .iter().map(|(id, x)| (AnyEntity::TrainID(id), (&x.trans, &x.it))),
-            self.birds .iter().map(|(id, x)| (AnyEntity::BirdID(id), (&x.trans, &x.it))),
         ))
     }
 
@@ -300,7 +295,6 @@ impl World {
             self.humans  .values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
             self.trains  .values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
             self.vehicles.values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
-            self.birds .values_mut().map(|h| (&mut h.it, &mut h.trans, h.speed.0)),
         ))
     }
 

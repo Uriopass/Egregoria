@@ -49,7 +49,7 @@ pub fn init() {
     register_system("random_vehicles", random_vehicles_update);
 
     register_system_sim("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
-    register_system_sim("add_birds_randomly", add_flocks_randomly);
+    register_system_sim("add_flocks_randomly", add_flocks_randomly);
 
     register_resource_noserialize::<GoodsCompanyRegistry>();
     register_resource_noserialize::<ItemRegistry>();

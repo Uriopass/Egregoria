@@ -33,7 +33,7 @@ impl InstancedRender {
             wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb").unwrap()),
             pedestrians: InstancedMeshBuilder::new(load_mesh(gfx, "pedestrian.glb").unwrap()),
-            birds: InstancedMeshBuilder::new(load_mesh(gfx, "rail_freight_station.glb").unwrap()),
+            birds: InstancedMeshBuilder::new(load_mesh(gfx, "bird.glb").unwrap()),
         }
     }
 
@@ -97,11 +97,8 @@ impl InstancedRender {
 
         for bird_ent in sim.world().birds.values() {
             self.birds.instances.push(MeshInstance {
-                pos: bird_ent
-                    .trans
-                    .position
-                    .up(0.5 + 0.4 * bird_ent.bird_mob.fly_anim.cos()),
-                dir: bird_ent.trans.dir.xy().z0(),
+                pos: bird_ent.trans.position,
+                dir: bird_ent.trans.dir,
                 tint: LinearColor::WHITE,
             });
         }
