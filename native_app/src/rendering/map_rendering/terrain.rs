@@ -1,6 +1,6 @@
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, GfxContext};
-use geom::{Camera, InfiniteFrustrum};
+use geom::Camera;
 use simulation::map::{Map, MapSubscriber, UpdateType};
 use simulation::Simulation;
 
@@ -24,8 +24,8 @@ impl TerrainRender {
         }
     }
 
-    pub fn draw(&mut self, cam: &Camera, frustrum: &InfiniteFrustrum, fctx: &mut FrameContext<'_>) {
-        self.terrain.draw_terrain(cam, frustrum, fctx);
+    pub fn draw(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
+        self.terrain.draw_terrain(cam, fctx);
     }
 
     pub fn update(&mut self, ctx: &mut Context, map: &Map) {

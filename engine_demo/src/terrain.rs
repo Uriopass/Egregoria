@@ -1,8 +1,9 @@
-use crate::DemoElement;
 use engine::meshload::load_mesh;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, InstancedMeshBuilder, MeshInstance};
-use geom::{vec2, Camera, Heightmap, HeightmapChunk, InfiniteFrustrum, LinearColor, Vec3};
+use geom::{vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
+
+use crate::DemoElement;
 
 const CSIZE: usize = 512;
 const CRESO: usize = 16;
@@ -95,8 +96,8 @@ impl DemoElement for Terrain {
         }
     }
 
-    fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum) {
-        self.terrain.draw_terrain(cam, frustrum, fc);
+    fn render(&mut self, fc: &mut FrameContext, cam: &Camera) {
+        self.terrain.draw_terrain(cam, fc);
 
         self.hitmesh.instances.clear();
         if let Some(pos) = self.last_hitpos {

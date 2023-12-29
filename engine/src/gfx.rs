@@ -49,7 +49,7 @@ pub struct GfxContext {
     pub tick: u64,
     pub(crate) pipelines: RefCell<Pipelines>,
     pub(crate) projection: Uniform<Matrix4>,
-    pub(crate) frustrum: InfiniteFrustrum,
+    pub frustrum: InfiniteFrustrum,
     pub(crate) sun_projection: [Uniform<Matrix4>; N_CASCADES],
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,

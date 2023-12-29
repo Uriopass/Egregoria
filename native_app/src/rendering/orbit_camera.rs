@@ -2,7 +2,7 @@
 
 use common::saveload::Encoder;
 use engine::{Context, Tesselator};
-use geom::{Camera, InfiniteFrustrum, Plane, Radians, Vec2, Vec3, AABB};
+use geom::{Camera, Plane, Radians, Vec2, Vec3, AABB};
 use simulation::map::pathfinding_crate::num_traits::Pow;
 
 use crate::gui::windows::settings::Settings;
@@ -18,7 +18,6 @@ pub struct OrbitCamera {
     pub targetyaw: Radians,
     pub targetpitch: Radians,
     pub targetdist: f32,
-    pub frustrum: InfiniteFrustrum,
 }
 
 impl OrbitCamera {
@@ -82,7 +81,6 @@ impl OrbitCamera {
             targetyaw: camera.yaw,
             targetpitch: camera.pitch,
             targetdist: camera.dist,
-            frustrum: InfiniteFrustrum::new([Plane::new(Vec3::ZERO, 0.0); 5]),
         }
     }
 

@@ -179,7 +179,6 @@ impl engine::framework::State for State {
             &sim.map(),
             time.seconds,
             &camera.camera,
-            &camera.frustrum,
             MapRenderOptions {
                 show_arrows: self.uiw.read::<Tool>().show_arrows(),
                 show_lots: self.uiw.read::<Tool>().show_lots(),
@@ -261,7 +260,7 @@ impl State {
             .build_sun_shadowmap_matrix(
                 sun,
                 params.shadow_mapping_resolution as f32,
-                &camera.frustrum,
+                &ctx.gfx.frustrum,
             )
             .try_into()
             .unwrap();

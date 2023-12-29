@@ -1,10 +1,11 @@
-use crate::DemoElement;
 use engine::meshload::load_mesh;
 use engine::{
     Context, FrameContext, InstancedMesh, InstancedMeshBuilder, Material, MeshInstance,
     MetallicRoughness,
 };
-use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Vec3};
+use geom::{vec3, Camera, LinearColor, Vec3};
+
+use crate::DemoElement;
 
 pub struct Spheres {
     meshes: Vec<InstancedMesh>,
@@ -56,7 +57,7 @@ impl DemoElement for Spheres {
 
     fn update(&mut self, _ctx: &mut Context, _cam: &Camera) {}
 
-    fn render(&mut self, fc: &mut FrameContext, _cam: &Camera, _frustrum: &InfiniteFrustrum) {
+    fn render(&mut self, fc: &mut FrameContext, _cam: &Camera) {
         fc.draw(self.meshes.clone());
     }
 }

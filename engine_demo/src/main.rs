@@ -20,7 +20,7 @@ trait DemoElement {
     where
         Self: Sized;
     fn update(&mut self, ctx: &mut Context, cam: &Camera);
-    fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum);
+    fn render(&mut self, fc: &mut FrameContext, cam: &Camera);
     fn render_gui(&mut self, _ui: &mut egui::Ui) {}
 }
 
@@ -31,10 +31,6 @@ struct State {
 
     camera: Camera,
     camera_speed: f32,
-    frustrum: InfiniteFrustrum,
-    last_cam: Camera,
-
-    freeze_cam: bool,
 
     delta: f32,
     play_queue: Vec<&'static str>,
@@ -84,9 +80,6 @@ impl engine::framework::State for State {
             delta: 0.0,
             play_queue: vec![],
             camera_speed: 100.0,
-            frustrum: InfiniteFrustrum::new([Plane::X; 5]),
-            last_cam: camera,
-            freeze_cam: false,
             ms_hist: History::new(128),
             gfx_settings,
             sun_angle: Degrees(0.0),
@@ -115,10 +108,8 @@ impl engine::framework::State for State {
         params.sun_col = 4.0
             * sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-        if !self.freeze_cam {
-            params.cam_pos = self.camera.eye();
-            params.cam_dir = self.camera.dir();
-        }
+        params.cam_pos = self.camera.eye();
+        params.cam_dir = self.camera.dir();
         params.sun = sun;
         params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
         self.camera.dist = 300.0;
@@ -146,19 +137,11 @@ impl engine::framework::State for State {
     }
 
     fn render(&mut self, fc: &mut FrameContext) {
-        if !self.freeze_cam {
-            self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(
-                self.camera.eye(),
-                fc.gfx.render_params.value().inv_proj,
-            );
-            self.last_cam = self.camera;
-        }
-
         for (de, enabled) in &mut self.demo_elements {
             if !*enabled {
                 continue;
             }
-            de.render(fc, &self.last_cam, &self.frustrum);
+            de.render(fc, &self.camera);
         }
     }
 
@@ -193,7 +176,6 @@ impl engine::framework::State for State {
                 ));
 
                 ui.add(egui::Slider::new(&mut self.camera_speed, 1.0..=100.0).text("Camera speed"));
-                ui.checkbox(&mut self.freeze_cam, "Freeze camera");
 
                 ui.checkbox(&mut self.gfx_settings.fullscreen, "Fullscreen");
                 ui.checkbox(&mut self.gfx_settings.vsync, "VSync");

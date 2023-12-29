@@ -1,16 +1,14 @@
+use std::ops::Mul;
+
 use common::FastMap;
 use engine::meshload::load_mesh;
 use engine::wgpu::RenderPass;
 use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
-use geom::{
-    vec3, vec4, Camera, HeightmapChunk, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3,
-    AABB3,
-};
+use geom::{vec3, vec4, Camera, HeightmapChunk, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
 use simulation::config;
 use simulation::map::{Map, MapSubscriber, SubscriberChunkID, UpdateType};
-use std::ops::Mul;
 
 pub struct TreesRender {
     tree_builder: InstancedMeshBuilder<false>,
@@ -56,13 +54,7 @@ impl TreesRender {
         }
     }
 
-    pub fn draw(
-        &mut self,
-        map: &Map,
-        cam: &Camera,
-        frustrum: &InfiniteFrustrum,
-        ctx: &mut FrameContext<'_>,
-    ) {
+    pub fn draw(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
         self.build(map, ctx);
 
         if config().disable_trees {
@@ -113,7 +105,7 @@ impl TreesRender {
                 .map(HeightmapChunk::max_height)
                 .fold(0.0, f32::max);
 
-            if !frustrum.intersects(&AABB3::new_size(
+            if !ctx.gfx.frustrum.intersects(&AABB3::new_size(
                 cid.corner().z(-40.0),
                 vec3(
                     5.0 + SubscriberChunkID::SIZE_F32,

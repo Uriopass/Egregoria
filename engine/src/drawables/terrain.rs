@@ -1,14 +1,17 @@
-use crate::{
-    bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
-    IndexType, PipelineBuilder, RenderParams, Texture, TextureBuilder, Uniform, TL,
-};
-use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, Matrix4, Vec2, AABB3};
 use std::sync::Arc;
+
 use wgpu::{
     BindGroupDescriptor, BindGroupLayoutDescriptor, BufferUsages, CommandEncoder,
     CommandEncoderDescriptor, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat,
     Origin3d, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, TextureView,
     VertexAttribute, VertexBufferLayout,
+};
+
+use geom::{vec2, vec3, Camera, Intersect3, Matrix4, Vec2, AABB3};
+
+use crate::{
+    bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
+    IndexType, PipelineBuilder, RenderParams, Texture, TextureBuilder, Uniform, TL,
 };
 
 const LOD: usize = 5;
@@ -203,12 +206,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         );
     }
 
-    pub fn draw_terrain(
-        &mut self,
-        cam: &Camera,
-        frustrum: &InfiniteFrustrum,
-        fctx: &mut FrameContext<'_>,
-    ) {
+    pub fn draw_terrain(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
         profiling::scope!("terrain::draw_terrain");
         let eye = cam.eye();
 
@@ -224,7 +222,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 let chunk_corner = vec2(x as f32, y as f32) * CSIZE as f32;
                 let chunk_center = chunk_corner + Vec2::splat(CSIZE as f32 * 0.5);
 
-                if !frustrum.intersects(&AABB3::new(
+                if !fctx.gfx.frustrum.intersects(&AABB3::new(
                     chunk_corner.z(MIN_HEIGHT),
                     chunk_corner.z0() + vec3(CSIZE as f32, CSIZE as f32, MAX_HEIGHT + 16.0),
                 )) {

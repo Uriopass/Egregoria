@@ -52,19 +52,18 @@ impl MapRenderer {
         map: &Map,
         time: u32,
         cam: &Camera,
-        frustrum: &InfiniteFrustrum,
         options: MapRenderOptions,
         draw: &mut ImmediateDraw,
         ctx: &mut FrameContext<'_>,
     ) {
         profiling::scope!("render map renderer");
-        self.terrain.draw(cam, frustrum, ctx);
+        self.terrain.draw(cam, ctx);
 
-        self.trees.draw(map, cam, frustrum, ctx);
+        self.trees.draw(map, cam, ctx);
 
         self.meshb.latest_mesh(map, options, ctx);
 
-        Self::signals_render(map, time, cam, frustrum, draw);
+        Self::signals_render(map, time, cam, &ctx.gfx.frustrum, draw);
 
         ctx.draw(self.water.clone());
     }
