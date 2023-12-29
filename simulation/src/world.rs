@@ -29,6 +29,7 @@ new_key_type! {
     pub struct FreightStationID;
     pub struct CompanyID;
     pub struct BirdID;
+    pub struct FlockID;
 }
 
 impl_entity!(VehicleID, VehicleEnt, vehicles);
@@ -38,6 +39,7 @@ impl_entity!(WagonID, WagonEnt, wagons);
 impl_entity!(FreightStationID, FreightStationEnt, freight_stations);
 impl_entity!(CompanyID, CompanyEnt, companies);
 impl_entity!(BirdID, BirdEnt, birds);
+impl_entity!(FlockID, Flock, flocks);
 
 impl_trans!(HumanID);
 impl_trans!(VehicleID);
@@ -194,6 +196,11 @@ impl SimDrop for BirdEnt {
     fn sim_drop(self, _: BirdID, _: &mut Resources) {}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct Flock {
+    pub bird_ids: Vec<BirdID>,
+}
+
 #[derive(Default, Serialize, Deserialize)]
 pub struct World {
     pub vehicles: HopSlotMap<VehicleID, VehicleEnt>,
@@ -203,6 +210,7 @@ pub struct World {
     pub freight_stations: HopSlotMap<FreightStationID, FreightStationEnt>,
     pub companies: HopSlotMap<CompanyID, CompanyEnt>,
     pub birds: HopSlotMap<BirdID, BirdEnt>,
+    pub flocks: HopSlotMap<FlockID, Flock>,
 }
 
 impl World {
@@ -280,6 +288,7 @@ impl World {
             self.vehicles.iter().map(|(id, x)| (AnyEntity::VehicleID(id), x.trans.position.xy())),
             self.trains  .iter().map(|(id, x)| (AnyEntity::TrainID(id), x.trans.position.xy())),
             self.wagons  .iter().map(|(id, x)| (AnyEntity::WagonID(id), x.trans.position.xy())),
+            self.birds   .iter().map(|(id, x)| (AnyEntity::BirdID(id), x.trans.position.xy())),
         ))
     }
 

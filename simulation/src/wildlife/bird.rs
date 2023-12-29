@@ -62,10 +62,38 @@ pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
     let aabb = map.terrain.bounds();
     let r = &mut RandProvider::new(ra.timestamp as u64);
 
-    world.birds
-        .values_mut()
-        //.par_bridge()
-        .for_each(|bird| bird_decision(ra, &mut bird.it, &mut bird.trans, &mut bird.speed, &mut bird.bird_mob, aabb, r))
+    world.flocks.values().for_each(|flock| {
+        let flock_physics: Vec<(Transform, Speed)> = flock
+            .bird_ids
+            .iter()
+            .map(|bird_id| match world.birds.get_mut(*bird_id) {
+                Some(bird_ent) => (bird_ent.trans, bird_ent.speed.clone()),
+                None => unreachable!(),
+            })
+            .collect();
+
+        flock
+            .bird_ids
+            .iter()
+            .for_each(|bird_id| match world.birds.get_mut(*bird_id) {
+                Some(bird_ent) => bird_decision(
+                    ra,
+                    &mut bird_ent.it,
+                    &mut bird_ent.trans,
+                    &mut bird_ent.speed,
+                    &mut bird_ent.bird_mob,
+                    aabb,
+                    r,
+                    &flock_physics,
+                ),
+                None => unreachable!(),
+            })
+    });
+
+    // world.birds
+    //     .values_mut()
+    //     //.par_bridge()
+    //     .for_each(|bird| bird_decision(ra, &mut bird.it, &mut bird.trans, &mut bird.speed, &mut bird.bird_mob, aabb, r))
 }
 
 const BIRD_WAIT_TIME: f64 = 100.0;
@@ -88,7 +116,7 @@ pub fn get_random_pos_from_center(center: Vec3, radius: f32, r1: f32, r2: f32, r
 }
 
 // amount of time per each flock itinerary
-const FLOCK_IT_PERIOD: f32 = 100000.0;
+const FLOCK_IT_PERIOD: f32 = 20000.0;
 // likelihood the bird will stray from the flock itinerary
 const DISTRACTED_PROB: f32 = 0.5;
 
@@ -100,6 +128,7 @@ pub fn bird_decision(
     bird_mob: &mut BirdMob,
     aabb: AABB,
     r: &mut RandProvider,
+    flock_physics: &Vec<(Transform, Speed)>,
 ) {
     let (desired_v, desired_dir) = calc_decision(bird_mob, trans, it);
 
@@ -110,7 +139,7 @@ pub fn bird_decision(
     // a random nearby location to hang around
     let random_itinerary = Itinerary::simple(vec![get_random_pos_from_center(
         trans.position,
-        5.0,
+        100.0,
         r.next_f32(),
         r.next_f32(),
         r.next_f32(),
@@ -160,10 +189,19 @@ pub fn physics(
         kin.0 += mag;
     }
     const ANG_VEL: f32 = 1.0;
+    // log::info!("{} {}", trans.dir, desired_dir);
+    assert!(
+        desired_dir.xy().mag() != 0.0,
+        "desired_dir.xy() had 0 magnitude"
+    );
     trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * time.realdelta);
 }
 
 pub fn calc_decision(bird_mob: &mut BirdMob, trans: &Transform, it: &Itinerary) -> (f32, Vec3) {
+    assert!(
+        trans.dir.xy().mag() != 0.0,
+        "trans.dir.xy() had 0 magnitude"
+    );
     let objective = match it.get_point() {
         Some(x) => x,
         None => return (0.0, trans.dir),
@@ -172,11 +210,17 @@ pub fn calc_decision(bird_mob: &mut BirdMob, trans: &Transform, it: &Itinerary) 
     let position = trans.position;
 
     let delta_pos: Vec3 = objective - position;
-    let dir_to_pos = match delta_pos.try_normalize() {
-        Some(x) => x,
+    let dir_to_pos = match delta_pos.xy().try_normalize() {
+        Some(x) => x.z(trans.dir.z),
         None => return (0.0, trans.dir),
     };
 
+    // log::info!("calc_decision trans.dir {}", trans.dir);
+    // log::info!("calc_decision dir_to_pos {}", dir_to_pos);
     let desired_dir = dir_to_pos.normalize();
+    assert!(
+        desired_dir.xy().mag() != 0.0,
+        "desired_dir.xy() had 0 magnitude in calc_decision"
+    );
     (bird_mob.flying_speed, desired_dir)
 }
