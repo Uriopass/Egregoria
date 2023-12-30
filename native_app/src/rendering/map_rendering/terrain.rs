@@ -1,6 +1,6 @@
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, GfxContext};
-use geom::{Camera, InfiniteFrustrum};
+use geom::Camera;
 use simulation::map::{Map, MapSubscriber, UpdateType};
 use simulation::Simulation;
 
@@ -14,11 +14,9 @@ pub struct TerrainRender {
 
 impl TerrainRender {
     pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
-        let (w, h) = sim.map().terrain.size();
+        let (w, h) = sim.map().environment.size();
 
-        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
-
-        let terrain = EngineTerrainRender::new(gfx, w as u32, h as u32, grass);
+        let terrain = EngineTerrainRender::new(gfx, w as u32, h as u32);
 
         Self {
             terrain,
@@ -26,12 +24,12 @@ impl TerrainRender {
         }
     }
 
-    pub fn draw(&mut self, cam: &Camera, frustrum: &InfiniteFrustrum, fctx: &mut FrameContext<'_>) {
-        self.terrain.draw_terrain(cam, frustrum, fctx);
+    pub fn draw(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
+        self.terrain.draw_terrain(cam, fctx);
     }
 
     pub fn update(&mut self, ctx: &mut Context, map: &Map) {
-        let ter = &map.terrain;
+        let ter = &map.environment;
 
         if self.terrain_sub.take_cleared() {
             for (chunk_id, chunk) in ter.chunks() {

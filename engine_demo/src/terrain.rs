@@ -1,8 +1,9 @@
-use crate::DemoElement;
 use engine::meshload::load_mesh;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, InstancedMeshBuilder, MeshInstance};
-use geom::{vec2, Camera, Heightmap, HeightmapChunk, InfiniteFrustrum, LinearColor, Vec3};
+use geom::{vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
+
+use crate::DemoElement;
 
 const CSIZE: usize = 512;
 const CRESO: usize = 16;
@@ -23,6 +24,7 @@ impl DemoElement for Terrain {
         "Terrain"
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
@@ -49,16 +51,14 @@ impl DemoElement for Terrain {
             }
         }
 
-        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
-
-        let mut terrain = EngineTerrainRender::new(gfx, MAP_SIZE as u32, MAP_SIZE as u32, grass);
+        let mut terrain = EngineTerrainRender::new(gfx, MAP_SIZE as u32, MAP_SIZE as u32);
 
         for x in 0..MAP_SIZE {
             for y in 0..MAP_SIZE {
                 terrain.update_chunk(
                     gfx,
                     (x as u32, y as u32),
-                    &h.get_chunk((x as u16, y as u16)).unwrap().heights(),
+                    h.get_chunk((x as u16, y as u16)).unwrap().heights(),
                 );
             }
         }
@@ -96,8 +96,8 @@ impl DemoElement for Terrain {
         }
     }
 
-    fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum) {
-        self.terrain.draw_terrain(cam, frustrum, fc);
+    fn render(&mut self, fc: &mut FrameContext, cam: &Camera) {
+        self.terrain.draw_terrain(cam, fc);
 
         self.hitmesh.instances.clear();
         if let Some(pos) = self.last_hitpos {
@@ -120,10 +120,8 @@ impl DemoElement for Terrain {
 
     fn render_gui(&mut self, ui: &mut egui::Ui) {
         ui.indent("terrain", |ui| {
-            if cfg!(debug_assertions) {
-                if ui.button("reload terrain").clicked() {
-                    self.reload = true;
-                }
+            if cfg!(debug_assertions) && ui.button("reload terrain").clicked() {
+                self.reload = true;
             }
         });
     }

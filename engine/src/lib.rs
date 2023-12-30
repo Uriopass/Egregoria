@@ -16,11 +16,16 @@ mod material;
 pub mod meshload;
 mod pbr;
 pub mod pbuffer;
+mod perf_counters;
 mod pipelines;
 mod shader;
 mod texture;
 mod uniform;
 mod vertex_types;
+
+mod meshbuild;
+#[cfg(feature = "yakui")]
+pub mod yakui;
 
 pub use audio::*;
 pub use drawables::*;
@@ -30,7 +35,9 @@ pub use gfx::*;
 pub use input::*;
 pub use lamplights::*;
 pub use material::*;
+pub use meshbuild::*;
 pub use pbr::*;
+pub use perf_counters::*;
 pub use pipelines::*;
 pub use shader::*;
 pub use texture::*;
@@ -38,8 +45,9 @@ pub use u8slice::*;
 pub use uniform::*;
 pub use vertex_types::*;
 
-pub use winit::event::ScanCode;
 pub use winit::window::CursorGrabMode;
+pub use winit::window::CursorIcon;
 
+pub use gltf;
 pub use image;
 pub use wgpu;

@@ -163,10 +163,10 @@ mod tests {
             x.iter().map(|x| (x.to_string(), "".to_string())).collect()
         }
 
-        assert_eq!(super::apply_ifdefs(&f(&[]), &src).trim(), "b");
-        assert_eq!(super::apply_ifdefs(&f(&["A"]), &src).trim(), "a");
-        assert_eq!(super::apply_ifdefs(&f(&["B"]), &src).trim(), "b");
-        assert_eq!(super::apply_ifdefs(&f(&["A", "B"]), &src).trim(), "a");
+        assert_eq!(super::apply_ifdefs(&f(&[]), src).trim(), "b");
+        assert_eq!(super::apply_ifdefs(&f(&["A"]), src).trim(), "a");
+        assert_eq!(super::apply_ifdefs(&f(&["B"]), src).trim(), "b");
+        assert_eq!(super::apply_ifdefs(&f(&["A", "B"]), src).trim(), "a");
 
         let src = r#"
         #ifdef A
@@ -178,10 +178,10 @@ mod tests {
         #endif
         "#;
 
-        assert_eq!(super::apply_ifdefs(&f(&[]), &src).trim(), "c");
-        assert_eq!(super::apply_ifdefs(&f(&["A"]), &src).trim(), "a");
-        assert_eq!(super::apply_ifdefs(&f(&["B"]), &src).trim(), "b");
-        assert_eq!(super::apply_ifdefs(&f(&["A", "B"]), &src).trim(), "a");
+        assert_eq!(super::apply_ifdefs(&f(&[]), src).trim(), "c");
+        assert_eq!(super::apply_ifdefs(&f(&["A"]), src).trim(), "a");
+        assert_eq!(super::apply_ifdefs(&f(&["B"]), src).trim(), "b");
+        assert_eq!(super::apply_ifdefs(&f(&["A", "B"]), src).trim(), "a");
 
         let src = r#"
         #ifdef A
@@ -195,9 +195,9 @@ mod tests {
         #endif
         "#;
 
-        assert_eq!(super::apply_ifdefs(&f(&[]), &src).trim(), "c");
-        assert_eq!(super::apply_ifdefs(&f(&["A"]), &src).trim(), "b");
-        assert_eq!(super::apply_ifdefs(&f(&["B"]), &src).trim(), "c");
-        assert_eq!(super::apply_ifdefs(&f(&["A", "B"]), &src).trim(), "a");
+        assert_eq!(super::apply_ifdefs(&f(&[]), src).trim(), "c");
+        assert_eq!(super::apply_ifdefs(&f(&["A"]), src).trim(), "b");
+        assert_eq!(super::apply_ifdefs(&f(&["B"]), src).trim(), "c");
+        assert_eq!(super::apply_ifdefs(&f(&["A", "B"]), src).trim(), "a");
     }
 }

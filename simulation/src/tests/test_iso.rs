@@ -278,13 +278,13 @@ fn test_world_survives_serde() {
             println!("not equal");
             deser.save_to_disk("world");
             sim.save_to_disk("world2");
-            assert!(false);
+            panic!("not equal");
         }
         if !deser.is_equal(&sim2) {
             println!("not equal");
             deser.save_to_disk("world");
             sim2.save_to_disk("world2");
-            assert!(false);
+            panic!("not equal");
         }
 
         std::mem::swap(&mut deser, &mut sim2);

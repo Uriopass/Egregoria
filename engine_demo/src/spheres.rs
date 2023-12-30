@@ -1,10 +1,11 @@
-use crate::DemoElement;
 use engine::meshload::load_mesh;
 use engine::{
     Context, FrameContext, InstancedMesh, InstancedMeshBuilder, Material, MeshInstance,
     MetallicRoughness,
 };
-use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Vec3};
+use geom::{vec3, Camera, LinearColor, Vec3};
+
+use crate::DemoElement;
 
 pub struct Spheres {
     meshes: Vec<InstancedMesh>,
@@ -19,7 +20,7 @@ impl DemoElement for Spheres {
         let gfx = &mut ctx.gfx;
 
         let mesh = load_mesh(gfx, "sphere.glb").unwrap();
-        let alb = gfx.material(mesh.materials[0].0).albedo.clone();
+        let alb = gfx.material(mesh.lods[0].primitives[0].0).albedo.clone();
 
         let mut meshes = vec![];
 
@@ -30,7 +31,7 @@ impl DemoElement for Spheres {
             for z in 0..N_MET {
                 let mut c = mesh.clone();
 
-                c.materials[0].0 = gfx.register_material(Material::new_raw(
+                c.lods[0].primitives[0].0 = gfx.register_material(Material::new_raw(
                     &gfx.device,
                     alb.clone(),
                     MetallicRoughness {
@@ -56,7 +57,7 @@ impl DemoElement for Spheres {
 
     fn update(&mut self, _ctx: &mut Context, _cam: &Camera) {}
 
-    fn render(&mut self, fc: &mut FrameContext, _cam: &Camera, _frustrum: &InfiniteFrustrum) {
+    fn render(&mut self, fc: &mut FrameContext, _cam: &Camera) {
         fc.draw(self.meshes.clone());
     }
 }

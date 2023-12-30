@@ -267,15 +267,15 @@ mod tests {
         data[4..].copy_from_slice(&vec![1u8; 996]);
 
         receiver.recv(&data, |d| assert_eq!(d, vec![1u8; 996]));
-        receiver.recv(&vec![0u8; 0], |_| assert!(false));
+        receiver.recv(&[0u8; 0], |_| panic!("should not be called"));
 
         receiver = FramedTcpReceiver::new();
 
         let s = 5u32.to_le_bytes();
-        receiver.recv(&s[..2], |_| assert!(false));
-        receiver.recv(&s[2..], |_| assert!(false));
-        receiver.recv(&vec![1u8; 3], |_| assert!(false));
-        receiver.recv(&vec![2u8; 3], |d| {
+        receiver.recv(&s[..2], |_| panic!("should not be called"));
+        receiver.recv(&s[2..], |_| panic!("should not be called"));
+        receiver.recv(&[1u8; 3], |_| panic!("should not be called"));
+        receiver.recv(&[2u8; 3], |d| {
             assert_eq!(d, vec![1u8, 1u8, 1u8, 2u8, 2u8])
         });
         assert_eq!(receiver.buf, vec![2u8]);
@@ -289,7 +289,7 @@ mod tests {
             } else if i == 1 {
                 assert_eq!(d, vec![1, 5])
             } else {
-                assert!(false);
+                panic!("should not be called");
             }
             i += 1;
         });

@@ -15,7 +15,9 @@ struct ChunkData {
 
 @group(2) @binding(4) var t_grass: texture_2d<f32>;
 @group(2) @binding(5) var s_grass: sampler;
-@group(2) @binding(6) var<uniform> cdata: ChunkData;
+@group(2) @binding(6) var t_cliff: texture_2d<f32>;
+@group(2) @binding(7) var s_cliff: sampler;
+@group(2) @binding(8) var<uniform> cdata: ChunkData;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;
@@ -83,8 +85,8 @@ fn textureNoTile(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32
     var ofc: vec4<f32> = hash4( iuv + vec2(0.0,1.0) );
     var ofd: vec4<f32> = hash4( iuv + vec2(1.0,1.0) );
 
-    let ddx: vec2<f32> = dpdx(uv);
-    let ddy: vec2<f32> = dpdy(uv);
+    let ddx: vec2<f32> = dpdxCoarse(uv);
+    let ddy: vec2<f32> = dpdyCoarse(uv);
 
     // transform per-tile uvs
     ofa.z = sign(ofa.z - 0.5);
@@ -129,13 +131,24 @@ fn frag(@builtin(position) position: vec4<f32>,
         shadow_v = sampleShadow(in_wpos);
     }
 
-    var c: vec3<f32> = params.grass_col.rgb;
+    var c: vec3<f32> = vec3(0.0, 0.0, 0.0);
     #ifdef TERRAIN_GRID
-    c.g += grid(in_wpos, fwidth(in_wpos.x)) * 0.015;
+    c.g += grid(in_wpos, fwidthCoarse(in_wpos.x)) * 0.015;
     #endif
 
-    let grass = (textureNoTile(t_grass, s_grass, in_wpos.xy / 100.0).rgb * 0.3 - c) * 0.5;
-    c = c + grass;
+    // tri-planar mapping
+    let grass = textureNoTile(t_grass, s_grass, in_wpos.xy / 200.0).rgb;
+    let cliffE = textureSample(t_cliff, s_cliff, in_wpos.xz / 100.0).rgb;
+    let cliffN = textureSample(t_cliff, s_cliff, in_wpos.yz / 100.0).rgb;
+
+    let wcliffN = pow(abs(in_normal.x), 16.0);
+    let wcliffE = pow(abs(in_normal.y), 16.0);
+    let wgrass  = pow(abs(in_normal.z)*0.8, 16.0);
+
+    let sum = wgrass + wcliffE + wcliffN;
+
+    c = c + (grass * wgrass + cliffE * wcliffE + cliffN * wcliffN) / sum;
+
     c = mix(params.sand_col.rgb, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
@@ -154,16 +167,13 @@ fn frag(@builtin(position) position: vec4<f32>,
 
     if (params.terraforming_mode_radius > 0.0) {
         let dist = length(params.unproj_pos - in_wpos.xy);
-        let alpha = smoothstep(params.terraforming_mode_radius, 0.0, dist) * 0.1;
-        let alpha2 = smoothstep(params.terraforming_mode_radius * 0.5, 0.0, dist) * 0.3;
-        let alpha3 = smoothstep(params.terraforming_mode_radius * 0.25, 0.0, dist) * 0.3;
-        var fw = fwidth(in_wpos.z) * 2.5;
+        var fw = fwidthCoarse(in_wpos.z) * 2.5;
+
+        let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist);
         let alpha4 = smoothstep(fw, 0.0, abs((in_wpos.z % 10.0) - 5.0)) * 0.1;
         let alpha5 = smoothstep(fw, 0.0, abs((in_wpos.z % 50.0) - 25.0)) * 0.1;
 
-        c = mix(c, vec3(1.0, 0.5, 0.5), alpha);
-        c = mix(c, vec3(0.5, 1.0, 0.5), alpha2);
-        c = mix(c, vec3(0.5, 0.5, 1.0), alpha3);
+        c = mix(c, vec3(0.7, 0.4, 0.2), alpha * 0.15);
         c = mix(c, vec3(0.0, 0.0, 0.0), alpha4 + alpha5);
     }
 

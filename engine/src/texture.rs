@@ -170,7 +170,6 @@ impl Texture {
                 ),
                 count: None,
             }))
-            .into_iter()
         })
     }
 

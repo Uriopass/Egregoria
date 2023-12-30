@@ -40,7 +40,7 @@ impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
 
-        Gui::set_style(&ctx.egui.egui);
+        Gui::set_style(ctx.egui.platform.egui_ctx());
         log::info!("loaded egui_render");
 
         let sim: Simulation =
@@ -59,7 +59,7 @@ impl engine::framework::State for State {
         uiworld.write::<InputMap>().build_input_tree(&mut bindings);
         drop(bindings);
 
-        uiworld.insert(UiTextures::new(&mut ctx.egui.egui));
+        uiworld.insert(UiTextures::new(&mut ctx.egui.platform.egui_ctx().clone()));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
@@ -122,7 +122,7 @@ impl engine::framework::State for State {
             self.uiw.write::<InputMap>().ray = ray;
 
             if let Some(ray) = ray {
-                let cast = map.terrain.raycast(ray);
+                let cast = map.environment.raycast(ray);
 
                 self.uiw.write::<InputMap>().unprojected = cast.map(|x| x.0);
                 self.uiw.write::<InputMap>().unprojected_normal = cast.map(|x| x.1);
@@ -179,7 +179,6 @@ impl engine::framework::State for State {
             &sim.map(),
             time.seconds,
             &camera.camera,
-            &camera.frustrum,
             MapRenderOptions {
                 show_arrows: self.uiw.read::<Tool>().show_arrows(),
                 show_lots: self.uiw.read::<Tool>().show_lots(),
@@ -239,12 +238,14 @@ impl State {
         ctx.gfx.update_simplelit_bg();
     }
 
-    fn manage_gfx_params(&self, ctx: &mut Context) {
+    fn manage_gfx_params(&mut self, ctx: &mut Context) {
         let t = std::f32::consts::TAU
             * (ctx.gfx.render_params.value().time - 8.0 * GameTime::HOUR as f32)
             / GameTime::DAY as f32;
 
         let sun = vec3(t.cos(), t.sin() * 0.5, t.sin() + 0.5).normalize();
+
+        self.uiw.insert(ctx.gfx.perf.as_static());
 
         let params = ctx.gfx.render_params.value_mut();
         params.time_always = (params.time_always + ctx.delta) % 3600.0;
@@ -259,7 +260,7 @@ impl State {
             .build_sun_shadowmap_matrix(
                 sun,
                 params.shadow_mapping_resolution as f32,
-                &camera.frustrum,
+                &ctx.gfx.frustrum,
             )
             .try_into()
             .unwrap();
@@ -289,8 +290,8 @@ impl State {
             ctx.delta,
             &self.uiw.read::<InputMap>(),
             &self.uiw.read::<Settings>(),
-            map.terrain.bounds(),
-            |p| map.terrain.height(p),
+            map.environment.bounds(),
+            |p| map.environment.height(p),
         );
         *self.uiw.write::<Camera>() = self.uiw.read::<OrbitCamera>().camera;
 
@@ -320,7 +321,7 @@ impl State {
             unsafe {
                 for v in &geom::DEBUG_OBBS {
                     immediate
-                        .obb(*v, map.terrain.height(v.center()).unwrap_or(0.0) + 8.0)
+                        .obb(*v, map.environment.height(v.center()).unwrap_or(0.0) + 8.0)
                         .color(col);
                 }
                 for v in &geom::DEBUG_SPLINES {

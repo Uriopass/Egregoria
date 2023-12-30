@@ -157,6 +157,8 @@ impl Drawable for SpriteBatch {
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..6, 0, 0..self.n_instances);
+
+        gfx.perf.drawcall(2 * self.n_instances);
     }
 }
 

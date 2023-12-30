@@ -232,7 +232,7 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                 }
             });
 
-            let mut sorted_inps = bindings.0.keys().copied().collect::<Vec<_>>();
+            let mut sorted_inps = bindings.0.keys().cloned().collect::<Vec<_>>();
             sorted_inps.sort();
 
             egui_extras::TableBuilder::new(ui)

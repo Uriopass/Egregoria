@@ -2,15 +2,16 @@ use crate::rendering::MapRenderOptions;
 use common::FastMap;
 use engine::earcut::earcut;
 use engine::meshload::load_mesh;
+use engine::MeshBuilder;
 use engine::{
-    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, Mesh, MeshBuilder,
-    MeshInstance, MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
+    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, Mesh, MeshInstance,
+    MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
 use simulation::map::{
-    Building, BuildingKind, CanonicalPosition, Intersection, LaneKind, Lanes, LotKind, Map,
-    MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
-    Terrain, Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
+    Building, BuildingKind, CanonicalPosition, Environment, Intersection, LaneKind, Lanes, LotKind,
+    Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
+    Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::Simulation;
@@ -304,28 +305,29 @@ impl MapBuilders {
                 let pos = from + dir * WALKING_W * 0.5;
                 let height = l - WALKING_W;
 
-                self.crosswalk_builder.extend_with(|vertices, add_index| {
-                    let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
-                        position: position.into(),
-                        uv: uv.into(),
-                        normal: Vec3::Z,
-                        color: [1.0; 4],
-                        tangent: [0.0; 4],
-                    };
+                self.crosswalk_builder
+                    .extend_with(None, |vertices, add_index| {
+                        let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
+                            position: position.into(),
+                            uv: uv.into(),
+                            normal: Vec3::Z,
+                            color: [1.0; 4],
+                            tangent: [0.0; 4],
+                        };
 
-                    vertices.push(mk_v(pos - perp, Vec2::ZERO));
-                    vertices.push(mk_v(pos + perp, Vec2::ZERO));
-                    vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height)));
-                    vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height)));
+                        vertices.push(mk_v(pos - perp, Vec2::ZERO));
+                        vertices.push(mk_v(pos + perp, Vec2::ZERO));
+                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height)));
+                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height)));
 
-                    add_index(0);
-                    add_index(1);
-                    add_index(2);
+                        add_index(0);
+                        add_index(1);
+                        add_index(2);
 
-                    add_index(0);
-                    add_index(2);
-                    add_index(3);
-                });
+                        add_index(0);
+                        add_index(2);
+                        add_index(3);
+                    });
             }
         }
     }
@@ -459,7 +461,7 @@ impl MapBuilders {
 
         let avg = -zone.0.iter().sum::<Vec2>() / zone.len() as f32;
 
-        zone_mesh.extend_with(|vertices, add_index| {
+        zone_mesh.extend_with(None, |vertices, add_index| {
             for p in &zone.0 {
                 vertices.push(MeshVertex {
                     position: p.z(building.height + 0.05).into(),
@@ -480,7 +482,7 @@ impl MapBuilders {
 
     fn houses_mesh(&mut self, building: &Building) {
         for (face, col) in &building.mesh.faces {
-            self.houses_mesh.extend_with(|vertices, add_index| {
+            self.houses_mesh.extend_with(None, |vertices, add_index| {
                 let o = face[1];
                 let u = unwrap_ret!((face[0] - o).try_normalize());
                 let v = unwrap_ret!((face[2] - o).try_normalize());
@@ -586,7 +588,7 @@ impl MapBuilders {
         let lanes = map.lanes();
         let roads = map.roads();
         let lots = map.lots();
-        let terrain = &map.terrain;
+        let env = &map.environment;
 
         for road in chunk_roads {
             let road = &roads[road];
@@ -597,7 +599,7 @@ impl MapBuilders {
             let first_dir = unwrap_cont!(cut.first_dir());
             let last_dir = unwrap_cont!(cut.last_dir());
 
-            road_pylons(&mut self.tess_map.meshbuilder, terrain, road);
+            road_pylons(&mut self.tess_map.meshbuilder, env, road);
 
             self.tess_map.normal.z = -1.0;
             self.tess_map.draw_polyline_full(
@@ -674,7 +676,7 @@ impl MapBuilders {
 
             self.crosswalks(inter, lanes);
 
-            inter_pylon(&mut self.tess_map.meshbuilder, terrain, inter, roads);
+            inter_pylon(&mut self.tess_map.meshbuilder, env, inter, roads);
             intersection_mesh(&mut self.tess_map, &hig_col, inter, roads);
 
             // Walking corners
@@ -788,7 +790,7 @@ fn add_polyon(
 
     let mr = &mut meshb;
     let mut quad = move |a, b, c, d, nor| {
-        mr.extend_with(move |vertices, add_idx| {
+        mr.extend_with(None, move |vertices, add_idx| {
             let mut pvert = move |p: Vec3, normal: Vec3| {
                 vertices.push(MeshVertex {
                     position: p.into(),
@@ -819,19 +821,19 @@ fn add_polyon(
     quad(3, 0, 7, 4, d2p);
 }
 
-fn road_pylons(meshb: &mut MeshBuilder<false>, terrain: &Terrain, road: &Road) {
-    for pylon in Road::pylons_positions(road.interfaced_points(), terrain) {
+fn road_pylons(meshb: &mut MeshBuilder<false>, env: &Environment, road: &Road) {
+    for pylon in Road::pylons_positions(road.interfaced_points(), env) {
         add_polyon(meshb, road.width * 0.5, pylon);
     }
 }
 
 fn inter_pylon(
     meshb: &mut MeshBuilder<false>,
-    terrain: &Terrain,
+    env: &Environment,
     inter: &Intersection,
     roads: &Roads,
 ) {
-    let h = unwrap_ret!(terrain.height(inter.pos.xy()));
+    let h = unwrap_ret!(env.height(inter.pos.xy()));
     if (h - inter.pos.z).abs() <= 2.0 {
         return;
     }
@@ -951,21 +953,22 @@ fn intersection_mesh(
     polygon.simplify();
 
     let col = LinearColor::from(simulation::config().road_mid_col).into();
-    tess.meshbuilder.extend_with(move |vertices, add_idx| {
-        vertices.extend(polygon.iter().map(|pos| MeshVertex {
-            position: pos.z(inter.pos.z - 0.001).into(),
-            normal: Vec3::Z,
-            uv: [0.0; 2],
-            color: col,
-            tangent: [0.0; 4],
-        }));
-        earcut(&polygon.0, &[], |a, b, c| {
-            add_idx(a as u32);
-            add_idx(b as u32);
-            add_idx(c as u32);
-            add_idx(c as u32);
-            add_idx(b as u32);
-            add_idx(a as u32);
+    tess.meshbuilder
+        .extend_with(None, move |vertices, add_idx| {
+            vertices.extend(polygon.iter().map(|pos| MeshVertex {
+                position: pos.z(inter.pos.z - 0.001).into(),
+                normal: Vec3::Z,
+                uv: [0.0; 2],
+                color: col,
+                tangent: [0.0; 4],
+            }));
+            earcut(&polygon.0, &[], |a, b, c| {
+                add_idx(a as u32);
+                add_idx(b as u32);
+                add_idx(c as u32);
+                add_idx(c as u32);
+                add_idx(b as u32);
+                add_idx(a as u32);
+            });
         });
-    });
 }

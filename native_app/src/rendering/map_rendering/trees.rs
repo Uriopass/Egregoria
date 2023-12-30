@@ -1,16 +1,14 @@
+use std::ops::Mul;
+
 use common::FastMap;
 use engine::meshload::load_mesh;
 use engine::wgpu::RenderPass;
 use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
-use geom::{
-    vec3, vec4, Camera, HeightmapChunk, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3,
-    AABB3,
-};
+use geom::{vec3, vec4, Camera, HeightmapChunk, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
 use simulation::config;
 use simulation::map::{Map, MapSubscriber, SubscriberChunkID, UpdateType};
-use std::ops::Mul;
 
 pub struct TreesRender {
     tree_builder: InstancedMeshBuilder<false>,
@@ -35,14 +33,14 @@ impl TreesRender {
             self.tree_builder.instances.clear();
 
             let aabb = chunkid.bbox();
-            map.terrain
+            map.environment
                 .trees
                 .query_aabb_visitor(aabb.ll, aabb.ur, |obj| {
-                    let Some((_, t)) = map.terrain.trees.get(obj.0) else {
+                    let Some((_, t)) = map.environment.trees.get(obj.0) else {
                         return;
                     };
                     self.tree_builder.instances.push(MeshInstance {
-                        pos: t.pos.z(map.terrain.height(t.pos).unwrap_or_default()),
+                        pos: t.pos.z(map.environment.height(t.pos).unwrap_or_default()),
                         dir: t.dir.z0() * t.size * 0.2,
                         tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
                     });
@@ -56,13 +54,7 @@ impl TreesRender {
         }
     }
 
-    pub fn draw(
-        &mut self,
-        map: &Map,
-        cam: &Camera,
-        frustrum: &InfiniteFrustrum,
-        ctx: &mut FrameContext<'_>,
-    ) {
+    pub fn draw(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
         self.build(map, ctx);
 
         if config().disable_trees {
@@ -109,11 +101,11 @@ impl TreesRender {
             let chunkcenter = cid.center().z0();
             let max_height = cid
                 .convert()
-                .filter_map(|c| map.terrain.get_chunk(c))
+                .filter_map(|c| map.environment.get_chunk(c))
                 .map(HeightmapChunk::max_height)
                 .fold(0.0, f32::max);
 
-            if !frustrum.intersects(&AABB3::new_size(
+            if !ctx.gfx.frustrum.intersects(&AABB3::new_size(
                 cid.corner().z(-40.0),
                 vec3(
                     5.0 + SubscriberChunkID::SIZE_F32,

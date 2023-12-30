@@ -107,6 +107,7 @@ impl Default for InspectedEntity {
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Tool {
+    #[default]
     Hand,
     RoadbuildStraight,
     RoadbuildCurved,
@@ -115,7 +116,6 @@ pub enum Tool {
     LotBrush,
     SpecialBuilding,
     Train,
-    #[default]
     Terraforming,
 }
 

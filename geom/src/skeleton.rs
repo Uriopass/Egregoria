@@ -1125,8 +1125,8 @@ mod tests {
         .copied()
         .rev()
         .collect::<Vec<_>>();
-        let skeleton = skeleton(&poly, &[]);
-        let _ = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
+        let skeleton = skeleton(poly, &[]);
+        let _ = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
     }
 
     #[test]

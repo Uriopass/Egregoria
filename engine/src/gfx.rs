@@ -1,11 +1,12 @@
 use crate::pbr::PBR;
+use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
     MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError, TextureBuilder, Uniform,
     UvVertex, TL,
 };
 use common::FastMap;
-use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
+use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -48,6 +49,7 @@ pub struct GfxContext {
     pub tick: u64,
     pub(crate) pipelines: RefCell<Pipelines>,
     pub(crate) projection: Uniform<Matrix4>,
+    pub frustrum: InfiniteFrustrum,
     pub(crate) sun_projection: [Uniform<Matrix4>; N_CASCADES],
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
@@ -68,6 +70,8 @@ pub struct GfxContext {
     pub sky_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
+
+    pub perf: PerfCounters,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
@@ -212,14 +216,11 @@ impl Default for RenderParams {
 
 u8slice_impl!(RenderParams);
 
-pub struct GuiRenderContext<'a, 'b> {
-    pub window: &'a Window,
+pub struct GuiRenderContext<'a> {
+    pub gfx: &'a mut GfxContext,
     pub encoder: &'a mut CommandEncoder,
     pub view: &'a TextureView,
     pub size: (u32, u32, f64),
-    pub device: &'a Device,
-    pub queue: &'a Queue,
-    pub rpass: Option<wgpu::RenderPass<'b>>,
 }
 
 pub struct FrameContext<'a> {
@@ -344,6 +345,7 @@ impl GfxContext {
             default_material: Material::new_default(&device, &queue, &null_texture),
             tick: 0,
             projection,
+            frustrum: InfiniteFrustrum::new([Plane::X; 5]),
             sun_projection: [(); 4].map(|_| Uniform::new(Matrix4::zero(), &device)),
             render_params: Uniform::new(Default::default(), &device),
             texture_cache_paths: textures,
@@ -363,6 +365,7 @@ impl GfxContext {
             defines: Default::default(),
             defines_changed: false,
             settings: None,
+            perf: Default::default(),
         };
 
         me.update_simplelit_bg();
@@ -540,12 +543,14 @@ impl GfxContext {
         self.render_params.value_mut().time = time;
     }
 
-    pub fn set_proj(&mut self, proj: Matrix4) {
-        *self.projection.value_mut() = proj;
-    }
+    pub fn set_camera(&mut self, cam: Camera) {
+        let viewproj = cam.build_view_projection_matrix();
+        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
 
-    pub fn set_inv_proj(&mut self, proj: Matrix4) {
-        self.render_params.value_mut().inv_proj = proj;
+        *self.projection.value_mut() = viewproj;
+        self.render_params.value_mut().inv_proj = inv_viewproj;
+
+        self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(cam.eye(), inv_viewproj);
     }
 
     pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {
@@ -598,6 +603,8 @@ impl GfxContext {
         mut prepare: impl FnMut(&mut FrameContext<'_>),
     ) {
         profiling::scope!("gfx::render_objs");
+        self.perf.clear();
+
         let mut objs = vec![];
         let mut fc = FrameContext {
             objs: &mut objs,
@@ -770,17 +777,14 @@ impl GfxContext {
         &mut self,
         encoders: &mut Encoders,
         frame: &TextureView,
-        mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
+        mut render_gui: impl FnMut(GuiRenderContext<'_>),
     ) {
         profiling::scope!("gfx::render_gui");
         render_gui(GuiRenderContext {
-            window: &self.window,
+            size: self.size,
+            gfx: self,
             encoder: &mut encoders.end,
             view: frame,
-            size: self.size,
-            device: &self.device,
-            queue: &self.queue,
-            rpass: None,
         });
     }
 

@@ -103,7 +103,7 @@ impl LampLights {
             0.0,
         );
 
-        let mut l = lights.collect::<smallvec::SmallVec<[Vec3; 4]>>();
+        let mut l = lights.collect::<Vec<Vec3>>();
         l.sort_unstable_by_key(|x| {
             OrderedFloat(x.distance2(origin + Vec3::splat(Self::LIGHTCHUNK_SIZE as f32 / 2.0)))
         });

@@ -1,14 +1,17 @@
-use crate::{
-    bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
-    IndexType, PipelineBuilder, RenderParams, Texture, TextureBuilder, Uniform, TL,
-};
-use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, Matrix4, Vec2, AABB3};
 use std::sync::Arc;
+
 use wgpu::{
     BindGroupDescriptor, BindGroupLayoutDescriptor, BufferUsages, CommandEncoder,
     CommandEncoderDescriptor, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat,
     Origin3d, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, TextureView,
     VertexAttribute, VertexBufferLayout,
+};
+
+use geom::{vec2, vec3, Camera, Intersect3, Matrix4, Vec2, AABB3};
+
+use crate::{
+    bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
+    IndexType, PipelineBuilder, RenderParams, Texture, TextureBuilder, Uniform, TL,
 };
 
 const LOD: usize = 5;
@@ -48,12 +51,15 @@ pub struct TerrainPrepared {
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
     const LOD0_RESOLUTION: usize = CRESOLUTION * (1 << UPSCALE_LOD);
 
-    pub fn new(gfx: &mut GfxContext, w: u32, h: u32, grass: Arc<Texture>) -> Self {
+    pub fn new(gfx: &mut GfxContext, w: u32, h: u32) -> Self {
         debug_assert!(
             Self::LOD0_RESOLUTION >= 1 << LOD,
             "LOD0 TERRAIN RESOLUTION must be >= {}",
             1 << LOD
         );
+
+        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
+        let cliff = gfx.texture("assets/sprites/cliff.jpg", "cliff");
 
         let indices = Self::generate_indices_mesh(gfx);
 
@@ -111,10 +117,10 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 &gfx.device,
             );
 
-            let texs = &[&terrain_tex, &normals_tex, &grass];
-            let mut bg_entries = Vec::with_capacity(3);
+            let texs = &[&terrain_tex, &normals_tex, &grass, &cliff];
+            let mut bg_entries = Vec::with_capacity(12);
             bg_entries.extend(Texture::multi_bindgroup_entries(0, texs));
-            bg_entries.push(uni.bindgroup_entry(6));
+            bg_entries.push(uni.bindgroup_entry(8));
             bgs.push(
                 gfx.device.create_bind_group(&BindGroupDescriptor {
                     layout: &gfx
@@ -131,15 +137,15 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         defer!(log::info!("finished init of terrain render"));
         Self {
-            normal_pipeline: normal_pipeline(&gfx, &normals_tex),
+            normal_pipeline: normal_pipeline(gfx, &normals_tex),
             normal_unis: collect_arrlod((0..LOD).map(|lod| {
                 Uniform::new(
                     (CSIZE << lod) as f32 / Self::LOD0_RESOLUTION as f32,
                     &gfx.device,
                 )
             })),
-            downsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "downsample"),
-            upsample_pipeline: resample_pipeline(&gfx, &terrain_tex, "upsample"),
+            downsample_pipeline: resample_pipeline(gfx, &terrain_tex, "downsample"),
+            upsample_pipeline: resample_pipeline(gfx, &terrain_tex, "upsample"),
 
             bgs: Arc::new(collect_arrlod(bgs)),
             terrain_tex: Arc::new(terrain_tex),
@@ -166,11 +172,9 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION * 2);
 
-        for i in 0..CRESOLUTION {
-            let ys: &[f32; CRESOLUTION] = &chunk[i];
-
-            for j in 0..CRESOLUTION {
-                contents.extend(pack(ys[j]));
+        for ys in chunk.iter() {
+            for &v in ys {
+                contents.extend(pack(v));
             }
         }
 
@@ -202,12 +206,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         );
     }
 
-    pub fn draw_terrain(
-        &mut self,
-        cam: &Camera,
-        frustrum: &InfiniteFrustrum,
-        fctx: &mut FrameContext<'_>,
-    ) {
+    pub fn draw_terrain(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
         profiling::scope!("terrain::draw_terrain");
         let eye = cam.eye();
 
@@ -223,7 +222,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 let chunk_corner = vec2(x as f32, y as f32) * CSIZE as f32;
                 let chunk_center = chunk_corner + Vec2::splat(CSIZE as f32 * 0.5);
 
-                if !frustrum.intersects(&AABB3::new(
+                if !fctx.gfx.frustrum.intersects(&AABB3::new(
                     chunk_corner.z(MIN_HEIGHT),
                     chunk_corner.z0() + vec3(CSIZE as f32, CSIZE as f32, MAX_HEIGHT + 16.0),
                 )) {
@@ -296,6 +295,19 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             for y in 0..resolution {
                 for x in 0..resolution {
                     let idx = y * w + x;
+                    // avoid aliasing by alternating the triangles
+                    // alternate at 2 different levels (x + y) and (x / 2 + y / 2)
+                    // because of the LOD interpolation (each rectangle might end up being 2 times smaller)
+                    if (x + y + x / 2 + y / 2) % 2 == 0 {
+                        indices.push(idx);
+                        indices.push(idx + 1);
+                        indices.push(idx + w);
+
+                        indices.push(idx + 1);
+                        indices.push(idx + w + 1);
+                        indices.push(idx + w);
+                        continue;
+                    }
                     indices.push(idx);
                     indices.push(idx + 1);
                     indices.push(idx + w + 1);
@@ -420,10 +432,10 @@ fn normal_pipeline(gfx: &GfxContext, normals_tex: &Texture) -> RenderPipeline {
         })
 }
 
-fn normal_update<'a>(
+fn normal_update(
     gfx: &GfxContext,
     normal_pipeline: &RenderPipeline,
-    encoder: &'a mut CommandEncoder,
+    encoder: &mut CommandEncoder,
     height_tex: &TextureView,
     normal_view: &TextureView,
     uni: &Uniform<f32>,
@@ -432,7 +444,7 @@ fn normal_update<'a>(
         layout: &normal_pipeline.get_bind_group_layout(0),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
-            resource: wgpu::BindingResource::TextureView(&height_tex),
+            resource: wgpu::BindingResource::TextureView(height_tex),
         }],
         label: None,
     });
@@ -440,7 +452,7 @@ fn normal_update<'a>(
     let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("terrain normals render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: &normal_view,
+            view: normal_view,
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Load,
@@ -451,7 +463,7 @@ fn normal_update<'a>(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rp.set_pipeline(&normal_pipeline);
+    rp.set_pipeline(normal_pipeline);
     rp.set_bind_group(0, &bg, &[]);
     rp.set_bind_group(1, &uni.bindgroup, &[]);
     rp.draw(0..4, 0..1);
@@ -540,7 +552,7 @@ fn downsample_update(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rp.set_pipeline(&downsample_pipeline);
+    rp.set_pipeline(downsample_pipeline);
     rp.set_bind_group(0, &bg, &[]);
     rp.draw(0..4, 0..1);
     drop(rp);
@@ -578,7 +590,7 @@ fn upsample_update(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rp.set_pipeline(&upsample_pipeline);
+    rp.set_pipeline(upsample_pipeline);
     rp.set_bind_group(0, &bg, &[]);
     rp.draw(0..4, 0..1);
     drop(rp);
@@ -622,24 +634,6 @@ impl TerrainInstance {
     }
 }
 
-impl TerrainPrepared {
-    fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
-        for lod in 0..LOD {
-            let (instances, n_instances) = &self.instances[lod];
-            if *n_instances == 0 {
-                continue;
-            }
-
-            let (ind, n_indices) = &self.indices[lod];
-
-            rp.set_bind_group(2, &self.terrainbgs[lod], &[]);
-            rp.set_vertex_buffer(0, instances.slice().unwrap());
-            rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
-            rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);
-        }
-    }
-}
-
 impl PipelineBuilder for TerrainPipeline {
     fn build(
         &self,
@@ -651,10 +645,10 @@ impl PipelineBuilder for TerrainPipeline {
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
                 entries: &Texture::bindgroup_layout_entries(
                     0,
-                    [TL::UInt, TL::UInt, TL::Float].into_iter(),
+                    [TL::UInt, TL::UInt, TL::Float, TL::Float].into_iter(),
                 )
                 .chain(std::iter::once(
-                    Uniform::<TerrainChunkData>::bindgroup_layout_entry(6),
+                    Uniform::<TerrainChunkData>::bindgroup_layout_entry(8),
                 ))
                 .collect::<Vec<_>>(),
                 label: Some("terrain bindgroup layout"),
@@ -705,6 +699,14 @@ impl Drawable for TerrainPrepared {
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
 
         self.set_buffers(rp);
+
+        for lod in 0..LOD {
+            let (_, n_instances) = &self.instances[lod];
+            let (_, n_indices) = &self.indices[lod];
+
+            gfx.perf
+                .terrain_drawcall(*n_indices as usize / 3 * *n_instances as usize)
+        }
     }
 
     fn draw_depth<'a>(
@@ -725,6 +727,34 @@ impl Drawable for TerrainPrepared {
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
 
         self.set_buffers(rp);
+
+        for lod in 0..LOD {
+            let (_, n_instances) = &self.instances[lod];
+            let (_, n_indices) = &self.indices[lod];
+
+            gfx.perf.terrain_depth_drawcall(
+                *n_indices as usize / 3 * *n_instances as usize,
+                shadow_cascade.is_some(),
+            );
+        }
+    }
+}
+
+impl TerrainPrepared {
+    fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
+        for lod in 0..LOD {
+            let (instances, n_instances) = &self.instances[lod];
+            if *n_instances == 0 {
+                continue;
+            }
+
+            let (ind, n_indices) = &self.indices[lod];
+
+            rp.set_bind_group(2, &self.terrainbgs[lod], &[]);
+            rp.set_vertex_buffer(0, instances.slice().unwrap());
+            rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
+            rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);
+        }
     }
 }
 

@@ -1,12 +1,10 @@
 use common::{AudioKind, History};
 use engine::meshload::load_mesh;
 use engine::{
-    Context, FrameContext, GfxContext, GfxSettings, InstancedMeshBuilder, KeyCode, MeshInstance,
-    MouseButton, ShadowQuality,
+    Context, FrameContext, GfxSettings, InstancedMeshBuilder, Key, MeshInstance, MouseButton,
+    ShadowQuality,
 };
-use geom::{
-    vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3,
-};
+use geom::{vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Plane, Radians, Vec2, Vec3};
 
 use crate::helmet::Helmet;
 use crate::spheres::Spheres;
@@ -22,7 +20,7 @@ trait DemoElement {
     where
         Self: Sized;
     fn update(&mut self, ctx: &mut Context, cam: &Camera);
-    fn render(&mut self, fc: &mut FrameContext, cam: &Camera, frustrum: &InfiniteFrustrum);
+    fn render(&mut self, fc: &mut FrameContext, cam: &Camera);
     fn render_gui(&mut self, _ui: &mut egui::Ui) {}
 }
 
@@ -33,10 +31,6 @@ struct State {
 
     camera: Camera,
     camera_speed: f32,
-    frustrum: InfiniteFrustrum,
-    last_cam: Camera,
-
-    freeze_cam: bool,
 
     delta: f32,
     play_queue: Vec<&'static str>,
@@ -50,10 +44,6 @@ struct State {
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
-
-        gfx.render_params.value_mut().shadow_mapping_resolution = 2048;
-        gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
-        gfx.update_simplelit_bg();
 
         let mut meshes = vec![];
 
@@ -74,8 +64,10 @@ impl engine::framework::State for State {
 
         ctx.audio.set_settings(100.0, 100.0, 100.0, 100.0);
 
-        let mut gfx_settings = GfxSettings::default();
-        gfx_settings.shader_debug = true;
+        let gfx_settings = GfxSettings {
+            shader_debug: true,
+            ..Default::default()
+        };
 
         Self {
             demo_elements: vec![
@@ -88,9 +80,6 @@ impl engine::framework::State for State {
             delta: 0.0,
             play_queue: vec![],
             camera_speed: 100.0,
-            frustrum: InfiniteFrustrum::new([Plane::X; 5]),
-            last_cam: camera,
-            freeze_cam: false,
             ms_hist: History::new(128),
             gfx_settings,
             sun_angle: Degrees(0.0),
@@ -112,20 +101,15 @@ impl engine::framework::State for State {
 
         let gfx = &mut ctx.gfx;
 
-        let viewproj = self.camera.build_view_projection_matrix();
-        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
-        gfx.set_proj(viewproj);
-        gfx.set_inv_proj(inv_viewproj);
+        gfx.set_camera(self.camera);
 
         let params = gfx.render_params.value_mut();
         params.time_always = (params.time_always + delta) % 3600.0;
         params.sun_col = 4.0
             * sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-        if !self.freeze_cam {
-            params.cam_pos = self.camera.eye();
-            params.cam_dir = self.camera.dir();
-        }
+        params.cam_pos = self.camera.eye();
+        params.cam_dir = self.camera.dir();
         params.sun = sun;
         params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
         self.camera.dist = 300.0;
@@ -148,24 +132,16 @@ impl engine::framework::State for State {
         }
 
         for v in self.play_queue.drain(..) {
-            ctx.audio.play(&v, AudioKind::Ui);
+            ctx.audio.play(v, AudioKind::Ui);
         }
     }
 
     fn render(&mut self, fc: &mut FrameContext) {
-        if !self.freeze_cam {
-            self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(
-                self.camera.eye(),
-                fc.gfx.render_params.value().inv_proj,
-            );
-            self.last_cam = self.camera;
-        }
-
         for (de, enabled) in &mut self.demo_elements {
             if !*enabled {
                 continue;
             }
-            de.render(fc, &self.last_cam, &self.frustrum);
+            de.render(fc, &self.camera);
         }
     }
 
@@ -200,7 +176,6 @@ impl engine::framework::State for State {
                 ));
 
                 ui.add(egui::Slider::new(&mut self.camera_speed, 1.0..=100.0).text("Camera speed"));
-                ui.checkbox(&mut self.freeze_cam, "Freeze camera");
 
                 ui.checkbox(&mut self.gfx_settings.fullscreen, "Fullscreen");
                 ui.checkbox(&mut self.gfx_settings.vsync, "VSync");
@@ -239,7 +214,7 @@ impl State {
             self.is_captured = false;
         }
 
-        if ctx.input.keyboard.pressed.contains(&KeyCode::Escape) {
+        if ctx.input.keyboard.pressed.contains(&Key::Escape) {
             let _ = ctx.gfx.window.set_cursor_grab(engine::CursorGrabMode::None);
             ctx.gfx.window.set_cursor_visible(true);
             self.is_captured = false;

@@ -31,7 +31,7 @@ struct ChunkData {
 @group(2) @binding(1) var s_terrain: sampler;
 @group(2) @binding(2) var t_normals: texture_2d<u32>;
 @group(2) @binding(3) var s_normals: sampler;
-@group(2) @binding(6) var<uniform> cdata: ChunkData;
+@group(2) @binding(8) var<uniform> cdata: ChunkData;
 
 /*
 normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)
@@ -75,22 +75,22 @@ fn vert(@builtin(vertex_index) vid: u32,
 
     var world_pos: vec3<f32> = vec3(vec2<f32>(in_position * i32(cdata.lod_pow2)) * cdata.cell_size + in_off, height_normal.x);
 
-    let height_normal_next: vec4<f32> = sampleHeightDxDy(tpos / 2, i32(cdata.lod) + 1);
-
 #ifdef DEBUG
     var debug = 1.0;
 #endif
 
-    if (cdata.lod < 4u) {
-        let dist_to_cam: f32 = length(params.cam_pos.xyz - vec3(world_pos.xy, 0.0));
-        let transition_alpha: f32 = smoothstep(cdata.distance_lod_cutoff * 0.8, cdata.distance_lod_cutoff, dist_to_cam);
+    let dist_to_cam: f32 = length(params.cam_pos.xyz - vec3(world_pos.xy, 0.0));
+    let transition_alpha: f32 = smoothstep(cdata.distance_lod_cutoff * 0.8, cdata.distance_lod_cutoff, dist_to_cam);
 
+    if (cdata.lod < 4u && transition_alpha > 0.0) {
 #ifdef DEBUG
 //    debug = (f32(cdata.lod) + transition_alpha + 1.0) / 5.0;
     debug = f32(cdata.lod);
 #endif
+        let height_normal_next: vec4<f32> = sampleHeightDxDy(tpos / 2, i32(cdata.lod) + 1);
 
         var world_pos_next: vec3<f32> = vec3(vec2<f32>(in_position / 2 * i32(cdata.lod_pow2)) * cdata.cell_size * 2.0 + in_off, height_normal_next.x);
+
 
         normal = normalize(mix(normal, height_normal_next.yzw, transition_alpha));
         world_pos = mix(world_pos, world_pos_next, transition_alpha);

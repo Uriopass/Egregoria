@@ -1,3 +1,5 @@
+#![allow(clippy::needless_range_loop, clippy::needless_late_init)]
+
 extern crate core;
 macro_rules! defer_inter {
     ($a:ty => $b:ty) => {
@@ -48,6 +50,7 @@ mod ray3;
 mod segment;
 mod segment3;
 pub mod skeleton;
+mod sphere;
 mod spline3;
 mod splines;
 mod transform;
@@ -81,6 +84,7 @@ pub use ray::*;
 pub use ray3::*;
 pub use segment::*;
 pub use segment3::*;
+pub use sphere::*;
 pub use spline3::*;
 pub use splines::*;
 pub use transform::*;

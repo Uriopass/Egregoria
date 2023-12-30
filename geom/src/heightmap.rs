@@ -381,8 +381,9 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
 
                 let min_t = t_x.min(t_y) + 0.0001;
                 t += min_t;
+                #[allow(clippy::neg_cmp_op_on_partial_ord)]
+                // reverse the condition to avoid infinite loop in case of NaN
                 if !(t < l) {
-                    // reverse the condition to avoid infinite loop in case of NaN
                     return None;
                 }
                 cur += min_t * speed;
@@ -457,13 +458,25 @@ fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
     mid
 }
 
+fn pack_height(height: f32) -> u16 {
+    ((height - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT) * u16::MAX as f32) as u16
+}
+
+fn unpack_height(height: u16) -> f32 {
+    height as f32 / u16::MAX as f32 * (MAX_HEIGHT - MIN_HEIGHT) + MIN_HEIGHT
+}
+
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut seq = serializer.serialize_seq(Some(1 + RESOLUTION * RESOLUTION))?;
         seq.serialize_element(&self.max_height)?;
+        let mut last = 0;
         for row in &self.heights {
-            for height in row {
-                seq.serialize_element(height)?;
+            for &height in row {
+                let packed = pack_height(height);
+                let delta = packed.wrapping_sub(last);
+                seq.serialize_element(&delta)?;
+                last = packed;
             }
         }
         seq.end()
@@ -501,11 +514,15 @@ impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVis
             .next_element()?
             .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
         let mut heights = [[0.0; RESOLUTION]; RESOLUTION];
+        let mut last = 0;
         for row in &mut heights {
             for height in row {
-                *height = seq
+                let delta: u16 = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
+                let packed = delta.wrapping_add(last);
+                *height = unpack_height(packed);
+                last = packed;
             }
         }
         Ok((heights, max_height))
@@ -564,7 +581,7 @@ mod erosion {
             for _ in 0..n_particles {
                 // Create water droplet at random point in bounds, in a circle
 
-                let d = randgen().sqrt() * (bounds.size() / 2.0).mag();
+                let d = randgen().powf(0.8) * bounds.w() * 0.5;
                 let angle = Radians(randgen() * std::f32::consts::TAU);
                 let pos = bounds.center() + angle.vec2() * d;
 
@@ -640,10 +657,10 @@ mod erosion {
 
                         let amount_to_deposit = amount_to_deposit * Self::CELL_SIZE;
                         {
-                            self.height_idx_mut(pos.x as usize    , pos.y as usize)    .map(|v| { *v += amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y) });
-                            self.height_idx_mut(pos.x as usize + 1, pos.y as usize)    .map(|v| { *v += amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y) });
-                            self.height_idx_mut(pos.x as usize    , pos.y as usize + 1).map(|v| { *v += amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y });
-                            self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1).map(|v|   *v += amount_to_deposit * cell_offset.x         * cell_offset.y);
+                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize)     { *v += amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize)     { *v += amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize + 1) { *v += amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1) { *v += amount_to_deposit * cell_offset.x         * cell_offset.y };
                         }
                     } else {
                         // Erode a fraction of the droplet's current carry capacity.
@@ -672,8 +689,9 @@ mod erosion {
                                     .div(Self::CELL_SIZE)
                                     .min(weighed_erode_amount);
 
-                                self.height_idx_mut(pos_radius.x as usize, pos_radius.y as usize)
-                                    .map(|v| *v -= delta_sediment * Self::CELL_SIZE);
+                                if let Some(v) = self.height_idx_mut(pos_radius.x as usize, pos_radius.y as usize)
+                                        {  *v -= delta_sediment * Self::CELL_SIZE }
+
 
                                 //dbg!(delta_sediment, weighed_erode_amount, amount_to_erode);
                                 sediment += delta_sediment;

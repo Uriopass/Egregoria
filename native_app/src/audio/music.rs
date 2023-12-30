@@ -1,6 +1,6 @@
 use common::AudioKind;
-use engine::{AudioContext, BaseSignal, ControlHandle, FadeIn};
-use oddio::{FramesSignal, Stop};
+use engine::{AudioContext, FadeIn};
+use oddio::{FramesSignal, Mixed};
 use std::time::{Duration, Instant};
 
 const TRACKS: &[&str] = &["music2", "music1"];
@@ -10,7 +10,7 @@ pub struct Music {
     track_id: usize,
     time_between_tracks: Duration,
     last_played: Instant,
-    cur_track: Option<ControlHandle<FadeIn<BaseSignal>>>,
+    cur_track: Option<Mixed>,
 }
 
 impl Music {
@@ -28,7 +28,7 @@ impl Music {
             return;
         }
         if let Some(ref mut x) = self.cur_track {
-            if !x.control::<Stop<_>, _>().is_stopped() {
+            if !x.is_stopped() {
                 return;
             }
             self.cur_track = None;
@@ -38,10 +38,10 @@ impl Music {
             self.track_id = (self.track_id + 1) % TRACKS.len();
             let h = ctx.play_with_control(
                 TRACKS[self.track_id],
-                |s| FadeIn::new(FramesSignal::new(s, 0.0), 5.0),
+                |s| ((), FadeIn::new(FramesSignal::new(s, 0.0).1, 5.0)),
                 AudioKind::Music,
             );
-            self.cur_track = h;
+            self.cur_track = h.map(|x| x.1);
             log::info!("playing soundtrack {}", TRACKS[self.track_id]);
             self.last_played = Instant::now();
         }

@@ -66,6 +66,14 @@ impl Mul<Vec4> for Matrix4 {
     }
 }
 
+impl<'a> Mul<Vec4> for &'a Matrix4 {
+    type Output = Vec4;
+
+    fn mul(self, rhs: Vec4) -> Self::Output {
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z + self.w * rhs.w
+    }
+}
+
 impl Mul for Matrix4 {
     type Output = Matrix4;
 
