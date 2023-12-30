@@ -43,7 +43,7 @@ pub(crate) fn add_flocks_randomly(sim: &mut Simulation) {
 
     let mut rng = RandProvider::new(num_flocks as u64);
 
-    let aabb = sim.map().terrain.bounds();
+    let aabb = sim.map().environment.bounds();
     let center_pos = get_random_spawn_pos(aabb, rng.next_f32(), rng.next_f32(), rng.next_f32());
 
     let mut ids: Vec<BirdID> = Vec::new();

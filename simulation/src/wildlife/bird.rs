@@ -27,7 +27,7 @@ pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.read::<GameTime>();
     let map = &*resources.read::<Map>();
 
-    let aabb = map.terrain.bounds();
+    let aabb = map.environment.bounds();
 
     world.flocks.values().for_each(|flock| {
         let flock_physics: Vec<(Transform, Speed)> = flock
