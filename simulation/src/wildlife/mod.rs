@@ -32,7 +32,7 @@ const NUM_FLOCKS: u32 = 20;
 const BIRDS_PER_FLOCK: u32 = 50;
 const SPAWN_RANGE: f32 = 5.0; // how spread out birds in the flock should be initially
 
-/// HACK (for now): spawns birds in random clusters around the map
+/// spawns birds in random clusters around the map
 pub(crate) fn add_flocks_randomly(sim: &mut Simulation) {
     profiling::scope!("wildlife::add_flocks_randomly");
 

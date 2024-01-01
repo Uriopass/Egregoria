@@ -9,6 +9,7 @@ use geom::angle_lerpxy;
 use geom::AABB;
 use geom::{Transform, Vec3};
 
+/// spawns a bird in the world
 pub fn spawn_bird(sim: &mut Simulation, spawn_pos: Vec3) -> Option<BirdID> {
     profiling::scope!("spawn_bird");
 
@@ -22,8 +23,9 @@ pub fn spawn_bird(sim: &mut Simulation, spawn_pos: Vec3) -> Option<BirdID> {
     Some(id)
 }
 
+/// Update the movement of each bird in the world
 pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
-    profiling::scope!("wildlife::animal_decision_system");
+    profiling::scope!("wildlife::bird_decision_system");
     let ra = &*resources.read::<GameTime>();
     let map = &*resources.read::<Map>();
 
@@ -60,7 +62,7 @@ pub fn bird_decision_system(world: &mut World, resources: &mut Resources) {
     });
 }
 
-/// Update the speed, position, and direction of a bird
+/// Update the speed, position, and direction of a bird using the boids algorithm
 pub fn bird_decision(
     time: &GameTime,
     trans: &mut Transform,
@@ -141,7 +143,7 @@ fn bounds_adjustment(trans: &Transform, aabb: AABB) -> Vec3 {
     const MAX_Z: f32 = 200.0;
     const TURN_AMOUNT: f32 = 1.0;
     let mut v = Vec3::new(0.0, 0.0, 0.0);
-    // TODO: the ground might not be at 0
+    // TODO: the ground might not be at z: 0
     if trans.position.z < MARGIN {
         v.z += TURN_AMOUNT;
     }
