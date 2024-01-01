@@ -73,16 +73,18 @@ pub fn bird_decision(
     // the initial velocity of the bird
     let mut dv = trans.dir * kin.0;
 
-    // fly towards the flock center
-    const CENTERING_FACTOR: f32 = 0.1;
-    dv += (flock_center - trans.position) * CENTERING_FACTOR;
+    // fly towards the average position of all other birds
+    const CENTERING_FACTOR: f32 = 0.01;
+    let num_birds = flock_physics.len() as f32;
+    let perceived_center = (flock_center * num_birds - trans.position) / (num_birds - 1.0);
+    dv += (perceived_center - trans.position) * CENTERING_FACTOR;
 
     // match the flock's average velocity
-    const MATCHING_FACTOR: f32 = 0.1;
+    const MATCHING_FACTOR: f32 = 0.01;
     dv += (flock_avg_v - dv) * MATCHING_FACTOR;
 
     // avoid nearby birds
-    const AVOID_FACTOR: f32 = 0.1;
+    const AVOID_FACTOR: f32 = 0.01;
     dv += separation_adjustment(trans, flock_physics) * AVOID_FACTOR;
 
     // avoid map boundaries
@@ -123,11 +125,11 @@ fn average_velocity(flock_physics: &Vec<(Transform, Speed)>) -> Vec3 {
 
 /// Get an adjustment vector to move the bird away from other birds
 fn separation_adjustment(trans: &Transform, flock_physics: &Vec<(Transform, Speed)>) -> Vec3 {
-    const MIN_DISTANCE: f32 = 20.0;
+    const MIN_DISTANCE: f32 = 5.0;
     flock_physics
         .iter()
-        .filter(|(t, _)| t.position.distance(trans.position) < MIN_DISTANCE)
-        .map(|(t, _)| trans.position - t.position)
+        .filter(|(other, _)| other.position.distance(trans.position) < MIN_DISTANCE)
+        .map(|(other, _)| trans.position - other.position)
         // TODO: use .sum() ?
         .reduce(|a, b| a + b)
         .unwrap()
