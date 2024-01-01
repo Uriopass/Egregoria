@@ -10,10 +10,15 @@ pub struct RandProvider {
 }
 
 impl RandProvider {
-    pub fn new(seed: u64) -> Self {
-        let b = seed.to_le_bytes();
+    pub fn new(mut seed: u64) -> Self {
+        let tmp = splitmix64(&mut seed);
+        let tmp2 = splitmix64(&mut seed);
+
         Self::from_seed([
-            b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], 0, 0, 0, 0, 0, 0, 0, 0,
+            tmp as u32,
+            (tmp >> 32) as u32,
+            tmp2 as u32,
+            (tmp2 >> 32) as u32,
         ])
     }
 
@@ -67,12 +72,7 @@ impl RandProvider {
         }
     }
 
-    pub fn from_seed(seed: [u8; 16]) -> Self {
-        let mut seed_u32 = [0u32; 4];
-        for (out, chunk) in seed_u32.iter_mut().zip(seed.chunks_exact(4)) {
-            *out = u32::from_le_bytes(chunk.try_into().unwrap());
-        }
-
+    pub fn from_seed(mut seed_u32: [u32; 4]) -> Self {
         // Xorshift cannot be seeded with 0 and we cannot return an Error, but
         // also do not wish to panic (because a random seed can legitimately be
         // 0); our only option is therefore to use a preset value.
@@ -87,4 +87,13 @@ impl RandProvider {
             w: w(seed_u32[3]),
         }
     }
+}
+
+// used only for the initial seed
+fn splitmix64(state: &mut u64) -> u64 {
+    *state = state.wrapping_add(0x9E3779B97f4A7C15);
+    let mut result = *state;
+    result = (result ^ (result >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+    result = (result ^ (result >> 27)).wrapping_mul(0x94D049BB133111EB);
+    return result ^ (result >> 31);
 }
