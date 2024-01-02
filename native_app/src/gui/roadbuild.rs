@@ -7,6 +7,7 @@ use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
 use geom::{PolyLine3, Spline3, Vec2, Vec3};
 use simulation::map::{
     Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
+    RoadSegmentKind,
 };
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::Simulation;
@@ -56,9 +57,9 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
     let grid_size = 20.0;
     let mousepos = if state.snap_to_grid {
         let v = unproj.xy().snap(grid_size, grid_size);
-        v.z(unwrap_ret!(map.environment.height(v)) + 0.3 + state.height_offset)
+        v.z(unwrap_ret!(map.environment.height(v)) + state.height_offset)
     } else {
-        unproj.up(0.3 + state.height_offset)
+        unproj.up(state.height_offset)
     };
 
     let log_camheight = cam.eye().z.log10();
@@ -408,7 +409,22 @@ impl RoadBuildResource {
             Start(x) => {
                 immdraw.circle(proj_pos, patwidth * 0.5).color(col);
                 immdraw.circle(x.pos.up(0.1), patwidth * 0.5).color(col);
-                immdraw.line(proj_pos, x.pos.up(0.1), patwidth).color(col);
+
+                let Ok(points) = simulation::map::Road::generate_points(
+                    x.pos,
+                    proj_pos,
+                    RoadSegmentKind::Straight,
+                    false,
+                    &map.environment,
+                ) else {
+                    // todo: handle error
+                    return;
+                };
+
+                immdraw
+                    .polyline(points.into_vec(), patwidth, false)
+                    .color(col);
+
                 let istart = interf((proj_pos - x.pos).xy().normalize(), x);
                 let iend = interf(-(proj_pos - x.pos).xy().normalize(), proj);
                 PolyLine3::new(vec![x.pos.up(0.1), proj_pos]).cut(istart, iend)

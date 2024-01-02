@@ -1,4 +1,4 @@
-use crate::{vec3, PolyLine, Segment3, Vec3, AABB3};
+use crate::{vec3, PolyLine, Radians, Segment3, Vec3, AABB3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -74,6 +74,70 @@ impl PolyLine3 {
             }
             v
         })
+    }
+
+    /// Simplifies the polyline by keeping points
+    /// where the dot product of the previous and next segment is greater than mindot
+    /// mindot should be a bit more than -1
+    /// mindist is the minimum distance between two points, below that and the point is removed
+    /// maxdist is the maximum distance between two points, above that and the algorithm goes forward.
+    ///         Keeping points close enough to avoid precision issues
+    /// Complexity is O(N)
+    pub fn simplify(&mut self, maxangle: Radians, mindist: f32, maxdist: f32) {
+        let mut i = 1;
+        let mut j = 1;
+
+        let maxdot = maxangle.cos();
+
+        while i < self.len() {
+            if i != j {
+                self.points[j] = self[i];
+            }
+            i += 1;
+
+            if i == self.len() {
+                j += 1;
+                break;
+            }
+
+            let Some(&prev) = self.get(j - 1) else {
+                j += 1;
+                continue;
+            };
+            let cur = self[j];
+            let Some(&next) = self.get(i) else {
+                j += 1;
+                continue;
+            };
+
+            let prevdiff = prev - cur;
+            let prevdist = prevdiff.mag();
+            if prevdist <= mindist {
+                continue;
+            }
+            if prevdist >= maxdist {
+                j += 1;
+                continue;
+            }
+
+            let prevdir = prevdiff / prevdist;
+
+            let Some(nextdir) = (next - cur).try_normalize() else {
+                j += 1;
+                continue;
+            };
+
+            if prevdir.dot(nextdir) < -maxdot {
+                continue;
+            }
+
+            j += 1;
+        }
+
+        if j != i {
+            self.points.truncate(j);
+            self.l = length(&self.points);
+        }
     }
 
     pub fn extend<A, T>(&mut self, s: T)
@@ -394,8 +458,13 @@ impl PolyLine3 {
         self.points.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<'_, Vec3> {
+    /// Length must be recalculated after using this function
+    pub fn iter_mut_unchecked(&mut self) -> IterMut<'_, Vec3> {
         self.points.iter_mut()
+    }
+
+    pub fn recalculate_length(&mut self) {
+        self.l = length(&self.points);
     }
 
     pub fn array_windows<const N: usize>(&self) -> impl Iterator<Item = &[Vec3; N]> + '_ {
@@ -454,4 +523,35 @@ impl<'a> PointsAlongs3<'a> {
 
 fn length(v: &[Vec3]) -> f32 {
     v.windows(2).map(|x| (x[1] - x[0]).mag()).sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{vec3, PolyLine3};
+
+    #[test]
+    fn test_simplify() {
+        let mut p = PolyLine3::new(vec![
+            vec3(0.0, 0.0, 0.0),
+            vec3(1.0, 0.0, 0.0),
+            vec3(2.0, 0.0, 0.0),
+            vec3(3.0, 0.0, 0.0),
+            vec3(4.0, 0.0, 0.0),
+            vec3(5.0, 1.0, 0.0),
+            vec3(5.0, 2.0, 0.0),
+            vec3(5.0, 200.0, 0.0),
+            vec3(5.0, 300.0, 0.0),
+        ]);
+        p.simplify(-0.9, 0.1, 100.0);
+        assert_eq!(
+            p.into_vec(),
+            vec![
+                vec3(0.0, 0.0, 0.0),
+                vec3(4.0, 0.0, 0.0),
+                vec3(5.0, 1.0, 0.0),
+                vec3(5.0, 200.0, 0.0),
+                vec3(5.0, 300.0, 0.0),
+            ]
+        );
+    }
 }

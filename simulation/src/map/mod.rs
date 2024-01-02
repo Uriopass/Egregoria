@@ -53,3 +53,4 @@ pub use turn_policy::*;
 pub use ::pathfinding as pathfinding_crate;
 
 pub const CROSSWALK_WIDTH: f32 = 2.0;
+pub const ROAD_Z_OFFSET: f32 = 0.3;

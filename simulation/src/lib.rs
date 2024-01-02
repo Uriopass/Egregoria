@@ -458,7 +458,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4343.2334,
             6262.846,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -466,7 +466,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4222.163,
             6318.7007,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -512,7 +512,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             2024.0668,
             147.33333,
-            0.3
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -525,7 +525,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             2831.1282,
             2172.9182,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -555,7 +555,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             2831.1282,
             2172.9182,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -568,7 +568,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4098.609,
             4876.7466,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -598,7 +598,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4098.609,
             4876.7466,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -611,7 +611,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4180.8335,
             5765.297,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -641,7 +641,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4180.8335,
             5765.297,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -654,7 +654,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4312.9233,
             5982.129,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -679,7 +679,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4312.9233,
             5982.129,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -692,7 +692,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4418.4004,
             6150.2427,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -717,7 +717,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4418.4004,
             6150.2427,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -730,7 +730,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4343.2334,
             6262.846,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -760,7 +760,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4222.163,
             6318.7007,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -773,7 +773,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4080.5332,
             6242.0093,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -798,7 +798,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4080.5332,
             6242.0093,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -811,7 +811,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4134.9575,
             5988.7896,
-            0.31
+            0.0
           ],
           "kind": "Ground"
         },
@@ -836,7 +836,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4134.9575,
             5988.7896,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {
@@ -849,7 +849,7 @@ const START_COMMANDS: &str = r#"
           "pos": [
             4180.8335,
             5765.297,
-            0.31
+            0.0
           ],
           "kind": {
             "Inter": {

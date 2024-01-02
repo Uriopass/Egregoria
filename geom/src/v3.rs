@@ -1,16 +1,28 @@
 use crate::{vec2, vec4, Shape3, Vec2, Vec4, AABB3};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 pub type V3 = Vec3;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, PartialEq)]
 #[repr(C)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+impl Debug for Vec3 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("V3(")?;
+        Debug::fmt(&self.x, f)?;
+        f.write_str(", ")?;
+        Debug::fmt(&self.y, f)?;
+        f.write_str(", ")?;
+        Debug::fmt(&self.z, f)?;
+        f.write_str(")")
+    }
 }
 
 impl Shape3 for Vec3 {
@@ -51,11 +63,11 @@ impl Eq for Vec3 {}
 impl Display for Vec3 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("V3(")?;
-        self.x.fmt(f)?;
+        Display::fmt(&self.x, f)?;
         f.write_str(", ")?;
-        self.y.fmt(f)?;
+        Display::fmt(&self.y, f)?;
         f.write_str(", ")?;
-        self.z.fmt(f)?;
+        Display::fmt(&self.z, f)?;
         f.write_str(")")
     }
 }
@@ -63,11 +75,11 @@ impl Display for Vec3 {
 impl Display for Vec3d {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("V3d(")?;
-        self.x.fmt(f)?;
+        Display::fmt(&self.x, f)?;
         f.write_str(", ")?;
-        self.y.fmt(f)?;
+        Display::fmt(&self.y, f)?;
         f.write_str(", ")?;
-        self.z.fmt(f)?;
+        Display::fmt(&self.z, f)?;
         f.write_str(")")
     }
 }

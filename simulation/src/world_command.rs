@@ -366,7 +366,7 @@ fn generate_terrain(sim: &mut Simulation, size: u16) {
     sim.map_mut().environment = Environment::new(size, size);
     info!("took {}s", t.elapsed().as_secs_f32());
 
-    let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.3);
+    let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.0);
     let obb = OBB::new(c.xy(), -Vec2::X, 72.2, 200.0);
 
     let [offy, _] = obb.axis().map(|x| x.normalize().z(0.0));

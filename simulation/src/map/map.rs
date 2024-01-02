@@ -156,14 +156,19 @@ impl Map {
             })
         };
 
-        let from = mk_inter(from)?;
-        let to = mk_inter(to)?;
+        let from_id = mk_inter(from)?;
+        let to_id = mk_inter(to)?;
 
-        let r = self.connect(from, to, pattern, connection_segment)?;
+        let r = self.connect(from_id, to_id, pattern, connection_segment)?;
+
+        info!(
+            "connect {:?}({:?}) {:?}({:?}) {:?} {:?}: {:?}",
+            from, from_id, to, to_id, pattern, &interpoint, r
+        );
 
         self.check_invariants();
 
-        Some((to, r))
+        Some((to_id, r))
     }
 
     pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Zone)) {
@@ -530,11 +535,6 @@ impl Map {
         pattern: &LanePattern,
         segment: RoadSegmentKind,
     ) -> Option<RoadID> {
-        info!(
-            "connect {:?} {:?} {:?} {:?}",
-            src_id, dst_id, pattern, segment
-        );
-
         let src = self.intersections.get(src_id)?;
         let dst = self.intersections.get(dst_id)?;
 
@@ -543,11 +543,12 @@ impl Map {
             dst,
             segment,
             pattern,
+            &self.environment,
             &mut self.roads,
             &mut self.lanes,
             &mut self.parking,
             &mut self.spatial_map,
-        );
+        )?;
         #[allow(clippy::indexing_slicing)]
         let r = &self.roads[id];
 
@@ -785,8 +786,28 @@ impl Map {
             assert!(dst.roads.contains(&road.id));
             assert!(!road.points.is_empty());
             assert!(road.lanes_iter().next().is_some());
-            assert!(road.points.first().is_close(src.pos, 0.001),);
-            assert!(road.points.last().is_close(dst.pos, 0.001));
+            assert!(
+                road.points
+                    .first()
+                    .up(-crate::map::ROAD_Z_OFFSET)
+                    .is_close(src.pos, 0.001),
+                "{:?} {:?} {:?} {:?}",
+                road.points.first().up(-crate::map::ROAD_Z_OFFSET),
+                src.pos,
+                road.id,
+                src.id,
+            );
+            assert!(
+                road.points
+                    .last()
+                    .up(-crate::map::ROAD_Z_OFFSET)
+                    .is_close(dst.pos, 0.001),
+                "{:?} {:?} {:?} {:?}",
+                road.points.last().up(-crate::map::ROAD_Z_OFFSET),
+                dst.pos,
+                road.id,
+                dst.id,
+            );
             assert!(road.interfaced_points().n_points() >= 2);
             assert!(road.length() > 0.0);
             assert!(self.spatial_map.contains(road.id));
