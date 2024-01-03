@@ -476,25 +476,7 @@ fn resample_pipeline(gfx: &GfxContext, height_tex: &Texture, entry_point: &str) 
     gfx.device
         .create_render_pipeline(&RenderPipelineDescriptor {
             label: Some("terrain downsample pipeline"),
-            layout: Some(
-                &gfx.device
-                    .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                        label: Some("terrain downsample pipeline layout"),
-                        bind_group_layouts: &[&gfx.device.create_bind_group_layout(
-                            &BindGroupLayoutDescriptor {
-                                label: None,
-                                entries: &[Texture::bindgroup_layout_entries(
-                                    0,
-                                    [TL::UInt].into_iter(),
-                                )
-                                    // We don't need a sampler
-                                .next()
-                                .unwrap()],
-                            },
-                        )],
-                        push_constant_ranges: &[],
-                    }),
-            ),
+            layout: None,
             vertex: wgpu::VertexState {
                 module: &resample_module,
                 entry_point: "vert",

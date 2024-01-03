@@ -278,12 +278,8 @@ impl Road {
             points.cut(self.interface_from(self.src), self.interface_from(self.dst));
 
         let cpoints = &mut self.interfaced_points;
-        let o_beg = points.first().z;
-        let o_end = points.last().z;
         let i_beg = cpoints.first().z;
         let i_end = cpoints.last().z;
-        let i_range = i_end - i_beg;
-        let o_range = o_end - o_beg;
 
         let start = cpoints.first().clone();
         let end = cpoints.last().clone();

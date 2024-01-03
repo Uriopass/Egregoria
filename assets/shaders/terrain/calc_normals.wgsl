@@ -43,14 +43,14 @@ fn calc_normals(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
 
     let id = vec2<u32>(v_TexCoord * vec2<f32>(dim));
 
-    let hR: f32 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(1u, 0u), 0).r);
-    let hL: f32 = unpack_height(textureLoad(t_terrain, id - vec2<u32>(1u, 0u), 0).r);
-    let hT: f32 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(0u, 1u), 0).r);
-    let hB: f32 = unpack_height(textureLoad(t_terrain, id - vec2<u32>(0u, 1u), 0).r);
+    let hR: f32 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(2u, 0u), 0).r);
+    let hL: f32 = unpack_height(textureLoad(t_terrain, id - vec2<u32>(2u, 0u), 0).r);
+    let hT: f32 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(0u, 2u), 0).r);
+    let hB: f32 = unpack_height(textureLoad(t_terrain, id - vec2<u32>(0u, 2u), 0).r);
 
     // We only need xy. We assume positive-z normal as it's from a heightmap
     // We can reconstruct z later because it's a unit vector
-    let normal = normalize(vec3(hL - hR, hB - hT, 2.0 * cell_size)).xy;
+    let normal = normalize(vec3(hL - hR, hB - hT, 4.0 * cell_size)).xy;
 
     return FragmentOutput(pack_normal(normal));
 }

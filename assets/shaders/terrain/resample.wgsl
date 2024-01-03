@@ -66,10 +66,11 @@ fn downsample(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
 }
 
 @fragment
-fn upsample(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
-    let dim = textureDimensions(t_terrain);
+fn upsample(@builtin(position) pos: vec4<f32>, @location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
+    let p: vec2<f32> = pos.xy - vec2<f32>(0.5);
 
-    let id = vec2<u32>(v_TexCoord * vec2<f32>(dim));
+    let terrain_space = p * 0.5;
+    let id = vec2<u32>(terrain_space);
 
     let h0 = unpack_height(textureLoad(t_terrain, id, 0).r);
     let h1 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(1u, 0u), 0).r);
@@ -77,12 +78,11 @@ fn upsample(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
     let h3 = unpack_height(textureLoad(t_terrain, id + vec2<u32>(1u, 1u), 0).r);
 
     // bilinear interpolation
-    let x = fract(v_TexCoord.x * vec2<f32>(dim));
-    let y = fract(v_TexCoord.y * vec2<f32>(dim));
+    let v = fract(terrain_space);
 
-    let h01 = mix(h0, h1, x.x);
-    let h23 = mix(h2, h3, x.x);
-    let h = mix(h01, h23, y.y);
+    let h01 = mix(h0, h1, v.x);
+    let h23 = mix(h2, h3, v.x);
+    let h = mix(h01, h23, v.y);
 
     let final_height = h;
 

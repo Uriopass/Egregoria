@@ -1,7 +1,6 @@
-const MAX_HEIGHT:   f32 = 2008.0;
-const MIN_HEIGHT:   f32 = -40.0;
-const HEIGHT_RANGE: f32 = MAX_HEIGHT - MIN_HEIGHT;
-const MAX_DIFF:     f32 = 32.0;
+const HEIGHT_RANGE: f32 = 2048.0;
+const MIN_HEIGHT: f32 = -40.0007;
+const MAX_HEIGHT: f32 = HEIGHT_RANGE - MIN_HEIGHT;
 
 fn unpack_height(h: u32) -> f32 {
     return (f32(h) / 65535.0) * HEIGHT_RANGE + MIN_HEIGHT;

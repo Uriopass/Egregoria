@@ -170,7 +170,10 @@ pub fn debug(
         drop(counters);
 
         if let Some(mouse) = mouse {
-            ui.label(format!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+            ui.label(format!(
+                "World mouse pos: {:.1} {:.1} {:.2}",
+                mouse.x, mouse.y, mouse.z
+            ));
         }
         ui.label(format!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
         ui.separator();

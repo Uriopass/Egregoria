@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 
 pub type HeightmapChunkID = (u16, u16);
 
-const MIN_HEIGHT: f32 = -40.0;
-const MAX_HEIGHT: f32 = 2008.0;
+const MAX_HEIGHT_DIFF: f32 = 2048.0;
+const MIN_HEIGHT: f32 = -40.0007;
+const MAX_HEIGHT: f32 = MAX_HEIGHT_DIFF - MIN_HEIGHT;
 
 #[derive(Clone)]
 pub struct HeightmapChunk<const RESOLUTION: usize, const SIZE: u32> {
@@ -307,13 +308,12 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
             self.height_nearest(p + Vec2::y(Self::CELL_SIZE)),
             self.height_nearest(p + vec2(Self::CELL_SIZE, Self::CELL_SIZE)),
         ) {
-            let x = (p.x / Self::CELL_SIZE).fract();
-            let y = (p.y / Self::CELL_SIZE).fract();
+            let v = (p / Self::CELL_SIZE).fract();
 
-            let h01 = ll + x * (lr - ll);
-            let h23 = ul + x * (ur - ul);
+            let h01 = ll + v.x * (lr - ll);
+            let h23 = ul + v.x * (ur - ul);
 
-            return Some(h01 + y * (h23 - h01));
+            return Some(h01 + v.y * (h23 - h01));
         }
         exact
     }
@@ -417,13 +417,15 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
                     // we still need to do one last binary search
                     // to find the bilinear-filtered-corrected location
 
-                    let t = binary_search(t - t_step * 2.0, t, |t| {
-                        let p = ray.from + ray.dir * t;
+                    let c = binary_search(0.0, 1.0, |c| {
+                        let t_test = t - t_step * 2.0 * (1.0 - c);
+                        let p = ray.from + ray.dir * t_test;
                         let Some(h) = self.height(p.xy()) else {
                             return false;
                         };
                         p.z < h
                     });
+                    let t = t - t_step * 2.0 * (1.0 - c);
 
                     return Some((ray.from + ray.dir * t, vec3(0.0, 0.0, 1.0)));
                 }
@@ -459,11 +461,11 @@ fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
 }
 
 fn pack_height(height: f32) -> u16 {
-    ((height - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT) * u16::MAX as f32) as u16
+    ((height - MIN_HEIGHT) / MAX_HEIGHT_DIFF * u16::MAX as f32) as u16
 }
 
 fn unpack_height(height: u16) -> f32 {
-    height as f32 / u16::MAX as f32 * (MAX_HEIGHT - MIN_HEIGHT) + MIN_HEIGHT
+    height as f32 / u16::MAX as f32 * MAX_HEIGHT_DIFF + MIN_HEIGHT
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {

@@ -527,7 +527,7 @@ fn length(v: &[Vec3]) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{vec3, PolyLine3};
+    use crate::{vec3, Degrees, PolyLine3};
 
     #[test]
     fn test_simplify() {
@@ -542,7 +542,7 @@ mod tests {
             vec3(5.0, 200.0, 0.0),
             vec3(5.0, 300.0, 0.0),
         ]);
-        p.simplify(-0.9, 0.1, 100.0);
+        p.simplify(Degrees(10.0).into(), 0.1, 100.0);
         assert_eq!(
             p.into_vec(),
             vec![
