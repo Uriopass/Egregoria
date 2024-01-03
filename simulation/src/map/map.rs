@@ -157,9 +157,18 @@ impl Map {
         };
 
         let from_id = mk_inter(from)?;
-        let to_id = mk_inter(to)?;
+        let Some(to_id) = mk_inter(to) else {
+            self.invalidate(from_id);
+            self.check_invariants();
+            return None;
+        };
 
-        let r = self.connect(from_id, to_id, pattern, connection_segment)?;
+        let Some(r) = self.connect(from_id, to_id, pattern, connection_segment) else {
+            self.invalidate(from_id);
+            self.invalidate(to_id);
+            self.check_invariants();
+            return None;
+        };
 
         info!(
             "connect {:?}({:?}) {:?}({:?}) {:?} {:?}: {:?}",
@@ -548,7 +557,7 @@ impl Map {
             &mut self.lanes,
             &mut self.parking,
             &mut self.spatial_map,
-        )?;
+        );
         #[allow(clippy::indexing_slicing)]
         let r = &self.roads[id];
 
@@ -747,8 +756,18 @@ impl Map {
             for turn in inter.turns() {
                 log::debug!("{:?}", turn.id);
                 assert_eq!(turn.id.parent, inter.id);
-                assert!(self.lanes.contains_key(turn.id.src));
-                assert!(self.lanes.contains_key(turn.id.dst));
+                assert!(
+                    self.lanes.contains_key(turn.id.src),
+                    "{:?} {:?}",
+                    inter.id,
+                    turn.id.src
+                );
+                assert!(
+                    self.lanes.contains_key(turn.id.dst),
+                    "{:?} {:?}",
+                    inter.id,
+                    turn.id.dst
+                );
                 assert!(turn.points.n_points() >= 2);
             }
 
@@ -860,6 +879,8 @@ impl Map {
         }
 
         assert!(self.parking.reuse_spot.is_empty());
+
+        log::info!("invariants checked");
     }
 }
 
@@ -869,5 +890,9 @@ impl MapProject {
             pos,
             kind: ProjectKind::Ground,
         }
+    }
+
+    pub fn is_ground(&self) -> bool {
+        matches!(self.kind, ProjectKind::Ground)
     }
 }

@@ -319,6 +319,9 @@ impl State {
             let mut col = LinearColor::WHITE;
             col.a = 0.2;
             unsafe {
+                for v in &geom::DEBUG_POS {
+                    immediate.circle(*v, 1.0).color(LinearColor::RED);
+                }
                 for v in &geom::DEBUG_OBBS {
                     immediate
                         .obb(*v, map.environment.height(v.center()).unwrap_or(0.0) + 8.0)
@@ -335,8 +338,9 @@ impl State {
                         )
                         .color(col);
                 }
-                //geom::DEBUG_OBBS.clear();
+                geom::DEBUG_OBBS.clear();
                 geom::DEBUG_SPLINES.clear();
+                geom::DEBUG_POS.clear();
             }
 
             immediate.apply(&mut self.immtess, ctx);

@@ -1,4 +1,4 @@
-use super::Vec2;
+use super::{Vec2, Vec3};
 use crate::aabb::AABB;
 use crate::{vec2, BoldLine, Circle, Intersect, Polygon, Segment, Shape, Spline, OBB};
 use serde::{Deserialize, Serialize};
@@ -82,6 +82,7 @@ impl Intersect<Polygon> for BoldSpline {
     }
 }
 
+pub static mut DEBUG_POS: Vec<Vec3> = Vec::new();
 pub static mut DEBUG_OBBS: Vec<OBB> = Vec::new();
 pub static mut DEBUG_SPLINES: Vec<Spline> = Vec::new();
 

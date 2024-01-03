@@ -1,33 +1,26 @@
+use common::AudioKind;
+use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
+use geom::{PolyLine3, Vec2, Vec3};
+use simulation::map::{
+    LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition, RoadSegmentKind,
+};
+use simulation::world_command::{WorldCommand, WorldCommands};
+use simulation::Simulation;
+use BuildState::{Hover, Interpolation, Start, StartInterp};
+use ProjectKind::{Building, Ground, Inter, Road};
+
 use crate::gui::{PotentialCommands, Tool};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
-use common::AudioKind;
-use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
-use geom::{PolyLine3, Spline3, Vec2, Vec3};
-use simulation::map::{
-    Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
-    RoadSegmentKind,
-};
-use simulation::world_command::{WorldCommand, WorldCommands};
-use simulation::Simulation;
-use BuildState::{Hover, Interpolation, Start};
-use ProjectKind::{Building, Ground, Inter, Road};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub enum BuildState {
     #[default]
     Hover,
     Start(MapProject),
+    StartInterp(MapProject),
     Interpolation(Vec2, MapProject),
-}
-
-#[derive(Default)]
-pub struct RoadBuildResource {
-    pub build_state: BuildState,
-    pub pattern_builder: LanePatternBuilder,
-    pub snap_to_grid: bool,
-    pub height_offset: f32,
 }
 
 /// Road building tool
@@ -158,9 +151,9 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
 
     let is_rail = state.pattern_builder.rail;
 
-    let is_valid = match (state.build_state, cur_proj.kind) {
+    let mut is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
-        (Start(selected_proj), _) => {
+        (Start(selected_proj) | StartInterp(selected_proj), _) => {
             let sp = BoldLine::new(
                 PolyLine::new(vec![selected_proj.pos.xy(), cur_proj.pos.xy()]),
                 patwidth * 0.5,
@@ -201,25 +194,54 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
         _ => true,
     };
 
-    state.update_drawing(map, immdraw, cur_proj, patwidth, tool, is_valid);
+    let build_args = match state.build_state {
+        StartInterp(selected_proj) if !cur_proj.is_ground() => {
+            Some((selected_proj, None, state.pattern_builder.build()))
+        }
+        Start(selected_proj) => Some((selected_proj, None, state.pattern_builder.build())),
+        Interpolation(interpoint, selected_proj) => {
+            let inter = Some(interpoint);
+            Some((selected_proj, inter, state.pattern_builder.build()))
+        }
+        _ => None,
+    };
     potential_command.0.clear();
-    match state.build_state {
-        Hover => {}
-        Start(selected_proj) => potential_command.set(WorldCommand::MapMakeConnection {
+
+    let mut points = None;
+
+    if let Some((selected_proj, inter, pat)) = build_args {
+        potential_command.set(WorldCommand::MapMakeConnection {
             from: selected_proj,
             to: cur_proj,
-            inter: None,
-            pat: state.pattern_builder.build(),
-        }),
-        Interpolation(interpoint, selected_proj) => {
-            potential_command.set(WorldCommand::MapMakeConnection {
-                from: selected_proj,
-                to: cur_proj,
-                inter: Some(interpoint),
-                pat: state.pattern_builder.build(),
-            })
-        }
+            inter,
+            pat,
+        });
+
+        let connection_segment = match inter {
+            Some(x) => RoadSegmentKind::from_elbow(selected_proj.pos.xy(), cur_proj.pos.xy(), x),
+            None => RoadSegmentKind::Straight,
+        };
+
+        points = match simulation::map::Road::generate_points(
+            selected_proj.pos,
+            cur_proj.pos,
+            connection_segment,
+            is_rail,
+            &map.environment,
+        ) {
+            Ok(p) => Some(p),
+            Err((p, _err)) => {
+                is_valid = false;
+                if let Some(p) = p {
+                    Some(p)
+                } else {
+                    None
+                }
+            }
+        };
     }
+
+    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points);
 
     if is_valid && inp.just_act.contains(&InputAction::Select) {
         log::info!(
@@ -228,16 +250,20 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
             cur_proj.kind
         );
 
-        match (state.build_state, cur_proj.kind, tool) {
-            (Hover, Ground, _) | (Hover, Road(_), _) | (Hover, Inter(_), _) => {
+        match (state.build_state, cur_proj.kind) {
+            (Hover, Ground) | (Hover, Road(_)) | (Hover, Inter(_)) => {
                 // Hover selection
-                state.build_state = Start(cur_proj);
+                if tool == Tool::RoadbuildCurved {
+                    state.build_state = StartInterp(cur_proj);
+                } else {
+                    state.build_state = Start(cur_proj);
+                }
             }
-            (Start(v), Ground, Tool::RoadbuildCurved) => {
+            (StartInterp(v), Ground) => {
                 // Set interpolation point
                 state.build_state = Interpolation(mousepos.xy(), v);
             }
-            (Start(_), _, _) => {
+            (Start(_) | StartInterp(_), _) => {
                 // Straight connection to something
                 immsound.play("road_lay", AudioKind::Ui);
                 if let Some(wc) = potential_command.0.drain(..).next() {
@@ -246,7 +272,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
 
                 state.build_state = Hover;
             }
-            (Interpolation(_, _), _, _) => {
+            (Interpolation(_, _), _) => {
                 // Interpolated connection to something
                 immsound.play("road_lay", AudioKind::Ui);
                 if let Some(wc) = potential_command.0.drain(..).next() {
@@ -258,6 +284,14 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
             _ => {}
         }
     }
+}
+
+#[derive(Default)]
+pub struct RoadBuildResource {
+    pub build_state: BuildState,
+    pub pattern_builder: LanePatternBuilder,
+    pub snap_to_grid: bool,
+    pub height_offset: f32,
 }
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
@@ -357,8 +391,8 @@ impl RoadBuildResource {
         immdraw: &mut ImmediateDraw,
         proj: MapProject,
         patwidth: f32,
-        tool: Tool,
         is_valid: bool,
+        points: Option<PolyLine3>,
     ) {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.1;
@@ -368,24 +402,12 @@ impl RoadBuildResource {
             simulation::config().gui_danger
         };
 
-        let interf = |ang: Vec2, proj: MapProject| match proj.kind {
-            Inter(i) => map
-                .intersections()
-                .get(i)
-                .map(|i| i.interface_at(map.roads(), patwidth, ang))
-                .unwrap_or_default(),
-            Road(_) => Intersection::empty_interface(patwidth),
-            Building(_) => 0.0,
-            ProjectKind::Lot(_) => 0.0,
-            Ground => Intersection::empty_interface(patwidth),
-        };
-
         let p = match self.build_state {
             Hover => {
                 immdraw.circle(proj_pos, patwidth * 0.5).color(col);
                 return;
             }
-            Start(x) if matches!(tool, Tool::RoadbuildCurved) && proj.kind.is_ground() => {
+            StartInterp(x) if proj.kind.is_ground() => {
                 let dir = unwrap_or!((proj_pos - x.pos).try_normalize(), {
                     immdraw.circle(proj_pos, patwidth * 0.5).color(col);
                     return;
@@ -406,48 +428,7 @@ impl RoadBuildResource {
 
                 return;
             }
-            Start(x) => {
-                immdraw.circle(proj_pos, patwidth * 0.5).color(col);
-                immdraw.circle(x.pos.up(0.1), patwidth * 0.5).color(col);
-
-                let Ok(points) = simulation::map::Road::generate_points(
-                    x.pos,
-                    proj_pos,
-                    RoadSegmentKind::Straight,
-                    false,
-                    &map.environment,
-                ) else {
-                    // todo: handle error
-                    return;
-                };
-
-                immdraw
-                    .polyline(points.into_vec(), patwidth, false)
-                    .color(col);
-
-                let istart = interf((proj_pos - x.pos).xy().normalize(), x);
-                let iend = interf(-(proj_pos - x.pos).xy().normalize(), proj);
-                PolyLine3::new(vec![x.pos.up(0.1), proj_pos]).cut(istart, iend)
-            }
-            Interpolation(p, x) => {
-                let sp = Spline3 {
-                    from: x.pos.up(0.1),
-                    to: proj_pos,
-                    from_derivative: (p - x.pos.xy()).z0() * std::f32::consts::FRAC_1_SQRT_2,
-                    to_derivative: (proj_pos.xy() - p).z0() * std::f32::consts::FRAC_1_SQRT_2,
-                };
-                let points: Vec<_> = sp.smart_points(1.0, 0.0, 1.0).collect();
-
-                immdraw.polyline(&*points, patwidth, false).color(col);
-
-                immdraw.circle(sp.get(0.0), patwidth * 0.5).color(col);
-                immdraw.circle(sp.get(1.0), patwidth * 0.5).color(col);
-
-                let istart = interf((p - x.pos.xy()).normalize(), x);
-                let iend = interf(-(proj_pos.xy() - p).normalize(), proj);
-
-                PolyLine3::new(points).cut(istart, iend)
-            }
+            _ => unwrap_ret!(points),
         };
 
         for PylonPosition {
@@ -460,5 +441,9 @@ impl RoadBuildResource {
                 .circle(pos.xy().z(terrain_height + 0.1), patwidth * 0.5)
                 .color(col);
         }
+
+        immdraw.circle(p.first(), patwidth * 0.5).color(col);
+        immdraw.circle(p.last(), patwidth * 0.5).color(col);
+        immdraw.polyline(p.into_vec(), patwidth, false).color(col);
     }
 }

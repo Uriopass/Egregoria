@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 use slotmapd::new_key_type;
 
-use geom::{lerp, BoldLine, Degrees, PolyLine3};
-use geom::{PolyLine, Spline3};
+use geom::PolyLine;
+use geom::{lerp, BoldLine, Degrees, PolyLine3, Spline, Spline1};
 use geom::{Vec2, Vec3};
 
 use crate::map::{
     Environment, Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern,
-    Lanes, ParkingSpots, Roads, SpatialMap, ROAD_Z_OFFSET,
+    Lanes, ParkingSpots, Roads, SpatialMap, MAX_SLOPE, ROAD_Z_OFFSET,
 };
 
 new_key_type! {
@@ -68,6 +68,7 @@ pub enum PointGenerateError {
 
 impl Road {
     /// Builds the road and its associated lanes
+    /// Must not fail or it make keeping invariants very complicated be cause of road splitting
     pub fn make(
         src: &Intersection,
         dst: &Intersection,
@@ -78,16 +79,19 @@ impl Road {
         lanes: &mut Lanes,
         parking: &mut ParkingSpots,
         spatial: &mut SpatialMap,
-    ) -> Option<RoadID> {
+    ) -> RoadID {
         let width = lane_pattern.width();
-        let points = Self::generate_points(
+        let points = match Self::generate_points(
             src.pos,
             dst.pos,
             segment,
             lane_pattern.lanes().any(|(a, _, _)| a.is_rail()),
             env,
-        )
-        .ok()?;
+        ) {
+            Ok(v) => v,
+            Err((Some(v), _)) => v,
+            _ => PolyLine3::new(vec![src.pos, dst.pos]),
+        };
 
         let id = roads.insert_with_key(|id| Self {
             id,
@@ -120,7 +124,7 @@ impl Road {
         road.update_lanes(lanes, parking);
 
         spatial.insert(id, road.boldline());
-        Some(road.id)
+        road.id
     }
 
     pub fn is_one_way(&self) -> bool {
@@ -278,18 +282,18 @@ impl Road {
             points.cut(self.interface_from(self.src), self.interface_from(self.dst));
 
         let cpoints = &mut self.interfaced_points;
-        let i_beg = cpoints.first().z;
-        let i_end = cpoints.last().z;
+        let z_beg = self.points.first().z;
+        let z_end = self.points.last().z;
 
         let start = cpoints.first().clone();
         let end = cpoints.last().clone();
 
         for v in cpoints.iter_mut_unchecked() {
-            let start_coeff = v.distance(start) / 5.0;
-            v.z = lerp(i_beg, v.z, start_coeff.clamp(0.0, 1.0));
+            let start_coeff = v.distance(start) / 15.0;
+            v.z = lerp(z_beg, v.z, start_coeff.clamp(0.0, 1.0));
 
-            let end_coeff = v.distance(end) / 5.0;
-            v.z = lerp(i_end, v.z, end_coeff.clamp(0.0, 1.0));
+            let end_coeff = v.distance(end) / 15.0;
+            v.z = lerp(z_end, v.z, end_coeff.clamp(0.0, 1.0));
         }
 
         cpoints.recalculate_length();
@@ -312,7 +316,7 @@ impl Road {
         end_height: f32,
         maxslope: f32,
         env: &Environment,
-    ) -> Result<PolyLine3, PointGenerateError> {
+    ) -> Result<PolyLine3, (Option<PolyLine3>, PointGenerateError)> {
         // first calculate the contour
 
         let mut contour = Vec::with_capacity(p.length() as usize + 2);
@@ -325,7 +329,9 @@ impl Road {
             )
             .chain(std::iter::once(p.last()))
         {
-            let h = env.height(pos).ok_or(PointGenerateError::OutsideOfMap)?;
+            let h = env
+                .height(pos)
+                .ok_or((None, PointGenerateError::OutsideOfMap))?;
             contour.push(h);
             points.push(pos.z(h));
         }
@@ -347,13 +353,15 @@ impl Road {
         }
 
         let mut cur_height = contour.last().copied().unwrap();
-        let mut i = airborn.len();
-        for &h in contour.iter().rev() {
-            i -= 1;
-            let diff = cur_height - h;
+        {
+            let mut i = airborn.len();
+            for &h in contour.iter().rev() {
+                i -= 1;
+                let diff = cur_height - h;
 
-            airborn[i] |= diff > maxslope;
-            cur_height -= diff.min(maxslope);
+                airborn[i] |= diff > maxslope;
+                cur_height -= diff.min(maxslope);
+            }
         }
 
         // Then find the interface points where points become airborn
@@ -365,33 +373,54 @@ impl Road {
         let mut interface = Vec::with_capacity(airborn.len());
         for i in 1..airborn.len() - 1 {
             if airborn[i] && !airborn[i - 1] {
-                interface.push(i - 1);
+                interface.push(i.saturating_sub(3));
             }
             if airborn[i] && !airborn[i + 1] {
-                interface.push(i + 1);
+                interface.push((i + 3).min(airborn.len() - 1));
             }
         }
 
-        // Then linear interpolate the points between the interface points using a nice cubic
-
-        fn cubic(t: f32) -> f32 {
-            t * t * (3.0 - 2.0 * t)
+        // merge interface points that overlap
+        let mut i = 0;
+        while i + 3 < interface.len() {
+            if interface[i + 1] >= interface[i + 2] {
+                interface.remove(i + 2);
+                interface.remove(i + 1);
+            } else {
+                i += 2;
+            }
         }
 
-        for w in interface.windows(2) {
+        let mut slope_was_too_steep = false;
+
+        // Then linear interpolate the points between the interface points that aren't on the ground using a nice spline
+        for w in interface.chunks(2) {
             let i1 = w[0];
             let i2 = w[1];
 
             let h1 = contour[i1];
             let h2 = contour[i2];
 
-            let di = (i2 - i1) as f32;
-            let dh = h2 - h1;
+            let derivative_1 = h1 - contour.get(i1.wrapping_sub(1)).unwrap_or(&h1);
+            let derivative_2 = contour.get(i2 + 1).unwrap_or(&h2) - h2;
 
-            for i in i1..=i2 {
-                let coeff = (i - i1) as f32 / di;
-                let h = h1 + dh * cubic(coeff);
-                contour[i] = h;
+            let d = (h2 - h1).abs();
+
+            let slope = d / (i2 - i1) as f32;
+
+            if slope > maxslope {
+                slope_was_too_steep = true;
+            }
+
+            let s = Spline1 {
+                from: h1,
+                to: h2,
+                from_derivative: derivative_1 * d,
+                to_derivative: derivative_2 * d,
+            };
+
+            for (j, h) in s.points(i2 - i1 + 1).enumerate() {
+                contour[i1 + j] = h;
             }
         }
 
@@ -416,6 +445,10 @@ impl Road {
         let mut points = PolyLine3::new(points);
         points.simplify(Degrees(1.0).into(), 1.0, 100.0);
 
+        if slope_was_too_steep {
+            return Err((Some(points), PointGenerateError::TooSteep));
+        }
+
         Ok(points)
     }
 
@@ -425,35 +458,35 @@ impl Road {
         segment: RoadSegmentKind,
         precise: bool,
         env: &Environment,
-    ) -> Result<PolyLine3, PointGenerateError> {
+    ) -> Result<PolyLine3, (Option<PolyLine3>, PointGenerateError)> {
         let spline = match segment {
             RoadSegmentKind::Straight => {
                 let p = PolyLine::new(vec![from.xy(), to.xy()]);
-                return Self::heightfinder(&p, from.z, to.z, 0.25, env);
+                return Self::heightfinder(&p, from.z, to.z, MAX_SLOPE, env);
             }
-            RoadSegmentKind::Curved((from_derivative, to_derivative)) => Spline3 {
-                from: from.up(ROAD_Z_OFFSET),
-                to: to.up(ROAD_Z_OFFSET),
-                from_derivative: from_derivative.z0(),
-                to_derivative: to_derivative.z0(),
+            RoadSegmentKind::Curved((from_derivative, to_derivative)) => Spline {
+                from: from.xy(),
+                to: to.xy(),
+                from_derivative,
+                to_derivative,
             },
         };
 
         let iter = spline.smart_points(if precise { 0.1 } else { 1.0 }, 0.0, 1.0);
-        let mut p = PolyLine3::new(vec![from.up(ROAD_Z_OFFSET)]);
+        let mut p = PolyLine::new(vec![from.xy()]);
 
         for v in iter {
-            if v.is_close(from, 1.0) {
+            if v.is_close(from.xy(), 1.0) {
                 continue;
             }
-            if v.is_close(to, 1.0) {
+            if v.is_close(to.xy(), 1.0) {
                 continue;
             }
             p.push(v);
         }
-        p.push(to.up(ROAD_Z_OFFSET));
+        p.push(to.xy());
 
-        Ok(p)
+        Self::heightfinder(&p, from.z, to.z, MAX_SLOPE, env)
     }
 
     pub fn interface_point(&self, id: IntersectionID) -> Vec3 {
