@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use slotmapd::new_key_type;
 
 use geom::PolyLine;
-use geom::{lerp, BoldLine, Degrees, PolyLine3, Spline, Spline1};
+use geom::{BoldLine, Degrees, PolyLine3, Spline, Spline1};
 use geom::{Vec2, Vec3};
 
 use crate::map::{
@@ -81,17 +81,13 @@ impl Road {
         spatial: &mut SpatialMap,
     ) -> RoadID {
         let width = lane_pattern.width();
-        let points = match Self::generate_points(
+        let (points, _err) = Self::generate_points(
             src.pos,
             dst.pos,
             segment,
             lane_pattern.lanes().any(|(a, _, _)| a.is_rail()),
             env,
-        ) {
-            Ok(v) => v,
-            Err((Some(v), _)) => v,
-            _ => PolyLine3::new(vec![src.pos, dst.pos]),
-        };
+        );
 
         let id = roads.insert_with_key(|id| Self {
             id,
@@ -121,7 +117,7 @@ impl Road {
             dist_from_bottom += lane_k.width();
         }
 
-        road.update_lanes(lanes, parking);
+        road.update_lanes(lanes, parking, env);
 
         spatial.insert(id, road.boldline());
         road.id
@@ -197,8 +193,13 @@ impl Road {
         }
     }
 
-    pub fn update_lanes(&mut self, lanes: &mut Lanes, parking: &mut ParkingSpots) {
-        self.update_interfaced_points();
+    pub fn update_lanes(
+        &mut self,
+        lanes: &mut Lanes,
+        parking: &mut ParkingSpots,
+        env: &Environment,
+    ) {
+        self.update_interfaced_points(env);
         for (id, _) in self.lanes_iter() {
             let l = unwrap_contlog!(lanes.get_mut(id), "lane in road does not exist anymore");
             l.gen_pos(self);
@@ -276,27 +277,24 @@ impl Road {
         &self.interfaced_points
     }
 
-    fn update_interfaced_points(&mut self) {
+    fn update_interfaced_points(&mut self, env: &Environment) {
         let points = &self.points;
         self.interfaced_points =
             points.cut(self.interface_from(self.src), self.interface_from(self.dst));
 
         let cpoints = &mut self.interfaced_points;
-        let z_beg = self.points.first().z;
-        let z_end = self.points.last().z;
+        let z_beg = self.points.first().z - ROAD_Z_OFFSET;
+        let z_end = self.points.last().z - ROAD_Z_OFFSET;
 
-        let start = cpoints.first().clone();
-        let end = cpoints.last().clone();
+        let (p, _) = Self::heightfinder(
+            &PolyLine::new(cpoints.iter().map(|v| v.xy()).collect::<Vec<_>>()),
+            z_beg,
+            z_end,
+            MAX_SLOPE,
+            env,
+        );
 
-        for v in cpoints.iter_mut_unchecked() {
-            let start_coeff = v.distance(start) / 15.0;
-            v.z = lerp(z_beg, v.z, start_coeff.clamp(0.0, 1.0));
-
-            let end_coeff = v.distance(end) / 15.0;
-            v.z = lerp(z_end, v.z, end_coeff.clamp(0.0, 1.0));
-        }
-
-        cpoints.recalculate_length();
+        self.interfaced_points = p;
     }
 
     // Run an algorithm to find the height of the road at each point
@@ -316,12 +314,13 @@ impl Road {
         end_height: f32,
         maxslope: f32,
         env: &Environment,
-    ) -> Result<PolyLine3, (Option<PolyLine3>, PointGenerateError)> {
+    ) -> (PolyLine3, Option<PointGenerateError>) {
         // first calculate the contour
 
         let mut contour = Vec::with_capacity(p.length() as usize + 2);
         let mut points = Vec::with_capacity(contour.len());
 
+        let mut height_error = false;
         for pos in std::iter::once(p.first())
             .chain(
                 p.points_dirs_along((1..p.length() as u32).map(|v| v as f32))
@@ -329,9 +328,10 @@ impl Road {
             )
             .chain(std::iter::once(p.last()))
         {
-            let h = env
-                .height(pos)
-                .ok_or((None, PointGenerateError::OutsideOfMap))?;
+            let h = env.height(pos).unwrap_or_else(|| {
+                height_error = true;
+                0.0
+            });
             contour.push(h);
             points.push(pos.z(h));
         }
@@ -445,11 +445,15 @@ impl Road {
         let mut points = PolyLine3::new(points);
         points.simplify(Degrees(1.0).into(), 1.0, 100.0);
 
-        if slope_was_too_steep {
-            return Err((Some(points), PointGenerateError::TooSteep));
+        if height_error {
+            return (points, Some(PointGenerateError::OutsideOfMap));
         }
 
-        Ok(points)
+        if slope_was_too_steep {
+            return (points, Some(PointGenerateError::TooSteep));
+        }
+
+        (points, None)
     }
 
     pub fn generate_points(
@@ -458,7 +462,7 @@ impl Road {
         segment: RoadSegmentKind,
         precise: bool,
         env: &Environment,
-    ) -> Result<PolyLine3, (Option<PolyLine3>, PointGenerateError)> {
+    ) -> (PolyLine3, Option<PointGenerateError>) {
         let spline = match segment {
             RoadSegmentKind::Straight => {
                 let p = PolyLine::new(vec![from.xy(), to.xy()]);

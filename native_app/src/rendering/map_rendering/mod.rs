@@ -145,7 +145,7 @@ impl MapRenderer {
                     0.0
                 };
                 let w = r.width * 0.5 - offset;
-                for (point, dir) in r.points().equipoints_dir(45.0, true) {
+                for (point, dir) in r.interfaced_points().equipoints_dir(45.0, true) {
                     draw.mesh("streetlamp.glb", point - dir.perp_up() * w, dir.perp_up());
                 }
             }

@@ -92,7 +92,11 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
             if let proj @ MapProject { kind: Inter(_), .. } =
                 map.project(to.pos, 0.0, ProjectFilter::ALL)
             {
-                state.build_state = Start(proj);
+                if matches!(tool, Tool::RoadbuildCurved) {
+                    state.build_state = StartInterp(proj);
+                } else {
+                    state.build_state = Start(proj);
+                }
             }
         }
     }
@@ -222,23 +226,17 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
             None => RoadSegmentKind::Straight,
         };
 
-        points = match simulation::map::Road::generate_points(
+        let (p, err) = simulation::map::Road::generate_points(
             selected_proj.pos,
             cur_proj.pos,
             connection_segment,
             is_rail,
             &map.environment,
-        ) {
-            Ok(p) => Some(p),
-            Err((p, _err)) => {
-                is_valid = false;
-                if let Some(p) = p {
-                    Some(p)
-                } else {
-                    None
-                }
-            }
-        };
+        );
+        points = Some(p);
+        if err.is_some() {
+            is_valid = false;
+        }
     }
 
     state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points);
@@ -315,7 +313,9 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
             true
         }
         Road(r) => {
-            let r = &map.roads()[r]; // fixme don't crash
+            let Some(r) = map.roads().get(r) else {
+                return false;
+            };
             let (proj, _, rdir1) = r.points().project_segment_dir(from.pos);
             let rdir2 = -rdir1;
             let dir = (to - proj.xy()).normalize();
@@ -331,10 +331,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
 }
 
 fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
-    // enforce at most 18 deg angle
-    if x.pos.distance(y.pos) < 10.0
-        || (x.pos.z - y.pos.z).abs() > 0.2 * x.pos.xy().distance(y.pos.xy())
-    {
+    if x.pos.distance(y.pos) < 10.0 {
         return false;
     }
     match (x.kind, y.kind) {

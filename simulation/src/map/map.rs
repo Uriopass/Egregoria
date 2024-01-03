@@ -321,6 +321,7 @@ impl Map {
         self.lots.retain(|_, lot| {
             let to_remove = lot.parent == road_id;
             if to_remove {
+                self.subscribers.dispatch(UpdateType::Road, lot);
                 smap.remove(lot.id);
             }
             !to_remove
@@ -407,7 +408,7 @@ impl Map {
             other_end.update_interface_radius(&mut self.roads);
 
             #[allow(clippy::indexing_slicing)] // borrowed before
-            self.roads[x].update_lanes(&mut self.lanes, &mut self.parking);
+            self.roads[x].update_lanes(&mut self.lanes, &mut self.parking, &self.environment);
         }
 
         #[allow(clippy::indexing_slicing)] // borrowed before

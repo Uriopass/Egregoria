@@ -11,7 +11,7 @@ use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, 
 use simulation::map::{
     Building, BuildingKind, CanonicalPosition, Environment, Intersection, LaneKind, Lanes, LotKind,
     Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
-    Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
+    Turn, TurnKind, UpdateType, CROSSWALK_WIDTH, ROAD_Z_OFFSET,
 };
 use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::Simulation;
@@ -665,12 +665,14 @@ impl MapBuilders {
         for inter in chunk_inters {
             let inter = &inters[inter];
 
+            let interpos = inter.pos.up(ROAD_Z_OFFSET);
+
             if inter.roads.is_empty() {
                 self.tess_map.set_color(line_col);
-                self.tess_map.draw_circle(inter.pos, 5.5);
+                self.tess_map.draw_circle(interpos, 5.5);
 
                 self.tess_map.set_color(mid_col);
-                self.tess_map.draw_circle(inter.pos, 5.0);
+                self.tess_map.draw_circle(interpos, 5.0);
                 continue;
             }
 
@@ -756,7 +758,7 @@ fn add_polyon(
     let color: [f32; 4] = color.into();
 
     let up = pos.up(-0.2);
-    let down = pos.xy().z(terrain_height);
+    let down = pos.xy().z(terrain_height - 20.0);
     let dirp = dir.perp_up();
     let d2 = dir.xy().z0();
     let d2p = d2.perp_up();
@@ -833,8 +835,10 @@ fn inter_pylon(
     inter: &Intersection,
     roads: &Roads,
 ) {
+    let interpos = inter.pos.up(ROAD_Z_OFFSET);
+
     let h = unwrap_ret!(env.height(inter.pos.xy()));
-    if (h - inter.pos.z).abs() <= 2.0 {
+    if (h - interpos.z).abs() <= 2.0 {
         return;
     }
 
@@ -849,7 +853,7 @@ fn inter_pylon(
     if !inter.roads.is_empty() {
         avgp /= inter.roads.len() as f32;
     } else {
-        avgp = inter.pos;
+        avgp = interpos;
     }
 
     add_polyon(
@@ -869,6 +873,7 @@ fn intersection_mesh(
     inter: &Intersection,
     roads: &Roads,
 ) {
+    let interpos = inter.pos.up(ROAD_Z_OFFSET);
     let id = inter.id;
 
     let getw = |road: &Road| {
@@ -921,7 +926,7 @@ fn intersection_mesh(
 
         if inter.is_roundabout() {
             if let Some(rp) = inter.turn_policy.roundabout {
-                let center = inter.pos.xy();
+                let center = interpos.xy();
 
                 let ang = (left - center)
                     .normalize()
@@ -938,7 +943,7 @@ fn intersection_mesh(
                     ));
 
                     tess.set_color(center_col);
-                    tess.draw_circle(center.z(inter.pos.z + 0.01), rp.radius * 0.5);
+                    tess.draw_circle(center.z(interpos.z + 0.01), rp.radius * 0.5);
 
                     continue;
                 }
@@ -956,7 +961,7 @@ fn intersection_mesh(
     tess.meshbuilder
         .extend_with(None, move |vertices, add_idx| {
             vertices.extend(polygon.iter().map(|pos| MeshVertex {
-                position: pos.z(inter.pos.z - 0.001).into(),
+                position: pos.z(interpos.z - 0.001).into(),
                 normal: Vec3::Z,
                 uv: [0.0; 2],
                 color: col,
