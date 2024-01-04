@@ -290,7 +290,7 @@ impl GfxContext {
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
-            alpha_mode: CompositeAlphaMode::Opaque,
+            alpha_mode: CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
         let samples = if cfg!(target_arch = "wasm32") { 1 } else { 4 };
