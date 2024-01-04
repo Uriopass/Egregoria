@@ -36,8 +36,7 @@ pub fn screen_coverage(gfx: &GfxContext, s: Sphere) -> f32 {
 
     let proj_radius2 = (proj_center_side - proj_center).mag2();
 
-    let screen_area = proj_radius2 * std::f32::consts::PI;
-    screen_area
+    proj_radius2 * std::f32::consts::PI
 }
 
 #[derive(Clone, Copy, Hash)]

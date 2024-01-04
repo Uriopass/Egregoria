@@ -277,7 +277,7 @@ pub fn find_nodes<'a>(
             let coverage = v.get("screencoverage").map(|v| {
                 v.as_array()
                     .unwrap()
-                    .into_iter()
+                    .iter()
                     .map(|v| v.as_f64().unwrap())
                     .collect::<Vec<_>>()
             });

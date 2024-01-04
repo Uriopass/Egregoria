@@ -91,9 +91,9 @@ impl RandProvider {
 
 // used only for the initial seed
 fn splitmix64(state: &mut u64) -> u64 {
-    *state = state.wrapping_add(0x9E3779B97f4A7C15);
+    *state = state.wrapping_add(0x9E3779B97F4A7C15);
     let mut result = *state;
     result = (result ^ (result >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
     result = (result ^ (result >> 27)).wrapping_mul(0x94D049BB133111EB);
-    return result ^ (result >> 31);
+    result ^ (result >> 31)
 }

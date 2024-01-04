@@ -804,7 +804,8 @@ mod erosion {
             }
 
             for c in &changed {
-                self.get_chunk_mut(*c).map(|c| c.update_max_height());
+                let Some(c) = self.get_chunk_mut(*c) else { continue; };
+                c.update_max_height();
             }
 
             changed.into_iter().collect()
