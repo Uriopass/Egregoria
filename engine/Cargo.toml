@@ -21,7 +21,7 @@ bytemuck      = "1.7.2"
 image         = { version = "0.24.3", default-features = false, features = ["png"] }
 log           = "0.4.11"
 gltf          = { version = "1.2.0", default-features=false, features=["import", "utils", "names", "extensions", "extras"] }
-itertools     = { version = "0.11.0", default-features = false }
+itertools     = { version = "0.12.0", default-features = false }
 profiling     = { version = "1.0.1", default-features = false  }
 rayon         = "1.6"
 beul          = "1.0.0"
