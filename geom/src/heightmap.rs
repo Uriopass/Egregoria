@@ -1,6 +1,7 @@
 use crate::{vec2, vec3, Ray3, Vec2, Vec3, AABB, AABB3};
+use serde::de::{SeqAccess, Visitor};
 use serde::ser::SerializeSeq;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 pub type HeightmapChunkID = (u16, u16);
 
@@ -8,9 +9,13 @@ const MAX_HEIGHT_DIFF: f32 = 2048.0;
 const MIN_HEIGHT: f32 = -40.0007;
 const MAX_HEIGHT: f32 = MAX_HEIGHT_DIFF - MIN_HEIGHT;
 
+/// Special value for heights_override to indicate that the height is not overridden
+pub const NO_OVERRIDE: f32 = -40.0;
+
 #[derive(Clone)]
 pub struct HeightmapChunk<const RESOLUTION: usize, const SIZE: u32> {
     heights: [[f32; RESOLUTION]; RESOLUTION], // TODO: change to RESOLUTION * RESOLUTION when generic_const_exprs is stabilized
+    heights_override: [[f32; RESOLUTION]; RESOLUTION],
     max_height: f32,
 }
 
@@ -18,6 +23,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Default for HeightmapChunk<RESOLU
     fn default() -> Self {
         Self {
             heights: [[0.0; RESOLUTION]; RESOLUTION],
+            heights_override: [[NO_OVERRIDE; RESOLUTION]; RESOLUTION],
             max_height: 0.0,
         }
     }
@@ -25,17 +31,13 @@ impl<const RESOLUTION: usize, const SIZE: u32> Default for HeightmapChunk<RESOLU
 
 impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> {
     pub fn new(heights: [[f32; RESOLUTION]; RESOLUTION]) -> Self {
-        let mut max_height = heights[0][0];
-        for row in &heights {
-            for height in row {
-                max_height = max_height.max(*height);
-            }
-        }
-
-        Self {
+        let mut me = Self {
             heights,
-            max_height,
-        }
+            heights_override: [[NO_OVERRIDE; RESOLUTION]; RESOLUTION],
+            max_height: 0.0,
+        };
+        me.update_max_height();
+        me
     }
 
     #[inline]
@@ -66,19 +68,42 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
         )
     }
 
+    fn update_max_height(&mut self) {
+        for y in 0..RESOLUTION {
+            for x in 0..RESOLUTION {
+                let h = unsafe { self.height_idx(x, y).unwrap_unchecked() };
+                self.max_height = self.max_height.max(h);
+            }
+        }
+    }
+
     /// assume p is in chunk-space and in-bounds
     #[inline]
     pub fn height_unchecked(&self, p: Vec2) -> f32 {
         let v = p / SIZE as f32;
         let v = v * RESOLUTION as f32;
-        self.heights[v.y as usize][v.x as usize]
+        self.height_idx(v.x as usize, v.y as usize).unwrap()
     }
 
     #[inline]
     pub fn height(&self, p: Vec2) -> Option<f32> {
         let v = p / SIZE as f32;
         let v = v * RESOLUTION as f32;
-        self.heights.get(v.y as usize)?.get(v.x as usize).copied()
+        self.height_idx(v.x as usize, v.y as usize)
+    }
+
+    pub fn height_idx(&self, x: usize, y: usize) -> Option<f32> {
+        let height_override = *self.heights_override.get(y)?.get(x)?;
+        let h = unsafe { *self.heights.get_unchecked(y).get_unchecked(x) };
+        if height_override != NO_OVERRIDE && height_override < h {
+            return Some(height_override);
+        }
+        Some(h)
+    }
+
+    /// Always returns the normal heightmap height
+    fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
+        self.heights.get_mut(y)?.get_mut(x)
     }
 
     #[inline]
@@ -139,6 +164,19 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
             return None;
         }
         unsafe { Some(self.chunks.get_unchecked((id.0 + id.1 * self.w) as usize)) }
+    }
+
+    pub fn set_override(
+        &mut self,
+        id: HeightmapChunkID,
+        override_heights: [[f32; RESOLUTION]; RESOLUTION],
+    ) {
+        if !self.check_valid(id) {
+            return;
+        }
+        let chunk = self.get_chunk_mut(id).unwrap();
+        chunk.heights_override = override_heights;
+        chunk.update_max_height();
     }
 
     fn get_chunk_mut(
@@ -261,23 +299,26 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
             .map(move |(i, chunk)| ((i as u16 % self.w, i as u16 / self.w), chunk))
     }
 
+    pub fn covered_chunks(&self, bounds: AABB) -> impl Iterator<Item = HeightmapChunkID> {
+        let ll = bounds.ll / SIZE as f32;
+        let ur = bounds.ur / SIZE as f32;
+        let ll = vec2(ll.x.floor(), ll.y.floor()).max(Vec2::ZERO);
+        let ur = vec2(ur.x.ceil(), ur.y.ceil()).min(vec2(self.w as f32, self.h as f32));
+
+        (ll.y as u16..ur.y as u16)
+            .flat_map(move |y| (ll.x as u16..ur.x as u16).map(move |x| (x, y)))
+    }
+
+    /// Returns height at any point using the cell to the bottom left of the point
     pub fn height_nearest(&self, p: Vec2) -> Option<f32> {
         let cell = HeightmapChunk::<RESOLUTION, SIZE>::id(p);
 
-        self.get_chunk(cell).and_then(|chunk| {
-            let v = p / SIZE as f32 - vec2(cell.0 as f32, cell.1 as f32);
-            let v = v * RESOLUTION as f32;
-            chunk
-                .heights
-                .get(v.y as usize)
-                .and_then(|x| x.get(v.x as usize))
-                .copied()
-        })
+        self.get_chunk(cell)
+            .and_then(|chunk| chunk.height(p - vec2(cell.0 as f32, cell.1 as f32) * SIZE as f32))
     }
 
     /// get height by actual cell position
-    #[inline]
-    pub fn height_idx(&self, x: usize, y: usize) -> Option<f32> {
+    fn height_idx(&self, x: usize, y: usize) -> Option<f32> {
         let chunkx = x / RESOLUTION;
         let chunky = y / RESOLUTION;
 
@@ -285,10 +326,13 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         let celly = y % RESOLUTION;
 
         let chunk = self.get_chunk((chunkx as u16, chunky as u16))?;
-        Some(chunk.heights[celly][cellx])
+
+        // Safety: modulo RESOLUTION
+        unsafe { Some(chunk.height_idx(cellx, celly).unwrap_unchecked()) }
     }
 
-    pub fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
+    /// Always returns the normal heightmap height
+    fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
         let chunkx = x / RESOLUTION;
         let chunky = y / RESOLUTION;
 
@@ -296,7 +340,9 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         let celly = y % RESOLUTION;
 
         let chunk = self.get_chunk_mut((chunkx as u16, chunky as u16))?;
-        Some(&mut chunk.heights[celly][cellx])
+
+        // Safety: modulo RESOLUTION
+        unsafe { Some(chunk.height_idx_mut(cellx, celly).unwrap_unchecked()) }
     }
 
     /// Returns height at any point using bilinear interpolation
@@ -469,19 +515,38 @@ fn unpack_height(height: u16) -> f32 {
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut seq = serializer.serialize_seq(Some(1 + RESOLUTION * RESOLUTION))?;
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut seq = serializer.serialize_seq(Some(1 + RESOLUTION * RESOLUTION * 2))?;
         seq.serialize_element(&self.max_height)?;
+        Self::encode_delta(&mut seq, &self.heights, false)?;
+        Self::encode_delta(&mut seq, &self.heights_override, true)?;
+        seq.end()
+    }
+}
+
+impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> {
+    fn encode_delta<S: SerializeSeq>(
+        seq: &mut S,
+        heights: &[[f32; RESOLUTION]; RESOLUTION],
+        handle_override: bool,
+    ) -> Result<(), S::Error> {
         let mut last = 0;
-        for row in &self.heights {
+        for row in heights {
             for &height in row {
-                let packed = pack_height(height);
+                let mut packed = pack_height(height);
+                if handle_override {
+                    if height == NO_OVERRIDE {
+                        packed = 0;
+                    } else if packed == 0 {
+                        packed = 1;
+                    }
+                }
                 let delta = packed.wrapping_sub(last);
                 seq.serialize_element(&delta)?;
                 last = packed;
             }
         }
-        seq.end()
+        Ok(())
     }
 }
 
@@ -489,10 +554,11 @@ impl<'de, const RESOLUTION: usize, const SIZE: u32> Deserialize<'de>
     for HeightmapChunk<RESOLUTION, SIZE>
 {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let (heights, max_height) =
+        let (heights, heights_override, max_height) =
             deserializer.deserialize_seq(HeightmapChunkVisitor::<RESOLUTION>)?;
         Ok(Self {
             heights,
+            heights_override,
             max_height,
         })
     }
@@ -500,34 +566,63 @@ impl<'de, const RESOLUTION: usize, const SIZE: u32> Deserialize<'de>
 
 struct HeightmapChunkVisitor<const RESOLUTION: usize>;
 
-impl<'de, const RESOLUTION: usize> serde::de::Visitor<'de> for HeightmapChunkVisitor<RESOLUTION> {
-    type Value = ([[f32; RESOLUTION]; RESOLUTION], f32);
+impl<'de, const RESOLUTION: usize> Visitor<'de> for HeightmapChunkVisitor<RESOLUTION> {
+    type Value = (
+        [[f32; RESOLUTION]; RESOLUTION],
+        [[f32; RESOLUTION]; RESOLUTION],
+        f32,
+    );
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a sequence of floats")
     }
 
-    fn visit_seq<A: serde::de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-        let len = seq.size_hint().unwrap_or(1 + RESOLUTION * RESOLUTION);
-        if len != 1 + RESOLUTION * RESOLUTION {
-            return Err(serde::de::Error::invalid_length(len, &""));
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+        let len = seq.size_hint().unwrap_or(1 + RESOLUTION * RESOLUTION * 2);
+        if len != 1 + RESOLUTION * RESOLUTION * 2 {
+            return Err(serde::de::Error::invalid_length(
+                len,
+                &"not enough elements to decode map chunk",
+            ));
         }
         let max_height = seq
             .next_element()?
             .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
         let mut heights = [[0.0; RESOLUTION]; RESOLUTION];
+        let mut heights_override = [[0.0; RESOLUTION]; RESOLUTION];
+
+        Self::decode_delta(&mut seq, &mut heights, false)?;
+        Self::decode_delta(&mut seq, &mut heights_override, true)?;
+
+        Ok((heights, heights_override, max_height))
+    }
+}
+
+impl<const RESOLUTION: usize> HeightmapChunkVisitor<RESOLUTION> {
+    fn decode_delta<'de, A: SeqAccess<'de>>(
+        seq: &mut A,
+        heights: &mut [[f32; RESOLUTION]; RESOLUTION],
+        handle_override: bool,
+    ) -> Result<(), A::Error> {
         let mut last = 0;
-        for row in &mut heights {
+        for row in heights {
             for height in row {
                 let delta: u16 = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
                 let packed = delta.wrapping_add(last);
+
+                if handle_override && packed == 0 {
+                    *height = NO_OVERRIDE;
+                    last = packed;
+                    continue;
+                }
+
                 *height = unpack_height(packed);
                 last = packed;
             }
         }
-        Ok((heights, max_height))
+        Ok(())
     }
 }
 
@@ -706,6 +801,10 @@ mod erosion {
                     water *= 1.0 - EVAPORATE_SPEED;
                     pos += dir;
                 }
+            }
+
+            for c in &changed {
+                self.get_chunk_mut(*c).map(|c| c.update_max_height());
             }
 
             changed.into_iter().collect()

@@ -8,6 +8,12 @@ pub struct Circle {
 }
 
 impl Circle {
+    pub fn contains(&self, p: Vec2) -> bool {
+        self.center.is_close(p, self.radius)
+    }
+}
+
+impl Circle {
     #[inline]
     pub fn new(center: Vec2, radius: f32) -> Self {
         Self { center, radius }

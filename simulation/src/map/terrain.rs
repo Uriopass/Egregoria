@@ -13,7 +13,7 @@ pub type TerrainChunkID = common::ChunkID<5>;
 
 pub const TERRAIN_CHUNK_RESOLUTION: usize = 32;
 
-const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32;
+pub(super) const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32;
 
 const TREE_GRID_SIZE: usize = 256;
 
@@ -124,8 +124,23 @@ impl Environment {
             .map(|((x, y), c)| (TerrainChunkID::new_i16(x as i16, y as i16), c))
     }
 
+    pub fn covered_chunks(&self, bounds: AABB) -> impl Iterator<Item = TerrainChunkID> {
+        self.heightmap
+            .covered_chunks(bounds)
+            .map(|(x, y)| TerrainChunkID::new_i16(x as i16, y as i16))
+    }
+
     pub fn raycast(&self, ray: Ray3) -> Option<(Vec3, Vec3)> {
         self.heightmap.raycast(ray)
+    }
+
+    pub fn set_overrides(
+        &mut self,
+        chunk: TerrainChunkID,
+        overrides: [[f32; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION],
+    ) {
+        self.heightmap
+            .set_override((chunk.0 as u16, chunk.1 as u16), overrides);
     }
 
     /// Applies a function to the heightmap

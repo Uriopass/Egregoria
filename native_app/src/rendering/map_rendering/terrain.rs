@@ -4,7 +4,7 @@ use geom::Camera;
 use simulation::map::{Map, MapSubscriber, UpdateType};
 use simulation::Simulation;
 
-const CSIZE: usize = simulation::map::Heightmap::SIZE as usize;
+const CSIZE: u32 = simulation::map::Heightmap::SIZE;
 const CRESO: usize = simulation::map::Heightmap::RESOLUTION;
 
 pub struct TerrainRender {
@@ -36,7 +36,7 @@ impl TerrainRender {
                 self.terrain.update_chunk(
                     &mut ctx.gfx,
                     (chunk_id.0 as u32, chunk_id.1 as u32),
-                    chunk.heights(),
+                    chunk,
                 );
             }
 
@@ -53,7 +53,7 @@ impl TerrainRender {
                 self.terrain.update_chunk(
                     &mut ctx.gfx,
                     (chunkid.0 as u32, chunkid.1 as u32),
-                    chunk.heights(),
+                    chunk,
                 );
             }
             changed = true;

@@ -50,6 +50,14 @@ impl AABB3 {
     }
 
     #[inline]
+    pub fn flatten(self) -> AABB {
+        AABB {
+            ll: self.ll.xy(),
+            ur: self.ur.xy(),
+        }
+    }
+
+    #[inline]
     pub fn w(&self) -> f32 {
         self.ur.x - self.ll.x
     }

@@ -5,7 +5,7 @@ use geom::{vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
 
 use crate::DemoElement;
 
-const CSIZE: usize = 512;
+const CSIZE: u32 = 512;
 const CRESO: usize = 16;
 const MAP_SIZE: usize = 50;
 
@@ -58,7 +58,7 @@ impl DemoElement for Terrain {
                 terrain.update_chunk(
                     gfx,
                     (x as u32, y as u32),
-                    h.get_chunk((x as u16, y as u16)).unwrap().heights(),
+                    h.get_chunk((x as u16, y as u16)).unwrap(),
                 );
             }
         }

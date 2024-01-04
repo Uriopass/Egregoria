@@ -52,6 +52,28 @@ impl AABB {
         }
     }
 
+    #[inline]
+    pub fn intersection(self, other: AABB) -> AABB {
+        let v = AABB {
+            ll: self.ll.max(other.ll),
+            ur: self.ur.min(other.ur),
+        };
+        if v.ll.x > v.ur.x || v.ll.y > v.ur.y {
+            AABB::zero()
+        } else {
+            v
+        }
+    }
+
+    #[inline]
+    pub fn offset(self, offset: Vec2) -> AABB {
+        AABB {
+            ll: self.ll + offset,
+            ur: self.ur + offset,
+        }
+    }
+
+    #[inline]
     pub fn size(&self) -> Vec2 {
         self.ur - self.ll
     }

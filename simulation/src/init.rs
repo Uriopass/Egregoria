@@ -44,6 +44,7 @@ pub fn init() {
     register_system("train_reservations_update", train_reservations_update);
     register_system("freight_station", freight_station_system);
     register_system("random_vehicles", random_vehicles_update);
+    register_system("update_map", |_, res| res.write::<Map>().update());
 
     register_system_sim("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 

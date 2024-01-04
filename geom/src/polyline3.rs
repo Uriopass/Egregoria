@@ -1,4 +1,4 @@
-use crate::{vec3, PolyLine, Radians, Segment3, Vec3, AABB3};
+use crate::{vec3, PolyLine, Radians, Segment, Segment3, Vec2, Vec3, AABB3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -239,6 +239,31 @@ impl PolyLine3 {
                 .min_by_key(|&(proj, _)| OrderedFloat((p - proj).xy().mag()))
                 .unwrap(), // Unwrap ok: n_points > 2
         }
+    }
+
+    /// Returns the id of the point right after the projection along with the projection
+    /// None if polyline is empty
+    pub fn project_segment_2d(&self, p: Vec2) -> (Vec3, usize) {
+        match *self.points {
+            [] => unsafe { unreachable_unchecked() },
+            [p] => (p, 0),
+            _ => self
+                .array_windows::<2>()
+                .enumerate()
+                .map(|(i, &[a, b])| {
+                    let seg = Segment {
+                        src: a.xy(),
+                        dst: b.xy(),
+                    };
+                    (a + (b - a) * seg.project_t(p), i + 1)
+                })
+                .min_by_key(|&(proj, _)| OrderedFloat((p - proj.xy()).mag()))
+                .unwrap(), // Unwrap ok: n_points > 2
+        }
+    }
+
+    pub fn project_2d(&self, p: Vec2) -> Vec3 {
+        self.project_segment_2d(p).0
     }
 
     pub fn segment_vec(&self, id: usize) -> Option<Vec3> {

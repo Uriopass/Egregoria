@@ -46,7 +46,7 @@ impl From<SerializedMap> for Map {
             parking: sel.parking,
             environment: sel.environment,
             bkinds: sel.bkinds,
-            subscribers: Default::default(),
+            ..Self::empty()
         }
     }
 }

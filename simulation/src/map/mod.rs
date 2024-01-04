@@ -28,6 +28,7 @@ pub mod procgen {
 }
 
 mod change_detection;
+mod height_override;
 mod light_policy;
 #[allow(clippy::module_inception)]
 mod map;

@@ -7,7 +7,7 @@ use wgpu::{
     VertexAttribute, VertexBufferLayout,
 };
 
-use geom::{vec2, vec3, Camera, Intersect3, Matrix4, Vec2, AABB3};
+use geom::{vec2, vec3, Camera, HeightmapChunk, Intersect3, Matrix4, Vec2, AABB3};
 
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
@@ -26,7 +26,7 @@ pub struct TerrainChunk {
 
 /// CSIZE is the size of a chunk in meters
 /// CRESOLUTION is the resolution of a chunk, in vertices, at the chunk data level (not LOD0 since we upsample)
-pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
+pub struct TerrainRender<const CSIZE: u32, const CRESOLUTION: usize> {
     terrain_tex: Arc<Texture>,
     normal_tex: Arc<Texture>,
 
@@ -48,7 +48,7 @@ pub struct TerrainPrepared {
     instances: [(PBuffer, u32); LOD],
 }
 
-impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
+impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
     const LOD0_RESOLUTION: usize = CRESOLUTION * (1 << UPSCALE_LOD);
 
     pub fn new(gfx: &mut GfxContext, w: u32, h: u32) -> Self {
@@ -161,7 +161,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         &mut self,
         gfx: &mut GfxContext,
         cell: (u32, u32),
-        chunk: &[[f32; CRESOLUTION]; CRESOLUTION],
+        chunk: &HeightmapChunk<CRESOLUTION, CSIZE>,
     ) {
         fn pack(height: f32) -> [u8; 2] {
             let h_encoded = ((height.clamp(MIN_HEIGHT, MAX_HEIGHT) - MIN_HEIGHT)
@@ -172,9 +172,9 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION * 2);
 
-        for ys in chunk.iter() {
-            for &v in ys {
-                contents.extend(pack(v));
+        for y in 0..CRESOLUTION {
+            for x in 0..CRESOLUTION {
+                contents.extend(pack(chunk.height_idx(x, y).unwrap()));
             }
         }
 

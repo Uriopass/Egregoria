@@ -2802,6 +2802,7 @@ name = "simulation"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
+ "bitflags 2.4.1",
  "common",
  "derive_more",
  "easybench",

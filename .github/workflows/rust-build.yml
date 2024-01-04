@@ -3,7 +3,7 @@ name: rust-build
 on:
   push:
     branches:
-      - master
+      - '*'
     tags-ignore:
       - v*  # don't run on tags since release does that
   pull_request:

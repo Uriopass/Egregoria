@@ -1,3 +1,4 @@
+use crate::map::height_override::find_overrides;
 use crate::map::serializing::SerializedMap;
 use crate::map::{
     Building, BuildingID, BuildingKind, Environment, Intersection, IntersectionID, Lane, LaneID,
@@ -37,6 +38,7 @@ pub struct Map {
     pub environment: Environment,
     pub parking: ParkingSpots,
     pub subscribers: MapSubscribers,
+    pub(crate) override_suscriber: MapSubscriber,
 }
 
 defer_serialize!(Map, SerializedMap);
@@ -50,6 +52,7 @@ impl Default for Map {
 impl Map {
     // Public API
     pub fn empty() -> Self {
+        let subscribers = MapSubscribers::default();
         Self {
             roads: Roads::default(),
             lanes: Lanes::default(),
@@ -60,7 +63,15 @@ impl Map {
             environment: Environment::default(),
             spatial_map: SpatialMap::default(),
             bkinds: Default::default(),
-            subscribers: Default::default(),
+            override_suscriber: subscribers.subscribe(UpdateType::Road | UpdateType::Building),
+            subscribers,
+        }
+    }
+
+    /// Perform cleanups potentially required every frame
+    pub fn update(&mut self) {
+        for chunk in self.override_suscriber.take_updated_chunks() {
+            find_overrides(self, chunk);
         }
     }
 
@@ -629,6 +640,10 @@ impl Map {
         mk_proj(ProjectKind::Ground)
     }
 
+    pub fn get<T: MapObj>(&self, id: T) -> Option<&T::Obj> {
+        MapObj::get(id, self)
+    }
+
     pub fn is_empty(&self) -> bool {
         self.roads.is_empty() && self.lanes.is_empty() && self.intersections.is_empty()
     }
@@ -895,5 +910,45 @@ impl MapProject {
 
     pub fn is_ground(&self) -> bool {
         matches!(self.kind, ProjectKind::Ground)
+    }
+}
+
+pub trait MapObj {
+    type Obj;
+    fn get(self, map: &Map) -> Option<&Self::Obj>;
+}
+
+impl MapObj for RoadID {
+    type Obj = Road;
+    fn get(self, map: &Map) -> Option<&Road> {
+        map.roads.get(self)
+    }
+}
+
+impl MapObj for LaneID {
+    type Obj = Lane;
+    fn get(self, map: &Map) -> Option<&Lane> {
+        map.lanes.get(self)
+    }
+}
+
+impl MapObj for IntersectionID {
+    type Obj = Intersection;
+    fn get(self, map: &Map) -> Option<&Intersection> {
+        map.intersections.get(self)
+    }
+}
+
+impl MapObj for BuildingID {
+    type Obj = Building;
+    fn get(self, map: &Map) -> Option<&Building> {
+        map.buildings.get(self)
+    }
+}
+
+impl MapObj for LotID {
+    type Obj = Lot;
+    fn get(self, map: &Map) -> Option<&Lot> {
+        map.lots.get(self)
     }
 }

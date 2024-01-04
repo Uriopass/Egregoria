@@ -355,6 +355,14 @@ impl Vec2 {
     }
 
     #[inline]
+    pub fn ceil(self) -> Self {
+        Self {
+            x: self.x.ceil(),
+            y: self.y.ceil(),
+        }
+    }
+
+    #[inline]
     pub fn fract(self) -> Self {
         Self {
             x: self.x.fract(),

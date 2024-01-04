@@ -16,11 +16,13 @@ pub trait CanonicalPosition {
 
 pub type SubscriberChunkID = ChunkID<5>;
 
-#[derive(Eq, PartialEq, Hash, Copy, Clone)]
-pub enum UpdateType {
-    Road,
-    Building,
-    Terrain,
+bitflags::bitflags! {
+    #[derive(Debug, Copy, Clone)]
+    pub struct UpdateType: u8 {
+        const Road = 1;
+        const Building = 1 << 1;
+        const Terrain = 1 << 2;
+    }
 }
 
 #[derive(Default)]
@@ -115,7 +117,7 @@ impl MapSubscriber {
     }
 
     pub fn dispatch(&mut self, update_type: UpdateType, chunk_id: SubscriberChunkID) {
-        if update_type != self.filter {
+        if !self.filter.intersects(update_type) {
             return;
         }
         let mut inner = self.inner.lock().unwrap();
