@@ -10,3 +10,7 @@ world
 *.exe
 *.tar.gz
 __pycache__
+native_app/target*
+assets_gui/target*
+headless/target*
+engine_demo/target*
