@@ -9,6 +9,7 @@ use crate::physics::coworld_synchronize;
 use crate::souls::freight_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
+use crate::souls::social_network::{clean_kinships_system, SocialNetworkRes};
 use crate::transportation::pedestrian_decision_system;
 use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_system};
 use crate::transportation::testing_vehicles::{random_vehicles_update, RandomVehicles};
@@ -45,6 +46,7 @@ pub fn init() {
     register_system("freight_station", freight_station_system);
     register_system("random_vehicles", random_vehicles_update);
     register_system("update_map", |_, res| res.write::<Map>().update());
+    register_system("social_cleaner", clean_kinships_system);
 
     register_system_sim("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 
@@ -62,6 +64,7 @@ pub fn init() {
 
     register_init(init_market);
 
+    register_resource_default::<SocialNetworkRes, Bincode>("social_network");
     register_resource_default::<MultiplayerState, Bincode>("multiplayer_state");
     register_resource_default::<RandomVehicles, Bincode>("random_vehicles");
     register_resource_default::<Tick, Bincode>("tick");

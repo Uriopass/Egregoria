@@ -15,6 +15,7 @@ pub mod desire;
 pub mod freight_station;
 pub mod goods_company;
 pub mod human;
+pub mod social_network;
 
 /// Adds souls to empty buildings
 pub(crate) fn add_souls_to_empty_buildings(sim: &mut Simulation) {

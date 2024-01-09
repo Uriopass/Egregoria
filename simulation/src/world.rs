@@ -11,6 +11,7 @@ use crate::souls::human::{HumanDecision, PersonalInfo};
 use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon};
 use crate::transportation::{Location, Pedestrian, Vehicle, VehicleKind, VehicleState};
 use crate::utils::par_command_buffer::SimDrop;
+use crate::utils::rand_provider::RandProvider;
 use crate::utils::resources::Resources;
 use crate::{impl_entity, impl_trans, SoulID};
 use derive_more::{From, TryInto};
