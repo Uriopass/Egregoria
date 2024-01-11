@@ -6,6 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = "1.0.195"
-geom = { path = "../geom" }
+common       = { path = "../common" }
+geom         = { path = "../geom" }
 egui-inspect = { path = "../egui-inspect" }
+mlua         = { version = "0.9.4", features = ["luau"] }
+slotmapd     = "1.0.10"
+serde        = "1.0.195"
+thiserror    = "1.0.56"
+log = { version = "0.4.20", features = [] }

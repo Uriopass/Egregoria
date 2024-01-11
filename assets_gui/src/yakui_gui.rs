@@ -1,7 +1,7 @@
-use yakui::widgets::{List, Pad, StateResponse, TextBox};
+use yakui::widgets::{List, Pad, StateResponse};
 use yakui::{
-    align, center, colored_box_container, column, constrained, pad, row, use_state, Alignment,
-    Constraints, CrossAxisAlignment, MainAxisAlignment, MainAxisSize, Response, Vec2,
+    colored_box_container, column, constrained, row, use_state, Constraints, CrossAxisAlignment,
+    MainAxisAlignment, MainAxisSize, Response, Vec2,
 };
 
 use engine::meshload::CPUMesh;
@@ -9,22 +9,20 @@ use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, InstancedMesh, Mesh, SpriteBatch};
 use geom::Matrix4;
 use goryak::{
-    background, button_primary, center_width, checkbox_value, combo_box, divider, dragvalue, icon,
-    interact_box_radius, is_hovered, labelc, on_background, on_secondary, on_secondary_container,
-    on_surface, outline_variant, round_rect, scroll_vertical, secondary, secondary_container,
-    set_theme, stretch_width, surface, surface_variant, use_changed, CountGrid, Draggable,
-    MainAxisAlignItems, RoundRect, Theme,
+    background, button_primary, checkbox_value, divider, dragvalue, icon, interact_box_radius,
+    is_hovered, labelc, on_secondary_container, on_surface, outline_variant, round_rect,
+    scroll_vertical, secondary_container, set_theme, surface, surface_variant, use_changed,
+    CountGrid, RoundRect, Theme,
 };
-use prototypes::{BuildingGen, CompanyKind};
+use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype};
 
-use crate::companies::Companies;
 use crate::lod::LodGenerateParams;
 use crate::{GUIAction, State};
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub enum Inspected {
     None,
-    Company(usize),
+    Company(GoodsCompanyID),
 }
 
 #[derive(Clone)]
@@ -36,7 +34,6 @@ pub enum Shown {
 }
 
 pub struct Gui {
-    pub companies: Companies,
     pub inspected: Inspected,
     pub shown: Shown,
 }
@@ -44,7 +41,6 @@ pub struct Gui {
 impl Gui {
     pub fn new() -> Self {
         Self {
-            companies: Companies::new().expect("could not load companies.json"),
             inspected: Inspected::None,
             shown: Shown::None,
         }
@@ -56,7 +52,7 @@ impl State {
         row(|| {
             self.explorer();
             self.model_properties();
-            self.properties();
+            //self.properties();
         });
     }
 
@@ -96,19 +92,15 @@ impl State {
                                         companies_open.modify(|x| !x);
                                     },
                                 );
-                                if self.gui.companies.changed && button_primary("Save").clicked {
-                                    self.gui.companies.save();
-                                }
                                 if companies_open.get() {
-                                    for (i, comp) in self.gui.companies.companies.iter().enumerate()
-                                    {
+                                    for comp in prototypes_iter::<GoodsCompanyPrototype>() {
                                         Self::explore_item(
                                             4,
-                                            Inspected::Company(i) == self.gui.inspected,
+                                            Inspected::Company(comp.id) == self.gui.inspected,
                                             comp.name.to_string(),
                                             None,
                                             || {
-                                                self.gui.inspected = Inspected::Company(i);
+                                                self.gui.inspected = Inspected::Company(comp.id);
                                             },
                                         );
                                     }
@@ -267,12 +259,13 @@ impl State {
         });
     }
 
+    /*
     fn properties(&mut self) {
         match self.gui.inspected {
             Inspected::None => {}
             Inspected::Company(i) => {
                 properties_container(|| {
-                    let comp = &mut self.gui.companies.companies[i];
+                    let comp = prototype(i).unwrap();
 
                     let label = |name: &str| {
                         pad(Pad::all(3.0), || {
@@ -399,10 +392,10 @@ impl State {
                 });
             }
         }
-    }
+    }*/
 }
 
-fn properties_container(children: impl FnOnce()) {
+/*fn properties_container(children: impl FnOnce()) {
     let mut off = use_state(|| 350.0);
     resizebar_vert(&mut off, true);
     constrained(
@@ -426,7 +419,7 @@ fn properties_container(children: impl FnOnce()) {
             });
         },
     );
-}
+}*/
 
 /// A horizontal resize bar.
 pub fn resizebar_vert(off: &mut Response<StateResponse<f32>>, scrollbar_on_left_side: bool) {
@@ -465,7 +458,7 @@ pub fn resizebar_vert(off: &mut Response<StateResponse<f32>>, scrollbar_on_left_
     });
 }
 
-fn text_inp(v: &mut String) {
+/*fn text_inp(v: &mut String) {
     center(|| {
         let mut t = TextBox::new(v.clone());
         t.fill = Some(secondary());
@@ -474,7 +467,7 @@ fn text_inp(v: &mut String) {
             *v = x;
         }
     });
-}
+}*/
 
 impl Drawable for Shown {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {

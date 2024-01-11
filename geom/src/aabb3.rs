@@ -137,7 +137,7 @@ impl AABB3 {
 
     /// as ray is defined by O + tD, return the t values for the entering and exiting intersections
     /// Returns a 2-tuple of (t_near, t_far)
-    /// Adapted from https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
+    /// Adapted from <https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d>
     /// If the ray origin is inside the box, t_near will be zero
     #[inline]
     pub fn raycast(&self, ray: Ray3) -> Option<(f32, f32)> {

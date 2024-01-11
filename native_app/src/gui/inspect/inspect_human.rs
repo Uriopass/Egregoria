@@ -1,6 +1,7 @@
 use egui::{Context, Widget};
+use prototypes::ItemID;
 
-use simulation::economy::{ItemRegistry, Market};
+use simulation::economy::Market;
 use simulation::map_dynamic::Destination;
 use simulation::souls::desire::WorkKind;
 use simulation::transportation::Location;
@@ -96,11 +97,10 @@ pub fn inspect_human(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: 
             });
 
             let market = sim.read::<Market>();
-            let itemregistry = sim.read::<ItemRegistry>();
 
             ui.add_space(10.0);
 
-            let jobopening = itemregistry.id("job-opening");
+            let jobopening = ItemID::new("job-opening");
             for (&item_id, m) in market.iter() {
                 let Some(v) = m.capital(id.into()) else {
                     continue;
@@ -108,11 +108,8 @@ pub fn inspect_human(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: 
                 if item_id == jobopening {
                     continue;
                 }
-                let Some(item) = itemregistry.get(item_id) else {
-                    continue;
-                };
 
-                item_icon(ui, uiworld, item, v);
+                item_icon(ui, uiworld, item_id, v);
             }
 
             follow_button(uiworld, ui, id);

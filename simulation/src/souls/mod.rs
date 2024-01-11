@@ -1,7 +1,7 @@
 use crate::map::{BuildingID, BuildingKind};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::freight_station::freight_station_soul;
-use crate::souls::goods_company::{company_soul, GoodsCompany, GoodsCompanyRegistry};
+use crate::souls::goods_company::{company_soul, GoodsCompanyState};
 use crate::souls::human::spawn_human;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::Simulation;
@@ -62,37 +62,29 @@ pub(crate) fn add_souls_to_empty_buildings(sim: &mut Simulation) {
         .filter_map(|(kind, v)| kind.as_goods_company().zip(Some(v)))
         .flat_map(|(bkind, v)| v.iter().map(move |x| (bkind, x)))
     {
-        let registry = sim.read::<GoodsCompanyRegistry>();
-        let des = &unwrap_or!(registry.descriptions.get(bkind), continue);
+        let proto = bkind.prototype();
 
-        let ckind = des.kind;
-        let mk_trucks = |sim: &mut Simulation| {
-            let mut trucks = vec![];
-            if let CompanyKind::Factory { n_trucks } = ckind {
-                for _ in 0..n_trucks {
-                    trucks.extend(spawn_parked_vehicle(sim, VehicleKind::Truck, pos))
-                }
-                if trucks.is_empty() {
-                    return None;
-                }
+        let ckind = proto.kind;
+        let mut trucks = vec![];
+        if ckind == CompanyKind::Factory {
+            for _ in 0..proto.n_trucks {
+                trucks.extend(spawn_parked_vehicle(sim, VehicleKind::Truck, pos))
             }
-            Some(trucks)
-        };
+            if trucks.is_empty() {
+                continue;
+            }
+        }
 
-        let comp = GoodsCompany {
-            kind: des.kind,
+        let comp = GoodsCompanyState {
+            kind: proto.id,
             building: build_id,
-            recipe: des.recipe.clone(),
-            max_workers: des.n_workers,
+            max_workers: proto.n_workers,
             progress: 0.0,
             driver: None,
-            trucks: {
-                drop(registry);
-                unwrap_or!(mk_trucks(sim), continue)
-            },
+            trucks,
         };
 
-        company_soul(sim, comp);
+        company_soul(sim, comp, proto);
 
         n_souls_added += 1;
     }

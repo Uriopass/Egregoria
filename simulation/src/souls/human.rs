@@ -1,4 +1,4 @@
-use crate::economy::{Bought, ItemRegistry, Market};
+use crate::economy::{Bought, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination, Itinerary, Router};
 use crate::souls::desire::{BuyFood, Home, Work};
@@ -15,6 +15,7 @@ use crate::{BuildingKind, Map, ParCommandBuffer, Simulation, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
 use lazy_static::lazy_static;
+use prototypes::ItemID;
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Serialize, Deserialize, Default)]
@@ -244,11 +245,7 @@ pub fn spawn_human(sim: &mut Simulation, house: BuildingID) -> Option<HumanID> {
     let hpos = sim.map().buildings().get(house)?.door_pos;
     let p = Pedestrian::new(&mut sim.write::<RandProvider>());
 
-    let registry = sim.read::<ItemRegistry>();
     let time = sim.read::<GameTime>().instant();
-
-    let food = BuyFood::new(time, &registry);
-    drop(registry);
 
     let car = spawn_parked_vehicle(sim, VehicleKind::Car, housepos);
 
@@ -262,7 +259,7 @@ pub fn spawn_human(sim: &mut Simulation, house: BuildingID) -> Option<HumanID> {
         speed: Speed::default(),
         decision: HumanDecision::default(),
         home: Home::new(house),
-        food,
+        food: BuyFood::new(time),
         bought: Bought::default(),
         router: Router::new(car),
         collider: None,
@@ -272,8 +269,7 @@ pub fn spawn_human(sim: &mut Simulation, house: BuildingID) -> Option<HumanID> {
 
     let soul = SoulID::Human(id);
     let mut m = sim.write::<Market>();
-    let registry = sim.read::<ItemRegistry>();
-    m.buy(soul, housepos.xy(), registry.id("job-opening"), 1);
+    m.buy(soul, housepos.xy(), ItemID::new("job-opening"), 1);
 
     sim.write::<BuildingInfos>().get_in(house, soul);
     sim.write::<BuildingInfos>().set_owner(house, soul);

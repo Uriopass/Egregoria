@@ -1,10 +1,10 @@
-use crate::economy::{Item, ItemID, ItemRegistry, Money, WORKER_CONSUMPTION_PER_SECOND};
+use crate::economy::{ItemID, Money, WORKER_CONSUMPTION_PER_SECOND};
 use crate::map::BuildingID;
 use crate::map_dynamic::BuildingInfos;
-use crate::souls::goods_company::GoodsCompanyID;
-use crate::{BuildingKind, GoodsCompanyRegistry, Map, SoulID};
+use crate::{BuildingKind, Map, SoulID};
 use geom::Vec2;
 use ordered_float::OrderedFloat;
+use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype, ItemPrototype};
 use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
@@ -121,11 +121,10 @@ pub fn find_trade_place(
 }
 
 impl Market {
-    pub fn new(registry: &ItemRegistry, companies: &GoodsCompanyRegistry) -> Self {
-        let prices = calculate_prices(registry, companies, 1.25);
+    pub fn new() -> Self {
+        let prices = calculate_prices(1.25);
         Self {
-            markets: registry
-                .iter()
+            markets: prototypes_iter::<ItemPrototype>()
                 .map(|v| (v.id, SingleMarket::new(prices[&v.id], v.optout_exttrade)))
                 .collect(),
             all_trades: Default::default(),
@@ -360,51 +359,38 @@ impl Market {
     }
 }
 
-fn calculate_prices(
-    registry: &ItemRegistry,
-    companies: &GoodsCompanyRegistry,
-    price_multiplier: f32,
-) -> BTreeMap<ItemID, Money> {
+fn calculate_prices(price_multiplier: f32) -> BTreeMap<ItemID, Money> {
     let mut item_graph: BTreeMap<ItemID, Vec<GoodsCompanyID>> = BTreeMap::new();
-    for (id, company) in companies.descriptions.iter() {
-        for (itemid, _) in &company.recipe.production {
-            item_graph.entry(*itemid).or_default().push(id);
+    for company in GoodsCompanyPrototype::iter() {
+        for item in &company.recipe.production {
+            item_graph.entry(item.id).or_default().push(company.id);
         }
     }
 
     let mut prices = BTreeMap::new();
     fn calculate_price_inner(
-        registry: &ItemRegistry,
-        companies: &GoodsCompanyRegistry,
         item_graph: &BTreeMap<ItemID, Vec<GoodsCompanyID>>,
-        item: &Item,
+        id: ItemID,
         prices: &mut BTreeMap<ItemID, Money>,
         price_multiplier: f32,
     ) {
-        if prices.contains_key(&item.id) {
+        if prices.contains_key(&id) {
             return;
         }
 
         let mut minprice = None;
-        for &comp in item_graph.get(&item.id).unwrap_or(&vec![]) {
-            let company = &companies.descriptions[comp];
+        for &comp in item_graph.get(&id).unwrap_or(&vec![]) {
+            let company = &comp.prototype();
             let mut price_consumption = Money::ZERO;
-            for &(itemid, qty) in &company.recipe.consumption {
-                calculate_price_inner(
-                    registry,
-                    companies,
-                    item_graph,
-                    &registry[itemid],
-                    prices,
-                    price_multiplier,
-                );
-                price_consumption += prices[&itemid] * qty as i64;
+            for recipe_item in &company.recipe.consumption {
+                calculate_price_inner(item_graph, recipe_item.id, prices, price_multiplier);
+                price_consumption += prices[&recipe_item.id] * recipe_item.amount as i64;
             }
             let qty = company
                 .recipe
                 .production
                 .iter()
-                .find_map(|x| (x.0 == item.id).then_some(x.1))
+                .find_map(|x| (x.id == id).then_some(x.amount))
                 .unwrap_or(0) as i64;
 
             let price_workers = company.recipe.complexity as i64
@@ -418,18 +404,11 @@ fn calculate_prices(
             minprice = minprice.map(|x: Money| x.min(newprice)).or(Some(newprice));
         }
 
-        prices.insert(item.id, minprice.unwrap_or(Money::ZERO));
+        prices.insert(id, minprice.unwrap_or(Money::ZERO));
     }
 
-    for item in registry.iter() {
-        calculate_price_inner(
-            registry,
-            companies,
-            &item_graph,
-            item,
-            &mut prices,
-            price_multiplier,
-        );
+    for item in ItemPrototype::iter() {
+        calculate_price_inner(&item_graph, item.id, &mut prices, price_multiplier);
     }
 
     prices
@@ -438,12 +417,11 @@ fn calculate_prices(
 #[cfg(test)]
 mod tests {
     use super::Market;
-    use crate::economy::{ItemRegistry, WORKER_CONSUMPTION_PER_SECOND};
-    use crate::souls::goods_company::{GoodsCompanyDescription, Recipe};
+    use crate::economy::WORKER_CONSUMPTION_PER_SECOND;
     use crate::world::CompanyID;
-    use crate::{GoodsCompanyRegistry, SoulID};
-    use common::descriptions::{BuildingGen, CompanyKind};
+    use crate::SoulID;
     use geom::{vec2, Vec2};
+    use prototypes::{test_prototypes, ItemID};
 
     fn mk_ent(id: u64) -> CompanyID {
         CompanyID::from(slotmapd::KeyData::from_ffi(id))
@@ -455,26 +433,26 @@ mod tests {
         let seller_far = SoulID::GoodsCompany(mk_ent((1 << 32) | 2));
         let buyer = SoulID::GoodsCompany(mk_ent((1 << 32) | 3));
 
-        let mut registry = ItemRegistry::default();
-
-        registry.load_item_definitions(
+        test_prototypes(
             r#"
-          [{
-            "name": "cereal",
-            "label": "Cereal"
+        data:extend {
+          {
+            type = "item",
+            name = "cereal",
+            label = "Cereal"
           },
           {
-            "name": "wheat",
-            "label": "Wheat"
-          }]
+            type = "item",
+            name = "wheat",
+            label = "Wheat",
+          }
+        }
         "#,
         );
 
-        let g = GoodsCompanyRegistry::default();
+        let mut m = Market::new();
 
-        let mut m = Market::new(&registry, &g);
-
-        let cereal = registry.id("cereal");
+        let cereal = ItemID::new("cereal");
 
         m.produce(seller, cereal, 3);
         m.produce(seller_far, cereal, 3);
@@ -494,67 +472,70 @@ mod tests {
 
     #[test]
     fn calculate_prices() {
-        let mut registry = ItemRegistry::default();
-
-        registry.load_item_definitions(
+        test_prototypes(
             r#"
-          [{
-            "name": "cereal",
-            "label": "Cereal"
+        data:extend {
+          {
+            type = "item",
+            name = "cereal",
+            label = "Cereal"
           },
           {
-            "name": "wheat",
-            "label": "Wheat"
-          }]
+            type = "item",
+            name = "wheat",
+            label = "Wheat",
+          }
+        }
+        
+        data:extend {{
+            type = "goods-company",
+            name = "cereal-farm",
+            label = "Cereal farm",
+            kind = "factory",
+            bgen = "farm",
+            recipe = {
+                production = {
+                    {"cereal", 3}
+                },
+                consumption = {},
+                complexity = 3,
+                storage_multiplier = 5,
+            },
+            n_trucks = 1,
+            n_workers = 2,
+            size = 0.0,
+            asset_location = "",
+            price = 0,
+        },
+        {
+            type = "goods-company",
+            name = "wheat-factory",
+            label = "Wheat factory",
+            kind = "factory",
+            bgen = "farm",
+            recipe = {
+                production = {
+                    {"wheat", 2}
+                },
+                consumption = {
+                    {"cereal", 2}
+                },
+                complexity = 10,
+                storage_multiplier = 5,
+            },
+            n_trucks = 1,
+            n_workers = 5,
+            size = 0.0,
+            asset_location = "",
+            price = 0,
+        }}
         "#,
         );
 
-        let cereal = registry.id("cereal");
-        let wheat = registry.id("wheat");
+        let cereal = ItemID::new("cereal");
+        let wheat = ItemID::new("wheat");
 
-        let mut companies = GoodsCompanyRegistry::default();
-
-        companies
-            .descriptions
-            .insert_with_key(|id| GoodsCompanyDescription {
-                id,
-                name: "Cereal farm".to_string(),
-                bgen: BuildingGen::House,
-                kind: CompanyKind::Store,
-                recipe: Recipe {
-                    production: vec![(cereal, 3)],
-                    complexity: 3,
-                    consumption: vec![],
-                    storage_multiplier: 5,
-                },
-                n_workers: 2,
-                size: 0.0,
-                asset_location: "".to_string(),
-                price: 0,
-                zone: None,
-            });
-
-        companies
-            .descriptions
-            .insert_with_key(|id| GoodsCompanyDescription {
-                id,
-                name: "Wheat factory".to_string(),
-                bgen: BuildingGen::House,
-                kind: CompanyKind::Store,
-                recipe: Recipe {
-                    production: vec![(wheat, 2)],
-                    complexity: 10,
-                    consumption: vec![(cereal, 2)],
-                    storage_multiplier: 5,
-                },
-                n_workers: 5,
-                size: 0.0,
-                asset_location: "".to_string(),
-                price: 0,
-                zone: None,
-            });
-
-        let prices = super::calculate_prices(&registry, &companies, 1.0);
+        let prices = super::calculate_prices(1.0);
 
         assert_eq!(prices.len(), 2);
         let price_cereal = 2 * WORKER_CONSUMPTION_PER_SECOND;

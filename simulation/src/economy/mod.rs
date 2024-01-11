@@ -8,8 +8,8 @@
 //! - The government, which is the entity representing the player
 //!
 use crate::utils::resources::Resources;
+use crate::SoulID;
 use crate::World;
-use crate::{GoodsCompanyRegistry, SoulID};
 use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -19,15 +19,14 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, SubAssign};
 
 mod ecostats;
 mod government;
-mod item;
 mod market;
 
 use crate::utils::time::{Tick, TICKS_PER_SECOND};
 use crate::world::HumanID;
 pub use ecostats::*;
 pub use government::*;
-pub use item::*;
 pub use market::*;
+use prototypes::ItemID;
 
 const WORKER_CONSUMPTION_PER_SECOND: Money = Money::new_cents(1);
 
@@ -164,31 +163,10 @@ pub struct Bought(pub BTreeMap<ItemID, Vec<Trade>>);
 #[derive(Inspect, Debug, Default, Serialize, Deserialize)]
 pub struct Workers(pub Vec<HumanID>);
 
-#[cfg(not(test))]
-const ITEMS_PATH: &str = "assets/items.json";
-#[cfg(not(test))]
-const COMPANIES_PATH: &str = "assets/companies.json";
-
-#[cfg(test)]
-const ITEMS_PATH: &str = "../assets/items.json";
-#[cfg(test)]
-const COMPANIES_PATH: &str = "../assets/companies.json";
-
 pub fn init_market(_: &mut World, res: &mut Resources) {
-    res.write::<ItemRegistry>()
-        .load_item_definitions(&common::saveload::load_string(ITEMS_PATH).unwrap());
-
-    res.write::<GoodsCompanyRegistry>().load(
-        &common::saveload::load_string(COMPANIES_PATH).unwrap(),
-        &res.read::<ItemRegistry>(),
-    );
-
-    let market = Market::new(
-        &res.read::<ItemRegistry>(),
-        &res.read::<GoodsCompanyRegistry>(),
-    );
+    let market = Market::new();
     res.insert(market);
-    let stats = EcoStats::new(&res.read::<ItemRegistry>());
+    let stats = EcoStats::new();
     res.insert(stats);
 }
 
@@ -197,7 +175,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
     let n_workers = world.humans.len();
 
     let mut m = resources.write::<Market>();
-    let job_opening = resources.read::<ItemRegistry>().id("job-opening");
+    let job_opening = ItemID::new("job-opening");
     let mut gvt = resources.write::<Government>();
     let tick = resources.read::<Tick>().0;
 

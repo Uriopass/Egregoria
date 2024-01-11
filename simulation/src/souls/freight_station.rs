@@ -161,8 +161,8 @@ mod tests {
     use crate::souls::human::{spawn_human, HumanDecisionKind};
     use crate::tests::TestCtx;
     use crate::{BuildingKind, SoulID, WorldCommand};
-    use common::descriptions::BuildingGen;
     use geom::{vec2, vec3, OBB};
+    use prototypes::BuildingGen;
 
     #[test]
     fn test_deliver_to_freight_station_incrs_station() {

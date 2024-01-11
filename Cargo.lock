@@ -336,6 +336,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c48f0051a4b4c5e0b6d365cd04af53aeaa209e3cc15ec2cdb69e73cc87fbd0dc"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -510,6 +520,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "egui-inspect",
+ "fast-float",
  "geom",
  "inline_tweak",
  "log",
@@ -1004,6 +1015,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fast-float"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95765f67b4b18863968b4a1bd5bb576f732b29a4a28c7cd84c09fa3e2875f33c"
+
+[[package]]
 name = "fdeflate"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1144,6 +1161,7 @@ dependencies = [
  "flat_spatial",
  "fnv",
  "inline_tweak",
+ "mlua",
  "ordered-float",
  "serde",
 ]
@@ -1703,6 +1721,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "luau0-src"
+version = "0.7.11+luau606"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07ffc4945ee953a33cb2b331e00b19e11275fc105c8ac8a977c810597d790f08"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "mach2"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1817,6 +1844,32 @@ name = "mint"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
+
+[[package]]
+name = "mlua"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "069264935e816c85884b99e88c8b408d6d92e40ae8760f726c983526a53546b5"
+dependencies = [
+ "bstr",
+ "libloading 0.8.1",
+ "mlua-sys",
+ "num-traits",
+ "once_cell",
+ "rustc-hash",
+]
+
+[[package]]
+name = "mlua-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4655631a02e3739d014951291ecfa08db49c4da3f7f8c6f3931ed236af5dd78e"
+dependencies = [
+ "cc",
+ "cfg-if",
+ "luau0-src",
+ "pkg-config",
+]
 
 [[package]]
 name = "naga"
@@ -2473,9 +2526,14 @@ dependencies = [
 name = "prototypes"
 version = "0.1.0"
 dependencies = [
+ "common",
  "egui-inspect",
  "geom",
+ "log",
+ "mlua",
  "serde",
+ "slotmapd",
+ "thiserror",
 ]
 
 [[package]]

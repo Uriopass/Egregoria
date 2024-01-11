@@ -1,7 +1,7 @@
 use crate::economy::Money;
 use crate::map::{LanePattern, MapProject, MAX_ZONE_AREA};
 use crate::world_command::WorldCommand;
-use crate::{BuildingKind, GoodsCompanyRegistry, Simulation};
+use crate::{BuildingKind, Simulation};
 use serde::{Deserialize, Serialize};
 
 /// The government represents the player.
@@ -32,13 +32,17 @@ impl Government {
             } => {
                 let m = sim.map();
                 let Some(b) = m.buildings.get(*bid) else {
+                    log::error!("Trying to update zone of non-existent building");
                     return Money::ZERO;
                 };
                 let Some(gc) = b.kind.as_goods_company() else {
+                    log::error!("Trying to update zone of non-goods-company building");
                     return Money::ZERO;
                 };
-                let registry = sim.read::<GoodsCompanyRegistry>();
-                let zonedescr = registry.descriptions[gc].zone.as_ref().unwrap();
+                let Some(zonedescr) = gc.prototype().zone.as_ref() else {
+                    log::error!("Trying to update zone of non-zoneable building");
+                    return Money::ZERO;
+                };
 
                 let oldarea = b.zone.as_ref().map_or(0.0, |z| z.area);
                 let newarea = z.area;
@@ -55,7 +59,7 @@ impl Government {
             }
             WorldCommand::MapBuildSpecialBuilding { kind: x, .. } => match x {
                 BuildingKind::GoodsCompany(x) => {
-                    let descr = &sim.read::<GoodsCompanyRegistry>().descriptions[*x];
+                    let descr = x.prototype();
                     descr.price
                         + descr
                             .zone

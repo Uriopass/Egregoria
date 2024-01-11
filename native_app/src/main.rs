@@ -26,6 +26,8 @@ fn main() {
     profiling::tracy_client::Client::start();
     profiling::register_thread!("Main Thread");
 
+    engine::framework::init();
     init::init();
+
     engine::framework::start::<game_loop::State>();
 }

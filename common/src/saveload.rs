@@ -190,8 +190,6 @@ pub fn load_raw(p: impl AsRef<Path>) -> Result<Vec<u8>> {
     std::fs::read(p)
 }
 
-pub fn load_string(
-    p: impl AsRef<Path>,
-) -> std::result::Result<String, Box<dyn std::error::Error + 'static>> {
-    std::fs::read_to_string(p).map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+pub fn load_string(p: impl AsRef<Path>) -> Result<String> {
+    std::fs::read_to_string(p)
 }

@@ -6,12 +6,12 @@ use engine::{
     SpriteBatchBuilder,
 };
 use geom::{vec3, InfiniteFrustrum, LinearColor, Plane, Vec2, Vec3};
+use prototypes::{load_prototypes, try_prototype};
 use std::path::{Path, PathBuf};
 
 use crate::orbit_camera::OrbitCamera;
 use crate::yakui_gui::{Gui, Inspected, Shown};
 
-mod companies;
 mod lod;
 mod orbit_camera;
 mod yakui_gui;
@@ -40,7 +40,7 @@ impl engine::framework::State for State {
 
         let mut gui = Gui::new();
 
-        gui.inspected = Inspected::Company(1);
+        gui.inspected = Inspected::None;
 
         Self {
             camera,
@@ -126,11 +126,11 @@ impl State {
     }
 }
 
-fn create_shown(gfx: &mut GfxContext, state: &State, inspected: Inspected) -> Shown {
+fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> Shown {
     match inspected {
         Inspected::None => Shown::None,
         Inspected::Company(i) => {
-            let comp = &state.gui.companies.companies[i];
+            let comp = try_prototype(i).unwrap();
             let p = Path::new(&comp.asset_location);
             match p.extension() {
                 Some(x) if (x == "png" || x == "jpg") => {
@@ -188,7 +188,9 @@ fn create_shown(gfx: &mut GfxContext, state: &State, inspected: Inspected) -> Sh
 }
 
 fn main() {
-    common::logger::MyLog::init();
-
+    engine::framework::init();
+    unsafe {
+        load_prototypes("./").unwrap();
+    }
     engine::framework::start::<State>();
 }

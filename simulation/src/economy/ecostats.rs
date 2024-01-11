@@ -1,4 +1,5 @@
-use crate::economy::{ItemID, ItemRegistry, Money, Trade, TradeTarget};
+use crate::economy::{ItemID, Money, Trade, TradeTarget};
+use prototypes::{prototypes_iter, ItemPrototype};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::collections::BTreeMap;
@@ -47,10 +48,9 @@ pub struct EcoStats {
 }
 
 impl ItemHistories {
-    pub fn new(registry: &ItemRegistry) -> Self {
+    pub fn new() -> Self {
         Self {
-            m: registry
-                .iter()
+            m: prototypes_iter::<ItemPrototype>()
                 .map(|item| (item.id, ItemHistory::default()))
                 .collect(),
             cursors: [0; LEVEL_FREQS.len()],
@@ -100,11 +100,11 @@ impl ItemHistories {
 }
 
 impl EcoStats {
-    pub fn new(registry: &ItemRegistry) -> Self {
+    pub fn new() -> Self {
         Self {
-            exports: ItemHistories::new(registry),
-            imports: ItemHistories::new(registry),
-            internal_trade: ItemHistories::new(registry),
+            exports: ItemHistories::new(),
+            imports: ItemHistories::new(),
+            internal_trade: ItemHistories::new(),
         }
     }
 

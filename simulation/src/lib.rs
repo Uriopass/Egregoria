@@ -4,7 +4,6 @@
 use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryLeader};
 use crate::souls::add_souls_to_empty_buildings;
-use crate::souls::goods_company::GoodsCompanyRegistry;
 use crate::utils::resources::{Ref, RefMut, Resources};
 use crate::world_command::WorldCommand;
 use common::saveload::Encoder;
@@ -493,10 +492,9 @@ const START_COMMANDS: &str = r#"
           ]
         },
         "kind": "RailFreightStation",
-        "gen": {
-          "kind": "no_walkway",
+        "gen": {"NoWalkway": {
           "door_pos": 0
-        },
+        }},
         "zone": null
       }
     }

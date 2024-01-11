@@ -160,6 +160,18 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
     }).expect("Failed to run event loop");
 }
 
+pub fn init() {
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+        console_log::init().expect("Failed to initialize logger");
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        common::logger::MyLog::init();
+    }
+}
+
 pub fn start<S: State>() {
     let el = EventLoop::new().expect("Failed to create event loop");
 
@@ -175,8 +187,6 @@ pub fn start<S: State>() {
             .build(&el)
             .unwrap();
 
-        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        console_log::init().expect("Failed to initialize logger");
         use winit::platform::web::WindowExtWebSys;
         // On wasm, append the canvas to the document body
         web_sys::window()
@@ -191,8 +201,6 @@ pub fn start<S: State>() {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        common::logger::MyLog::init();
-
         let size = match el.primary_monitor() {
             Some(monitor) => monitor.size(),
             None => el.available_monitors().next().unwrap().size(),

@@ -8,12 +8,12 @@ use engine::{
     MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
+use prototypes::GoodsCompanyPrototype;
 use simulation::map::{
     Building, BuildingKind, CanonicalPosition, Environment, Intersection, LaneKind, Lanes, LotKind,
     Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
     Turn, TurnKind, UpdateType, CROSSWALK_WIDTH, ROAD_Z_OFFSET,
 };
-use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::Simulation;
 use std::ops::{Mul, Neg};
 use std::rc::Rc;
@@ -55,7 +55,7 @@ impl MapMeshHandler {
         let mut buildmeshes = FastMap::default();
         let mut zonemeshes = FastMap::default();
 
-        for descr in sim.read::<GoodsCompanyRegistry>().descriptions.values() {
+        for descr in GoodsCompanyPrototype::iter() {
             let asset = &descr.asset_location;
             if !asset.ends_with(".png") && !asset.ends_with(".jpg") {
                 continue;
@@ -69,10 +69,7 @@ impl MapMeshHandler {
             );
         }
 
-        for (asset, bkind) in sim
-            .read::<GoodsCompanyRegistry>()
-            .descriptions
-            .values()
+        for (asset, bkind) in GoodsCompanyPrototype::iter()
             .map(|descr| {
                 (
                     descr.asset_location.as_ref(),
@@ -98,7 +95,7 @@ impl MapMeshHandler {
             buildmeshes.insert(bkind, InstancedMeshBuilder::new(m));
         }
 
-        for descr in sim.read::<GoodsCompanyRegistry>().descriptions.values() {
+        for descr in GoodsCompanyPrototype::iter() {
             let Some(ref z) = descr.zone else { continue };
             let floor = &z.floor;
             let filler = &z.filler;

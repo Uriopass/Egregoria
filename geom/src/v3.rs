@@ -1,4 +1,5 @@
 use crate::{vec2, vec4, Shape3, Vec2, Vec4, AABB3};
+use mlua::{FromLua, Value};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -634,5 +635,39 @@ impl Vec3 {
     pub fn approx_eq(self, other: Vec3) -> bool {
         let m = self.distance2(other);
         m < f32::EPSILON
+    }
+}
+
+impl<'a> FromLua<'a> for Vec3 {
+    fn from_lua(value: Value<'a>, _: &'a mlua::Lua) -> mlua::Result<Self> {
+        let t = match value {
+            Value::Vector(v) => {
+                return Ok(Self {
+                    x: v.x(),
+                    y: v.y(),
+                    z: v.z(),
+                })
+            }
+            Value::Table(t) => t,
+            _ => {
+                return Err(mlua::Error::FromLuaConversionError {
+                    from: value.type_name(),
+                    to: "Vec3",
+                    message: Some("expected a table or vector".to_string()),
+                })
+            }
+        };
+        if let Ok(x) = t.get(1) {
+            return Ok(Self {
+                x,
+                y: t.get(2)?,
+                z: t.get(3)?,
+            });
+        }
+
+        let x = t.get("x")?;
+        let y = t.get("y")?;
+        let z = t.get("z")?;
+        Ok(Self { x, y, z })
     }
 }

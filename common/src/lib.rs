@@ -231,6 +231,26 @@ pub fn fastset_with_capacity<V>(cap: usize) -> FastSet<V> {
     FastSet::with_capacity_and_hasher(cap, Default::default())
 }
 
+pub type TransparentMap<K, V> = std::collections::HashMap<K, V, TransparentHasherU64>;
+
+pub fn transparentmap_with_capacity<K, V>(cap: usize) -> TransparentMap<K, V> {
+    TransparentMap::with_capacity_and_hasher(cap, Default::default())
+}
+
+pub fn transparentmap<K, V>() -> TransparentMap<K, V> {
+    TransparentMap::with_hasher(Default::default())
+}
+
+pub fn parse_f32(x: &str) -> fast_float::Result<(f32, &str)> {
+    fast_float::parse_partial::<f32, _>(x)
+        .map(|(v, l)| (v, if l == x.len() { "" } else { &x[l..] }))
+}
+
+pub fn parse_f64(x: &str) -> fast_float::Result<(f64, &str)> {
+    fast_float::parse_partial::<f64, _>(x)
+        .map(|(v, l)| (v, if l == x.len() { "" } else { &x[l..] }))
+}
+
 #[derive(Default)]
 pub struct TransparentHasherU64(u64);
 

@@ -5,7 +5,7 @@ use crate::map_dynamic::{
 };
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::freight_station::FreightStation;
-use crate::souls::goods_company::GoodsCompany;
+use crate::souls::goods_company::GoodsCompanyState;
 use crate::souls::human::{HumanDecision, PersonalInfo};
 use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon};
 use crate::transportation::{
@@ -166,7 +166,7 @@ impl SimDrop for FreightStationEnt {
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct CompanyEnt {
     pub trans: Transform,
-    pub comp: GoodsCompany,
+    pub comp: GoodsCompanyState,
     pub workers: Workers,
     pub sold: Sold,
     pub bought: Bought,

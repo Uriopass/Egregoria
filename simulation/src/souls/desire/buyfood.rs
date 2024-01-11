@@ -1,4 +1,10 @@
-use crate::economy::{find_trade_place, Bought, ItemID, ItemRegistry, Market};
+use serde::{Deserialize, Serialize};
+
+use egui_inspect::Inspect;
+use geom::Transform;
+use prototypes::ItemID;
+
+use crate::economy::{find_trade_place, Bought, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination};
 use crate::souls::human::HumanDecisionKind;
@@ -6,9 +12,6 @@ use crate::transportation::Location;
 use crate::utils::time::{GameInstant, GameTime};
 use crate::world::{HumanEnt, HumanID};
 use crate::{Map, ParCommandBuffer, SoulID};
-use egui_inspect::Inspect;
-use geom::Transform;
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum BuyFoodState {
@@ -23,16 +26,14 @@ debug_inspect_impl!(BuyFoodState);
 pub struct BuyFood {
     pub last_ate: GameInstant,
     state: BuyFoodState,
-    bread: ItemID,
     pub last_score: f32,
 }
 
 impl BuyFood {
-    pub fn new(start: GameInstant, registry: &ItemRegistry) -> Self {
+    pub fn new(start: GameInstant) -> Self {
         BuyFood {
             last_ate: start,
             state: BuyFoodState::Empty,
-            bread: registry.id("bread"),
             last_score: 0.0,
         }
     }
@@ -41,7 +42,7 @@ impl BuyFood {
         if matches!(self.state, BuyFoodState::WaitingForTrade)
             && bought
                 .0
-                .get(&self.bread)
+                .get(&ItemID::new("bread"))
                 .map(Vec::is_empty)
                 .unwrap_or(false)
         {
@@ -70,15 +71,14 @@ impl BuyFood {
         match self.state {
             BuyFoodState::Empty => {
                 let pos = trans.pos;
-                let bread = self.bread;
                 cbuf.exec_on(id, move |market: &mut Market| {
-                    market.buy(SoulID::Human(id), pos.xy(), bread, 1)
+                    market.buy(SoulID::Human(id), pos.xy(), ItemID::new("bread"), 1)
                 });
                 self.state = BuyFoodState::WaitingForTrade;
                 Yield
             }
             BuyFoodState::WaitingForTrade => {
-                for trade in bought.0.entry(self.bread).or_default().drain(..) {
+                for trade in bought.0.entry(ItemID::new("bread")).or_default().drain(..) {
                     if let Some(b) = find_trade_place(trade.seller, trans.pos.xy(), binfos, map) {
                         self.state = BuyFoodState::BoughtAt(b);
                     }

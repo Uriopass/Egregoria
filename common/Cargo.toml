@@ -17,3 +17,4 @@ rustc-hash    = "1.1.0"
 inline_tweak  = {version = "1.0.8"}
 log-panics    = { version = "2.0.0", features=["with-backtrace"] }
 egui-inspect  = { path = "../egui-inspect" }
+fast-float    = { version = "0.2.0", default-features = false }

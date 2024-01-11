@@ -1,16 +1,16 @@
 use crate::uiworld::UiWorld;
 use egui::{Context, Ui, Widget};
-use simulation::economy::{ItemRegistry, Market};
+use simulation::economy::Market;
 use simulation::world_command::WorldCommand;
 use simulation::{Simulation, SoulID};
 
 use crate::gui::inspect::entity_link;
 use crate::gui::item_icon;
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
+use prototypes::{ItemID, Recipe};
 use simulation::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
 use simulation::map_dynamic::BuildingInfos;
 use simulation::souls::freight_station::FreightTrainState;
-use simulation::souls::goods_company::{GoodsCompanyRegistry, Recipe};
 
 /// Inspect a specific building, showing useful information about it
 pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: BuildingID) {
@@ -18,11 +18,10 @@ pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, i
     let Some(building) = map.buildings().get(id) else {
         return;
     };
-    let gregistry = sim.read::<GoodsCompanyRegistry>();
 
     let title: &str = match building.kind {
         BuildingKind::House => "House",
-        BuildingKind::GoodsCompany(id) => &gregistry.descriptions[id].name,
+        BuildingKind::GoodsCompany(id) => &id.prototype().name,
         BuildingKind::RailFreightStation => "Rail Freight Station",
         BuildingKind::TrainStation => "Train Station",
         BuildingKind::ExternalTrading => "External Trading",
@@ -139,7 +138,6 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
     let workers = &c.workers;
 
     let market = sim.read::<Market>();
-    let itemregistry = sim.read::<ItemRegistry>();
     let max_workers = goods.max_workers;
     egui::ProgressBar::new(workers.0.len() as f32 / max_workers as f32)
         .text(format!("workers: {}/{}", workers.0.len(), max_workers))
@@ -160,7 +158,7 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
             .ui(ui);
     }
 
-    render_recipe(ui, uiworld, sim, &goods.recipe);
+    render_recipe(ui, uiworld, &goods.kind.prototype().recipe);
 
     egui::ProgressBar::new(goods.progress)
         .show_percentage()
@@ -170,7 +168,7 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
     ui.add_space(10.0);
     ui.label("Storage");
 
-    let jobopening = itemregistry.id("job-opening");
+    let jobopening = ItemID::new("job-opening");
     for (&id, m) in market.iter() {
         let Some(v) = m.capital(c_id.into()) else {
             continue;
@@ -178,17 +176,12 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
         if id == jobopening && v == 0 {
             continue;
         }
-        let Some(item) = itemregistry.get(id) else {
-            continue;
-        };
 
-        item_icon(ui, uiworld, item, v);
+        item_icon(ui, uiworld, id, v);
     }
 }
 
-fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, recipe: &Recipe) {
-    let registry = sim.read::<ItemRegistry>();
-
+fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, recipe: &Recipe) {
     if recipe.consumption.is_empty() {
         ui.label("No Inputs");
     } else {
@@ -198,11 +191,8 @@ fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, recipe: &Reci
             "Inputs"
         });
         ui.horizontal(|ui| {
-            for &(good, amount) in recipe.consumption.iter() {
-                let Some(item) = registry.get(good) else {
-                    continue;
-                };
-                item_icon(ui, uiworld, item, amount);
+            for item in recipe.consumption.iter() {
+                item_icon(ui, uiworld, item.id, item.amount);
             }
         });
     }
@@ -216,11 +206,8 @@ fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, recipe: &Reci
             "Outputs"
         });
         ui.horizontal(|ui| {
-            for &(good, amount) in recipe.production.iter() {
-                let Some(item) = registry.get(good) else {
-                    continue;
-                };
-                item_icon(ui, uiworld, item, amount);
+            for item in recipe.production.iter() {
+                item_icon(ui, uiworld, item.id, item.amount);
             }
         });
     }

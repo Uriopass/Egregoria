@@ -1,4 +1,4 @@
-use crate::economy::{init_market, market_update, EcoStats, Government, ItemRegistry, Market};
+use crate::economy::{init_market, market_update, EcoStats, Government, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
     dispatch_system, itinerary_update, routing_changed_system, routing_update_system,
@@ -6,7 +6,7 @@ use crate::map_dynamic::{
 };
 use crate::multiplayer::MultiplayerState;
 use crate::souls::freight_station::freight_station_system;
-use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
+use crate::souls::goods_company::company_system;
 use crate::souls::human::update_decision_system;
 use crate::transportation::pedestrian_decision_system;
 use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_system};
@@ -28,6 +28,22 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 pub fn init() {
+    // # Safety
+    // This function is called only once, before any other function in this crate.
+    unsafe {
+        #[cfg(not(test))]
+        let base = "./";
+        #[cfg(test)]
+        let base = "../";
+
+        match prototypes::load_prototypes(base) {
+            Ok(_) => {}
+            Err(e) => {
+                panic!("Error loading prototypes: {}", e)
+            }
+        }
+    }
+
     register_system("dispatch_system", dispatch_system);
     register_system("update_decision_system", update_decision_system);
     register_system("company_system", company_system);
@@ -47,8 +63,6 @@ pub fn init() {
 
     register_system_sim("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 
-    register_resource_noserialize::<GoodsCompanyRegistry>();
-    register_resource_noserialize::<ItemRegistry>();
     register_resource_noserialize::<ParCommandBuffer<VehicleEnt>>();
     register_resource_noserialize::<ParCommandBuffer<TrainEnt>>();
     register_resource_noserialize::<ParCommandBuffer<HumanEnt>>();

@@ -2,7 +2,7 @@ use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
 use egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
-use simulation::economy::{ItemRegistry, Market};
+use simulation::economy::Market;
 use simulation::transportation::Location;
 use simulation::{
     AnyEntity, CompanyEnt, FreightStationEnt, HumanEnt, Simulation, SoulID, TrainEnt, VehicleEnt,
@@ -97,7 +97,6 @@ impl InspectRenderer {
 
         if let Ok(soul) = SoulID::try_from(entity) {
             let market = sim.read::<Market>();
-            let registry = sim.read::<ItemRegistry>();
             let mut capitals = vec![];
             let mut borders = vec![];
             let mut sellorders = vec![];
@@ -116,7 +115,7 @@ impl InspectRenderer {
                 egui::CollapsingHeader::new("Capital").show(ui, |ui| {
                     ui.columns(2, |ui| {
                         for (kind, cap) in capitals {
-                            ui[0].label(&registry[*kind].label);
+                            ui[0].label(&kind.prototype().label);
                             ui[1].label(format!("{cap}"));
                         }
                     });
@@ -127,7 +126,7 @@ impl InspectRenderer {
                 egui::CollapsingHeader::new("Buy orders").show(ui, |ui| {
                     ui.columns(2, |ui| {
                         for (kind, b) in borders {
-                            ui[0].label(&registry[*kind].label);
+                            ui[0].label(&kind.prototype().label);
                             ui[1].label(format!("{b:#?}"));
                         }
                     });
@@ -138,7 +137,7 @@ impl InspectRenderer {
                 egui::CollapsingHeader::new("Sell orders").show(ui, |ui| {
                     ui.columns(2, |ui| {
                         for (kind, b) in sellorders {
-                            ui[0].label(&registry[*kind].label);
+                            ui[0].label(&kind.prototype().label);
                             ui[1].label(format!("{b:#?}"));
                         }
                     });

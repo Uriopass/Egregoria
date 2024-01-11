@@ -4,10 +4,9 @@ use egui::{Align2, Color32, Ui};
 use egui_plot::{Line, PlotPoints};
 use geom::Color;
 use simulation::economy::{
-    EcoStats, ItemHistories, ItemRegistry, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
+    EcoStats, ItemHistories, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
 };
 use simulation::Simulation;
-use slotmapd::Key;
 use std::cmp::Reverse;
 use std::collections::HashSet;
 
@@ -40,7 +39,6 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
     });
     let mut state = uiw.write::<EconomyState>();
     let ecostats = sim.read::<EcoStats>();
-    let registry = sim.read::<ItemRegistry>();
 
     window
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
@@ -146,7 +144,7 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                                 overallmax = maxval;
                             }
 
-                            let h = common::hash_u64(id.data().as_ffi());
+                            let h = id.hash();
                             let random_col = Color::new(
                                 0.5 + 0.5 * common::rand::rand2(h as f32, 0.0),
                                 0.5 + 0.5 * common::rand::rand2(h as f32, 1.0),
@@ -170,8 +168,6 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                                     first_zeros
                                 });
 
-                            let iname = &registry[id].name;
-
                             ui.line(
                                 Line::new(PlotPoints::from_iter(heights))
                                     .color(Color32::from_rgba_unmultiplied(
@@ -180,7 +176,7 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                                         (random_col.b * 255.0) as u8,
                                         (random_col.a * 255.0) as u8,
                                     ))
-                                    .name(iname),
+                                    .name(&id.prototype().name),
                             );
                         }
                         ui.line(
@@ -230,9 +226,8 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                             histories.sort_by_key(|(_, sum)| Reverse(*sum));
 
                             for (id, sum) in histories {
-                                let iname = &registry[id].name;
                                 let mut enabled = filter.contains(&id);
-                                if ui.checkbox(&mut enabled, iname).changed() {
+                                if ui.checkbox(&mut enabled, &id.prototype().name).changed() {
                                     if enabled {
                                         filter.insert(id);
                                     } else {
@@ -291,11 +286,10 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
 }
 
 fn render_market_prices(sim: &Simulation, ui: &mut Ui) {
-    let registry = sim.read::<ItemRegistry>();
     let market = sim.read::<Market>();
     egui::Grid::new("marketprices").show(ui, |ui| {
         for (id, market) in market.iter() {
-            ui.label(&registry[*id].name);
+            ui.label(&id.prototype().name);
             ui.label(market.ext_value.to_string());
             ui.end_row();
         }

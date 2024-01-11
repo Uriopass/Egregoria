@@ -285,7 +285,7 @@ impl State {
 }
 
 fn main() {
-    common::logger::MyLog::init();
+    engine::framework::init();
 
     engine::framework::start::<State>();
 }

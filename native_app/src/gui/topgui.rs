@@ -18,13 +18,12 @@ use egui::{
 };
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
-use prototypes::BuildingGen;
+use prototypes::{prototypes_iter, BuildingGen, GoodsCompanyPrototype, ItemID};
 use serde::{Deserialize, Serialize};
-use simulation::economy::{Government, Item, ItemRegistry, Money};
+use simulation::economy::{Government, Money};
 use simulation::map::{
     BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
 };
-use simulation::souls::goods_company::GoodsCompanyRegistry;
 use simulation::utils::time::{GameTime, SECONDS_PER_HOUR};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
@@ -151,7 +150,7 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
+    pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, _sim: &Simulation) {
         profiling::scope!("topgui::toolbox");
         #[derive(Copy, Clone)]
         pub enum Tab {
@@ -546,10 +545,6 @@ impl Gui {
         }
 
         let building_select_w = 200.0;
-        let registry = sim.read::<GoodsCompanyRegistry>();
-        let gbuildings = registry.descriptions.values().peekable();
-
-        let iregistry = sim.read::<ItemRegistry>();
 
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
@@ -566,7 +561,7 @@ impl Gui {
                     let mut picked_descr = None;
                     ui.style_mut().spacing.interact_size = [building_select_w - 5.0, 35.0].into();
 
-                    for descr in gbuildings {
+                    for descr in prototypes_iter::<GoodsCompanyPrototype>() {
                         let cur_kind = cur_build.opt.as_ref().map(|x| &*x.asset).unwrap_or("");
 
                         let mut name = RichText::new(&descr.name);
@@ -619,15 +614,15 @@ impl Gui {
                                 ui.add_space(10.0);
                                 if !descr.recipe.consumption.is_empty() {
                                     ui.label("consumption:");
-                                    for (kind, n) in &descr.recipe.consumption {
-                                        item_icon(ui, uiworld, &iregistry[*kind], *n);
+                                    for item in &descr.recipe.consumption {
+                                        item_icon(ui, uiworld, item.id, item.amount);
                                     }
                                     ui.add_space(10.0);
                                 }
                                 if !descr.recipe.production.is_empty() {
                                     ui.label("production:");
-                                    for (kind, n) in &descr.recipe.production {
-                                        item_icon(ui, uiworld, &iregistry[*kind], *n);
+                                    for item in &descr.recipe.production {
+                                        item_icon(ui, uiworld, item.id, item.amount);
                                     }
                                     ui.add_space(10.0);
                                 }
@@ -814,7 +809,8 @@ impl Gui {
     }
 }
 
-pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier: i32) -> Response {
+pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, id: ItemID, multiplier: i32) -> Response {
+    let item = id.prototype();
     ui.horizontal(move |ui| {
         if let Some(id) = uiworld
             .read::<UiTextures>()
