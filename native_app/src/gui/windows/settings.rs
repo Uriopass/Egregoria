@@ -252,14 +252,15 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                     });
                 })
                 .body(|body| {
-                    body.rows(25.0, sorted_inps.len(), |i, mut ui| {
+                    body.rows(25.0, sorted_inps.len(), |mut row| {
+                        let i = row.index();
                         let action = &sorted_inps[i];
                         let comb = bindings.0.get_mut(action).unwrap();
 
-                        ui.col(|ui| {
+                        row.col(|ui| {
                             ui.label(action.to_string());
                         });
-                        ui.col(|ui| {
+                        row.col(|ui| {
                             let resp = if !comb.0.is_empty() {
                                 ui.button(format!("{}", comb.0[0]))
                             } else {
@@ -274,7 +275,7 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                             }
                             if resp.clicked() {}
                         });
-                        ui.col(|ui| {
+                        row.col(|ui| {
                             let resp = if comb.0.len() > 1 {
                                 ui.button(format!("{}", comb.0[1]))
                             } else {
@@ -289,7 +290,7 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
                             }
                             if resp.clicked() {}
                         });
-                        ui.col(|ui| {
+                        row.col(|ui| {
                             if ui.button("↺").clicked() {
                                 comb.0 = Bindings::default().0.remove(action).unwrap().0;
                             }
