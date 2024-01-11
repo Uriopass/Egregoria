@@ -364,6 +364,7 @@ impl Gui {
                 .show(ui, |ui| {
                     let mut roadbuild = uiworld.write::<RoadBuildResource>();
                     ui.checkbox(&mut roadbuild.snap_to_grid, "snap to grid");
+                    ui.checkbox(&mut roadbuild.snap_to_angle, "snap to angle");
                     ui.horizontal(|ui| {
                         if ui.button("zero").clicked() {
                             roadbuild.height_offset = 0.0;
