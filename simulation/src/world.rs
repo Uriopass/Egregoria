@@ -3,13 +3,14 @@ use crate::map_dynamic::{
     DispatchID, Dispatcher, Itinerary, ItineraryFollower, ItineraryLeader, ParkingManagement,
     Router,
 };
-use crate::physics::{Collider, CollisionWorld, Speed};
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::freight_station::FreightStation;
 use crate::souls::goods_company::GoodsCompany;
 use crate::souls::human::{HumanDecision, PersonalInfo};
 use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon};
-use crate::transportation::{Location, Pedestrian, Vehicle, VehicleKind, VehicleState};
+use crate::transportation::{
+    Location, Pedestrian, Speed, TransportGrid, Transporter, Vehicle, VehicleKind, VehicleState,
+};
 use crate::utils::par_command_buffer::SimDrop;
 use crate::utils::resources::Resources;
 use crate::{impl_entity, impl_trans, SoulID};
@@ -59,13 +60,13 @@ pub struct VehicleEnt {
     pub speed: Speed,
     pub vehicle: Vehicle,
     pub it: Itinerary,
-    pub collider: Option<Collider>,
+    pub collider: Option<Transporter>,
 }
 
 impl SimDrop for VehicleEnt {
     fn sim_drop(mut self, id: VehicleID, res: &mut Resources) {
         if let Some(collider) = self.collider {
-            res.write::<CollisionWorld>().remove_maintain(collider.0);
+            res.write::<TransportGrid>().remove_maintain(collider.0);
         }
 
         if let VehicleState::Parked(resa) | VehicleState::RoadToPark(_, _, resa) =
@@ -87,7 +88,7 @@ pub struct HumanEnt {
     pub speed: Speed,
     pub location: Location,
     pub pedestrian: Pedestrian,
-    pub collider: Option<Collider>,
+    pub collider: Option<Transporter>,
 
     pub router: Router,
     pub it: Itinerary,
@@ -104,7 +105,7 @@ pub struct HumanEnt {
 impl SimDrop for HumanEnt {
     fn sim_drop(mut self, id: HumanID, res: &mut Resources) {
         if let Some(collider) = self.collider {
-            res.write::<CollisionWorld>().remove_maintain(collider.0);
+            res.write::<TransportGrid>().remove_maintain(collider.0);
         }
 
         res.write::<Market>().remove(SoulID::Human(id));
@@ -276,7 +277,7 @@ impl World {
     #[rustfmt::skip]
     pub fn query_trans_speed_coll_vehicle(
         &self,
-    ) -> impl Iterator<Item = (&Transform, &Speed, Collider, Option<&Vehicle>)> {
+    ) -> impl Iterator<Item = (&Transform, &Speed, Transporter, Option<&Vehicle>)> {
         chain((
               self.vehicles.values().filter_map(|x| { x.collider.map(|coll| (&x.trans, &x.speed, coll, Some(&x.vehicle))) }),
               self.humans  .values().filter_map(|x| { x.collider.map(|coll| (&x.trans, &x.speed, coll, None)) }),

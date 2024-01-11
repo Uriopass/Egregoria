@@ -1,5 +1,5 @@
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
-use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
+use crate::transportation::{TransportGrid, TransportState, TransportationGroup, Transporter};
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
 use crate::world::{VehicleEnt, VehicleID};
@@ -45,13 +45,13 @@ pub struct Vehicle {
 }
 
 #[must_use]
-pub fn put_vehicle_in_coworld(sim: &Simulation, w: f32, trans: Transform) -> Collider {
-    Collider(sim.write::<CollisionWorld>().insert(
+pub fn put_vehicle_in_transport_grid(sim: &Simulation, w: f32, trans: Transform) -> Transporter {
+    Transporter(sim.write::<TransportGrid>().insert(
         trans.position.xy(),
-        PhysicsObject {
+        TransportState {
             dir: trans.dir.xy(),
             radius: w * 0.5,
-            group: PhysicsGroup::Vehicles,
+            group: TransportationGroup::Vehicles,
             ..Default::default()
         },
     ))
@@ -117,7 +117,7 @@ pub fn unpark(sim: &mut Simulation, vehicle: VehicleID) {
         log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
     }
 
-    let coll = put_vehicle_in_coworld(sim, w, trans);
+    let coll = put_vehicle_in_transport_grid(sim, w, trans);
 
     let v = unwrap_ret!(sim.world.vehicles.get_mut(vehicle));
     v.collider = Some(coll);
@@ -167,7 +167,7 @@ pub fn make_vehicle_entity(
 
     let mut collider = None;
     if mk_collider {
-        collider = Some(put_vehicle_in_coworld(sim, w, trans));
+        collider = Some(put_vehicle_in_transport_grid(sim, w, trans));
     }
     sim.world.insert(VehicleEnt {
         trans,

@@ -1,5 +1,7 @@
 use crate::map_dynamic::Itinerary;
-use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject, Speed};
+use crate::transportation::{
+    Speed, TransportGrid, TransportState, TransportationGroup, Transporter,
+};
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
@@ -16,12 +18,15 @@ pub struct Pedestrian {
 
 const PED_SIZE: f32 = 0.5;
 
-pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec3) -> Collider {
-    Collider(coworld.insert(
+pub fn put_pedestrian_in_transport_grid(
+    transport_grid: &mut TransportGrid,
+    pos: Vec3,
+) -> Transporter {
+    Transporter(transport_grid.insert(
         pos.xy(),
-        PhysicsObject {
+        TransportState {
             radius: PED_SIZE * 0.6,
-            group: PhysicsGroup::Pedestrians,
+            group: TransportationGroup::Pedestrians,
             ..Default::default()
         },
     ))

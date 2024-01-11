@@ -1,7 +1,7 @@
 use crate::map::{BuildingID, Map, PathKind};
 use crate::map_dynamic::{Itinerary, ParkingManagement, ParkingReserveError, SpotReservation};
-use crate::physics::CollisionWorld;
-use crate::transportation::{put_pedestrian_in_coworld, unpark, Location, VehicleState};
+use crate::transportation::TransportGrid;
+use crate::transportation::{put_pedestrian_in_transport_grid, unpark, Location, VehicleState};
 use crate::utils::resources::Resources;
 use crate::world::{HumanEnt, HumanID, VehicleEnt, VehicleID};
 use crate::{ParCommandBuffer, World};
@@ -264,7 +264,7 @@ fn walk_inside(body: HumanID, h: &mut HumanEnt, cbuf: &ParCommandBuffer<HumanEnt
 fn walk_outside(body: HumanID, pos: Vec3, cbuf: &ParCommandBuffer<HumanEnt>, loc: &mut Location) {
     *loc = Location::Outside;
     cbuf.exec_ent(body, move |sim| {
-        let coll = put_pedestrian_in_coworld(&mut sim.write::<CollisionWorld>(), pos);
+        let coll = put_pedestrian_in_transport_grid(&mut sim.write::<TransportGrid>(), pos);
         let h = unwrap_ret!(sim.world.humans.get_mut(body));
         h.trans.position = pos;
         h.collider = Some(coll);

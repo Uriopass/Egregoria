@@ -1,8 +1,8 @@
 use crate::economy::{Bought, ItemRegistry, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination, Itinerary, Router};
-use crate::physics::Speed;
 use crate::souls::desire::{BuyFood, Home, Work};
+use crate::transportation::Speed;
 use crate::transportation::{
     random_pedestrian_shirt_color, spawn_parked_vehicle, Location, Pedestrian, VehicleKind,
 };

@@ -3,8 +3,6 @@
 
 use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryLeader};
-use crate::physics::CollisionWorld;
-use crate::physics::Speed;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::goods_company::GoodsCompanyRegistry;
 use crate::utils::resources::{Ref, RefMut, Resources};
@@ -40,7 +38,6 @@ pub mod init;
 pub mod map;
 pub mod map_dynamic;
 pub mod multiplayer;
-pub mod physics;
 pub mod souls;
 #[cfg(test)]
 mod tests;

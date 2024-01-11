@@ -4,7 +4,7 @@ use engine::{AudioContext, Gain, GainControl};
 use flat_spatial::grid::GridHandle;
 use geom::{Camera, AABB};
 use oddio::{Cycle, Mixed, Seek, Speed, SpeedControl};
-use simulation::physics::CollisionWorld;
+use simulation::transportation::TransportGrid;
 use simulation::Simulation;
 use slotmapd::SecondaryMap;
 
@@ -36,7 +36,7 @@ impl CarSounds {
     }
 
     pub fn update(&mut self, sim: &Simulation, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
-        let coworld = sim.read::<CollisionWorld>();
+        let transport_grid = sim.read::<TransportGrid>();
         let campos = uiworld.read::<Camera>().eye();
         let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);
 
@@ -50,7 +50,7 @@ impl CarSounds {
         let mut to_remove = vec![];
 
         for (h, _) in &self.sounds {
-            if let Some((pos, _)) = coworld.get(h) {
+            if let Some((pos, _)) = transport_grid.get(h) {
                 if pos.z0().is_close(campos, HEAR_RADIUS) {
                     continue;
                 }
@@ -70,14 +70,17 @@ impl CarSounds {
         }
 
         // Gather
-        for (h, _) in coworld.query_around(
+        for (h, _) in transport_grid.query_around(
             campos.xy(),
             (HEAR_RADIUS * HEAR_RADIUS - campos.z * campos.z)
                 .max(0.0)
                 .sqrt(),
         ) {
-            let (pos, obj) = coworld.get(h).unwrap();
-            if !matches!(obj.group, simulation::physics::PhysicsGroup::Vehicles) {
+            let (pos, obj) = transport_grid.get(h).unwrap();
+            if !matches!(
+                obj.group,
+                simulation::transportation::TransportationGroup::Vehicles
+            ) {
                 continue;
             }
 
@@ -120,7 +123,7 @@ impl CarSounds {
 
         // Update
         for (h, cs) in &mut self.sounds {
-            let (pos, obj) = coworld.get(h).unwrap(); // Unwrap ok: checked it existed before
+            let (pos, obj) = transport_grid.get(h).unwrap(); // Unwrap ok: checked it existed before
 
             let his_speed = (obj.speed * obj.dir).z0();
             let dir_to_me = (campos - pos.z(campos.z * 0.5)).normalize();
@@ -140,10 +143,15 @@ impl CarSounds {
         }
 
         if campos.z < 1000.0 {
-            let cars_on_screen = coworld
+            let cars_on_screen = transport_grid
                 .query_aabb(cambox.ll, cambox.ur)
-                .filter_map(|(h, _)| coworld.get(h))
-                .filter(|(_, obj)| matches!(obj.group, simulation::physics::PhysicsGroup::Vehicles))
+                .filter_map(|(h, _)| transport_grid.get(h))
+                .filter(|(_, obj)| {
+                    matches!(
+                        obj.group,
+                        simulation::transportation::TransportationGroup::Vehicles
+                    )
+                })
                 .count();
             if let Some(ref mut s) = self.generic_car_sound {
                 s.set_amplitude_ratio(

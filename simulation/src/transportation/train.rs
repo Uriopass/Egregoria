@@ -1,8 +1,9 @@
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::ItineraryFollower;
+use crate::transportation::Speed;
 use crate::utils::resources::Resources;
 use crate::world::{TrainEnt, TrainID, WagonEnt};
-use crate::{GameTime, Itinerary, ItineraryLeader, Simulation, Speed, World};
+use crate::{GameTime, Itinerary, ItineraryLeader, Simulation, World};
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use ordered_float::OrderedFloat;

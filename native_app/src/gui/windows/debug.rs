@@ -4,7 +4,7 @@ use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
 use crate::uiworld::UiWorld;
 use simulation::map_dynamic::ParkingManagement;
-use simulation::physics::CollisionWorld;
+use simulation::transportation::TransportGrid;
 use simulation::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
 use simulation::{Simulation, TrainID};
 
@@ -39,7 +39,7 @@ impl Default for DebugObjs {
             (false, "Debug train reservations", debug_trainreservations),
             (false, "Debug connectivity", debug_connectivity),
             (false, "Debug spatialmap", debug_spatialmap),
-            (false, "Debug collision world", debug_coworld),
+            (false, "Debug transport grid", debug_transport_grid),
             (false, "Debug splines", debug_spline),
             (false, "Debug lots", debug_lots),
             (false, "Debug road points", debug_road_points),
@@ -356,12 +356,12 @@ fn draw_spline(tess: &mut Tesselator<true>, mut sp: Spline3) {
     tess.draw_circle(sp.to - sp.to_derivative, 0.7);
 }
 
-fn debug_coworld(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
-    let coworld = sim.read::<CollisionWorld>();
+fn debug_transport_grid(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    let transport_grid = sim.read::<TransportGrid>();
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
-    for h in coworld.handles() {
-        let (pos, obj) = coworld.get(h)?;
+    for h in transport_grid.handles() {
+        let (pos, obj) = transport_grid.get(h)?;
         tess.draw_circle(pos.z(obj.height + 0.1), 3.0);
     }
     Some(())

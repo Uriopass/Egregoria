@@ -5,7 +5,6 @@ use crate::map_dynamic::{
     BuildingInfos, Dispatcher, ParkingManagement,
 };
 use crate::multiplayer::MultiplayerState;
-use crate::physics::coworld_synchronize;
 use crate::souls::freight_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
@@ -15,14 +14,14 @@ use crate::transportation::testing_vehicles::{random_vehicles_update, RandomVehi
 use crate::transportation::train::{
     locomotive_system, train_reservations_update, TrainReservations,
 };
+use crate::transportation::{transport_grid_synchronize, TransportGrid};
 use crate::utils::resources::Resources;
 use crate::utils::time::Tick;
 use crate::world::{CompanyEnt, FreightStationEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
 use crate::World;
 use crate::{
-    add_souls_to_empty_buildings, utils, CollisionWorld, GameTime, ParCommandBuffer, RandProvider,
-    Replay, RunnableSystem, Simulation, SimulationOptions, RNG_SEED, SECONDS_PER_DAY,
-    SECONDS_PER_HOUR,
+    add_souls_to_empty_buildings, utils, GameTime, ParCommandBuffer, RandProvider, Replay,
+    RunnableSystem, Simulation, SimulationOptions, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
 };
 use common::saveload::{Bincode, Encoder, JSON};
 use serde::de::DeserializeOwned;
@@ -33,7 +32,7 @@ pub fn init() {
     register_system("update_decision_system", update_decision_system);
     register_system("company_system", company_system);
     register_system("pedestrian_decision_system", pedestrian_decision_system);
-    register_system("coworld_synchronize", coworld_synchronize);
+    register_system("transport_grid_synchronize", transport_grid_synchronize);
     register_system("locomotive_system", locomotive_system);
     register_system("vehicle_decision_system", vehicle_decision_system);
     register_system("vehicle_state_update_system", vehicle_state_update_system);
@@ -73,7 +72,7 @@ pub fn init() {
     register_resource::<GameTime, Bincode>("game_time", || {
         GameTime::new(0.0, SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64)
     });
-    register_resource::<CollisionWorld, Bincode>("coworld", || CollisionWorld::new(100));
+    register_resource::<TransportGrid, Bincode>("transport_grid", || TransportGrid::new(100));
     register_resource::<RandProvider, Bincode>("randprovider", || RandProvider::new(RNG_SEED));
     register_resource_default::<Dispatcher, Bincode>("dispatcher");
     register_resource_default::<Replay, JSON>("replay");

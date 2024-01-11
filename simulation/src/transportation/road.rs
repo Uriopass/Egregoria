@@ -1,7 +1,8 @@
 use crate::map::{Map, TrafficBehavior, Traversable, TraverseKind};
 use crate::map_dynamic::{Itinerary, OBJECTIVE_OK_DIST};
-use crate::physics::Speed;
-use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
+use crate::transportation::{
+    Speed, TransportGrid, TransportState, TransportationGroup, Transporter,
+};
 use crate::transportation::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
@@ -39,15 +40,15 @@ pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
 pub fn vehicle_decision(
     map: &Map,
     time: &GameTime,
-    cow: &CollisionWorld,
+    cow: &TransportGrid,
     me: VehicleID,
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Speed,
     vehicle: &mut Vehicle,
-    collider: &Collider,
+    collider: &Transporter,
 ) {
-    let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
+    let (_, self_obj) = cow.get(collider.0).expect("Handle not in transport grid");
 
     let mut desired_speed = 0.0;
     let mut desired_dir = Vec3::ZERO;
@@ -59,7 +60,7 @@ pub fn vehicle_decision(
             (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(100.0);
         let neighbors = cow.query_around(trans.position.xy(), 12.0 + danger_length);
         let objs =
-            neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
+            neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in transport grid").1));
 
         let (s, d) = calc_decision(me, vehicle, map, time, trans, self_obj, it, objs);
         desired_speed = s;
@@ -107,7 +108,7 @@ pub fn vehicle_state_update(
     vehicle: &mut Vehicle,
     trans: &mut Transform,
     kin: &mut Speed,
-    coll: &mut Option<Collider>,
+    coll: &mut Option<Transporter>,
 ) {
     match vehicle.state {
         VehicleState::RoadToPark(_, ref mut t, _) => {
@@ -146,7 +147,7 @@ fn physics(
     kin: &mut Speed,
     vehicle: &mut Vehicle,
     time: &GameTime,
-    obj: &PhysicsObject,
+    obj: &TransportState,
     map: &Map,
     desired_speed: f32,
     desired_dir: Vec3,
@@ -200,9 +201,9 @@ pub fn calc_decision<'a>(
     map: &Map,
     time: &GameTime,
     trans: &Transform,
-    self_obj: &PhysicsObject,
+    self_obj: &TransportState,
     it: &Itinerary,
-    neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
+    neighs: impl Iterator<Item = (Vec2, &'a TransportState)>,
 ) -> (f32, Vec3) {
     let default_return = (0.0, trans.dir);
     if vehicle.wait_time > 0.0 {
@@ -313,9 +314,9 @@ pub fn calc_decision<'a>(
 fn calc_front_dist<'a>(
     vehicle: &mut Vehicle,
     trans: &Transform,
-    self_obj: &PhysicsObject,
+    self_obj: &TransportState,
     it: &Itinerary,
-    neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
+    neighs: impl Iterator<Item = (Vec2, &'a TransportState)>,
     cutoff: f32,
 ) -> (f32, u64) {
     let position = trans.position;
@@ -358,7 +359,7 @@ fn calc_front_dist<'a>(
 
         let dist_to_side = towards_vec.perp_dot(dir2).abs();
 
-        let is_vehicle = matches!(nei_physics_obj.group, PhysicsGroup::Vehicles);
+        let is_vehicle = matches!(nei_physics_obj.group, TransportationGroup::Vehicles);
 
         let cos_direction_angle = nei_physics_obj.dir.dot(dir2);
 
