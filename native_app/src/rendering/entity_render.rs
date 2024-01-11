@@ -43,7 +43,7 @@ impl InstancedRender {
         for v in sim.world().vehicles.values() {
             let trans = &v.trans;
             let instance = MeshInstance {
-                pos: trans.position,
+                pos: trans.pos,
                 dir: trans.dir,
                 tint: v.vehicle.tint.into(),
             };
@@ -61,7 +61,7 @@ impl InstancedRender {
         for wagon in sim.world().wagons.values() {
             let trans = &wagon.trans;
             let instance = MeshInstance {
-                pos: trans.position,
+                pos: trans.pos,
                 dir: trans.dir,
                 tint: LinearColor::WHITE,
             };
@@ -82,10 +82,7 @@ impl InstancedRender {
         for p in sim.world().humans.values() {
             if matches!(p.location, Location::Outside) {
                 self.pedestrians.instances.push(MeshInstance {
-                    pos: p
-                        .trans
-                        .position
-                        .up(0.5 + 0.4 * p.pedestrian.walk_anim.cos()),
+                    pos: p.trans.pos.up(0.5 + 0.4 * p.pedestrian.walk_anim.cos()),
                     dir: p.trans.dir.xy().z0(),
                     tint: LinearColor::WHITE,
                 });
@@ -106,7 +103,7 @@ impl InstancedRender {
 
             let s = 7.0;
             self.path_not_found.push(
-                trans.position + off * 3.0 * V3::Y + 3.0 * V3::Z,
+                trans.pos + off * 3.0 * V3::Y + 3.0 * V3::Z,
                 Vec3::X,
                 LinearColor::RED.a(r),
                 (s, s),

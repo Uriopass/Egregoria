@@ -420,25 +420,19 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
 
     world.query_it_trans_speed().for_each(
         |(it, trans, speed): (&mut Itinerary, &mut Transform, f32)| {
-            trans.position = it.update(
-                trans.position,
-                speed * time.realdelta,
-                tick,
-                time.seconds,
-                map,
-            );
+            trans.pos = it.update(trans.pos, speed * time.realdelta, tick, time.seconds, map);
         },
     );
 
     world.trains.values_mut().for_each(|train| {
-        train.leader.past.push(train.trans.position);
+        train.leader.past.push(train.trans.pos);
     });
 
     world.wagons.values_mut().for_each(|wagon| {
         let leader = &unwrap_ret!(world.trains.get(wagon.itfollower.leader)).leader;
         let (pos, dir) = wagon.itfollower.head.update(&leader.past);
         let (pos2, dir2) = wagon.itfollower.tail.update(&leader.past);
-        wagon.trans.position = (pos + pos2) * 0.5;
+        wagon.trans.pos = (pos + pos2) * 0.5;
         wagon.trans.dir = (dir + dir2).try_normalize().unwrap_or(dir);
     });
 }

@@ -183,7 +183,7 @@ pub fn update_decision(
         decision.wait -= 1;
         return;
     }
-    let pos = trans.position;
+    let pos = trans.pos;
     decision.wait = (30.0 + common::rand::rand2(pos.x, pos.y) * 50.0) as u8;
     if !decision.kind.update(router, binfos, map, cbuf_freight) {
         return;

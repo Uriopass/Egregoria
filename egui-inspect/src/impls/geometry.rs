@@ -71,14 +71,14 @@ impl Inspect<LinearColor> for LinearColor {
 
 impl Inspect<Transform> for Transform {
     fn render(t: &Self, _: &'static str, ui: &mut egui::Ui, _: &InspectArgs) {
-        let position = t.position;
+        let position = t.pos;
         let direction = t.dir;
         <Vec3 as Inspect<Vec3>>::render(&position, "position", ui, &InspectArgs::default());
         <Vec3 as Inspect<Vec3>>::render(&direction, "direction", ui, &InspectArgs::default());
     }
 
     fn render_mut(t: &mut Self, _: &'static str, ui: &mut egui::Ui, _: &InspectArgs) -> bool {
-        let mut position = t.position;
+        let mut position = t.pos;
         let mut direction = t.dir;
         let mut changed = <Vec3 as Inspect<Vec3>>::render_mut(
             &mut position,
@@ -93,7 +93,7 @@ impl Inspect<Transform> for Transform {
             &InspectArgs::default(),
         );
         t.dir = direction.normalize();
-        t.position = position;
+        t.pos = position;
         changed
     }
 }

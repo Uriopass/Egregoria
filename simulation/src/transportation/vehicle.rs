@@ -47,7 +47,7 @@ pub struct Vehicle {
 #[must_use]
 pub fn put_vehicle_in_transport_grid(sim: &Simulation, w: f32, trans: Transform) -> Transporter {
     Transporter(sim.write::<TransportGrid>().insert(
-        trans.position.xy(),
+        trans.pos.xy(),
         TransportState {
             dir: trans.dir.xy(),
             radius: w * 0.5,

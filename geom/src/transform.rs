@@ -5,7 +5,7 @@ const UP: Vec3 = Vec3::Z;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Transform {
-    pub position: Vec3,
+    pub pos: Vec3,
     pub dir: Vec3,
 }
 
@@ -15,17 +15,14 @@ impl Transform {
         Self::new(Vec3::ZERO)
     }
 
-    pub fn new<T: Into<Vec3>>(position: T) -> Self {
-        let position = position.into();
-        Self {
-            position,
-            dir: Vec3::X,
-        }
+    pub fn new<T: Into<Vec3>>(pos: T) -> Self {
+        let pos = pos.into();
+        Self { pos, dir: Vec3::X }
     }
 
     #[inline]
-    pub fn new_dir(position: Vec3, dir: Vec3) -> Self {
-        Self { position, dir }
+    pub fn new_dir(pos: Vec3, dir: Vec3) -> Self {
+        Self { pos, dir }
     }
 
     #[inline]
@@ -47,7 +44,7 @@ impl Transform {
             x: x.w(0.0),
             y: y.w(0.0),
             z: z.w(0.0),
-            w: self.position.w(1.0),
+            w: self.pos.w(1.0),
         }
     }
 
@@ -58,7 +55,7 @@ impl Transform {
 
     #[inline]
     pub fn project(&self, point: Vec3) -> Vec3 {
-        point.rotate_up(self.dir) + self.position
+        point.rotate_up(self.dir) + self.pos
     }
 }
 

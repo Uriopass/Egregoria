@@ -88,7 +88,7 @@ impl Dispatcher {
             .or_insert_with(|| DispatchOne::new(DispatchKind::FreightTrain.lane_kind()));
 
         world.trains.iter().for_each(|(ent, train)| {
-            disp_trains.register(DispatchID::FreightTrain(ent), map, train.trans.position);
+            disp_trains.register(DispatchID::FreightTrain(ent), map, train.trans.pos);
         });
 
         /*

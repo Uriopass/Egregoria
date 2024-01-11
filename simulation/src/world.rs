@@ -236,7 +236,7 @@ impl World {
     }
 
     pub fn pos<E: WorldTransform>(&self, id: E) -> Option<Vec3> {
-        self.get(id).map(|x| E::trans(x).position)
+        self.get(id).map(|x| E::trans(x).pos)
     }
 
     pub fn trans<E: WorldTransform>(&self, id: E) -> Option<Transform> {
@@ -255,10 +255,10 @@ impl World {
     #[rustfmt::skip]
     pub fn query_selectable_pos(&self) -> impl Iterator<Item = (AnyEntity, Vec2)> + '_ {
         chain((
-            self.humans  .iter().map(|(id, x)| (AnyEntity::HumanID(id), x.trans.position.xy())),
-            self.vehicles.iter().map(|(id, x)| (AnyEntity::VehicleID(id), x.trans.position.xy())),
-            self.trains  .iter().map(|(id, x)| (AnyEntity::TrainID(id), x.trans.position.xy())),
-            self.wagons  .iter().map(|(id, x)| (AnyEntity::WagonID(id), x.trans.position.xy())),
+            self.humans  .iter().map(|(id, x)| (AnyEntity::HumanID(id), x.trans.pos.xy())),
+            self.vehicles.iter().map(|(id, x)| (AnyEntity::VehicleID(id), x.trans.pos.xy())),
+            self.trains  .iter().map(|(id, x)| (AnyEntity::TrainID(id), x.trans.pos.xy())),
+            self.wagons  .iter().map(|(id, x)| (AnyEntity::WagonID(id), x.trans.pos.xy())),
         ))
     }
 

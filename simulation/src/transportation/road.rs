@@ -58,7 +58,7 @@ pub fn vehicle_decision(
     ) {
         let danger_length =
             (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(100.0);
-        let neighbors = cow.query_around(trans.position.xy(), 12.0 + danger_length);
+        let neighbors = cow.query_around(trans.pos.xy(), 12.0 + danger_length);
         let objs =
             neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in transport grid").1));
 
@@ -159,7 +159,7 @@ fn physics(
             return;
         }
         VehicleState::RoadToPark(spline, t, _) => {
-            trans.position = spline.get(t);
+            trans.pos = spline.get(t);
             trans.dir = spline.derivative(t).normalize();
             return;
         }
@@ -220,7 +220,7 @@ pub fn calc_decision<'a>(
 
     let (front_dist, flag) = calc_front_dist(vehicle, trans, self_obj, it, neighs, cutoff);
 
-    let position = trans.position;
+    let position = trans.pos;
     let dir_to_pos = unwrap_or!(
         (objective - position).try_normalize(),
         return default_return
@@ -319,7 +319,7 @@ fn calc_front_dist<'a>(
     neighs: impl Iterator<Item = (Vec2, &'a TransportState)>,
     cutoff: f32,
 ) -> (f32, u64) {
-    let position = trans.position;
+    let position = trans.pos;
     let direction = trans.dir;
     let pos2 = position.xy();
     let dir2 = trans.dir.xy();

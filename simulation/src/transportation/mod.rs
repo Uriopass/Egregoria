@@ -91,11 +91,11 @@ pub fn transport_grid_synchronize(world: &mut World, resources: &mut Resources) 
 
     world.query_trans_speed_coll_vehicle().for_each(
         |(trans, kin, coll, v): (&Transform, &Speed, Transporter, Option<&Vehicle>)| {
-            transport_grid.set_position(coll.0, trans.position.xy());
+            transport_grid.set_position(coll.0, trans.pos.xy());
             let (_, po) = transport_grid.get_mut(coll.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
             po.dir = trans.dir.xy();
             po.speed = kin.0;
-            po.height = trans.position.z;
+            po.height = trans.pos.z;
             if let Some(v) = v {
                 po.flag = v.flag;
             }

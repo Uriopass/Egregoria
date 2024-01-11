@@ -745,7 +745,7 @@ impl Map {
             .lanes()
             .get(lane)?
             .points
-            .project_segment_dir(spot.trans.position);
+            .project_segment_dir(spot.trans.pos);
         Some(pos - dir * 4.0)
     }
 

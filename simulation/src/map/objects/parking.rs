@@ -72,7 +72,7 @@ impl ParkingSpots {
         if let Some(spots) = self.lane_spots.remove(lane) {
             for spot_id in spots {
                 let spot = unwrap_cont!(self.spots.get(spot_id));
-                self.reuse_spot.insert(spot.trans.position.xy(), spot_id);
+                self.reuse_spot.insert(spot.trans.pos.xy(), spot_id);
             }
         }
     }
@@ -154,7 +154,7 @@ impl ParkingSpots {
         let lspots = self.lane_spots.get(lane)?;
         let (closest, _) = lspots.iter().copied().enumerate().min_by_key(|&(_, x)| {
             let p = unwrap_ret!(spots.get(x), OrderedFloat(f32::INFINITY));
-            OrderedFloat(p.trans.position.distance2(near))
+            OrderedFloat(p.trans.pos.distance2(near))
         })?;
 
         let closest = closest as i32;

@@ -116,7 +116,7 @@ pub fn calc_decision(
         None => return (0.0, trans.dir),
     };
 
-    let position = trans.position;
+    let position = trans.pos;
 
     let delta_pos: Vec3 = objective - position;
     let dir_to_pos = match delta_pos.try_normalize() {

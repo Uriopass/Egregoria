@@ -124,17 +124,17 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
         let itin: &Itinerary = &h.it;
 
         let pos = match h.location {
-            Location::Outside => trans.position,
+            Location::Outside => trans.pos,
             Location::Vehicle(id) => world
                 .vehicles
                 .get(id)
-                .map(|x| x.trans.position)
-                .unwrap_or_else(|| trans.position),
+                .map(|x| x.trans.pos)
+                .unwrap_or_else(|| trans.pos),
             Location::Building(id) => map
                 .buildings()
                 .get(id)
                 .map(|b| b.door_pos)
-                .unwrap_or_else(|| trans.position),
+                .unwrap_or_else(|| trans.pos),
         };
 
         let mut cur_step_over = true;
@@ -172,7 +172,7 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
                 RoutingStep::GetInVehicle(vehicle) => world
                     .vehicles
                     .get(vehicle)
-                    .map(|v| v.trans.position.is_close(pos, 3.0))
+                    .map(|v| v.trans.pos.is_close(pos, 3.0))
                     .unwrap_or(true),
                 RoutingStep::GetOutVehicle(_) => true,
                 RoutingStep::GetInBuilding(build) => map
@@ -229,7 +229,7 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
                         .vehicles
                         .get(vehicle)
                         .map(|v| v.trans)
-                        .map(|vtrans| vtrans.position + vtrans.dir.cross(Vec3::Z) * 2.0)
+                        .map(|vtrans| vtrans.pos + vtrans.dir.cross(Vec3::Z) * 2.0)
                         .unwrap_or(pos);
                     walk_outside(body, pos, cbuf_human, &mut h.location);
                 }
@@ -266,7 +266,7 @@ fn walk_outside(body: HumanID, pos: Vec3, cbuf: &ParCommandBuffer<HumanEnt>, loc
     cbuf.exec_ent(body, move |sim| {
         let coll = put_pedestrian_in_transport_grid(&mut sim.write::<TransportGrid>(), pos);
         let h = unwrap_ret!(sim.world.humans.get_mut(body));
-        h.trans.position = pos;
+        h.trans.pos = pos;
         h.collider = Some(coll);
     });
 }
@@ -282,8 +282,8 @@ fn park(map: &Map, vehicle: &mut VehicleEnt, spot_resa: SpotReservation) {
     };
 
     let s = Spline3 {
-        from: trans.position,
-        to: spot.trans.position,
+        from: trans.pos,
+        to: spot.trans.pos,
         from_derivative: trans.dir * 2.0,
         to_derivative: spot.trans.dir * 2.0,
     };
@@ -358,7 +358,7 @@ impl Router {
             };
 
             if !matches!(loc, Location::Vehicle(_)) {
-                if let Some(pos) = cars.get(car).map(|x| x.trans.position) {
+                if let Some(pos) = cars.get(car).map(|x| x.trans.pos) {
                     steps.push(RoutingStep::WalkTo(pos));
                     steps.push(RoutingStep::GetInVehicle(car));
                     steps.push(RoutingStep::Unpark(car));

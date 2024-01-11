@@ -35,8 +35,7 @@ pub fn random_vehicles_update(world: &mut World, res: &mut Resources) {
         }
         let rng = common::hash_u64((tick.0, v_id));
 
-        if let Some(it) =
-            Itinerary::random_route(rng, v.trans.position, *tick, &map, PathKind::Vehicle)
+        if let Some(it) = Itinerary::random_route(rng, v.trans.pos, *tick, &map, PathKind::Vehicle)
         {
             v.it = it;
         }

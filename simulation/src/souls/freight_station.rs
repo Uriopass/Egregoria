@@ -104,7 +104,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                         let bpos = map.buildings[ext].obb.center().z(0.0);
 
                         *itin = if let Some(r) =
-                            Itinerary::route(tick, train.trans.position, bpos, &map, PathKind::Rail)
+                            Itinerary::route(tick, train.trans.pos, bpos, &map, PathKind::Rail)
                         {
                             r
                         } else {
@@ -134,7 +134,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
             continue;
         }
 
-        let destination = pos.position + pos.dir * 75.0 - pos.dir.perp_up() * 40.0;
+        let destination = pos.pos + pos.dir * 75.0 - pos.dir.perp_up() * 40.0;
 
         let Some(DispatchID::FreightTrain(trainid)) = dispatch.query(
             &map,
@@ -147,13 +147,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         let train = world.trains.get_mut(trainid).unwrap();
 
         train.it = unwrap_or!(
-            Itinerary::route(
-                tick,
-                train.trans.position,
-                destination,
-                &map,
-                PathKind::Rail,
-            ),
+            Itinerary::route(tick, train.trans.pos, destination, &map, PathKind::Rail,),
             continue
         );
 

@@ -69,7 +69,7 @@ impl BuyFood {
         use HumanDecisionKind::*;
         match self.state {
             BuyFoodState::Empty => {
-                let pos = trans.position;
+                let pos = trans.pos;
                 let bread = self.bread;
                 cbuf.exec_on(id, move |market: &mut Market| {
                     market.buy(SoulID::Human(id), pos.xy(), bread, 1)
@@ -79,9 +79,7 @@ impl BuyFood {
             }
             BuyFoodState::WaitingForTrade => {
                 for trade in bought.0.entry(self.bread).or_default().drain(..) {
-                    if let Some(b) =
-                        find_trade_place(trade.seller, trans.position.xy(), binfos, map)
-                    {
+                    if let Some(b) = find_trade_place(trade.seller, trans.pos.xy(), binfos, map) {
                         self.state = BuyFoodState::BoughtAt(b);
                     }
                 }

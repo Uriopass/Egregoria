@@ -325,7 +325,7 @@ pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
         let desired_dir =
             t.it.get_point()
                 .and_then(|x| {
-                    let d = x - t.trans.position;
+                    let d = x - t.trans.pos;
                     if d.mag2() < 0.5 {
                         return None;
                     }
@@ -432,7 +432,7 @@ pub fn locomotive_desired_speed(
     }
 
     if on_last_lane {
-        if let Some(howfar) = t.it.end_pos().map(|term| term.distance(t.trans.position)) {
+        if let Some(howfar) = t.it.end_pos().map(|term| term.distance(t.trans.pos)) {
             if howfar + 0.1 <= stop_dist {
                 return 0.0;
             }
