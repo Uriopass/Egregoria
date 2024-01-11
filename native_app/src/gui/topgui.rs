@@ -10,7 +10,6 @@ use crate::gui::windows::GUIWindows;
 use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
-use common::descriptions::BuildingGen;
 use common::saveload::Encoder;
 use egui::load::SizedTexture;
 use egui::{
@@ -19,6 +18,7 @@ use egui::{
 };
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
+use prototypes::BuildingGen;
 use serde::{Deserialize, Serialize};
 use simulation::economy::{Government, Item, ItemRegistry, Money};
 use simulation::map::{

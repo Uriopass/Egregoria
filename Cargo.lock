@@ -200,6 +200,7 @@ dependencies = [
  "inline_tweak",
  "log",
  "meshopt2",
+ "prototypes",
  "yakui",
 ]
 
@@ -1881,6 +1882,7 @@ dependencies = [
  "oddio",
  "ordered-float",
  "profiling",
+ "prototypes",
  "rayon",
  "serde",
  "simulation",
@@ -2468,6 +2470,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "prototypes"
+version = "0.1.0"
+dependencies = [
+ "egui-inspect",
+ "geom",
+ "serde",
+]
+
+[[package]]
 name = "quick-xml"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2797,6 +2808,7 @@ dependencies = [
  "ordered-float",
  "pathfinding",
  "profiling",
+ "prototypes",
  "quickcheck",
  "rayon",
  "serde",

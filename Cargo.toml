@@ -12,6 +12,7 @@ members = [
     "headless",
     "native_app",
     "networking",
+    "prototypes",
 ]
 
 resolver = "2"

@@ -8,12 +8,10 @@ use crate::utils::time::GameTime;
 use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
 use crate::{ParCommandBuffer, SoulID};
 use crate::{Simulation, World};
-use common::descriptions::{
-    BuildingGen, CompanyKind, GoodsCompanyDescriptionJSON, ZoneDescription,
-};
 use common::saveload::Encoder;
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
+use prototypes::{BuildingGen, CompanyKind, GoodsCompanyDescriptionJSON, ZoneDescription};
 use serde::{Deserialize, Serialize};
 use slotmapd::{new_key_type, SlotMap};
 

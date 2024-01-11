@@ -1,9 +1,9 @@
 use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
 use crate::map::{Buildings, Environment, LanePattern, SpatialMap};
 use crate::souls::goods_company::GoodsCompanyID;
-use common::descriptions::BuildingGen;
 use egui_inspect::debug_inspect_impl;
 use geom::{Color, Polygon, Vec2, Vec3, OBB};
+use prototypes::BuildingGen;
 use serde::{Deserialize, Serialize};
 use slotmapd::new_key_type;
 

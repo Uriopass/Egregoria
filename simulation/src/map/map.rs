@@ -7,10 +7,10 @@ use crate::map::{
     SubscriberChunkID, TerraformKind, UpdateType, Zone,
 };
 use crate::utils::time::Tick;
-use common::descriptions::BuildingGen;
 use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
+use prototypes::BuildingGen;
 use serde::{Deserialize, Serialize};
 use slotmapd::HopSlotMap;
 use std::collections::BTreeMap;

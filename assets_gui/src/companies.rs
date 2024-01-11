@@ -1,5 +1,5 @@
-use common::descriptions::GoodsCompanyDescriptionJSON;
 use common::saveload::Encoder;
+use prototypes::GoodsCompanyDescriptionJSON;
 use std::io;
 
 pub struct Companies {

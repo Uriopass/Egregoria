@@ -4,7 +4,6 @@ use yakui::{
     Constraints, CrossAxisAlignment, MainAxisAlignment, MainAxisSize, Response, Vec2,
 };
 
-use common::descriptions::{BuildingGen, CompanyKind};
 use engine::meshload::CPUMesh;
 use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, InstancedMesh, Mesh, SpriteBatch};
@@ -16,6 +15,7 @@ use goryak::{
     set_theme, stretch_width, surface, surface_variant, use_changed, CountGrid, Draggable,
     MainAxisAlignItems, RoundRect, Theme,
 };
+use prototypes::{BuildingGen, CompanyKind};
 
 use crate::companies::Companies;
 use crate::lod::LodGenerateParams;

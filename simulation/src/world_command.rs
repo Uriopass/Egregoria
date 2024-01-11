@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 use std::time::Instant;
 
-use common::descriptions::BuildingGen;
 use serde::{Deserialize, Serialize};
 
 use geom::{vec3, Vec2, Vec3, OBB};
+use prototypes::BuildingGen;
 use WorldCommand::*;
 
 use crate::economy::Government;

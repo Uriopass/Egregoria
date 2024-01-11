@@ -5,8 +5,8 @@ use crate::souls::goods_company::{company_soul, GoodsCompany, GoodsCompanyRegist
 use crate::souls::human::spawn_human;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::Simulation;
-use common::descriptions::CompanyKind;
 use geom::Vec3;
+use prototypes::CompanyKind;
 use std::collections::BTreeMap;
 
 #[macro_use]
