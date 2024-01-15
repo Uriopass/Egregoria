@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
-use prototypes::{CompanyKind, GoodsCompanyID, GoodsCompanyPrototype, ItemID, Recipe};
+use prototypes::{
+    try_prototype, CompanyKind, GoodsCompanyID, GoodsCompanyPrototype, ItemID, Recipe, SolarPanelID,
+};
 
 use crate::economy::{find_trade_place, Market};
 use crate::map::{Building, BuildingID, Map, Zone, MAX_ZONE_AREA};

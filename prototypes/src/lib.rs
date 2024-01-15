@@ -17,17 +17,42 @@ pub use types::*;
 crate::gen_prototypes!(
     companies: GoodsCompanyID => GoodsCompanyPrototype,
     items:     ItemID         => ItemPrototype,
+    solar:     SolarPanelID   => SolarPanelPrototype extends GoodsCompanyID,
 );
 
+/// A prototype is a collection of data that is dynamically loaded with Lua and defines a type of object
 pub trait Prototype: 'static + Sized {
-    type ID: Copy + Clone + Eq + Ord + Hash + 'static;
-    const KIND: &'static str;
+    /// The parent prototype of this prototype (optional). Use NoParent if there is no parent
+    type Parent: ConcretePrototype;
 
+    /// The type of the ID of the prototype
+    type ID: Copy + Clone + Eq + Ord + Hash + 'static;
+
+    /// The name of the prototype used to parse the prototype from Lua's data table
+    const NAME: &'static str;
+
+    /// Parse the prototype from a Lua table
     fn from_lua(table: &Table) -> mlua::Result<Self>;
+
+    /// The ID of the prototype
     fn id(&self) -> Self::ID;
+
+    /// The parent of the prototype
+    fn parent(&self) -> Option<&Self::Parent> {
+        None
+    }
+
+    /// util function to recursively insert the parents of this prototype into the prototypes lists
+    fn insert_parents(&self, prototypes: &mut Prototypes) {
+        if let Some(p) = self.parent() {
+            Self::Parent::storage_mut(prototypes).insert(p.id(), p.clone());
+            p.insert_parents(prototypes);
+        }
+    }
 }
 
-pub trait ConcretePrototype: Prototype {
+/// A concrete prototype is a prototype that has a static storage and ordering (it is not virtual)
+pub trait ConcretePrototype: Prototype + Clone {
     fn ordering(prototypes: &Prototypes) -> &[Self::ID];
     fn storage(prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self>;
     fn storage_mut(prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self>;
@@ -35,6 +60,37 @@ pub trait ConcretePrototype: Prototype {
 
 pub trait PrototypeID: Debug + Copy + Clone + Eq + Ord + Hash + 'static {
     type Prototype: Prototype<ID = Self>;
+}
+
+#[derive(Clone)]
+pub struct NoParent;
+
+impl Prototype for NoParent {
+    type Parent = NoParent;
+    type ID = ();
+    const NAME: &'static str = "no-parent";
+
+    fn from_lua(_table: &Table) -> mlua::Result<Self> {
+        unreachable!()
+    }
+
+    fn id(&self) -> Self::ID {
+        unreachable!()
+    }
+}
+
+impl ConcretePrototype for NoParent {
+    fn ordering(_prototypes: &Prototypes) -> &[Self::ID] {
+        &[]
+    }
+
+    fn storage(_prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self> {
+        unreachable!()
+    }
+
+    fn storage_mut(_prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self> {
+        unreachable!()
+    }
 }
 
 static mut PROTOTYPES: Option<&'static Prototypes> = None;
@@ -80,6 +136,121 @@ pub fn prototypes_iter<T: ConcretePrototype>() -> impl Iterator<Item = &'static 
 
 pub fn prototypes_iter_ids<T: ConcretePrototype>() -> impl Iterator<Item = T::ID> {
     T::ordering(prototypes()).iter().copied()
+}
+
+#[macro_export]
+macro_rules! gen_prototypes {
+    ($($name:ident : $id:ident => $t:ident $(extends $parent_id:ident)?,)+) => {
+        $(
+            prototype_id!($id => $t);
+        )+
+
+        $(
+            $(
+            impl From<$parent_id> for $id {
+                fn from(v: $parent_id) -> Self {
+                    Self(v.0)
+                }
+            }
+
+            impl From<$id> for $parent_id {
+                fn from(v: $id) -> Self {
+                    Self(v.0)
+                }
+            }
+            )?
+        )+
+
+        #[derive(Default)]
+        struct Orderings {
+            $(
+                $name: Vec<$id>,
+            )+
+        }
+
+        #[derive(Default)]
+        pub struct Prototypes {
+            $(
+                $name: TransparentMap<$id, $t>,
+            )+
+            orderings: Orderings,
+        }
+
+        $(
+        impl ConcretePrototype for $t {
+            fn ordering(prototypes: &Prototypes) -> &[Self::ID] {
+                &prototypes.orderings.$name
+            }
+
+            fn storage(prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self> {
+                &prototypes.$name
+            }
+
+            fn storage_mut(prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self> {
+                &mut prototypes.$name
+            }
+        }
+
+        impl $t {
+            pub fn iter() -> impl Iterator<Item = &'static Self> {
+                crate::prototypes_iter::<Self>()
+            }
+            pub fn iter_ids() -> impl Iterator<Item = $id> {
+                crate::prototypes_iter_ids::<Self>()
+            }
+        }
+        )+
+
+        impl Prototypes {
+            pub(crate) fn print_stats(&self) {
+                $(
+                    log::info!("loaded {} {}", <$t>::storage(self).len(), <$t>::NAME);
+                )+
+            }
+
+            pub(crate) fn compute_orderings(&mut self) {
+                self.orderings = Orderings {
+                    $(
+                        $name: {
+                            let mut v = <$t>::storage(self).keys().copied().collect::<Vec<_>>();
+                            v.sort_by_key(|id| {
+                                let proto = &self.$name[id];
+                                (&proto.order, proto.id)
+                            });
+                            v
+                        },
+                    )+
+                }
+            }
+        }
+
+        fn parse_prototype(table: Table, prototypes: &mut Prototypes) -> Result<(), PrototypeLoadError> {
+            let _type = table.get::<_, String>("type")?;
+            let _type_str = _type.as_str();
+            match _type_str {
+                $(
+                    <$t>::NAME => {
+                        let proto: $t = Prototype::from_lua(&table).map_err(|e| {
+                              PrototypeLoadError::PrototypeLuaError(_type_str.to_string(), table.get::<_, String>("name").unwrap(), e)
+                        })?;
+
+                        proto.insert_parents(prototypes);
+
+                        if let Some(v) = prototypes.$name.insert((&proto.name).into(), proto) {
+                            log::warn!("duplicate {} with name: {}", <$t>::NAME, v.name);
+                        }
+                    }
+                ),+
+                _ => {
+                    if let Ok(s) = table.get::<_, String>("type") {
+                        log::warn!("unknown prototype: {}", s)
+                    }
+                }
+            }
+
+            Ok(())
+        }
+    };
 }
 
 #[macro_export]
@@ -152,102 +323,6 @@ macro_rules! prototype_id {
 
         impl crate::PrototypeID for $id {
             type Prototype = $proto;
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! gen_prototypes {
-    ($($name:ident : $id:ident => $t:ty,)+) => {
-        $(
-            prototype_id!($id => $t);
-        )+
-
-        #[derive(Default)]
-        struct Orderings {
-            $(
-                $name: Vec<$id>,
-            )+
-        }
-
-        #[derive(Default)]
-        pub struct Prototypes {
-            $(
-                $name: TransparentMap<$id, $t>,
-            )+
-            orderings: Orderings,
-        }
-
-        $(
-        impl ConcretePrototype for $t {
-            fn ordering(prototypes: &Prototypes) -> &[Self::ID] {
-                &prototypes.orderings.$name
-            }
-
-            fn storage(prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self> {
-                &prototypes.$name
-            }
-
-            fn storage_mut(prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self> {
-                &mut prototypes.$name
-            }
-        }
-
-        impl $t {
-            pub fn iter() -> impl Iterator<Item = &'static Self> {
-                crate::prototypes_iter::<Self>()
-            }
-            pub fn iter_ids() -> impl Iterator<Item = $id> {
-                crate::prototypes_iter_ids::<Self>()
-            }
-        }
-        )+
-
-        impl Prototypes {
-            pub(crate) fn print_stats(&self) {
-                $(
-                    log::info!("loaded {} {}", <$t>::storage(self).len(), <$t>::KIND);
-                )+
-            }
-
-            pub(crate) fn compute_orderings(&mut self) {
-                self.orderings = Orderings {
-                    $(
-                        $name: {
-                            let mut v = <$t>::storage(self).keys().copied().collect::<Vec<_>>();
-                            v.sort_by_key(|id| {
-                                let proto = &self.$name[id];
-                                (&proto.order, proto.id)
-                            });
-                            v
-                        },
-                    )+
-                }
-            }
-        }
-
-        fn parse_prototype(table: Table, proto: &mut Prototypes) -> Result<(), PrototypeLoadError> {
-            let _type = table.get::<_, String>("type")?;
-            let _type_str = _type.as_str();
-            match _type_str {
-                $(
-                    <$t>::KIND => {
-                        let p: $t = Prototype::from_lua(&table).map_err(|e| {
-                              PrototypeLoadError::PrototypeLuaError(_type_str.to_string(), table.get::<_, String>("name").unwrap(), e)
-                        })?;
-                        if let Some(v) = proto.$name.insert((&p.name).into(), p) {
-                            log::warn!("duplicate {} with name: {}", <$t>::KIND, v.name);
-                        }
-                    }
-                ),+
-                _ => {
-                    if let Ok(s) = table.get::<_, String>("type") {
-                        log::warn!("unknown prototype: {}", s)
-                    }
-                }
-            }
-
-            Ok(())
         }
     };
 }

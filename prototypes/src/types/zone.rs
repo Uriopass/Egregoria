@@ -1,7 +1,7 @@
 use crate::get_with_err;
 use mlua::{FromLua, Lua, Table, Value};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Zone {
     pub floor: String,
     pub filler: String,

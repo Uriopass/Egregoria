@@ -1,23 +1,30 @@
-pub mod company;
-pub mod item;
+mod company;
+mod item;
+mod solar;
 
+use crate::NoParent;
 pub use company::*;
 pub use item::*;
+pub use solar::*;
 
 #[derive(Debug, Clone, egui_inspect::Inspect)]
 pub struct PrototypeBase {
     pub name: String,
     pub order: String,
+    pub label: String,
 }
 
 impl crate::Prototype for PrototypeBase {
+    type Parent = NoParent;
     type ID = ();
-    const KIND: &'static str = "base";
+    const NAME: &'static str = "base";
 
     fn from_lua(table: &mlua::Table) -> mlua::Result<Self> {
+        use crate::get_with_err;
         Ok(Self {
-            name: table.get("name")?,
-            order: table.get("order").unwrap_or(String::new()),
+            name: get_with_err(table, "name")?,
+            order: get_with_err(table, "order").unwrap_or(String::new()),
+            label: get_with_err(table, "label")?,
         })
     }
 

@@ -1,5 +1,5 @@
 use crate::prototypes::PrototypeBase;
-use crate::{get_with_err, GoodsCompanyID, Prototype, Recipe, Zone};
+use crate::{get_with_err, GoodsCompanyID, NoParent, Prototype, Recipe, Zone};
 use egui_inspect::{debug_inspect_impl, Inspect};
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
@@ -29,11 +29,10 @@ pub enum CompanyKind {
     Network,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GoodsCompanyPrototype {
     pub base: PrototypeBase,
     pub id: GoodsCompanyID,
-    pub label: String,
     pub bgen: BuildingGen,
     pub kind: CompanyKind,
     pub recipe: Recipe,
@@ -46,15 +45,15 @@ pub struct GoodsCompanyPrototype {
 }
 
 impl Prototype for GoodsCompanyPrototype {
+    type Parent = NoParent;
     type ID = GoodsCompanyID;
-    const KIND: &'static str = "goods-company";
+    const NAME: &'static str = "goods-company";
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
         let base = PrototypeBase::from_lua(table)?;
         Ok(Self {
             id: GoodsCompanyID::from(&base.name),
             base,
-            label: get_with_err(table, "label")?,
             bgen: get_with_err(table, "bgen")?,
             kind: get_with_err(table, "kind")?,
             recipe: get_with_err(table, "recipe")?,

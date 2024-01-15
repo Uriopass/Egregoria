@@ -1,5 +1,5 @@
 use crate::prototypes::PrototypeBase;
-use crate::{get_with_err, ItemID, Prototype};
+use crate::{get_with_err, ItemID, NoParent, Prototype};
 use mlua::Table;
 use std::ops::Deref;
 
@@ -8,7 +8,6 @@ use std::ops::Deref;
 pub struct ItemPrototype {
     pub base: PrototypeBase,
     pub id: ItemID,
-    pub label: String,
     pub optout_exttrade: bool,
 }
 
@@ -21,15 +20,15 @@ impl Deref for ItemPrototype {
 }
 
 impl Prototype for ItemPrototype {
+    type Parent = NoParent;
     type ID = ItemID;
-    const KIND: &'static str = "item";
+    const NAME: &'static str = "item";
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
         let base = PrototypeBase::from_lua(table)?;
         Ok(Self {
             id: ItemID::new(&base.name),
             base,
-            label: get_with_err(table, "label")?,
             optout_exttrade: get_with_err(table, "optout_exttrade").unwrap_or(false),
         })
     }

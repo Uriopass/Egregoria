@@ -44,19 +44,13 @@ pub(crate) fn validate(proto: &Prototypes) -> Result<(), MultiError<ValidationEr
                 ));
             }
         }
+    }
 
-        if comp.recipe.power_usage.0 < 0 {
+    for solar in proto.solar.values() {
+        if solar.max_power.0 < 0 {
             errors.push(ValidationError::InvalidField(
-                comp.name.clone(),
+                solar.name.clone(),
                 "power_usage",
-                "must not be negative".to_string(),
-            ));
-        }
-
-        if comp.recipe.power_generation.0 < 0 {
-            errors.push(ValidationError::InvalidField(
-                comp.name.clone(),
-                "power_generation",
                 "must not be negative".to_string(),
             ));
         }

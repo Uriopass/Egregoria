@@ -1,4 +1,4 @@
-use crate::{get_with_err, ItemID, Power};
+use crate::{get_with_err, ItemID};
 use egui_inspect::Inspect;
 use mlua::{FromLua, Lua, Table, Value};
 
@@ -37,9 +37,6 @@ pub struct Recipe {
     pub consumption: Vec<RecipeItem>,
     pub production: Vec<RecipeItem>,
 
-    pub power_usage: Power,
-    pub power_generation: Power,
-
     /// Time to execute the recipe when the facility is at full capacity, in seconds
     pub complexity: i32,
 
@@ -55,8 +52,6 @@ impl<'lua> FromLua<'lua> for Recipe {
         Ok(Self {
             consumption: get_with_err(&table, "consumption")?,
             production: get_with_err(&table, "production")?,
-            power_usage: get_with_err(&table, "power_usage")?,
-            power_generation: get_with_err(&table, "power_generation")?,
             complexity: get_with_err(&table, "complexity")?,
             storage_multiplier: get_with_err(&table, "storage_multiplier")?,
         })
