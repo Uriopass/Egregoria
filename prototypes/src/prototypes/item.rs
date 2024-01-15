@@ -6,8 +6,8 @@ use std::ops::Deref;
 /// Item is the runtime representation of an item, such as meat, wood, etc.
 #[derive(Clone, Debug)]
 pub struct ItemPrototype {
-    pub id: ItemID,
     pub base: PrototypeBase,
+    pub id: ItemID,
     pub label: String,
     pub optout_exttrade: bool,
 }

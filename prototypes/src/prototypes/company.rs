@@ -50,9 +50,10 @@ impl Prototype for GoodsCompanyPrototype {
     const KIND: &'static str = "goods-company";
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
+        let base = PrototypeBase::from_lua(table)?;
         Ok(Self {
-            base: PrototypeBase::from_lua(table)?,
-            id: GoodsCompanyID::from(&get_with_err::<String>(table, "name")?),
+            id: GoodsCompanyID::from(&base.name),
+            base,
             label: get_with_err(table, "label")?,
             bgen: get_with_err(table, "bgen")?,
             kind: get_with_err(table, "kind")?,
