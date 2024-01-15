@@ -33,13 +33,11 @@ pub enum HumanDecisionKind {
     MultiStack(Vec<HumanDecisionKind>),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Inspect)]
 pub enum Gender {
     M,
     F,
 }
-
-debug_inspect_impl!(Gender);
 
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct PersonalInfo {

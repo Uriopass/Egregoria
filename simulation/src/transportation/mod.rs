@@ -38,13 +38,12 @@ impl Debug for Speed {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Inspect)]
 pub enum TransportationGroup {
     Unknown,
     Vehicles,
     Pedestrians,
 }
-debug_inspect_impl!(TransportationGroup);
 
 #[derive(Copy, Clone, Serialize, Deserialize, Inspect)]
 pub struct TransportState {

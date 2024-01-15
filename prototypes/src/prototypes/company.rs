@@ -1,10 +1,33 @@
 use crate::prototypes::PrototypeBase;
 use crate::{get_with_err, GoodsCompanyID, Prototype, Recipe, Zone};
-use egui_inspect::debug_inspect_impl;
+use egui_inspect::{debug_inspect_impl, Inspect};
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum BuildingGen {
+    House,
+    Farm,
+    CenteredDoor {
+        vertical_factor: f32, // 1.0 means that the door is at the bottom, just on the street
+    },
+    NoWalkway {
+        door_pos: Vec2, // door_pos is relative to the center of the building
+    },
+}
+debug_inspect_impl!(BuildingGen);
+
+#[derive(Copy, Clone, Serialize, Deserialize, Debug, PartialEq, Eq, Inspect)]
+pub enum CompanyKind {
+    /// Buyers come to get their goods
+    Store,
+    /// Buyers get their goods delivered to them
+    Factory,
+    /// Buyers get their goods instantly delivered, useful for things like electricity/water/..
+    Network,
+}
 
 #[derive(Debug)]
 pub struct GoodsCompanyPrototype {
@@ -56,16 +79,6 @@ impl Deref for GoodsCompanyPrototype {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub enum CompanyKind {
-    // Buyers come to get their goods
-    Store,
-    // Buyers get their goods delivered to them
-    Factory,
-    // Buyers get their goods instantly delivered, useful for things like electricity/water/..
-    Network,
-}
-
 impl<'a> FromLua<'a> for CompanyKind {
     fn from_lua(value: Value<'a>, lua: &'a Lua) -> mlua::Result<Self> {
         let s: String = FromLua::from_lua(value, lua)?;
@@ -80,22 +93,6 @@ impl<'a> FromLua<'a> for CompanyKind {
         }
     }
 }
-
-debug_inspect_impl!(CompanyKind);
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub enum BuildingGen {
-    House,
-    Farm,
-    CenteredDoor {
-        vertical_factor: f32, // 1.0 means that the door is at the bottom, just on the street
-    },
-    NoWalkway {
-        door_pos: Vec2, // door_pos is relative to the center of the building
-    },
-}
-
-debug_inspect_impl!(BuildingGen);
 
 impl<'a> FromLua<'a> for BuildingGen {
     fn from_lua(value: Value<'a>, _: &'a Lua) -> mlua::Result<Self> {

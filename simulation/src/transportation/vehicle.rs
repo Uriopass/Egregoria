@@ -23,7 +23,7 @@ pub enum VehicleState {
 
 debug_inspect_impl!(VehicleState);
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, Inspect)]
 pub enum VehicleKind {
     Car,
     Truck,
@@ -222,5 +222,3 @@ impl Vehicle {
         }
     }
 }
-
-debug_inspect_impl!(VehicleKind);

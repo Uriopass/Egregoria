@@ -38,14 +38,12 @@ pub struct LocomotiveReservation {
     upcoming_inters: Vec<IntersectionID>,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Inspect)]
 pub enum RailWagonKind {
     Locomotive,
     Passenger,
     Freight,
 }
-
-debug_inspect_impl!(RailWagonKind);
 
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct RailWagon {
