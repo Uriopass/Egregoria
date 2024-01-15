@@ -55,11 +55,12 @@ unsafe fn load_prototypes_str(l: Lua, main: &str) -> Result<(), PrototypeLoadErr
 
     validation::validate(&p)?;
 
+    p.compute_orderings();
+    p.print_stats();
+
     unsafe {
         PROTOTYPES = Some(Box::leak(p));
     }
-
-    crate::print_prototype_stats();
 
     Ok(())
 }

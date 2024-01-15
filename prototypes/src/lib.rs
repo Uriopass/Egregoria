@@ -28,6 +28,7 @@ pub trait Prototype: 'static + Sized {
 }
 
 pub trait ConcretePrototype: Prototype {
+    fn ordering(prototypes: &Prototypes) -> &[Self::ID];
     fn storage(prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self>;
     fn storage_mut(prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self>;
 }
@@ -72,11 +73,13 @@ where
 }
 
 pub fn prototypes_iter<T: ConcretePrototype>() -> impl Iterator<Item = &'static T> {
-    T::storage(prototypes()).values()
+    let p = prototypes();
+    let storage = T::storage(p);
+    T::ordering(p).iter().map(move |id| &storage[id])
 }
 
 pub fn prototypes_iter_ids<T: ConcretePrototype>() -> impl Iterator<Item = T::ID> {
-    T::storage(prototypes()).keys().copied()
+    T::ordering(prototypes()).iter().copied()
 }
 
 #[macro_export]
@@ -160,24 +163,27 @@ macro_rules! gen_prototypes {
             prototype_id!($id => $t);
         )+
 
+        #[derive(Default)]
+        struct Orderings {
+            $(
+                $name: Vec<$id>,
+            )+
+        }
+
+        #[derive(Default)]
         pub struct Prototypes {
             $(
                 $name: TransparentMap<$id, $t>,
             )+
-        }
-
-        impl Default for Prototypes {
-            fn default() -> Self {
-                Self {
-                    $(
-                        $name: Default::default(),
-                    )+
-                }
-            }
+            orderings: Orderings,
         }
 
         $(
         impl ConcretePrototype for $t {
+            fn ordering(prototypes: &Prototypes) -> &[Self::ID] {
+                &prototypes.orderings.$name
+            }
+
             fn storage(prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self> {
                 &prototypes.$name
             }
@@ -197,10 +203,27 @@ macro_rules! gen_prototypes {
         }
         )+
 
-        fn print_prototype_stats() {
-            $(
-                log::info!("loaded {} {}", <$t>::storage(prototypes()).len(), <$t>::KIND);
-            )+
+        impl Prototypes {
+            pub(crate) fn print_stats(&self) {
+                $(
+                    log::info!("loaded {} {}", <$t>::storage(self).len(), <$t>::KIND);
+                )+
+            }
+
+            pub(crate) fn compute_orderings(&mut self) {
+                self.orderings = Orderings {
+                    $(
+                        $name: {
+                            let mut v = <$t>::storage(self).keys().copied().collect::<Vec<_>>();
+                            v.sort_by_key(|id| {
+                                let proto = &self.$name[id];
+                                (&proto.order, proto.id)
+                            });
+                            v
+                        },
+                    )+
+                }
+            }
         }
 
         fn parse_prototype(table: Table, proto: &mut Prototypes) -> Result<(), PrototypeLoadError> {

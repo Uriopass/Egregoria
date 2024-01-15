@@ -1,6 +1,7 @@
 data:extend {
     {
         type = "goods-company",
+        order = "a-0",
         name = "bakery",
         label = "Bakery",
         bgen = {
@@ -21,6 +22,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "a-1",
         name = "flour-factory",
         label = "Flour Factory",
         bgen = {
@@ -42,6 +44,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "a-2",
         name = "cereal-farm",
         label = "Cereal Farm",
         bgen = "farm",
@@ -66,6 +69,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "b-1",
         name = "solar-panels",
         label = "Solar Panels",
         bgen = {
@@ -92,6 +96,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "b-2",
         name = "coal-power-plant",
         label = "Coal power plant",
         bgen = {
@@ -113,6 +118,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "c-1",
         name = "supermarket",
         label = "Supermarket",
         bgen = {
@@ -133,6 +139,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "d-1",
         name = "clothes-store",
         label = "Clothes store",
         bgen = {
@@ -153,6 +160,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "d-2",
         name = "cloth-factory",
         label = "Cloth factory",
         bgen = {
@@ -174,69 +182,7 @@ data:extend {
     },
     {
         type = "goods-company",
-        name = "polyester-refinery",
-        label = "Polyester refinery",
-        bgen = {
-            kind = "centered_door",
-            vertical_factor = 1.0,
-        },
-        kind = "factory",
-        n_trucks = 1,
-        recipe = {
-            consumption = {{"oil", 1}},
-            production = {{"polyester", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 5,
-        size = 80.0,
-        asset_location = "assets/sprites/polyester_refinery.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
-        name = "oil-pump",
-        label = "Oil pump",
-        bgen = {
-            kind = "centered_door",
-            vertical_factor = 1.0,
-        },
-        kind = "factory",
-        n_trucks = 1,
-        recipe = {
-            consumption = {},
-            production = {{"oil", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 5,
-        size = 20.0,
-        asset_location = "assets/sprites/oil_pump.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
-        name = "coal-mine",
-        label = "Coal mine",
-        bgen = {
-            kind = "centered_door",
-            vertical_factor = 1.0,
-        },
-        kind = "factory",
-        n_trucks = 1,
-        recipe = {
-            consumption = {},
-            production = {{"coal", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 5,
-        size = 20.0,
-        asset_location = "assets/sprites/oil_pump.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
+        order = "d-3",
         name = "textile-processing-facility",
         label = "Textile processing facility",
         bgen = {
@@ -258,6 +204,73 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "d-4",
+        name = "polyester-refinery",
+        label = "Polyester refinery",
+        bgen = {
+            kind = "centered_door",
+            vertical_factor = 1.0,
+        },
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {{"oil", 1}},
+            production = {{"polyester", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 5,
+        size = 80.0,
+        asset_location = "assets/sprites/polyester_refinery.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "e-1",
+        name = "oil-pump",
+        label = "Oil pump",
+        bgen = {
+            kind = "centered_door",
+            vertical_factor = 1.0,
+        },
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {},
+            production = {{"oil", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 5,
+        size = 20.0,
+        asset_location = "assets/sprites/oil_pump.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "e-2",
+        name = "coal-mine",
+        label = "Coal mine",
+        bgen = {
+            kind = "centered_door",
+            vertical_factor = 1.0,
+        },
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {},
+            production = {{"coal", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 5,
+        size = 20.0,
+        asset_location = "assets/sprites/oil_pump.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "f-1",
         name = "wool-farm",
         label = "Wool farm",
         bgen = {
@@ -279,6 +292,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "g-1",
         name = "florist",
         label = "Florist",
         bgen = {
@@ -299,6 +313,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "g-2",
         name = "horticulturalist",
         label = "Horticulturalist",
         bgen = {
@@ -320,6 +335,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "h-1",
         name = "high-tech-store",
         label = "High tech store",
         bgen = {
@@ -340,6 +356,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "h-2",
         name = "high-tech-facility",
         label = "High tech facility",
         bgen = {
@@ -361,68 +378,7 @@ data:extend {
     },
     {
         type = "goods-company",
-        name = "gold-mine",
-        label = "Gold mine",
-        bgen = {
-            kind = "centered_door",
-            vertical_factor = 1.0,
-        },
-        kind = "factory",
-        n_trucks = 1,
-        recipe = {
-            consumption = {},
-            production = {{"gold", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 10,
-        size = 80.0,
-        asset_location = "assets/sprites/rare_metal_mine.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
-        name = "furniture-store",
-        label = "Furniture store",
-        bgen = {
-            kind = "centered_door",
-            vertical_factor = 1.0,
-        },
-        kind = "store",
-        recipe = {
-            consumption = {{"metal", 1}, {"wood-plank", 1}},
-            production = {{"furniture", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 10,
-        size = 80.0,
-        asset_location = "assets/sprites/furniture_store.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
-        name = "foundry",
-        label = "Foundry",
-        bgen = {
-            kind = "centered_door",
-            vertical_factor = 1.0,
-        },
-        kind = "factory",
-        n_trucks = 1,
-        recipe = {
-            consumption = {{"iron-ore", 1}},
-            production = {{"metal", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 10,
-        size = 80.0,
-        asset_location = "assets/sprites/foundry.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
+        order = "i-1",
         name = "iron-mine",
         label = "Iron mine",
         bgen = {
@@ -444,6 +400,48 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "i-1",
+        name = "gold-mine",
+        label = "Gold mine",
+        bgen = {
+            kind = "centered_door",
+            vertical_factor = 1.0,
+        },
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {},
+            production = {{"gold", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 10,
+        size = 80.0,
+        asset_location = "assets/sprites/rare_metal_mine.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "j-1",
+        name = "lumber-yard",
+        label = "Lumber yard",
+        bgen = "farm",
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {},
+            production = {{"tree-log", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 10,
+        size = 200.0,
+        asset_location = "assets/sprites/lumber_yard.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "j-2",
         name = "woodmill",
         label = "Woodmill",
         bgen = {
@@ -465,45 +463,50 @@ data:extend {
     },
     {
         type = "goods-company",
-        name = "lumber-yard",
-        label = "Lumber yard",
-        bgen = "farm",
-        kind = "factory",
-        n_trucks = 1,
-        recipe = {
-            consumption = {},
-            production = {{"tree-log", 1}},
-            complexity = 100,
-            storage_multiplier = 5,
-        },
-        n_workers = 10,
-        size = 200.0,
-        asset_location = "assets/sprites/lumber_yard.png",
-        price = 1000,
-    },
-    {
-        type = "goods-company",
-        name = "meat-facility",
-        label = "Meat facility",
+        order = "j-3",
+        name = "furniture-store",
+        label = "Furniture store",
         bgen = {
             kind = "centered_door",
-            vertical_factor = 0.6,
+            vertical_factor = 1.0,
         },
-        kind = "factory",
-        n_trucks = 1,
+        kind = "store",
         recipe = {
-            consumption = {{"raw-meat", 1}},
-            production = {{"meat", 1}},
+            consumption = {{"metal", 1}, {"wood-plank", 1}},
+            production = {{"furniture", 1}},
             complexity = 100,
             storage_multiplier = 5,
         },
         n_workers = 10,
         size = 80.0,
-        asset_location = "assets/sprites/meat_facility.png",
+        asset_location = "assets/sprites/furniture_store.png",
         price = 1000,
     },
     {
         type = "goods-company",
+        order = "h-1",
+        name = "foundry",
+        label = "Foundry",
+        bgen = {
+            kind = "centered_door",
+            vertical_factor = 1.0,
+        },
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {{"iron-ore", 1}},
+            production = {{"metal", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 10,
+        size = 80.0,
+        asset_location = "assets/sprites/foundry.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "k-1",
         name = "slaughterhouse",
         label = "Slaughterhouse",
         bgen = {
@@ -525,6 +528,7 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "k-1",
         name = "animal-farm",
         label = "Animal Farm",
         bgen = "farm",
@@ -543,6 +547,29 @@ data:extend {
     },
     {
         type = "goods-company",
+        order = "k-2",
+        name = "meat-facility",
+        label = "Meat facility",
+        bgen = {
+            kind = "centered_door",
+            vertical_factor = 0.6,
+        },
+        kind = "factory",
+        n_trucks = 1,
+        recipe = {
+            consumption = {{"raw-meat", 1}},
+            production = {{"meat", 1}},
+            complexity = 100,
+            storage_multiplier = 5,
+        },
+        n_workers = 10,
+        size = 80.0,
+        asset_location = "assets/sprites/meat_facility.png",
+        price = 1000,
+    },
+    {
+        type = "goods-company",
+        order = "l-1",
         name = "vegetable-farm",
         label = "Vegetable Farm",
         bgen = "farm",
