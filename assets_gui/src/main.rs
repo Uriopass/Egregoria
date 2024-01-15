@@ -6,7 +6,7 @@ use engine::{
     SpriteBatchBuilder,
 };
 use geom::{vec3, InfiniteFrustrum, LinearColor, Plane, Vec2, Vec3};
-use prototypes::{load_prototypes, try_prototype};
+use prototypes::try_prototype;
 use std::path::{Path, PathBuf};
 
 use crate::orbit_camera::OrbitCamera;
@@ -190,7 +190,7 @@ fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> S
 fn main() {
     engine::framework::init();
     unsafe {
-        load_prototypes("./").unwrap();
+        prototypes::load_prototypes("./").unwrap();
     }
     engine::framework::start::<State>();
 }

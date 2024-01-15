@@ -1,4 +1,5 @@
-use crate::{get_with_err, ItemID, Prototype, PrototypeBase};
+use crate::prototypes::PrototypeBase;
+use crate::{get_with_err, ItemID, Prototype};
 use mlua::Table;
 use std::ops::Deref;
 

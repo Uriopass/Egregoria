@@ -1,4 +1,5 @@
-use crate::{CompanyKind, MultiError, Prototypes};
+use crate::{CompanyKind, Prototypes};
+use common::error::MultiError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

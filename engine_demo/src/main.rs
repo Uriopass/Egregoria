@@ -1,8 +1,8 @@
-use common::{AudioKind, History};
+use common::history::History;
 use engine::meshload::load_mesh;
 use engine::{
-    Context, FrameContext, GfxSettings, InstancedMeshBuilder, Key, MeshInstance, MouseButton,
-    ShadowQuality,
+    AudioKind, Context, FrameContext, GfxSettings, InstancedMeshBuilder, Key, MeshInstance,
+    MouseButton, ShadowQuality,
 };
 use geom::{vec3, Camera, Degrees, InfiniteFrustrum, LinearColor, Plane, Radians, Vec2, Vec3};
 

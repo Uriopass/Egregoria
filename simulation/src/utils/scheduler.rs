@@ -1,6 +1,6 @@
 use crate::world::{CompanyEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
 use crate::{FreightStationEnt, ParCommandBuffer, Simulation};
-use common::History;
+use common::history::History;
 use ordered_float::OrderedFloat;
 use std::time::Instant;
 

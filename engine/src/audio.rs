@@ -1,4 +1,4 @@
-use common::{AudioKind, FastMap, FastSet};
+use common::{FastMap, FastSet};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use oddio::{
     FixedGain, Frame, Frames, FramesSignal, Mixed, Mixer, MixerControl, Sample, Signal, Smoothed,
@@ -18,6 +18,13 @@ pub struct AudioContext {
     scene_handle: Option<MixerControl<[Sample; 2]>>,
     cache: Arc<RwLock<FastMap<String, StoredAudio>>>,
     preloading: FastSet<String>,
+}
+
+#[derive(Copy, Clone)]
+pub enum AudioKind {
+    Music,
+    Effect,
+    Ui,
 }
 
 static MASTER_SHARED: AtomicU32 = AtomicU32::new(0);

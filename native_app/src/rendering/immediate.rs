@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
-use common::{AudioKind, FastMap};
+use common::FastMap;
 use engine::meshload::load_mesh;
-use engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder, Tesselator};
+use engine::{
+    AudioKind, FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder, Tesselator,
+};
 use geom::{LinearColor, Polygon, Vec2, Vec3, AABB, OBB};
 use std::borrow::Cow;
 

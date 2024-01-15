@@ -1,6 +1,7 @@
 #![cfg(test)]
 
-use crate::{load_prototypes, try_prototype, GoodsCompanyID, ItemID};
+use crate::load::load_prototypes;
+use crate::{try_prototype, GoodsCompanyID, ItemID};
 
 #[test]
 fn test_base() {

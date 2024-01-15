@@ -421,7 +421,8 @@ mod tests {
     use crate::world::CompanyID;
     use crate::SoulID;
     use geom::{vec2, Vec2};
-    use prototypes::{test_prototypes, ItemID};
+    use prototypes::test_prototypes;
+    use prototypes::ItemID;
 
     fn mk_ent(id: u64) -> CompanyID {
         CompanyID::from(slotmapd::KeyData::from_ffi(id))
