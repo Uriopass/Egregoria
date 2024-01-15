@@ -49,6 +49,10 @@ pub fn prototypes() -> &'static Prototypes {
     unsafe { PROTOTYPES.unwrap_unchecked() }
 }
 
+pub fn try_prototypes() -> Option<&'static Prototypes> {
+    unsafe { PROTOTYPES }
+}
+
 #[inline]
 pub fn prototype<ID: PrototypeID>(id: ID) -> &'static <ID as PrototypeID>::Prototype
 where
@@ -64,7 +68,7 @@ pub fn try_prototype<ID: PrototypeID>(id: ID) -> Option<&'static <ID as Prototyp
 where
     ID::Prototype: ConcretePrototype,
 {
-    <ID as PrototypeID>::Prototype::storage(prototypes()).get(&id)
+    <ID as PrototypeID>::Prototype::storage(try_prototypes()?).get(&id)
 }
 
 pub fn prototypes_iter<T: ConcretePrototype>() -> impl Iterator<Item = &'static T> {
@@ -78,12 +82,19 @@ pub fn prototypes_iter_ids<T: ConcretePrototype>() -> impl Iterator<Item = T::ID
 #[macro_export]
 macro_rules! prototype_id {
     ($id:ident => $proto:ty) => {
-        #[derive(
-            Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
-        )]
+        #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
         pub struct $id(pub(crate) u64);
 
         egui_inspect::debug_inspect_impl!($id);
+
+        impl Debug for $id {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+                if let Some(v) = crate::try_prototype(*self) {
+                    return write!(f, "{}({:?})", stringify!($id), v.name);
+                }
+                write!(f, "{}({})", stringify!($id), self.0)
+            }
+        }
 
         impl $id {
             #[inline]

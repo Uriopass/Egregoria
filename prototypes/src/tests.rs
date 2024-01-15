@@ -22,5 +22,6 @@ fn test_base() {
         );
         println!("{:?}", try_prototype(ItemID::new("cereal")));
         println!("{:#?}", try_prototype(GoodsCompanyID::new("bakery")));
+        println!("{:?}", ItemID::new("unknown"));
     }
 }
