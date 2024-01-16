@@ -35,7 +35,7 @@ unsafe fn load_prototypes_str(l: Lua, main: &str) -> Result<(), PrototypeLoadErr
 
     l.load(main).exec()?;
 
-    let mut p = Box::new(Prototypes::default());
+    let mut p = Box::<Prototypes>::default();
 
     let mut errors = Vec::new();
 

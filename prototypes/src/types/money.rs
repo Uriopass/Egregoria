@@ -112,15 +112,13 @@ impl<'lua> FromLua<'lua> for Money {
                 if s.is_empty() {
                     return Ok(Money::ZERO);
                 }
-                s.parse().map_err(|e| mlua::Error::external(e))
+                s.parse().map_err(mlua::Error::external)
             }
-            _ => {
-                return Err(mlua::Error::FromLuaConversionError {
-                    from: value.type_name(),
-                    to: "Money",
-                    message: Some("expected nil, a number or string".to_string()),
-                })
-            }
+            _ => Err(mlua::Error::FromLuaConversionError {
+                from: value.type_name(),
+                to: "Money",
+                message: Some("expected nil, a number or string".to_string()),
+            }),
         }
     }
 }

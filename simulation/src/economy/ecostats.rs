@@ -44,15 +44,15 @@ pub struct ItemHistories {
     cursors: [usize; LEVEL_FREQS.len()],
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct EcoStats {
     pub exports: ItemHistories,
     pub imports: ItemHistories,
     pub internal_trade: ItemHistories,
 }
 
-impl ItemHistories {
-    pub fn new() -> Self {
+impl Default for ItemHistories {
+    fn default() -> Self {
         Self {
             m: prototypes_iter::<ItemPrototype>()
                 .map(|item| (item.id, ItemHistory::default()))
@@ -60,7 +60,9 @@ impl ItemHistories {
             cursors: [0; LEVEL_FREQS.len()],
         }
     }
+}
 
+impl ItemHistories {
     pub fn cursors(&self) -> &[usize] {
         &self.cursors
     }
@@ -104,14 +106,6 @@ impl ItemHistories {
 }
 
 impl EcoStats {
-    pub fn new() -> Self {
-        Self {
-            exports: ItemHistories::new(),
-            imports: ItemHistories::new(),
-            internal_trade: ItemHistories::new(),
-        }
-    }
-
     pub fn advance(&mut self, tick: u64, trades: &[Trade]) {
         self.exports.advance(tick);
         self.imports.advance(tick);

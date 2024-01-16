@@ -76,7 +76,5 @@ impl crate::Prototype for PrototypeBase {
         })
     }
 
-    fn id(&self) -> Self::ID {
-        ()
-    }
+    fn id(&self) -> Self::ID {}
 }

@@ -39,13 +39,6 @@ pub struct Bought(pub BTreeMap<ItemID, Vec<Trade>>);
 #[derive(Inspect, Debug, Default, Serialize, Deserialize)]
 pub struct Workers(pub Vec<HumanID>);
 
-pub fn init_market(_: &mut World, res: &mut Resources) {
-    let market = Market::new();
-    res.insert(market);
-    let stats = EcoStats::new();
-    res.insert(stats);
-}
-
 pub fn market_update(world: &mut World, resources: &mut Resources) {
     profiling::scope!("economy::market_update");
     let n_workers = world.humans.len();

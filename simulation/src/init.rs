@@ -1,4 +1,4 @@
-use crate::economy::{init_market, market_update, EcoStats, Government, Market};
+use crate::economy::{market_update, EcoStats, Government, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
     dispatch_system, itinerary_update, routing_changed_system, routing_update_system,
@@ -69,12 +69,10 @@ pub fn init() {
     register_resource_noserialize::<ParCommandBuffer<WagonEnt>>();
     register_resource_noserialize::<ParCommandBuffer<FreightStationEnt>>();
     register_resource_noserialize::<ParCommandBuffer<CompanyEnt>>();
-    register_resource_noinit::<Market, Bincode>("market");
-    register_resource_noinit::<EcoStats, Bincode>("ecostats");
     register_resource_noinit::<SimulationOptions, Bincode>("simoptions");
 
-    register_init(init_market);
-
+    register_resource_default::<Market, Bincode>("market");
+    register_resource_default::<EcoStats, Bincode>("ecostats");
     register_resource_default::<MultiplayerState, Bincode>("multiplayer_state");
     register_resource_default::<RandomVehicles, Bincode>("random_vehicles");
     register_resource_default::<Tick, Bincode>("tick");
@@ -110,13 +108,13 @@ pub(crate) static mut INIT_FUNCS: Vec<InitFunc> = Vec::new();
 pub(crate) static mut SAVELOAD_FUNCS: Vec<SaveLoadFunc> = Vec::new();
 pub(crate) static mut GSYSTEMS: Vec<GSystem> = Vec::new();
 
-fn register_init(s: fn(&mut World, &mut Resources)) {
+/*fn register_init(s: fn(&mut World, &mut Resources)) {
     unsafe {
         INIT_FUNCS.push(InitFunc {
             f: Box::new(move |sim| s(&mut sim.world, &mut sim.resources)),
         });
     }
-}
+}*/
 
 fn register_system(name: &'static str, s: fn(&mut World, &mut Resources)) {
     unsafe {

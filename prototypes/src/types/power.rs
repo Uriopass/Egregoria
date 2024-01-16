@@ -102,13 +102,11 @@ impl<'lua> FromLua<'lua> for Power {
                 }
                 Self::from_str(s).map_err(mlua::Error::external)
             }
-            _ => {
-                return Err(mlua::Error::FromLuaConversionError {
-                    from: value.type_name(),
-                    to: "Power",
-                    message: Some("expected nil, string or number".into()),
-                })
-            }
+            _ => Err(mlua::Error::FromLuaConversionError {
+                from: value.type_name(),
+                to: "Power",
+                message: Some("expected nil, string or number".into()),
+            }),
         }
     }
 }

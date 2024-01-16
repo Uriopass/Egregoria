@@ -94,8 +94,8 @@ pub fn find_trade_place(target: TradeTarget, binfos: &BuildingInfos) -> Option<B
     binfos.building_owned_by(target.0)
 }
 
-impl Market {
-    pub fn new() -> Self {
+impl Default for Market {
+    fn default() -> Self {
         let prices = calculate_prices(1.25);
         Self {
             markets: prototypes_iter::<ItemPrototype>()
@@ -105,7 +105,9 @@ impl Market {
             potential: Default::default(),
         }
     }
+}
 
+impl Market {
     pub fn m(&mut self, kind: ItemID) -> &mut SingleMarket {
         self.markets.get_mut(&kind).unwrap()
     }
@@ -435,7 +437,7 @@ mod tests {
         "#,
         );
 
-        let mut m = Market::new();
+        let mut m = Market::default();
 
         let cereal = ItemID::new("cereal");
 

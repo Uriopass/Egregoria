@@ -11,7 +11,7 @@ const MAP_SIZE: usize = 50;
 
 pub struct Terrain {
     terrain: EngineTerrainRender<CSIZE, CRESO>,
-    heights: Heightmap<CRESO, { CSIZE as u32 }>,
+    heights: Heightmap<CRESO, { CSIZE }>,
     reload: bool,
 
     last_hitpos: Option<Vec3>,

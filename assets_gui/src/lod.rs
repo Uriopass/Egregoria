@@ -90,7 +90,7 @@ pub fn lod_generate(m: &mut CPUMesh, params: LodGenerateParams) -> Result<(), Lo
                     )
                 };
 
-                let optimized_vertices = optimize_vertex_fetch(&mut *optimized_indices, &vertices);
+                let optimized_vertices = optimize_vertex_fetch(&mut optimized_indices, &vertices);
 
                 primitive_lods.push((primitive.index(), optimized_vertices, optimized_indices));
             }
@@ -98,7 +98,7 @@ pub fn lod_generate(m: &mut CPUMesh, params: LodGenerateParams) -> Result<(), Lo
         }
     }
 
-    let glb_buffer_id = engine::meshload::glb_buffer_id(&doc);
+    let glb_buffer_id = engine::meshload::glb_buffer_id(doc);
     let glb_data = &mut data[glb_buffer_id].0;
 
     let mut json = doc.clone().into_json();
@@ -221,7 +221,7 @@ pub fn lod_generate(m: &mut CPUMesh, params: LodGenerateParams) -> Result<(), Lo
                 extensions: json_primitive.extensions.clone(),
                 extras: json_primitive.extras.clone(),
                 indices: Some(indice_view),
-                material: json_primitive.material.clone(),
+                material: json_primitive.material,
                 mode: json_primitive.mode,
                 targets: json_primitive.targets.clone(),
             };

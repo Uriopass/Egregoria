@@ -232,7 +232,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             if w.work.is_none() {
                 let mut kind = WorkKind::Worker;
 
-                if let Some(truck) = c.comp.trucks.get(0) {
+                if let Some(truck) = c.comp.trucks.first() {
                     if proto.kind == CompanyKind::Factory && c.comp.driver.is_none() {
                         kind = WorkKind::Driver {
                             deliver_order: None,

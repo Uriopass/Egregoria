@@ -12,7 +12,7 @@ macro_rules! export_mods {
 macro_rules! gen_prototypes {
     ($($name:ident : $id:ident = $t:ty $(=> $parent_id:ident)?,)+) => {
         $(
-            crate::prototype_id!($id => $t);
+            $crate::prototype_id!($id => $t);
         )+
 
         $(
@@ -47,7 +47,7 @@ macro_rules! gen_prototypes {
         }
 
         $(
-        impl crate::ConcretePrototype for $t {
+        impl $crate::ConcretePrototype for $t {
             fn ordering(prototypes: &Prototypes) -> &[Self::ID] {
                 &prototypes.orderings.$name
             }
@@ -63,10 +63,10 @@ macro_rules! gen_prototypes {
 
         impl $t {
             pub fn iter() -> impl Iterator<Item = &'static Self> {
-                crate::prototypes_iter::<Self>()
+                $crate::prototypes_iter::<Self>()
             }
             pub fn iter_ids() -> impl Iterator<Item = $id> {
-                crate::prototypes_iter_ids::<Self>()
+                $crate::prototypes_iter_ids::<Self>()
             }
         }
         )+
@@ -74,7 +74,7 @@ macro_rules! gen_prototypes {
         impl Prototypes {
             pub(crate) fn print_stats(&self) {
                 $(
-                    log::info!("loaded {} {}", <$t as crate::ConcretePrototype>::storage(self).len(), <$t as crate::Prototype>::NAME);
+                    log::info!("loaded {} {}", <$t as $crate::ConcretePrototype>::storage(self).len(), <$t as $crate::Prototype>::NAME);
                 )+
             }
 
@@ -82,7 +82,7 @@ macro_rules! gen_prototypes {
                 self.orderings = Orderings {
                     $(
                         $name: {
-                            let mut v = <$t as crate::ConcretePrototype>::storage(self).keys().copied().collect::<Vec<_>>();
+                            let mut v = <$t as $crate::ConcretePrototype>::storage(self).keys().copied().collect::<Vec<_>>();
                             v.sort_by_key(|id| {
                                 let proto = &self.$name[id];
                                 (&proto.order, proto.id)
@@ -93,20 +93,20 @@ macro_rules! gen_prototypes {
                 }
             }
 
-            pub(crate) fn parse_prototype(&mut self, table: mlua::Table) -> Result<(), crate::PrototypeLoadError> {
+            pub(crate) fn parse_prototype(&mut self, table: mlua::Table) -> Result<(), $crate::PrototypeLoadError> {
                 let _type = table.get::<_, String>("type")?;
                 let _type_str = _type.as_str();
                 match _type_str {
                     $(
-                        <$t as crate::Prototype>::NAME => {
-                            let proto: $t = crate::Prototype::from_lua(&table).map_err(|e| {
-                                  crate::PrototypeLoadError::PrototypeLuaError(_type_str.to_string(), table.get::<_, String>("name").unwrap(), e)
+                        <$t as $crate::Prototype>::NAME => {
+                            let proto: $t = $crate::Prototype::from_lua(&table).map_err(|e| {
+                                  $crate::PrototypeLoadError::PrototypeLuaError(_type_str.to_string(), table.get::<_, String>("name").unwrap(), e)
                             })?;
 
-                            <$t as crate::Prototype>::insert_parents(&proto, self);
+                            <$t as $crate::Prototype>::insert_parents(&proto, self);
 
                             if let Some(v) = self.$name.insert((&proto.name).into(), proto) {
-                                log::warn!("duplicate {} with name: {}", <$t as crate::Prototype>::NAME, v.name);
+                                log::warn!("duplicate {} with name: {}", <$t as $crate::Prototype>::NAME, v.name);
                             }
                         }
                     ),+
@@ -137,7 +137,7 @@ macro_rules! prototype_id {
 
         impl core::fmt::Debug for $id {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-                if let Some(v) = crate::try_prototype(*self) {
+                if let Some(v) = $crate::try_prototype(*self) {
                     return write!(f, "{}({:?})", stringify!($id), v.name);
                 }
                 write!(f, "{}({})", stringify!($id), self.0)
@@ -152,7 +152,7 @@ macro_rules! prototype_id {
 
             #[inline]
             pub fn prototype(self) -> &'static $proto {
-                crate::prototype(self)
+                $crate::prototype(self)
             }
 
             #[inline]
@@ -195,7 +195,7 @@ macro_rules! prototype_id {
             }
         }
 
-        impl crate::PrototypeID for $id {
+        impl $crate::PrototypeID for $id {
             type Prototype = $proto;
         }
     };

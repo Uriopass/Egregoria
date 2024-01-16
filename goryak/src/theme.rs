@@ -1,3 +1,7 @@
+//! See https://material-foundation.github.io/material-theme-builder/
+//! for the source of the default theme.
+//! and https://m3.material.io/styles/color/roles for explanations of the role with more detail
+
 #![allow(dead_code)]
 
 use lazy_static::lazy_static;
@@ -6,10 +10,6 @@ use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use std::sync::{RwLock, RwLockReadGuard};
 use yakui_core::geometry::Color;
-
-///! See https://material-foundation.github.io/material-theme-builder/
-///! for the source of the default theme.
-///! and https://m3.material.io/styles/color/roles for explanations of the role with more detail
 
 /// Use primary roles for the most prominent components across the UI, such as the FAB
 /// high-emphasis buttons, and active states.

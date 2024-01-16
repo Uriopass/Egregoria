@@ -99,7 +99,7 @@ impl<'a> FromLua<'a> for BuildingGen {
         let table = match value {
             Value::String(s) => {
                 let s = s.to_str()?;
-                return match &*s {
+                return match s {
                     "house" => Ok(Self::House),
                     "farm" => Ok(Self::Farm),
                     _ => Err(mlua::Error::external(format!(
