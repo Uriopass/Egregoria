@@ -6,6 +6,7 @@ use crate::uiworld::UiWorld;
 use engine::AudioKind;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
+use prototypes::Size2D;
 use simulation::map::{ProjectFilter, ProjectKind};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
@@ -18,8 +19,7 @@ pub struct SpecialBuildArgs {
 
 pub struct SpecialBuildKind {
     pub make: Box<dyn Fn(&SpecialBuildArgs) -> Vec<WorldCommand> + Send + Sync + 'static>,
-    pub w: f32,
-    pub h: f32,
+    pub size: Size2D,
     pub asset: String,
     pub road_snap: bool,
 }
@@ -71,8 +71,7 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
     }
 
     let SpecialBuildKind {
-        w,
-        h,
+        size,
         ref asset,
         ref make,
         road_snap,
@@ -81,8 +80,8 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
     let mpos = unwrap_ret!(inp.unprojected);
     let roads = map.roads();
 
-    let diag = 0.5 * w.hypot(h);
-    let hover_obb = OBB::new(mpos.xy(), state.rotation.vec2(), w, h);
+    let half_diag = 0.5 * size.diag();
+    let hover_obb = OBB::new(mpos.xy(), state.rotation.vec2(), size.w, size.h);
 
     let mut draw = |obb, red| {
         let p = asset.to_string();
@@ -106,7 +105,7 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
     if road_snap {
         let closest_road = map
             .spatial_map()
-            .query_around(mpos.xy(), diag, ProjectFilter::ROAD)
+            .query_around(mpos.xy(), half_diag, ProjectFilter::ROAD)
             .filter_map(|x| match x {
                 ProjectKind::Road(id) => Some(&roads[id]),
                 _ => None,
@@ -120,7 +119,7 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
         let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);
         let dir = dir.xy();
 
-        if !proj.is_close(mpos, diag + closest_road.width * 0.5) {
+        if !proj.is_close(mpos, half_diag + closest_road.width * 0.5) {
             *uiworld.write::<ErrorTooltip>() = ErrorTooltip::new(Cow::Borrowed("No road nearby"));
             return draw(hover_obb, true);
         }
@@ -135,13 +134,13 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
         let last = closest_road.points().last();
 
         obb = OBB::new(
-            proj.xy() + side * (h + closest_road.width + 0.5) * 0.5,
+            proj.xy() + side * (size.h + closest_road.width + 0.5) * 0.5,
             side,
-            w,
-            h,
+            size.w,
+            size.h,
         );
 
-        if proj.distance(first) < diag || proj.distance(last) < diag {
+        if proj.distance(first) < half_diag || proj.distance(last) < half_diag {
             *uiworld.write::<ErrorTooltip>() =
                 ErrorTooltip::new(Cow::Borrowed("Too close to side"));
             draw(obb, true);

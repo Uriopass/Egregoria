@@ -351,8 +351,7 @@ impl Gui {
                                         });
                                         commands
                                     }),
-                                    w: proto.size.w(),
-                                    h: proto.size.h(),
+                                    size: proto.size,
                                     asset: proto.asset_location.clone(),
                                     road_snap: false,
                                 });
@@ -597,8 +596,7 @@ impl Gui {
                                         }),
                                     }]
                                 }),
-                                w: descr.size,
-                                h: descr.size,
+                                size: descr.size,
                                 asset: descr.asset_location.to_string(),
                             });
                         }

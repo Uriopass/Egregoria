@@ -61,8 +61,7 @@ impl Government {
                     let descr = x.prototype();
                     let mut price = descr.price;
                     if let Some(ref z) = descr.zone {
-                        price += z.price_per_area * (descr.size * descr.size) as i64
-                            / MAX_ZONE_AREA as i64;
+                        price += z.price_per_area * descr.size.area() as i64 / MAX_ZONE_AREA as i64;
                     }
                     return price;
                 }

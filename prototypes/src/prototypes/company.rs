@@ -1,5 +1,5 @@
 use crate::prototypes::PrototypeBase;
-use crate::{get_with_err, GoodsCompanyID, Money, NoParent, Prototype, Recipe, Zone};
+use crate::{get_with_err, GoodsCompanyID, Money, NoParent, Prototype, Recipe, Size2D, Zone};
 use egui_inspect::{debug_inspect_impl, Inspect};
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
@@ -38,7 +38,7 @@ pub struct GoodsCompanyPrototype {
     pub recipe: Recipe,
     pub n_trucks: i32,
     pub n_workers: i32,
-    pub size: f32,
+    pub size: Size2D,
     pub asset_location: String,
     pub price: Money,
     pub zone: Option<Zone>,
