@@ -90,7 +90,9 @@ impl SpatialMap {
         let kind = kind.into();
         let shape = shape.into();
         let handle = self.broad.insert(shape.bbox(), kind);
-        self.ids.insert(kind, handle);
+        if let Some(old_handle) = self.ids.insert(kind, handle) {
+            self.broad.remove(old_handle);
+        }
         self.near.insert(kind, shape);
     }
 
