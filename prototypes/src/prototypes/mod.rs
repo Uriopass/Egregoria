@@ -1,11 +1,59 @@
-mod company;
-mod item;
-mod solar;
+crate::export_mods! {
+    mod company;
+    mod item;
+    mod solar;
+    mod freightstation;
+}
 
-use crate::NoParent;
-pub use company::*;
-pub use item::*;
-pub use solar::*;
+crate::gen_prototypes!(
+    companies: GoodsCompanyID = GoodsCompanyPrototype,
+    items:     ItemID         = ItemPrototype,
+    solar:     SolarPanelID   = SolarPanelPrototype => GoodsCompanyID,
+    stations:  FreightStationPrototypeID = FreightStationPrototype,
+);
+
+/** Prototype template. remplace $proto with the root name e.g Item
+```rs
+use crate::{NoParent, Prototype, PrototypeBase};
+use mlua::Table;
+use std::ops::Deref;
+
+use super::*;
+
+/// $proto is
+#[derive(Clone, Debug)]
+pub struct $protoPrototype {
+    pub base: PrototypeBase,
+    pub id: $protoID,
+}
+
+impl Prototype for $protoPrototype {
+    type Parent = NoParent;
+    type ID = $protoID;
+    const NAME: &'static str = ;
+
+    fn from_lua(table: &Table) -> mlua::Result<Self> {
+        let base = PrototypeBase::from_lua(table)?;
+        Ok(Self {
+            id: Self::ID::new(&base.name),
+            base,
+        })
+    }
+
+    fn id(&self) -> Self::ID {
+        self.id
+    }
+}
+
+impl Deref for $protoPrototype {
+    type Target = PrototypeBase;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+```
+*/
 
 #[derive(Debug, Clone, egui_inspect::Inspect)]
 pub struct PrototypeBase {
@@ -15,7 +63,7 @@ pub struct PrototypeBase {
 }
 
 impl crate::Prototype for PrototypeBase {
-    type Parent = NoParent;
+    type Parent = crate::NoParent;
     type ID = ();
     const NAME: &'static str = "base";
 

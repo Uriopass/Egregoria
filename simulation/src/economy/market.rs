@@ -1,13 +1,16 @@
-use crate::economy::{ItemID, Money, WORKER_CONSUMPTION_PER_SECOND};
-use crate::map::BuildingID;
-use crate::map_dynamic::BuildingInfos;
-use crate::{BuildingKind, Map, SoulID};
-use geom::Vec2;
-use ordered_float::OrderedFloat;
-use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype, ItemPrototype};
-use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
+
+use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
+
+use geom::Vec2;
+use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype, ItemPrototype, Money};
+
+use crate::economy::{ItemID, WORKER_CONSUMPTION_PER_SECOND};
+use crate::map::BuildingID;
+use crate::map_dynamic::BuildingInfos;
+use crate::SoulID;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SellOrder {
@@ -74,21 +77,9 @@ pub struct Market {
 }
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum TradeTarget {
-    Soul(SoulID),
-    ExternalTrade,
-}
+pub struct TradeTarget(pub SoulID);
 
 debug_inspect_impl!(TradeTarget);
-
-impl TradeTarget {
-    pub(crate) fn soul(self) -> SoulID {
-        match self {
-            TradeTarget::Soul(soul) => soul,
-            TradeTarget::ExternalTrade => panic!("Cannot get soul from external trade"),
-        }
-    }
-}
 
 #[derive(Inspect, Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Trade {
@@ -99,25 +90,8 @@ pub struct Trade {
     pub money_delta: Money, // money delta from the govt point of view, positive means we gained money
 }
 
-pub fn find_trade_place(
-    target: TradeTarget,
-    pos: Vec2,
-    binfos: &BuildingInfos,
-    map: &Map,
-) -> Option<BuildingID> {
-    match target {
-        TradeTarget::Soul(id) => binfos.building_owned_by(id),
-        TradeTarget::ExternalTrade => {
-            map.bkinds
-                .get(&BuildingKind::RailFreightStation)
-                .and_then(|b| {
-                    b.iter()
-                        .filter_map(|&bid| map.buildings.get(bid))
-                        .min_by_key(|&b| OrderedFloat(b.door_pos.xy().distance2(pos)))
-                        .map(|x| x.id)
-                })
-        }
-    }
+pub fn find_trade_place(target: TradeTarget, binfos: &BuildingInfos) -> Option<BuildingID> {
+    binfos.building_owned_by(target.0)
 }
 
 impl Market {
@@ -214,7 +188,7 @@ impl Market {
     /// A trade updates the buy and sell orders from the market, and the capital of the buyers and sellers.
     /// A trade can only be completed if the seller has enough capital.
     /// Please do not keep the trades around much, it needs to be destroyed by the next time you call this function.
-    pub fn make_trades(&mut self) -> &[Trade] {
+    pub fn make_trades(&mut self, find_external: impl Fn(Vec2) -> Option<SoulID>) -> &[Trade] {
         self.all_trades.clear();
 
         for (&kind, market) in &mut self.markets {
@@ -243,8 +217,8 @@ impl Market {
                     let score = sorder.pos.distance2(border.pos);
                     self.potential.push((
                         Trade {
-                            buyer: TradeTarget::Soul(buyer),
-                            seller: TradeTarget::Soul(seller),
+                            buyer: TradeTarget(buyer),
+                            seller: TradeTarget(seller),
                             qty: qty_buy,
                             kind,
                             money_delta: Money::ZERO,
@@ -266,23 +240,20 @@ impl Market {
 
             self.all_trades
                 .extend(self.potential.drain(..).filter_map(|(trade, _)| {
-                    let buyer = trade.buyer.soul();
-                    let seller = trade.seller.soul();
-
-                    let cap_seller = capital.entry(seller).or_default();
+                    let cap_seller = capital.entry(trade.seller.0).or_default();
                     if *cap_seller < trade.qty {
                         return None;
                     }
 
-                    let cap_buyer = capital.entry(buyer).or_default();
-                    let border = buy_orders.entry(buyer);
+                    let cap_buyer = capital.entry(trade.buyer.0).or_default();
+                    let border = buy_orders.entry(trade.buyer.0);
 
                     match border {
                         Entry::Vacant(_) => return None,
                         Entry::Occupied(o) => o.remove(),
                     };
 
-                    let sorderent = sell_orders.entry(seller);
+                    let sorderent = sell_orders.entry(trade.seller.0);
 
                     let mut sorderocc = match sorderent {
                         Entry::Vacant(_) => return None,
@@ -303,7 +274,7 @@ impl Market {
 
                     // Safety: buyer cannot be the same as seller
                     *cap_buyer += trade.qty;
-                    *capital.get_mut(&seller).unwrap() -= trade.qty;
+                    *capital.get_mut(&trade.seller.0).unwrap() -= trade.qty;
 
                     Some(trade)
                 }));
@@ -317,9 +288,13 @@ impl Market {
                     let qty_buy = order.qty as i32;
                     *capital.entry(buyer).or_default() += qty_buy;
 
+                    let Some(ext) = find_external(order.pos) else {
+                        continue;
+                    };
+
                     self.all_trades.push(Trade {
-                        buyer: TradeTarget::Soul(buyer),
-                        seller: TradeTarget::ExternalTrade,
+                        buyer: TradeTarget(buyer),
+                        seller: TradeTarget(ext),
                         qty: qty_buy,
                         kind,
                         money_delta: -(*ext_value * qty_buy as i64), // we buy from external so we pay
@@ -340,9 +315,13 @@ impl Market {
                     *cap -= qty_sell;
                     order.qty -= qty_sell as u32;
 
+                    let Some(ext) = find_external(order.pos) else {
+                        continue;
+                    };
+
                     self.all_trades.push(Trade {
-                        buyer: TradeTarget::ExternalTrade,
-                        seller: TradeTarget::Soul(seller),
+                        buyer: TradeTarget(ext),
+                        seller: TradeTarget(seller),
                         qty: qty_sell,
                         kind,
                         money_delta: *ext_value * qty_sell as i64,
@@ -416,13 +395,15 @@ fn calculate_prices(price_multiplier: f32) -> BTreeMap<ItemID, Money> {
 
 #[cfg(test)]
 mod tests {
-    use super::Market;
-    use crate::economy::WORKER_CONSUMPTION_PER_SECOND;
-    use crate::world::CompanyID;
-    use crate::SoulID;
     use geom::{vec2, Vec2};
     use prototypes::test_prototypes;
     use prototypes::ItemID;
+
+    use crate::economy::WORKER_CONSUMPTION_PER_SECOND;
+    use crate::world::CompanyID;
+    use crate::{FreightStationID, SoulID};
+
+    use super::Market;
 
     fn mk_ent(id: u64) -> CompanyID {
         CompanyID::from(slotmapd::KeyData::from_ffi(id))
@@ -433,6 +414,9 @@ mod tests {
         let seller = SoulID::GoodsCompany(mk_ent((1 << 32) | 1));
         let seller_far = SoulID::GoodsCompany(mk_ent((1 << 32) | 2));
         let buyer = SoulID::GoodsCompany(mk_ent((1 << 32) | 3));
+        let freight = SoulID::FreightStation(FreightStationID::from(slotmapd::KeyData::from_ffi(
+            (1 << 32) | 4,
+        )));
 
         test_prototypes(
             r#"
@@ -462,12 +446,12 @@ mod tests {
         m.sell(seller, Vec2::X, cereal, 3, 5);
         m.sell(seller_far, vec2(10.0, 10.0), cereal, 3, 5);
 
-        let trades = m.make_trades();
+        let trades = m.make_trades(|_| Some(freight));
 
         assert_eq!(trades.len(), 1);
         let t0 = trades[0];
-        assert_eq!(t0.seller.soul(), seller);
-        assert_eq!(t0.buyer.soul(), buyer);
+        assert_eq!(t0.seller.0, seller);
+        assert_eq!(t0.buyer.0, buyer);
         assert_eq!(t0.qty, 2);
     }
 

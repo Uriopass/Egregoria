@@ -13,7 +13,6 @@ use ordered_float::OrderedFloat;
 use prototypes::BuildingGen;
 use serde::{Deserialize, Serialize};
 use slotmapd::HopSlotMap;
-use std::collections::BTreeMap;
 
 pub type Roads = HopSlotMap<RoadID, Road>;
 pub type Lanes = HopSlotMap<LaneID, Lane>;
@@ -34,7 +33,8 @@ pub struct Map {
     pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
-    pub(crate) bkinds: BTreeMap<BuildingKind, Vec<BuildingID>>,
+    pub(crate) external_train_stations: Vec<BuildingID>,
+
     pub environment: Environment,
     pub parking: ParkingSpots,
     pub subscribers: MapSubscribers,
@@ -62,7 +62,7 @@ impl Map {
             lots: Lots::default(),
             environment: Environment::default(),
             spatial_map: SpatialMap::default(),
-            bkinds: Default::default(),
+            external_train_stations: Default::default(),
             override_suscriber: subscribers.subscribe(UpdateType::Road | UpdateType::Building),
             subscribers,
         }
@@ -128,10 +128,8 @@ impl Map {
         self.spatial_map.remove(b.id);
         self.subscribers.dispatch(UpdateType::Building, &b);
 
-        if b.kind.is_cached_in_bkinds() {
-            self.bkinds
-                .entry(b.kind)
-                .and_modify(|v| v.retain(|id| *id != b.id));
+        if b.kind == BuildingKind::ExternalTrading {
+            self.external_train_stations.retain(|id| *id != b.id);
         }
 
         self.check_invariants();
@@ -258,11 +256,9 @@ impl Map {
         if let Some(id) = v {
             self.subscribers
                 .dispatch(UpdateType::Building, &self.buildings[id]);
-        }
 
-        if kind.is_cached_in_bkinds() {
-            if let Some(id) = v {
-                self.bkinds.entry(kind).or_default().push(id);
+            if kind == BuildingKind::ExternalTrading {
+                self.external_train_stations.push(id);
             }
         }
 
@@ -807,10 +803,8 @@ impl Map {
             }
         }
 
-        for bs in self.bkinds.values() {
-            for &b in bs {
-                assert!(self.buildings.contains_key(b));
-            }
+        for b in self.external_train_stations.iter() {
+            assert!(self.buildings.contains_key(*b));
         }
 
         for road in self.roads.values() {

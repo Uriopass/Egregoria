@@ -18,9 +18,11 @@ use egui::{
 };
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
-use prototypes::{prototypes_iter, BuildingGen, GoodsCompanyPrototype, ItemID};
+use prototypes::{
+    prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
+};
 use serde::{Deserialize, Serialize};
-use simulation::economy::{Government, Money};
+use simulation::economy::Government;
 use simulation::map::{
     BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
 };
@@ -117,7 +119,7 @@ impl Gui {
             .map(|cmd| Government::action_cost(&cmd, sim))
             .sum();
 
-        if cost == Money::default() {
+        if cost == Money::ZERO {
             return;
         }
 
@@ -307,47 +309,54 @@ impl Gui {
                         });
                     }*/
 
-                    let mut freightstation = RichText::new("Freight station");
-                    if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
-                        freightstation = freightstation.strong();
-                    };
-                    if ui.button(freightstation).clicked() {
-                        *uiworld.write::<Tool>() = Tool::SpecialBuilding;
+                    for proto in prototypes_iter::<FreightStationPrototype>() {
+                        let mut freightstation = RichText::new(&proto.label);
+                        if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
+                            freightstation = freightstation.strong();
+                        };
+                        if ui.button(freightstation).clicked() {
+                            *uiworld.write::<Tool>() = Tool::SpecialBuilding;
 
-                        uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
-                            make: Box::new(move |args| {
-                                let obb = args.obb;
-                                let c = obb.center().z(args.mpos.z + 0.3);
+                            uiworld.write::<SpecialBuildingResource>().opt =
+                                Some(SpecialBuildKind {
+                                    make: Box::new(move |args| {
+                                        let obb = args.obb;
+                                        let c = obb.center().z(args.mpos.z + 0.3);
 
-                                let [offx, offy] = obb.axis().map(|x| x.normalize().z(0.0));
+                                        let [offx, offy] = obb.axis().map(|x| x.normalize().z(0.0));
 
-                                let pat =
-                                    LanePatternBuilder::new().rail(true).one_way(true).build();
+                                        let pat = LanePatternBuilder::new()
+                                            .rail(true)
+                                            .one_way(true)
+                                            .build();
 
-                                let mut commands = Vec::with_capacity(5);
+                                        let mut commands = Vec::with_capacity(5);
 
-                                commands.push(WorldCommand::MapMakeConnection {
-                                    from: MapProject::ground(c - offx * 45.0 - offy * 100.0),
-                                    to: MapProject::ground(c - offx * 45.0 + offy * 100.0),
-                                    inter: None,
-                                    pat,
+                                        commands.push(WorldCommand::MapMakeConnection {
+                                            from: MapProject::ground(
+                                                c - offx * 45.0 - offy * 100.0,
+                                            ),
+                                            to: MapProject::ground(c - offx * 45.0 + offy * 100.0),
+                                            inter: None,
+                                            pat,
+                                        });
+
+                                        commands.push(WorldCommand::MapBuildSpecialBuilding {
+                                            pos: args.obb,
+                                            kind: BuildingKind::RailFreightStation(proto.id),
+                                            gen: BuildingGen::NoWalkway {
+                                                door_pos: Vec2::ZERO,
+                                            },
+                                            zone: None,
+                                        });
+                                        commands
+                                    }),
+                                    w: proto.size.w(),
+                                    h: proto.size.h(),
+                                    asset: proto.asset_location.clone(),
+                                    road_snap: false,
                                 });
-
-                                commands.push(WorldCommand::MapBuildSpecialBuilding {
-                                    pos: args.obb,
-                                    kind: BuildingKind::RailFreightStation,
-                                    gen: BuildingGen::NoWalkway {
-                                        door_pos: Vec2::ZERO,
-                                    },
-                                    zone: None,
-                                });
-                                commands
-                            }),
-                            w: 160.0,
-                            h: 200.0,
-                            asset: "rail_freight_station.glb".to_string(),
-                            road_snap: false,
-                        });
+                        }
                     }
                 });
         }

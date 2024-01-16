@@ -1,5 +1,5 @@
 use crate::prototypes::PrototypeBase;
-use crate::{get_with_err, GoodsCompanyID, NoParent, Prototype, Recipe, Zone};
+use crate::{get_with_err, GoodsCompanyID, Money, NoParent, Prototype, Recipe, Zone};
 use egui_inspect::{debug_inspect_impl, Inspect};
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
@@ -40,7 +40,7 @@ pub struct GoodsCompanyPrototype {
     pub n_workers: i32,
     pub size: f32,
     pub asset_location: String,
-    pub price: i64,
+    pub price: Money,
     pub zone: Option<Zone>,
 }
 
@@ -52,7 +52,7 @@ impl Prototype for GoodsCompanyPrototype {
     fn from_lua(table: &Table) -> mlua::Result<Self> {
         let base = PrototypeBase::from_lua(table)?;
         Ok(Self {
-            id: GoodsCompanyID::from(&base.name),
+            id: Self::ID::from(&base.name),
             base,
             bgen: get_with_err(table, "bgen")?,
             kind: get_with_err(table, "kind")?,

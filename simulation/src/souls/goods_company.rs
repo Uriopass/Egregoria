@@ -2,14 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
-use prototypes::{
-    try_prototype, CompanyKind, GoodsCompanyID, GoodsCompanyPrototype, ItemID, Recipe, SolarPanelID,
-};
+use prototypes::{CompanyKind, GoodsCompanyID, ItemID, Recipe};
 
 use crate::economy::{find_trade_place, Market};
 use crate::map::{Building, BuildingID, Map, Zone, MAX_ZONE_AREA};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
+use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
@@ -57,7 +56,7 @@ pub fn recipe_act(recipe: &Recipe, soul: SoulID, near: Vec2, market: &mut Market
 
 #[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct GoodsCompanyState {
-    pub kind: GoodsCompanyID,
+    pub proto: GoodsCompanyID,
     pub building: BuildingID,
     pub max_workers: i32,
     /// In [0; 1] range, to show how much has been made until new product
@@ -74,19 +73,41 @@ impl GoodsCompanyState {
 
 pub fn company_soul(
     sim: &mut Simulation,
-    company: GoodsCompanyState,
-    proto: &GoodsCompanyPrototype,
+    build_id: BuildingID,
+    proto: GoodsCompanyID,
 ) -> Option<SoulID> {
+    let proto = proto.prototype();
+
     let map = sim.map();
-    let b = map.buildings().get(company.building)?;
+    let b = map.buildings().get(build_id)?;
     let door_pos = b.door_pos;
     let obb = b.obb;
     let height = b.height;
     drop(map);
 
+    let ckind = proto.kind;
+    let mut trucks = vec![];
+    if ckind == CompanyKind::Factory {
+        for _ in 0..proto.n_trucks {
+            trucks.extend(spawn_parked_vehicle(sim, VehicleKind::Truck, door_pos))
+        }
+        if trucks.is_empty() {
+            return None;
+        }
+    }
+
+    let comp = GoodsCompanyState {
+        proto: proto.id,
+        building: build_id,
+        max_workers: proto.n_workers,
+        progress: 0.0,
+        driver: None,
+        trucks,
+    };
+
     let id = sim.world.insert(CompanyEnt {
         trans: Transform::new(obb.center().z(height)),
-        comp: company,
+        comp,
         workers: Default::default(),
         sold: Default::default(),
         bought: Default::default(),
@@ -129,7 +150,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             return;
         });
 
-        let proto = c.comp.kind.prototype();
+        let proto = c.comp.proto.prototype();
 
         if recipe_should_produce(&proto.recipe, soul, market) {
             c.comp.progress += c.comp.productivity(n_workers, b.zone.as_ref())
@@ -139,7 +160,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
 
         if c.comp.progress >= 1.0 {
             c.comp.progress -= 1.0;
-            let kind = c.comp.kind;
+            let kind = c.comp.proto;
             let bpos = b.door_pos;
 
             cbuf.exec_on(me, move |market| {
@@ -151,9 +172,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
 
         for (_, trades) in c.bought.0.iter_mut() {
             for trade in trades.drain(..) {
-                if let Some(owner_build) =
-                    find_trade_place(trade.seller, b.door_pos.xy(), binfos, map)
-                {
+                if let Some(owner_build) = find_trade_place(trade.seller, binfos) {
                     cbuf.exec_ent(me, move |sim| {
                         let (world, res) = sim.world_res();
                         if let Some(SoulID::FreightStation(owner)) =
@@ -187,8 +206,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             ) {
                 return;
             }
-            let Some(owner_build) = find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
-            else {
+            let Some(owner_build) = find_trade_place(trade.buyer, binfos) else {
                 log::warn!("driver can't find the place to deliver for {:?}", &trade);
                 return;
             };

@@ -1,8 +1,12 @@
-use crate::economy::{ItemID, Money, Trade, TradeTarget};
-use prototypes::{prototypes_iter, ItemPrototype};
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
-use std::collections::BTreeMap;
+
+use prototypes::{prototypes_iter, ItemPrototype, Money};
+
+use crate::economy::{ItemID, Trade};
+use crate::SoulID;
 
 pub const HISTORY_SIZE: usize = 128;
 /// Tick to wait before the new bin
@@ -114,11 +118,11 @@ impl EcoStats {
         self.internal_trade.advance(tick);
 
         for trade in trades {
-            if trade.buyer == TradeTarget::ExternalTrade {
+            if matches!(trade.buyer.0, SoulID::FreightStation(_)) {
                 self.exports.handle_trade(trade);
                 continue;
             }
-            if trade.seller == TradeTarget::ExternalTrade {
+            if matches!(trade.seller.0, SoulID::FreightStation(_)) {
                 self.imports.handle_trade(trade);
                 continue;
             }

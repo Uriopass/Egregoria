@@ -11,14 +11,6 @@ pub struct ItemPrototype {
     pub optout_exttrade: bool,
 }
 
-impl Deref for ItemPrototype {
-    type Target = PrototypeBase;
-
-    fn deref(&self) -> &Self::Target {
-        &self.base
-    }
-}
-
 impl Prototype for ItemPrototype {
     type Parent = NoParent;
     type ID = ItemID;
@@ -27,13 +19,21 @@ impl Prototype for ItemPrototype {
     fn from_lua(table: &Table) -> mlua::Result<Self> {
         let base = PrototypeBase::from_lua(table)?;
         Ok(Self {
-            id: ItemID::new(&base.name),
+            id: Self::ID::new(&base.name),
             base,
             optout_exttrade: get_with_err(table, "optout_exttrade").unwrap_or(false),
         })
     }
 
     fn id(&self) -> Self::ID {
-        ItemID::from(&self.name)
+        self.id
+    }
+}
+
+impl Deref for ItemPrototype {
+    type Target = PrototypeBase;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
     }
 }

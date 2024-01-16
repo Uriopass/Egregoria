@@ -22,7 +22,7 @@ pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, i
     let title: &str = match building.kind {
         BuildingKind::House => "House",
         BuildingKind::GoodsCompany(id) => &id.prototype().name,
-        BuildingKind::RailFreightStation => "Rail Freight Station",
+        BuildingKind::RailFreightStation(id) => &id.prototype().name,
         BuildingKind::TrainStation => "Train Station",
         BuildingKind::ExternalTrading => "External Trading",
     };
@@ -40,7 +40,7 @@ pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, i
                 BuildingKind::GoodsCompany(_) => {
                     render_goodscompany(ui, uiworld, sim, building);
                 }
-                BuildingKind::RailFreightStation => {
+                BuildingKind::RailFreightStation(_) => {
                     render_freightstation(ui, uiworld, sim, building);
                 }
                 BuildingKind::TrainStation => {}
@@ -158,7 +158,7 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
             .ui(ui);
     }
 
-    render_recipe(ui, uiworld, &goods.kind.prototype().recipe);
+    render_recipe(ui, uiworld, &goods.proto.prototype().recipe);
 
     egui::ProgressBar::new(goods.progress)
         .show_percentage()

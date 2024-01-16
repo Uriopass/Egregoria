@@ -2,7 +2,7 @@ use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
 use crate::map::{Buildings, Environment, LanePattern, SpatialMap};
 use egui_inspect::debug_inspect_impl;
 use geom::{Color, Polygon, Vec2, Vec3, OBB};
-use prototypes::{BuildingGen, GoodsCompanyID};
+use prototypes::{BuildingGen, FreightStationPrototypeID, GoodsCompanyID};
 use serde::{Deserialize, Serialize};
 use slotmapd::new_key_type;
 
@@ -16,7 +16,7 @@ debug_inspect_impl!(BuildingID);
 pub enum BuildingKind {
     House,
     GoodsCompany(GoodsCompanyID),
-    RailFreightStation,
+    RailFreightStation(FreightStationPrototypeID),
     TrainStation,
     ExternalTrading,
 }
@@ -30,10 +30,7 @@ impl BuildingKind {
     }
 
     pub fn is_cached_in_bkinds(&self) -> bool {
-        matches!(
-            self,
-            BuildingKind::RailFreightStation | BuildingKind::ExternalTrading
-        )
+        matches!(self, BuildingKind::ExternalTrading)
     }
 }
 

@@ -1,4 +1,9 @@
-use crate::map::{BuildingID, BuildingKind, Map, PathKind};
+use serde::{Deserialize, Serialize};
+
+use geom::Transform;
+use prototypes::FreightStationPrototypeID;
+
+use crate::map::{BuildingID, Map, PathKind};
 use crate::map_dynamic::{
     BuildingInfos, DispatchID, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary,
 };
@@ -7,8 +12,6 @@ use crate::utils::time::{GameTime, Tick};
 use crate::world::{FreightStationEnt, FreightStationID, TrainID};
 use crate::World;
 use crate::{ParCommandBuffer, Simulation, SoulID};
-use geom::Transform;
-use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, Inspect)]
 pub enum FreightTrainState {
@@ -27,6 +30,7 @@ const MAX_TRAINS_PER_STATION: usize = 2;
 /// and the freight trains that are associated with them.
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct FreightStation {
+    pub proto: FreightStationPrototypeID,
     pub building: BuildingID,
     pub trains: Vec<(TrainID, FreightTrainState)>,
     pub waiting_cargo: u32,
@@ -36,10 +40,12 @@ pub struct FreightStation {
 pub fn freight_station_soul(
     sim: &mut Simulation,
     building: BuildingID,
+    proto: FreightStationPrototypeID,
 ) -> Option<FreightStationID> {
     let map = sim.map();
 
     let f = FreightStation {
+        proto,
         building,
         trains: Vec::with_capacity(MAX_TRAINS_PER_STATION),
         waiting_cargo: 0,
@@ -100,7 +106,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                 }
                 FreightTrainState::Loading => {
                     if itin.has_ended(time.timestamp) {
-                        let ext = map.bkinds.get(&BuildingKind::ExternalTrading).unwrap()[0];
+                        let ext = *map.external_train_stations.first().unwrap();
                         let bpos = map.buildings[ext].obb.center().z(0.0);
 
                         *itin = if let Some(r) =
@@ -157,12 +163,13 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
 
 #[cfg(test)]
 mod tests {
+    use geom::{vec2, vec3, OBB};
+    use prototypes::{BuildingGen, FreightStationPrototypeID};
+
     use crate::map_dynamic::BuildingInfos;
     use crate::souls::human::{spawn_human, HumanDecisionKind};
     use crate::tests::TestCtx;
     use crate::{BuildingKind, SoulID, WorldCommand};
-    use geom::{vec2, vec3, OBB};
-    use prototypes::BuildingGen;
 
     #[test]
     fn test_deliver_to_freight_station_incrs_station() {
@@ -174,7 +181,7 @@ mod tests {
 
         test.apply(&[WorldCommand::MapBuildSpecialBuilding {
             pos: OBB::new(vec2(50.0, 50.0), vec2(1.0, 0.0), 5.0, 5.0),
-            kind: BuildingKind::RailFreightStation,
+            kind: BuildingKind::RailFreightStation(FreightStationPrototypeID::new("test")),
             gen: BuildingGen::NoWalkway {
                 door_pos: vec2(50.0, 50.0),
             },
@@ -187,7 +194,7 @@ mod tests {
             .map()
             .buildings()
             .iter()
-            .find(|(_, b)| matches!(b.kind, BuildingKind::RailFreightStation))
+            .find(|(_, b)| matches!(b.kind, BuildingKind::RailFreightStation(_)))
             .unwrap()
             .0;
 

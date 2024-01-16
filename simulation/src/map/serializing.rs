@@ -1,10 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::map::{
     BuildingID, Buildings, Environment, Intersections, Lanes, Lots, Map, ParkingSpots, Roads,
     SpatialMap,
 };
-use crate::BuildingKind;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 #[derive(Default, Serialize, Deserialize)]
 pub(crate) struct SerializedMap {
@@ -15,7 +14,7 @@ pub(crate) struct SerializedMap {
     pub parking: ParkingSpots,
     pub lots: Lots,
     pub environment: Environment,
-    pub bkinds: BTreeMap<BuildingKind, Vec<BuildingID>>,
+    pub external_train_stations: Vec<BuildingID>,
 }
 
 impl From<&Map> for SerializedMap {
@@ -28,7 +27,7 @@ impl From<&Map> for SerializedMap {
             parking: m.parking.clone(),
             lots: m.lots.clone(),
             environment: m.environment.clone(),
-            bkinds: m.bkinds.clone(),
+            external_train_stations: m.external_train_stations.clone(),
         }
     }
 }
@@ -45,7 +44,7 @@ impl From<SerializedMap> for Map {
             lots: sel.lots,
             parking: sel.parking,
             environment: sel.environment,
-            bkinds: sel.bkinds,
+            external_train_stations: sel.external_train_stations,
             ..Self::empty()
         }
     }

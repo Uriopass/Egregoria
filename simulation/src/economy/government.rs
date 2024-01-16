@@ -1,7 +1,7 @@
-use crate::economy::Money;
 use crate::map::{LanePattern, MapProject, MAX_ZONE_AREA};
 use crate::world_command::WorldCommand;
 use crate::{BuildingKind, Simulation};
+use prototypes::Money;
 use serde::{Deserialize, Serialize};
 
 /// The government represents the player.
@@ -46,9 +46,8 @@ impl Government {
 
                 let oldarea = b.zone.as_ref().map_or(0.0, |z| z.area);
                 let newarea = z.area;
-                return Money::new_bucks(
-                    (newarea - oldarea) as i64 * zonedescr.price_per_area / MAX_ZONE_AREA as i64,
-                );
+                return (newarea - oldarea) as i64 * zonedescr.price_per_area
+                    / MAX_ZONE_AREA as i64;
             }
             WorldCommand::MapMakeMultipleConnections(ref projs, ref links) => {
                 let mut total = 0;
@@ -60,17 +59,16 @@ impl Government {
             WorldCommand::MapBuildSpecialBuilding { kind: x, .. } => match x {
                 BuildingKind::GoodsCompany(x) => {
                     let descr = x.prototype();
-                    descr.price
-                        + descr
-                            .zone
-                            .as_ref()
-                            .map(|z| {
-                                z.price_per_area * (descr.size * descr.size) as i64
-                                    / MAX_ZONE_AREA as i64
-                            })
-                            .unwrap_or(0)
+                    let mut price = descr.price;
+                    if let Some(ref z) = descr.zone {
+                        price += z.price_per_area * (descr.size * descr.size) as i64
+                            / MAX_ZONE_AREA as i64;
+                    }
+                    return price;
                 }
-                BuildingKind::RailFreightStation => 1000,
+                BuildingKind::RailFreightStation(x) => {
+                    return x.prototype().price;
+                }
                 BuildingKind::TrainStation => 1000,
                 _ => 0,
             },

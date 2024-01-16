@@ -108,7 +108,7 @@ impl HumanDecisionKind {
                 let Some(b) = map.buildings().get(bid) else {
                     return true;
                 };
-                if matches!(b.kind, BuildingKind::RailFreightStation) {
+                if matches!(b.kind, BuildingKind::RailFreightStation(_)) {
                     let Some(SoulID::FreightStation(fid)) = binfos.owner(bid) else {
                         return true;
                     };
@@ -226,7 +226,7 @@ pub fn update_decision(
         NextDesire::Home(home) => decision.kind = home.apply(),
         NextDesire::Work(work) => decision.kind = work.apply(loc, router),
         NextDesire::Food(food) => {
-            decision.kind = food.apply(cbuf, binfos, map, time, me, trans, loc, bought)
+            decision.kind = food.apply(cbuf, binfos, time, me, trans, loc, bought)
         }
         NextDesire::None => {}
     }

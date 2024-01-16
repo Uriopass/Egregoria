@@ -1,7 +1,7 @@
-mod power;
-mod recipe;
-mod zone;
-
-pub use power::*;
-pub use recipe::*;
-pub use zone::*;
+crate::export_mods! {
+    mod power;
+    mod recipe;
+    mod zone;
+    mod money;
+    mod size;
+}

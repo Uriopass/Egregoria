@@ -11,7 +11,7 @@ use crate::souls::human::HumanDecisionKind;
 use crate::transportation::Location;
 use crate::utils::time::{GameInstant, GameTime};
 use crate::world::{HumanEnt, HumanID};
-use crate::{Map, ParCommandBuffer, SoulID};
+use crate::{ParCommandBuffer, SoulID};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum BuyFoodState {
@@ -60,7 +60,6 @@ impl BuyFood {
         &mut self,
         cbuf: &ParCommandBuffer<HumanEnt>,
         binfos: &BuildingInfos,
-        map: &Map,
         time: &GameTime,
         id: HumanID,
         trans: &Transform,
@@ -79,7 +78,7 @@ impl BuyFood {
             }
             BuyFoodState::WaitingForTrade => {
                 for trade in bought.0.entry(ItemID::new("bread")).or_default().drain(..) {
-                    if let Some(b) = find_trade_place(trade.seller, trans.pos.xy(), binfos, map) {
+                    if let Some(b) = find_trade_place(trade.seller, binfos) {
                         self.state = BuyFoodState::BoughtAt(b);
                     }
                 }

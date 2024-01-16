@@ -8,7 +8,7 @@ use engine::{
     MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
-use prototypes::GoodsCompanyPrototype;
+use prototypes::{FreightStationPrototype, GoodsCompanyPrototype};
 use simulation::map::{
     Building, BuildingKind, CanonicalPosition, Environment, Intersection, LaneKind, Lanes, LotKind,
     Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
@@ -70,16 +70,14 @@ impl MapMeshHandler {
         }
 
         for (asset, bkind) in GoodsCompanyPrototype::iter()
-            .map(|descr| {
+            .map(|descr| (&*descr.asset_location, BuildingKind::GoodsCompany(descr.id)))
+            .chain(FreightStationPrototype::iter().map(|descr| {
                 (
-                    descr.asset_location.as_ref(),
-                    BuildingKind::GoodsCompany(descr.id),
+                    &*descr.asset_location,
+                    BuildingKind::RailFreightStation(descr.id),
                 )
-            })
-            .chain([
-                ("rail_freight_station.glb", BuildingKind::RailFreightStation),
-                ("external_trading.glb", BuildingKind::ExternalTrading),
-            ])
+            }))
+            .chain([("external_trading.glb", BuildingKind::ExternalTrading)])
         {
             if !asset.ends_with(".glb") {
                 continue;

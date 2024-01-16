@@ -42,7 +42,7 @@ unsafe fn load_prototypes_str(l: Lua, main: &str) -> Result<(), PrototypeLoadErr
     let data_table = l.globals().get::<_, Table>("data")?;
 
     let _ = data_table.for_each(|_: String, t: Table| {
-        let r = crate::parse_prototype(t, &mut *p);
+        let r = p.parse_prototype(t);
         if let Err(e) = r {
             errors.push(e);
         }

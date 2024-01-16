@@ -485,13 +485,13 @@ const START_COMMANDS: &str = r#"
       "MapBuildSpecialBuilding": {
         "pos": {
           "corners": [
-            5009951615332041499,
-            5010447263148181973,
-            5009596924048175736,
-            5009101271937067965
+            5010057980197058898,
+            5010739497017993874,
+            5009490559183158337,
+            5008809038067256064
           ]
         },
-        "kind": "RailFreightStation",
+        "kind": {"RailFreightStation": 9010703082962909221},
         "gen": {"NoWalkway": {
           "door_pos": 0
         }},
