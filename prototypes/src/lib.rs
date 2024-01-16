@@ -117,6 +117,7 @@ where
     }
 }
 
+#[inline]
 pub fn try_prototype<ID: PrototypeID>(id: ID) -> Option<&'static <ID as PrototypeID>::Prototype>
 where
     ID::Prototype: ConcretePrototype,
@@ -124,12 +125,14 @@ where
     <ID as PrototypeID>::Prototype::storage(try_prototypes()?).get(&id)
 }
 
+#[inline]
 pub fn prototypes_iter<T: ConcretePrototype>() -> impl Iterator<Item = &'static T> {
     let p = prototypes();
     let storage = T::storage(p);
     T::ordering(p).iter().map(move |id| &storage[id])
 }
 
+#[inline]
 pub fn prototypes_iter_ids<T: ConcretePrototype>() -> impl Iterator<Item = T::ID> {
     T::ordering(prototypes()).iter().copied()
 }

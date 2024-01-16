@@ -62,9 +62,11 @@ macro_rules! gen_prototypes {
         }
 
         impl $t {
+            #[inline]
             pub fn iter() -> impl Iterator<Item = &'static Self> {
                 $crate::prototypes_iter::<Self>()
             }
+            #[inline]
             pub fn iter_ids() -> impl Iterator<Item = $id> {
                 $crate::prototypes_iter_ids::<Self>()
             }
