@@ -6,8 +6,8 @@ use geom::{BoldLine, Degrees, PolyLine3, Spline, Spline1};
 use geom::{Vec2, Vec3};
 
 use crate::map::{
-    Environment, Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern,
-    Lanes, ParkingSpots, Roads, SpatialMap, MAX_SLOPE, ROAD_Z_OFFSET,
+    BuildingID, Environment, Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind,
+    LanePattern, Lanes, ParkingSpots, Roads, SpatialMap, MAX_SLOPE, ROAD_Z_OFFSET,
 };
 
 new_key_type! {
@@ -42,6 +42,8 @@ pub struct Road {
     pub points: PolyLine3,
     pub interfaced_points: PolyLine3,
     pub width: f32,
+
+    pub connected_buildings: Vec<BuildingID>,
 
     src_interface: f32,
     dst_interface: f32,
@@ -101,6 +103,7 @@ impl Road {
             lanes_backward: vec![],
             interfaced_points: PolyLine3::new(vec![points.first()]),
             points,
+            connected_buildings: vec![],
         });
         #[allow(clippy::indexing_slicing)]
         let road = &mut roads[id];

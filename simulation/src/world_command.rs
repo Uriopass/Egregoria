@@ -77,6 +77,8 @@ pub enum WorldCommand {
         gen: BuildingGen,
         #[serde(default)]
         zone: Option<Zone>,
+        #[serde(default)]
+        connected_road: Option<RoadID>,
     },
     MapLoadParis,
     MapLoadTestField {
@@ -144,12 +146,14 @@ impl WorldCommands {
         kind: BuildingKind,
         gen: BuildingGen,
         zone: Option<Zone>,
+        connected_road: Option<RoadID>,
     ) {
         self.commands.push(MapBuildSpecialBuilding {
             pos: obb,
             kind,
             gen,
             zone,
+            connected_road,
         })
     }
 
@@ -276,11 +280,15 @@ impl WorldCommand {
                 kind,
                 gen,
                 ref zone,
+                connected_road,
             } => {
-                if let Some(id) =
-                    sim.write::<Map>()
-                        .build_special_building(&obb, kind, gen, zone.clone())
-                {
+                if let Some(id) = sim.write::<Map>().build_special_building(
+                    &obb,
+                    kind,
+                    gen,
+                    zone.clone(),
+                    connected_road,
+                ) {
                     sim.write::<BuildingInfos>().insert(id);
                 }
             }
@@ -388,6 +396,7 @@ fn generate_terrain(sim: &mut Simulation, size: u16) {
             BuildingGen::NoWalkway {
                 door_pos: Vec2::ZERO,
             },
+            None,
             None,
         )
         .is_none()

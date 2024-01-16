@@ -348,6 +348,7 @@ impl Gui {
                                                 door_pos: Vec2::ZERO,
                                             },
                                             zone: None,
+                                            connected_road: args.connected_road,
                                         });
                                         commands
                                     }),
@@ -594,6 +595,7 @@ impl Gui {
                                                 Vec2::X,
                                             )
                                         }),
+                                        connected_road: args.connected_road,
                                     }]
                                 }),
                                 size: descr.size,

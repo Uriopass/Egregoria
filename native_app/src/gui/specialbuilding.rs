@@ -7,7 +7,7 @@ use engine::AudioKind;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
 use prototypes::Size2D;
-use simulation::map::{ProjectFilter, ProjectKind};
+use simulation::map::{ProjectFilter, ProjectKind, RoadID};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::borrow::Cow;
@@ -15,6 +15,7 @@ use std::borrow::Cow;
 pub struct SpecialBuildArgs {
     pub obb: OBB,
     pub mpos: Vec3,
+    pub connected_road: Option<RoadID>,
 }
 
 pub struct SpecialBuildKind {
@@ -180,7 +181,11 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
 
     draw(obb, false);
 
-    let cmds: Vec<WorldCommand> = make(&SpecialBuildArgs { obb, mpos });
+    let cmds: Vec<WorldCommand> = make(&SpecialBuildArgs {
+        obb,
+        mpos,
+        connected_road: rid,
+    });
     if inp.act.contains(&InputAction::Select) {
         commands.extend(cmds);
         sound.play("road_lay", AudioKind::Ui);

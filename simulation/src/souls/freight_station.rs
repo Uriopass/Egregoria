@@ -186,6 +186,7 @@ mod tests {
                 door_pos: vec2(50.0, 50.0),
             },
             zone: None,
+            connected_road: None,
         }]);
         test.tick();
 

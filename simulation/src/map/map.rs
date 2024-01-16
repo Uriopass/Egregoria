@@ -132,6 +132,10 @@ impl Map {
             self.external_train_stations.retain(|id| *id != b.id);
         }
 
+        if let Some(r) = b.connected_road {
+            self.roads[r].connected_buildings.retain(|x| *x != b.id);
+        }
+
         self.check_invariants();
 
         Some(b)
@@ -222,6 +226,7 @@ impl Map {
         kind: BuildingKind,
         gen: BuildingGen,
         zone: Option<Zone>,
+        connected_road: Option<RoadID>,
     ) -> Option<BuildingID> {
         if self.building_overlaps(*obb) {
             log::warn!("did not build {:?}: building overlaps", kind);
@@ -246,11 +251,13 @@ impl Map {
         let v = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
+            &mut self.roads,
             &self.environment,
             *obb,
             kind,
             gen,
             zone,
+            connected_road,
         );
 
         if let Some(id) = v {
@@ -276,11 +283,13 @@ impl Map {
         let v = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
+            &mut self.roads,
             &self.environment,
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
             None,
+            Some(lot.parent),
         );
         if let Some(id) = v {
             self.subscribers
@@ -336,6 +345,11 @@ impl Map {
 
         self.invalidate(road.src);
         self.invalidate(road.dst);
+
+        for b in &road.connected_buildings {
+            self.buildings[*b].connected_road = None;
+        }
+
         Some(road)
     }
 
@@ -427,7 +441,7 @@ impl Map {
             .update(inter.id, inter.bcircle(&self.roads));
     }
 
-    /// Only removes road from Roads and spatial map but keeps lots,
+    /// Only removes road from Roads and spatial map but keeps lots, buildings connection
     /// and potentially empty intersections.
     fn remove_raw_road(&mut self, road_id: RoadID) -> Option<Road> {
         let road = self.roads.remove(road_id)?;
@@ -516,6 +530,21 @@ impl Map {
         let r2 = self.roads.get(r2)?;
 
         let spatial = &mut self.spatial_map;
+
+        for b in &r.connected_buildings {
+            let b = self.buildings.get_mut(*b)?;
+
+            let bpos = b.obb.center().z(b.height);
+
+            let d1 = r1.points.project_dist2(bpos);
+            let d2 = r2.points.project_dist2(bpos);
+
+            b.connected_road = Some(match d1 < d2 {
+                true => r1.id,
+                false => r2.id,
+            });
+        }
+
         self.lots.retain(|_, lot| {
             if lot.parent != r_id {
                 return true;
@@ -540,6 +569,13 @@ impl Map {
             }
             true
         });
+
+        for b in r.connected_buildings {
+            let b = &self.buildings[b];
+            self.roads[b.connected_road.unwrap()]
+                .connected_buildings
+                .push(b.id);
+        }
 
         Some(id)
     }
@@ -846,6 +882,11 @@ impl Map {
                 assert_eq!(v.parent, road.id);
             }
 
+            for b in &road.connected_buildings {
+                assert!(self.buildings.contains_key(*b));
+                assert_eq!(self.buildings[*b].connected_road, Some(road.id));
+            }
+
             // Road with parking lane has driving lane (incoming)
             let has_parking = road
                 .incoming_lanes_to(road.src)
@@ -872,6 +913,15 @@ impl Map {
                     .iter()
                     .any(|(_, kind)| matches!(kind, LaneKind::Driving));
                 assert!(has_driving);
+            }
+        }
+
+        for b in self.buildings.values() {
+            log::debug!("{:?}", b.id);
+            assert!(self.spatial_map.contains(b.id));
+            if let Some(r) = b.connected_road {
+                assert!(self.roads.contains_key(r));
+                assert!(self.roads[r].connected_buildings.contains(&b.id));
             }
         }
 

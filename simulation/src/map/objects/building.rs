@@ -1,5 +1,5 @@
 use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
-use crate::map::{Buildings, Environment, LanePattern, SpatialMap};
+use crate::map::{Buildings, Environment, LanePattern, RoadID, Roads, SpatialMap};
 use egui_inspect::debug_inspect_impl;
 use geom::{Color, Polygon, Vec2, Vec3, OBB};
 use prototypes::{BuildingGen, FreightStationPrototypeID, GoodsCompanyID};
@@ -74,17 +74,20 @@ pub struct Building {
     pub obb: OBB,
     pub height: f32,
     pub zone: Option<Zone>,
+    pub connected_road: Option<RoadID>,
 }
 
 impl Building {
     pub fn make(
         buildings: &mut Buildings,
         spatial_map: &mut SpatialMap,
+        roads: &mut Roads,
         env: &Environment,
         obb: OBB,
         kind: BuildingKind,
         gen: BuildingGen,
         zone: Option<Zone>,
+        mut connected_road: Option<RoadID>,
     ) -> Option<BuildingID> {
         let at = obb.center().z(env.height(obb.center())?);
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
@@ -124,11 +127,20 @@ impl Building {
         }
 
         Some(buildings.insert_with_key(move |id| {
+            if let Some(r) = connected_road {
+                if let Some(r) = roads.get_mut(r) {
+                    r.connected_buildings.push(id);
+                } else {
+                    connected_road = None;
+                }
+            }
+
             if let Some(zone) = zone.clone() {
                 spatial_map.insert(id, zone.poly);
             } else {
                 spatial_map.insert(id, obb);
             }
+
             Self {
                 id,
                 mesh,
@@ -137,6 +149,7 @@ impl Building {
                 obb,
                 height: at.z,
                 zone,
+                connected_road,
             }
         }))
     }
