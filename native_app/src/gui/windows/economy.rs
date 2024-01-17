@@ -1,8 +1,8 @@
 use crate::uiworld::UiWorld;
-use common::timestep::UP_DT;
 use egui::{Align2, Color32, Ui};
 use egui_plot::{Line, PlotPoints};
 use geom::Color;
+use prototypes::DELTA_F64;
 use simulation::economy::{
     EcoStats, ItemHistories, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
 };
@@ -97,7 +97,7 @@ pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, 
                 }
             });
 
-            let seconds_per_step = LEVEL_FREQS[state.curlevel] as f64 * UP_DT.as_secs_f64();
+            let seconds_per_step = LEVEL_FREQS[state.curlevel] as f64 * DELTA_F64;
             let xs: Vec<f64> = (0..HISTORY_SIZE)
                 .map(|i| i as f64 * seconds_per_step)
                 .collect();

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use geom::Vec2;
 use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype, ItemPrototype, Money};
 
-use crate::economy::{ItemID, WORKER_CONSUMPTION_PER_SECOND};
+use crate::economy::{ItemID, WORKER_CONSUMPTION_PER_MINUTE};
 use crate::map::BuildingID;
 use crate::map_dynamic::BuildingInfos;
 use crate::SoulID;
@@ -379,8 +379,9 @@ fn calculate_prices(price_multiplier: f32) -> BTreeMap<ItemID, Money> {
                 .find_map(|x| (x.id == id).then_some(x.amount))
                 .unwrap_or(0) as i64;
 
-            let price_workers =
-                recipe.complexity as i64 * company.n_workers as i64 * WORKER_CONSUMPTION_PER_SECOND;
+            let price_workers = recipe.duration.minutes()
+                * company.n_workers as f64
+                * WORKER_CONSUMPTION_PER_MINUTE;
 
             let newprice = (price_consumption
                 + Money::new_inner((price_workers.inner() as f32 * price_multiplier) as i64))
@@ -405,7 +406,7 @@ mod tests {
     use prototypes::test_prototypes;
     use prototypes::ItemID;
 
-    use crate::economy::WORKER_CONSUMPTION_PER_SECOND;
+    use crate::economy::WORKER_CONSUMPTION_PER_MINUTE;
     use crate::world::CompanyID;
     use crate::{FreightStationID, SoulID};
 
@@ -529,11 +530,11 @@ mod tests {
         let prices = super::calculate_prices(1.0);
 
         assert_eq!(prices.len(), 2);
-        let price_cereal = 2 * WORKER_CONSUMPTION_PER_SECOND;
+        let price_cereal = 2 * WORKER_CONSUMPTION_PER_MINUTE;
         assert_eq!(prices[&cereal], price_cereal);
         assert_eq!(
             prices[&wheat],
-            (price_cereal * 2 + 5 * WORKER_CONSUMPTION_PER_SECOND * 10) / 2
+            (price_cereal * 2 + 5 * WORKER_CONSUMPTION_PER_MINUTE * 10) / 2
         );
     }
 }

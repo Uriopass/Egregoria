@@ -1,12 +1,12 @@
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::transportation::{TransportGrid, TransportState, TransportationGroup, Transporter};
 use crate::utils::rand_provider::RandProvider;
-use crate::utils::time::GameInstant;
 use crate::world::{VehicleEnt, VehicleID};
 use crate::Simulation;
 use egui_inspect::Inspect;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
+use prototypes::GameInstant;
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.

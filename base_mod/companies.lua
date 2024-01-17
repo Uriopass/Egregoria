@@ -12,7 +12,7 @@ data:extend {
         recipe = {
             consumption = {{"flour", 1}},
             production = {{"bread", 1}},
-            complexity = 100,
+            complexity = "100s",
             storage_multiplier = 5,
         },
         n_workers = 3,

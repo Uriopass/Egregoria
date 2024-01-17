@@ -19,15 +19,14 @@ use egui::{
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use prototypes::{
-    prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
-    Power,
+    prototypes_iter, BuildingGen, FreightStationPrototype, GameTime, GoodsCompanyPrototype, ItemID,
+    Money, Power,
 };
 use serde::{Deserialize, Serialize};
 use simulation::economy::Government;
 use simulation::map::{
     BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
 };
-use simulation::utils::time::{GameTime, SECONDS_PER_HOUR};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::sync::atomic::Ordering;
@@ -638,7 +637,7 @@ impl Gui {
                                         }
                                         ui.add_space(10.0);
                                     }
-                                    ui.label(format!("time: {}s", recipe.complexity));
+                                    ui.label(format!("time: {}", recipe.duration));
                                     ui.label(format!(
                                         "storage multiplier: {}",
                                         recipe.storage_multiplier
@@ -708,12 +707,9 @@ impl Gui {
                 ui.horizontal(|ui| {
                     ui.label(format!(" Day {}", time.day));
                     ui.add_space(40.0);
-                    const OFF: i32 = SECONDS_PER_HOUR / 60;
                     ui.label(format!(
                         "{:02}:{:02}:{:02}",
-                        time.hour,
-                        time.second / OFF,
-                        time.second % OFF * 60 / OFF
+                        time.hour, time.minute, time.second
                     ));
                 });
 

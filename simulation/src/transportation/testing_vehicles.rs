@@ -1,7 +1,6 @@
 use crate::map::{Map, PathKind};
 use crate::map_dynamic::Itinerary;
 use crate::utils::resources::Resources;
-use crate::utils::time::Tick;
 use crate::{VehicleID, World};
 use common::scroll::BTreeSetScroller;
 use serde::{Deserialize, Serialize};
@@ -19,7 +18,7 @@ pub fn random_vehicles_update(world: &mut World, res: &mut Resources) {
 
     let mut to_kill = Vec::new();
 
-    let tick = res.read::<Tick>();
+    let tick = res.tick();
 
     for &v_id in rv.vehicle_scroller.iter_looped(&rv.vehicles).take(100) {
         let v = match world.vehicles.get_mut(v_id) {
@@ -35,8 +34,7 @@ pub fn random_vehicles_update(world: &mut World, res: &mut Resources) {
         }
         let rng = common::hash_u64((tick.0, v_id));
 
-        if let Some(it) = Itinerary::random_route(rng, v.trans.pos, *tick, &map, PathKind::Vehicle)
-        {
+        if let Some(it) = Itinerary::random_route(rng, v.trans.pos, tick, &map, PathKind::Vehicle) {
             v.it = it;
         }
     }

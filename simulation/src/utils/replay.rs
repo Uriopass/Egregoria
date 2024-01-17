@@ -1,7 +1,7 @@
 use crate::utils::scheduler::SeqSchedule;
-use crate::utils::time::Tick;
 use crate::world_command::WorldCommand;
 use crate::Simulation;
+use prototypes::Tick;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

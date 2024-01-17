@@ -1,14 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 use geom::Transform;
-use prototypes::FreightStationPrototypeID;
+use prototypes::{FreightStationPrototypeID, GameTime};
 
 use crate::map::{BuildingID, Map, PathKind};
 use crate::map_dynamic::{
     BuildingInfos, DispatchID, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary,
 };
 use crate::utils::resources::Resources;
-use crate::utils::time::{GameTime, Tick};
 use crate::world::{FreightStationEnt, FreightStationID, TrainID};
 use crate::World;
 use crate::{ParCommandBuffer, Simulation, SoulID};
@@ -76,7 +75,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
     let mut dispatch = resources.write::<Dispatcher>();
     let map = resources.read::<Map>();
     let time = resources.read::<GameTime>();
-    let tick = *resources.read::<Tick>();
+    let tick = time.tick;
 
     for (me, f) in world.freight_stations.iter_mut() {
         let pos = f.trans;

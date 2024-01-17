@@ -1,16 +1,20 @@
+use std::collections::btree_map::Entry;
+use std::collections::BTreeMap;
+
+use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
+use slotmapd::HopSlotMap;
+
+use egui_inspect::Inspect;
+use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
+use prototypes::DELTA;
+
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::ItineraryFollower;
 use crate::transportation::Speed;
 use crate::utils::resources::Resources;
 use crate::world::{TrainEnt, TrainID, WagonEnt};
-use crate::{GameTime, Itinerary, ItineraryLeader, Simulation, World};
-use egui_inspect::Inspect;
-use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
-use ordered_float::OrderedFloat;
-use serde::{Deserialize, Serialize};
-use slotmapd::HopSlotMap;
-use std::collections::btree_map::Entry;
-use std::collections::BTreeMap;
+use crate::{Itinerary, ItineraryLeader, Simulation, World};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct TrainReservations {
@@ -303,7 +307,6 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
 pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
     profiling::scope!("transportation::locomotive_system");
     let map: &Map = &resources.read();
-    let time: &GameTime = &resources.read();
     let reservs: &TrainReservations = &resources.read();
 
     // asume iter order stays the same
@@ -333,21 +336,21 @@ pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
         t.trans.dir = desired_dir;
 
         t.speed.0 += (desired_speed - t.speed.0).clamp(
-            -time.realdelta * t.locomotive.dec_force,
-            time.realdelta * t.locomotive.acc_force,
+            -DELTA * t.locomotive.dec_force,
+            DELTA * t.locomotive.acc_force,
         );
         if t.speed.0 <= 0.001 {
-            t.res.waited_for += time.realdelta;
+            t.res.waited_for += DELTA;
         } else {
             t.res.waited_for = 0.0;
         }
         for v in t.res.past_travers.values_mut() {
-            *v += t.speed.0 * time.realdelta;
+            *v += t.speed.0 * DELTA;
             if t.res.waited_for > 60.0 {
-                *v += 0.1 * time.realdelta;
+                *v += 0.1 * DELTA;
             }
         }
-        t.res.cur_travers_dist += t.speed.0 * time.realdelta;
+        t.res.cur_travers_dist += t.speed.0 * DELTA;
     }
 }
 

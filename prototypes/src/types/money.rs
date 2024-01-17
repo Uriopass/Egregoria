@@ -194,3 +194,19 @@ impl Div<i64> for Money {
         Money(self.0 / rhs)
     }
 }
+
+impl Mul<f64> for Money {
+    type Output = Money;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Money((self.0 as f64 * rhs) as i64)
+    }
+}
+
+impl Mul<Money> for f64 {
+    type Output = Money;
+
+    fn mul(self, rhs: Money) -> Self::Output {
+        rhs * self
+    }
+}

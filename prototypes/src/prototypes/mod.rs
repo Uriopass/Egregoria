@@ -1,9 +1,12 @@
-crate::export_mods! {
-    mod company;
-    mod item;
-    mod solar;
-    mod freightstation;
-}
+mod company;
+mod freightstation;
+mod item;
+mod solar;
+
+pub use company::*;
+pub use freightstation::*;
+pub use item::*;
+pub use solar::*;
 
 crate::gen_prototypes!(
     companies: GoodsCompanyID = GoodsCompanyPrototype,

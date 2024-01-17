@@ -4,7 +4,6 @@
 use crate::map::{BuildingID, LanePatternBuilder, ProjectFilter};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
-use crate::utils::time::Tick;
 use crate::world_command::{WorldCommand, WorldCommands};
 use crate::{Simulation, SimulationOptions};
 use common::logger::MyLog;
@@ -77,7 +76,7 @@ impl TestCtx {
                 Some(hash),
                 "key: {:?} at tick {}",
                 key,
-                self.g.read::<Tick>().0,
+                self.g.get_tick(),
             );
         }
     }

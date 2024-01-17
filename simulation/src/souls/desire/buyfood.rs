@@ -2,14 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use egui_inspect::Inspect;
 use geom::Transform;
-use prototypes::ItemID;
+use prototypes::{GameInstant, GameTime, ItemID};
 
 use crate::economy::{find_trade_place, Bought, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination};
 use crate::souls::human::HumanDecisionKind;
 use crate::transportation::Location;
-use crate::utils::time::{GameInstant, GameTime};
 use crate::world::{HumanEnt, HumanID};
 use crate::{ParCommandBuffer, SoulID};
 
@@ -53,7 +52,7 @@ impl BuyFood {
                 return 1.0;
             }
         }
-        self.last_ate.elapsed(time) as f32 / GameTime::DAY as f32 - 1.0
+        self.last_ate.elapsed(time).seconds() as f32 / GameTime::DAY as f32 - 1.0
     }
 
     pub fn apply(

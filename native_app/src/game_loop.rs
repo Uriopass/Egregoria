@@ -6,7 +6,6 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::history::History;
 use engine::{Context, FrameContext, Tesselator};
 use geom::{vec2, vec3, Camera, LinearColor};
-use simulation::utils::time::GameTime;
 use simulation::Simulation;
 
 use crate::audio::GameAudio;
@@ -18,6 +17,7 @@ use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
+use prototypes::GameTime;
 use simulation::utils::scheduler::SeqSchedule;
 
 pub const VERSION: &str = include_str!("../../VERSION");

@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
-use prototypes::{CompanyKind, GoodsCompanyID, GoodsCompanyPrototype, ItemID, Power, Recipe};
+use prototypes::{
+    CompanyKind, GoodsCompanyID, GoodsCompanyPrototype, ItemID, Power, Recipe, DELTA,
+};
 
 use crate::economy::{find_trade_place, Market};
 use crate::map::{Building, BuildingID, Map, Zone, MAX_ZONE_AREA};
@@ -10,7 +12,6 @@ use crate::map_dynamic::{BuildingInfos, ElectricityFlow};
 use crate::souls::desire::WorkKind;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::utils::resources::Resources;
-use crate::utils::time::GameTime;
 use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
 use crate::{ParCommandBuffer, SoulID, VehicleEnt};
 use crate::{Simulation, World};
@@ -170,7 +171,6 @@ pub fn company_soul(
 
 pub fn company_system(world: &mut World, res: &mut Resources) {
     profiling::scope!("souls::company_system");
-    let delta = res.read::<GameTime>().realdelta;
     let cbuf: &ParCommandBuffer<CompanyEnt> = &res.read();
     let cbuf_human: &ParCommandBuffer<HumanEnt> = &res.read();
     let binfos: &BuildingInfos = &res.read();
@@ -191,7 +191,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             if recipe_should_produce(recipe, soul, market) {
                 let productivity = c.productivity(proto, b.zone.as_ref(), map, elec_flow);
 
-                c.comp.progress += productivity * delta / recipe.complexity as f32;
+                c.comp.progress += productivity * DELTA / recipe.duration.seconds() as f32;
             }
 
             if c.comp.progress >= 1.0 {
@@ -225,9 +225,6 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
         }
 
         (|| {
-            let Some(trade) = c.sold.0.pop() else {
-                return;
-            };
             let Some(driver) = c.comp.driver else {
                 return;
             };
@@ -243,6 +240,9 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
             ) {
                 return;
             }
+            let Some(trade) = c.sold.0.pop() else {
+                return;
+            };
             let Some(owner_build) = find_trade_place(trade.buyer, binfos) else {
                 log::warn!("driver can't find the place to deliver for {:?}", &trade);
                 return;

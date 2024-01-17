@@ -5,11 +5,11 @@ use crate::transportation::{
 };
 use crate::transportation::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::utils::resources::Resources;
-use crate::utils::time::GameTime;
 use crate::world::{VehicleEnt, VehicleID};
 use crate::ParCommandBuffer;
 use crate::World;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
+use prototypes::{GameTime, DELTA};
 use slotmapd::Key;
 
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
@@ -71,7 +71,6 @@ pub fn vehicle_decision(
         trans,
         kin,
         vehicle,
-        time,
         self_obj,
         map,
         desired_speed,
@@ -83,13 +82,11 @@ pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources)
     profiling::scope!("transportation::vehicle_state_update_system");
     let ra = &*resources.read();
     let rb = &*resources.read();
-    let rc = &*resources.read();
 
     world.vehicles.iter_mut().for_each(|(ent, v)| {
         vehicle_state_update(
             ra,
             rb,
-            rc,
             ent,
             &mut v.vehicle,
             &mut v.trans,
@@ -102,7 +99,6 @@ pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources)
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
 pub fn vehicle_state_update(
     buf: &ParCommandBuffer<VehicleEnt>,
-    time: &GameTime,
     map: &Map,
     ent: VehicleID,
     vehicle: &mut Vehicle,
@@ -113,7 +109,7 @@ pub fn vehicle_state_update(
     match vehicle.state {
         VehicleState::RoadToPark(_, ref mut t, _) => {
             // Vehicle is on rails when parking.
-            *t += time.realdelta / TIME_TO_PARK;
+            *t += DELTA / TIME_TO_PARK;
 
             if *t >= 1.0 {
                 let v = coll.take();
@@ -146,7 +142,6 @@ fn physics(
     trans: &mut Transform,
     kin: &mut Speed,
     vehicle: &mut Vehicle,
-    time: &GameTime,
     obj: &TransportState,
     map: &Map,
     desired_speed: f32,
@@ -170,26 +165,19 @@ fn physics(
     let kind = vehicle.kind;
 
     let speed = speed
-        + (desired_speed - speed).clamp(
-            -time.realdelta * kind.deceleration(),
-            time.realdelta * kind.acceleration(),
-        );
+        + (desired_speed - speed).clamp(-DELTA * kind.deceleration(), DELTA * kind.acceleration());
 
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).clamp(0.0, 3.0);
 
     let approx_angle = trans.dir.distance(desired_dir);
 
-    vehicle.ang_velocity += time.realdelta * kind.ang_acc();
+    vehicle.ang_velocity += DELTA * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
         .min(4.0 * approx_angle)
         .min(max_ang_vel);
 
-    trans.dir = angle_lerpxy(
-        trans.dir,
-        desired_dir,
-        vehicle.ang_velocity * time.realdelta,
-    );
+    trans.dir = angle_lerpxy(trans.dir, desired_dir, vehicle.ang_velocity * DELTA);
 
     kin.0 = speed;
 }
@@ -207,7 +195,7 @@ pub fn calc_decision<'a>(
 ) -> (f32, Vec3) {
     let default_return = (0.0, trans.dir);
     if vehicle.wait_time > 0.0 {
-        vehicle.wait_time -= time.realdelta;
+        vehicle.wait_time -= DELTA;
         return default_return;
     }
     let objective: Vec3 = unwrap_or!(it.get_point(), return default_return);
@@ -227,7 +215,7 @@ pub fn calc_decision<'a>(
     );
 
     if let VehicleState::Panicking(since) = vehicle.state {
-        if since.elapsed(time) > 5.0 {
+        if since.elapsed(time).seconds() > 200.0 {
             vehicle.state = VehicleState::Driving;
         }
     } else if speed.abs() < 0.2 && front_dist < 1.5 {

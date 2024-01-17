@@ -2,9 +2,9 @@ use egui::panel::TopBottomSide;
 use egui::{Align2, Color32, Frame, RichText, ScrollArea, TextBuffer, TopBottomPanel};
 
 use geom::Color;
+use prototypes::{GameDuration, GameTime};
 use simulation::multiplayer::chat::{Message, MessageKind};
 use simulation::multiplayer::MultiplayerState;
-use simulation::utils::time::{GameInstant, GameTime, SECONDS_PER_REALTIME_SECOND};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
@@ -20,10 +20,7 @@ pub struct GUIChatState {
 pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, sim: &Simulation) {
     const MAX_MESSAGES: usize = 30;
     let mut state = uiw.write::<GUIChatState>();
-    let one_minute_ago = GameInstant {
-        timestamp: sim.read::<GameTime>().instant().timestamp
-            - 120.0 * SECONDS_PER_REALTIME_SECOND as f64,
-    };
+    let five_minute_ago = sim.read::<GameTime>().instant() - GameDuration::from_minutes(5);
 
     let mstate = sim.read::<MultiplayerState>();
 
@@ -38,7 +35,7 @@ pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, sim: &Simulation) {
 
     let msgs: Vec<_> = mstate
         .chat
-        .messages_since(one_minute_ago)
+        .messages_since(five_minute_ago)
         .take(MAX_MESSAGES)
         .collect();
 

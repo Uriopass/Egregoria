@@ -7,11 +7,10 @@ use crate::map::{
     ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
     SubscriberChunkID, TerraformKind, UpdateType, Zone,
 };
-use crate::utils::time::Tick;
 use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
-use prototypes::BuildingGen;
+use prototypes::{BuildingGen, Tick};
 use serde::{Deserialize, Serialize};
 use slotmapd::HopSlotMap;
 

@@ -1,6 +1,6 @@
 use crate::map::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
-use crate::utils::time::SECONDS_PER_REALTIME_SECOND;
 use egui_inspect::{egui, egui::Ui, Inspect, InspectArgs};
+use prototypes::SECONDS_PER_REALTIME_SECOND;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]

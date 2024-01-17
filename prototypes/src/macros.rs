@@ -1,14 +1,4 @@
 #[macro_export]
-macro_rules! export_mods {
-    {$(mod $v: ident;)+} => {
-        $(
-            mod $v;
-            pub use $v::*;
-        )+
-    };
-}
-
-#[macro_export]
 macro_rules! gen_prototypes {
     ($($name:ident : $id:ident = $t:ty $(=> $parent_id:ident)?,)+) => {
         $(

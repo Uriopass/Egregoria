@@ -1,6 +1,10 @@
 use std::time::{Duration, Instant};
 
-pub const UP_DT: Duration = Duration::from_millis(20);
+const UP_DT: Duration = Duration::from_millis(20);
+
+pub fn debug_up_dt() -> Duration {
+    UP_DT
+}
 
 /// A timestep that can be used to update the game state.
 /// It will try to keep a constant update rate.

@@ -1,5 +1,5 @@
-use crate::utils::time::{GameInstant, GameTime};
 use geom::Color;
+use prototypes::{GameInstant, GameTime};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]
@@ -39,6 +39,6 @@ impl Chat {
 impl Message {
     /// Returns the number of (game) seconds elapsed since the message was sent
     pub fn age_secs(&self, now: &GameTime) -> f64 {
-        self.sent_at.elapsed(now)
+        self.sent_at.elapsed(now).seconds()
     }
 }

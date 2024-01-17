@@ -1,7 +1,6 @@
 use crate::init::init;
 use crate::map::{LanePatternBuilder, Map, MapProject, ProjectKind};
 use crate::utils::scheduler::SeqSchedule;
-use crate::utils::time::Tick;
 use crate::World;
 use crate::{Replay, Simulation};
 use common::logger::MyLog;
@@ -259,14 +258,14 @@ fn test_world_survives_serde() {
 
         idx = next_idx;*/
 
-        let tick = sim.read::<Tick>().0;
+        let tick = sim.get_tick();
         if tick % 1000 != 0 || (tick < 7840) {
             continue;
         }
 
         println!(
             "--- tick {} ({}/{})",
-            sim.read::<Tick>().0,
+            sim.get_tick(),
             loader.pastt.0,
             loader.replay.commands.last().unwrap().0 .0
         );

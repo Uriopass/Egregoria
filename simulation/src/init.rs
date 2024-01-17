@@ -16,14 +16,14 @@ use crate::transportation::train::{
 };
 use crate::transportation::{transport_grid_synchronize, TransportGrid};
 use crate::utils::resources::Resources;
-use crate::utils::time::Tick;
 use crate::world::{CompanyEnt, FreightStationEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
 use crate::World;
 use crate::{
-    add_souls_to_empty_buildings, utils, GameTime, ParCommandBuffer, RandProvider, Replay,
-    RunnableSystem, Simulation, SimulationOptions, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
+    add_souls_to_empty_buildings, utils, ParCommandBuffer, RandProvider, Replay, RunnableSystem,
+    Simulation, SimulationOptions, RNG_SEED,
 };
 use common::saveload::{Bincode, Encoder, JSON};
+use prototypes::{GameTime, Tick};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -77,15 +77,12 @@ pub fn init() {
     register_resource_default::<EcoStats, Bincode>("ecostats");
     register_resource_default::<MultiplayerState, Bincode>("multiplayer_state");
     register_resource_default::<RandomVehicles, Bincode>("random_vehicles");
-    register_resource_default::<Tick, Bincode>("tick");
     register_resource_default::<Map, Bincode>("map");
     register_resource_default::<TrainReservations, Bincode>("train_reservations");
     register_resource_default::<Government, Bincode>("government");
     register_resource_default::<ParkingManagement, Bincode>("pmanagement");
     register_resource_default::<BuildingInfos, Bincode>("binfos");
-    register_resource::<GameTime, Bincode>("game_time", || {
-        GameTime::new(0.0, SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64)
-    });
+    register_resource::<GameTime, Bincode>("game_time", || GameTime::new(Tick(1)));
     register_resource::<TransportGrid, Bincode>("transport_grid", || TransportGrid::new(100));
     register_resource::<RandProvider, Bincode>("randprovider", || RandProvider::new(RNG_SEED));
     register_resource_default::<Dispatcher, Bincode>("dispatcher");

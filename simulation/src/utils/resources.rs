@@ -1,3 +1,4 @@
+use prototypes::{GameTime, Tick};
 use std::any::{Any, TypeId};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -21,6 +22,10 @@ fn downcast_resource<T: Any + Send + Sync>(resource: Box<Resource>) -> T {
 impl Resources {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn tick(&self) -> Tick {
+        self.read::<GameTime>().tick
     }
 
     pub fn contains<T: Any + Send + Sync>(&self) -> bool {

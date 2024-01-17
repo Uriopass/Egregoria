@@ -5,13 +5,13 @@ use crate::gui::InspectedEntity;
 use crate::uiworld::UiWorld;
 use simulation::map_dynamic::ParkingManagement;
 use simulation::transportation::TransportGrid;
-use simulation::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
 use simulation::{Simulation, TrainID};
 
 use crate::inputmap::InputMap;
 use egui::Widget;
 use engine::{PerfCountersStatic, Tesselator};
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
+use prototypes::{GameDuration, GameTime, SECONDS_PER_DAY};
 use simulation::map::{
     IntersectionID, Map, MapSubscriber, NetworkObjectID, RoadSegmentKind, TraverseKind, UpdateType,
 };
@@ -82,34 +82,37 @@ pub fn debug(
         );
         drop(objs);
 
-        let time = sim.read::<GameTime>().timestamp;
+        let time = *sim.read::<GameTime>();
         let daysecleft = SECONDS_PER_DAY - sim.read::<GameTime>().daytime.daysec();
 
         if ui.small_button("set night").clicked() {
             uiworld
                 .commands()
-                .set_game_time(GameTime::new(0.1, time + daysecleft as f64));
+                .set_game_time(time + GameDuration::from_secs(daysecleft as u64));
         }
 
         if ui.small_button("set morning").clicked() {
-            uiworld.commands().set_game_time(GameTime::new(
-                0.1,
-                time + daysecleft as f64 + 5.5 * GameTime::HOUR as f64,
-            ));
+            uiworld.commands().set_game_time(
+                time + GameDuration::from_secs(
+                    (daysecleft as f64 + 6.0 * GameTime::HOUR as f64) as u64,
+                ),
+            );
         }
 
         if ui.small_button("set day").clicked() {
-            uiworld.commands().set_game_time(GameTime::new(
-                0.1,
-                time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64,
-            ));
+            uiworld.commands().set_game_time(
+                time + GameDuration::from_secs(
+                    (daysecleft as f64 + 12.0 * GameTime::HOUR as f64) as u64,
+                ),
+            );
         }
 
         if ui.small_button("set dawn").clicked() {
-            uiworld.commands().set_game_time(GameTime::new(
-                0.1,
-                time + daysecleft as f64 + 21.7 * GameTime::HOUR as f64,
-            ));
+            uiworld.commands().set_game_time(
+                time + GameDuration::from_secs(
+                    (daysecleft as f64 + 21.7 * GameTime::HOUR as f64) as u64,
+                ),
+            );
         }
 
         ui.label(format!(
@@ -117,7 +120,7 @@ pub fn debug(
             sim.read::<GameTime>().timestamp
         ));
 
-        ui.label(format!("Tick: {}", sim.read::<Tick>().0));
+        ui.label(format!("Tick: {}", time.tick));
 
         let timings = uiworld.read::<Timings>();
         let mouse = uiworld.read::<InputMap>().unprojected;

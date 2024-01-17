@@ -1,11 +1,11 @@
 use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use crate::utils::resources::Resources;
-use crate::utils::time::{GameTime, Tick};
 use crate::world::TrainID;
 use crate::World;
 use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
+use prototypes::{GameTime, Tick, DELTA};
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Debug, Serialize, Deserialize)]
@@ -416,11 +416,11 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     profiling::scope!("map_dynamic::itinerary_update");
     let time = &*resources.read::<GameTime>();
     let map = &*resources.read::<Map>();
-    let tick = *resources.read::<Tick>();
+    let tick = resources.read::<GameTime>().tick;
 
     world.query_it_trans_speed().for_each(
         |(it, trans, speed): (&mut Itinerary, &mut Transform, f32)| {
-            trans.pos = it.update(trans.pos, speed * time.realdelta, tick, time.seconds, map);
+            trans.pos = it.update(trans.pos, speed * DELTA, tick, time.seconds, map);
         },
     );
 

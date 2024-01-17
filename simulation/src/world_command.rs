@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use geom::{vec3, Vec2, Vec3, OBB};
 use prototypes::BuildingGen;
+use prototypes::GameTime;
 use WorldCommand::*;
 
 use crate::economy::Government;
@@ -20,7 +21,6 @@ use crate::transportation::testing_vehicles::RandomVehicles;
 use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::transportation::{spawn_parked_vehicle_with_spot, unpark, VehicleKind};
 use crate::utils::rand_provider::RandProvider;
-use crate::utils::time::{GameTime, Tick};
 use crate::{Replay, Simulation, SimulationOptions};
 
 #[derive(Clone, Default)]
@@ -220,8 +220,8 @@ impl WorldCommand {
 
         let mut rep = sim.resources.write::<Replay>();
         if rep.enabled {
-            let tick = sim.read::<Tick>();
-            rep.commands.push((*tick, self.clone()));
+            let tick = sim.read::<GameTime>().tick;
+            rep.commands.push((tick, self.clone()));
         }
         drop(rep);
 
@@ -308,8 +308,8 @@ impl WorldCommand {
                 if opts.save_replay {
                     let mut rep = sim.resources.write::<Replay>();
                     rep.enabled = true;
-                    let tick = sim.read::<Tick>();
-                    rep.commands.push((*tick, Init(opts.clone())));
+                    let tick = sim.read::<GameTime>().tick;
+                    rep.commands.push((tick, Init(opts.clone())));
                 }
 
                 if opts.terrain_size > 0 {
@@ -359,7 +359,7 @@ impl WorldCommand {
                 level,
                 slope,
             } => {
-                let tick = *sim.read::<Tick>();
+                let tick = sim.read::<GameTime>().tick;
                 sim.map_mut()
                     .terraform(tick, kind, center, radius, amount, level, slope);
             }

@@ -4,10 +4,10 @@ use crate::transportation::{
 };
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::resources::Resources;
-use crate::utils::time::GameTime;
 use crate::World;
 use egui_inspect::Inspect;
 use geom::{angle_lerpxy, Color, Transform, Vec3};
+use prototypes::DELTA;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]
@@ -65,17 +65,15 @@ pub fn random_pedestrian_shirt_color(r: &mut RandProvider) -> Color {
     unreachable!();
 }
 
-pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
+pub fn pedestrian_decision_system(world: &mut World, _resources: &mut Resources) {
     profiling::scope!("transportation::pedestrian_decision_system");
-    let ra = &*resources.read();
     world.humans
         .values_mut()
         //.par_bridge()
-        .for_each(|human| pedestrian_decision(ra, &mut human.it, &mut human.trans, &mut human.speed, &mut human.pedestrian))
+        .for_each(|human| pedestrian_decision(&mut human.it, &mut human.trans, &mut human.speed, &mut human.pedestrian))
 }
 
 pub fn pedestrian_decision(
-    time: &GameTime,
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Speed,
@@ -83,27 +81,21 @@ pub fn pedestrian_decision(
 ) {
     let (desired_v, desired_dir) = calc_decision(pedestrian, trans, it);
 
-    pedestrian.walk_anim += 7.0 * kin.0 * time.realdelta / pedestrian.walking_speed;
+    pedestrian.walk_anim += 7.0 * kin.0 * DELTA / pedestrian.walking_speed;
     pedestrian.walk_anim %= 2.0 * std::f32::consts::PI;
-    physics(kin, trans, time, desired_v, desired_dir);
+    physics(kin, trans, desired_v, desired_dir);
 }
 
 const PEDESTRIAN_ACC: f32 = 1.5;
 
-pub fn physics(
-    kin: &mut Speed,
-    trans: &mut Transform,
-    time: &GameTime,
-    desired_velocity: f32,
-    desired_dir: Vec3,
-) {
+pub fn physics(kin: &mut Speed, trans: &mut Transform, desired_velocity: f32, desired_dir: Vec3) {
     let diff = desired_velocity - kin.0;
-    let mag = diff.min(time.realdelta * PEDESTRIAN_ACC);
+    let mag = diff.min(DELTA * PEDESTRIAN_ACC);
     if mag > 0.0 {
         kin.0 += mag;
     }
     const ANG_VEL: f32 = 1.0;
-    trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * time.realdelta);
+    trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * DELTA);
 }
 
 pub fn calc_decision(

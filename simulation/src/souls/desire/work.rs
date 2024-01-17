@@ -2,9 +2,9 @@ use crate::map::BuildingID;
 use crate::map_dynamic::{Destination, Router};
 use crate::souls::human::HumanDecisionKind;
 use crate::transportation::Location;
-use crate::utils::time::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
 use crate::world::VehicleID;
 use egui_inspect::Inspect;
+use prototypes::{GameTime, RecTimeInterval, MINUTES_PER_HOUR};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -30,8 +30,8 @@ impl Work {
         Work {
             workplace,
             work_inter: RecTimeInterval::new(
-                (8, (offset * SECONDS_PER_HOUR as f32) as i32),
-                (18, (offset * SECONDS_PER_HOUR as f32) as i32),
+                (8, (offset * MINUTES_PER_HOUR as f32) as i32),
+                (18, (offset * MINUTES_PER_HOUR as f32) as i32),
             ),
             kind,
             last_score: 0.0,

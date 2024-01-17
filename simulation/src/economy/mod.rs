@@ -21,14 +21,13 @@ mod government;
 mod market;
 
 use crate::map::Map;
-use crate::utils::time::{Tick, TICKS_PER_SECOND};
 use crate::world::HumanID;
 pub use ecostats::*;
 pub use government::*;
 pub use market::*;
-use prototypes::{ItemID, Money};
+use prototypes::{GameTime, ItemID, Money, TICKS_PER_MINUTE};
 
-const WORKER_CONSUMPTION_PER_SECOND: Money = Money::new_cents(1);
+const WORKER_CONSUMPTION_PER_MINUTE: Money = Money::new_cents(10);
 
 #[derive(Inspect, Default, Serialize, Deserialize)]
 pub struct Sold(pub Vec<Trade>);
@@ -46,10 +45,10 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
     let mut m = resources.write::<Market>();
     let job_opening = ItemID::new("job-opening");
     let mut gvt = resources.write::<Government>();
-    let tick = resources.read::<Tick>().0;
+    let tick = resources.read::<GameTime>().tick;
 
-    if tick % TICKS_PER_SECOND == 0 {
-        gvt.money -= n_workers as i64 * WORKER_CONSUMPTION_PER_SECOND;
+    if tick.0 % TICKS_PER_MINUTE == 0 {
+        gvt.money -= n_workers as i64 * WORKER_CONSUMPTION_PER_MINUTE;
     }
 
     let freights = &world.freight_stations;
@@ -67,7 +66,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
             .map(|(id, _)| SoulID::FreightStation(id))
     });
 
-    resources.write::<EcoStats>().advance(tick, trades);
+    resources.write::<EcoStats>().advance(tick.0, trades);
 
     for &trade in trades.iter() {
         log::debug!("A trade was made! {:?}", trade);

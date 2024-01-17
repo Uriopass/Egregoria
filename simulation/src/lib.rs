@@ -17,7 +17,6 @@ use std::hash::Hash;
 use std::time::{Duration, Instant};
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
-use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 
 #[macro_use]
 extern crate common;
@@ -49,9 +48,9 @@ pub use world::*;
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
-use crate::utils::time::{Tick, SECONDS_PER_REALTIME_SECOND};
 use crate::world_command::WorldCommand::Init;
 use common::FastMap;
+use prototypes::{GameTime, Tick};
 pub use utils::config::*;
 pub use utils::par_command_buffer::ParCommandBuffer;
 pub use utils::replay::*;
@@ -245,23 +244,18 @@ impl Simulation {
             }
         }
 
-        const WORLD_TICK_DT: f32 = 0.05;
         {
             let mut time = self.write::<GameTime>();
-            *time = GameTime::new(
-                WORLD_TICK_DT,
-                time.timestamp + SECONDS_PER_REALTIME_SECOND as f64 * WORLD_TICK_DT as f64,
-            );
+            *time = GameTime::new(Tick(time.tick.0 + 1));
         }
 
         game_schedule.execute(self);
-        self.write::<Tick>().0 += 1;
 
         t.elapsed()
     }
 
     pub fn get_tick(&self) -> u64 {
-        self.resources.read::<Tick>().0
+        self.resources.read::<GameTime>().tick.0
     }
 
     pub fn hashes(&self) -> BTreeMap<String, u64> {

@@ -1,10 +1,10 @@
 use crate::map::{
     LaneID, LaneKind, LanePatternBuilder, Map, Traversable, TraverseDirection, TraverseKind, TurnID,
 };
-use crate::utils::time::Tick;
 use common::hash_u64;
 use geom::{PolyLine3, Vec3};
 use ordered_float::OrderedFloat;
+use prototypes::Tick;
 use serde::{Deserialize, Serialize};
 use slotmapd::Key;
 

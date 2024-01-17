@@ -8,14 +8,13 @@ use crate::transportation::{
 };
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::resources::Resources;
-use crate::utils::time::GameTime;
 use crate::world::{FreightStationEnt, HumanEnt, HumanID, VehicleID};
 use crate::World;
 use crate::{BuildingKind, Map, ParCommandBuffer, Simulation, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
 use lazy_static::lazy_static;
-use prototypes::ItemID;
+use prototypes::{GameTime, ItemID};
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Serialize, Deserialize, Default)]

@@ -1,4 +1,4 @@
-use crate::{get_with_err, ItemID};
+use crate::{get_with_err, GameDuration, ItemID};
 use egui_inspect::Inspect;
 use mlua::{FromLua, Lua, Table, Value};
 
@@ -37,8 +37,8 @@ pub struct Recipe {
     pub consumption: Vec<RecipeItem>,
     pub production: Vec<RecipeItem>,
 
-    /// Time to execute the recipe when the facility is at full capacity, in seconds
-    pub complexity: i32,
+    /// Time to execute the recipe when the facility is at full capacity
+    pub duration: GameDuration,
 
     /// Quantity to store per production in terms of quantity produced. So if it takes 1ton of flour to make
     /// 1 ton of bread. A storage multiplier of 3 means 3 tons of bread will be stored before stopping to
@@ -52,7 +52,7 @@ impl<'lua> FromLua<'lua> for Recipe {
         Ok(Self {
             consumption: get_with_err(&table, "consumption")?,
             production: get_with_err(&table, "production")?,
-            complexity: get_with_err(&table, "complexity")?,
+            duration: get_with_err(&table, "duration")?,
             storage_multiplier: get_with_err(&table, "storage_multiplier")?,
         })
     }
