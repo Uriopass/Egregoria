@@ -44,6 +44,7 @@ mod turn_policy;
 // Use self or else it would be ambiguous with "pathfinding" crate
 pub use self::pathfinding::*;
 pub use change_detection::*;
+pub use electricity::*;
 pub use light_policy::*;
 pub use map::*;
 pub use spatial_map::*;

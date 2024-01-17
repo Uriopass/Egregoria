@@ -76,6 +76,10 @@ impl PolyLine3 {
         })
     }
 
+    pub fn middle(&self) -> Vec3 {
+        self.point_along(self.length() * 0.5)
+    }
+
     /// Simplifies the polyline by keeping points
     /// where the dot product of the previous and next segment is greater than mindot
     /// mindot should be a bit more than -1

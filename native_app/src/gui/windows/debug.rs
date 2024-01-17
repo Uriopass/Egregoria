@@ -13,7 +13,7 @@ use egui::Widget;
 use engine::{PerfCountersStatic, Tesselator};
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use simulation::map::{
-    IntersectionID, Map, MapSubscriber, RoadSegmentKind, TraverseKind, UpdateType,
+    IntersectionID, Map, MapSubscriber, NetworkObjectID, RoadSegmentKind, TraverseKind, UpdateType,
 };
 use simulation::transportation::train::TrainReservations;
 use simulation::world_command::WorldCommand;
@@ -38,6 +38,7 @@ impl Default for DebugObjs {
             (true, "Debug pathfinder", debug_pathfinder),
             (false, "Debug train reservations", debug_trainreservations),
             (false, "Debug connectivity", debug_connectivity),
+            (false, "Debug electricity", debug_electricity),
             (false, "Debug spatialmap", debug_spatialmap),
             (false, "Debug transport grid", debug_transport_grid),
             (false, "Debug splines", debug_spline),
@@ -295,6 +296,41 @@ pub fn debug_road_points(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWo
     Some(())
 }
 
+fn random_color(i: u64) -> Color {
+    let r = common::rand::randu(i as u32);
+    Color::hsv(r * 360.0, 0.8, 0.6, 0.5)
+}
+
+pub fn debug_electricity(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+    let map = sim.map();
+
+    let getpos = |object: NetworkObjectID| match object {
+        NetworkObjectID::Building(b) => Some(map.get(b)?.obb.center().z(5.0)),
+        NetworkObjectID::Intersection(i) => Some(map.get(i)?.pos.up(5.0)),
+        NetworkObjectID::Road(r) => {
+            let road = map.get(r)?;
+            Some(road.points.middle().up(5.0))
+        }
+    };
+
+    for network in map.electricity.networks() {
+        tess.set_color(random_color(common::hash_u64(network.id)));
+
+        for object in &network.objects {
+            tess.draw_circle(getpos(*object)?, 10.0);
+        }
+    }
+
+    for (k, v) in map.electricity.graph.iter() {
+        tess.set_color(random_color(common::hash_u64(map.electricity.net_id(*k)?)));
+        for v in v {
+            tess.draw_stroke(getpos(*k)?, getpos(*v)?, 3.0);
+        }
+    }
+
+    Some(())
+}
+
 pub fn debug_connectivity(
     tess: &mut Tesselator<true>,
     sim: &Simulation,
@@ -323,8 +359,7 @@ pub fn debug_connectivity(
     }
 
     for (i, comp) in state.connectivity.1.iter().enumerate() {
-        let r = common::rand::randu(i as u32);
-        tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
+        tess.set_color(random_color(i as u64));
 
         for int in comp.iter().flat_map(|x| map.intersections().get(*x)) {
             tess.draw_circle(int.pos, 8.0);
