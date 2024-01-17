@@ -30,7 +30,7 @@ impl From<RoadID> for NetworkObjectID {
 
 /// The id of a network is the id of its lowest object. This is necessary to keep everything
 /// deterministic even though we don't serialize the electricity cache
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ElectricityNetworkID(NetworkObjectID);
 
 /// A network is a set of sources and sinks that is connected together
@@ -342,7 +342,7 @@ impl ElectricityCache {
             }
             for neighbor in cache.edges(id) {
                 if visited.contains(&neighbor) {
-                    return false;
+                    continue;
                 }
                 if explore(cache, visited, neighbor, early_stop) {
                     return true;
@@ -405,10 +405,46 @@ impl ElectricityCache {
 #[cfg(test)]
 mod tests {
     use crate::map::electricity::ElectricityCache;
-    use crate::map::{BuildingKind, LanePatternBuilder, Map, MapProject};
+    use crate::map::{BuildingKind, LanePatternBuilder, Map, MapProject, NetworkObjectID, RoadID};
     use common::logger::MyLog;
     use geom::{vec3, Vec2, OBB};
     use prototypes::BuildingGen;
+    use slotmapd::KeyData;
+
+    #[test]
+    fn test_loop_removal() {
+        MyLog::init();
+
+        let mut e = ElectricityCache::default();
+
+        let mk_ent = |i| NetworkObjectID::Road(RoadID::from(KeyData::from_ffi(i)));
+
+        e.add_object(mk_ent(1));
+        e.add_object(mk_ent(2));
+        e.add_object(mk_ent(3));
+        e.add_object(mk_ent(4));
+        e.add_object(mk_ent(5));
+        e.add_object(mk_ent(6));
+        e.add_object(mk_ent(7));
+        e.add_object(mk_ent(8));
+
+        e.add_edge(mk_ent(1), mk_ent(2));
+        e.add_edge(mk_ent(2), mk_ent(3));
+        e.add_edge(mk_ent(3), mk_ent(4));
+        e.add_edge(mk_ent(4), mk_ent(5));
+        e.add_edge(mk_ent(5), mk_ent(6));
+        e.add_edge(mk_ent(6), mk_ent(7));
+        e.add_edge(mk_ent(7), mk_ent(8));
+        e.add_edge(mk_ent(8), mk_ent(1));
+
+        assert_eq!(e.networks.len(), 1);
+
+        e.remove_edge(mk_ent(1), mk_ent(2));
+        e.remove_edge(mk_ent(2), mk_ent(3));
+        e.remove_object(mk_ent(2));
+
+        assert_eq!(e.networks.len(), 1);
+    }
 
     #[test]
     fn test_connectivity() {
