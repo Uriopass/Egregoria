@@ -52,7 +52,7 @@ impl Lot {
             shape,
             height,
         });
-        map.spatial_map.insert(id, shape);
+        map.spatial_map.insert(&map.lots[id]);
         Some(id)
     }
 
@@ -118,8 +118,8 @@ impl Lot {
             .collect();
 
         let mut rp = |p: Circle| to_remove.extend(map.spatial_map.query(p, ProjectFilter::LOT));
-        rp(unwrap_ret!(map.intersections.get(r.src)).bcircle(&map.roads));
-        rp(unwrap_ret!(map.intersections.get(r.dst)).bcircle(&map.roads));
+        rp(unwrap_ret!(map.intersections.get(r.src)).bcircle());
+        rp(unwrap_ret!(map.intersections.get(r.dst)).bcircle());
 
         for lot in to_remove {
             if let ProjectKind::Lot(lot) = lot {

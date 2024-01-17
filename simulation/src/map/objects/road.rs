@@ -122,7 +122,7 @@ impl Road {
 
         road.update_lanes(lanes, parking, env);
 
-        spatial.insert(id, road.boldline());
+        spatial.insert(road);
         road.id
     }
 

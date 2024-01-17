@@ -126,19 +126,13 @@ impl Building {
             mesh.faces.push((walkway, Color::gray(0.4).into()));
         }
 
-        Some(buildings.insert_with_key(move |id| {
+        let b = buildings.insert_with_key(move |id| {
             if let Some(r) = connected_road {
                 if let Some(r) = roads.get_mut(r) {
                     r.connected_buildings.push(id);
                 } else {
                     connected_road = None;
                 }
-            }
-
-            if let Some(zone) = zone.clone() {
-                spatial_map.insert(id, zone.poly);
-            } else {
-                spatial_map.insert(id, obb);
             }
 
             Self {
@@ -151,6 +145,9 @@ impl Building {
                 zone,
                 connected_road,
             }
-        }))
+        });
+
+        spatial_map.insert(&buildings[b]);
+        Some(b)
     }
 }

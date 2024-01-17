@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::map::{
-    BuildingID, Buildings, Environment, Intersections, Lanes, Lots, Map, ParkingSpots, Roads,
-    SpatialMap,
+    BuildingID, Buildings, ElectricityCache, Environment, Intersections, Lanes, Lots, Map,
+    ParkingSpots, Roads, SpatialMap,
 };
 
 #[derive(Default, Serialize, Deserialize)]
@@ -35,7 +35,7 @@ impl From<&Map> for SerializedMap {
 impl From<SerializedMap> for Map {
     fn from(sel: SerializedMap) -> Self {
         let spatial_map = mk_spatial_map(&sel);
-        Map {
+        let mut m = Map {
             roads: sel.roads,
             lanes: sel.lanes,
             intersections: sel.intersections,
@@ -46,27 +46,25 @@ impl From<SerializedMap> for Map {
             environment: sel.environment,
             external_train_stations: sel.external_train_stations,
             ..Self::empty()
-        }
+        };
+        m.electricity = ElectricityCache::build(&m);
+        m
     }
 }
 
 fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     let mut sm = SpatialMap::default();
     for b in m.buildings.values() {
-        if let Some(ref z) = b.zone {
-            sm.insert(b.id, z.poly.clone());
-            continue;
-        }
-        sm.insert(b.id, b.obb);
+        sm.insert(b);
     }
     for r in m.roads.values() {
-        sm.insert(r.id, r.boldline());
+        sm.insert(r);
     }
     for i in m.intersections.values() {
-        sm.insert(i.id, i.bcircle(&m.roads));
+        sm.insert(i);
     }
     for l in m.lots.values() {
-        sm.insert(l.id, l.shape);
+        sm.insert(l);
     }
     sm
 }

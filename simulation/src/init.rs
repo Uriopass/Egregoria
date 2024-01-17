@@ -1,8 +1,8 @@
 use crate::economy::{market_update, EcoStats, Government, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
-    dispatch_system, itinerary_update, routing_changed_system, routing_update_system,
-    BuildingInfos, Dispatcher, ParkingManagement,
+    dispatch_system, electricity_flow_system, itinerary_update, routing_changed_system,
+    routing_update_system, BuildingInfos, Dispatcher, ElectricityFlow, ParkingManagement,
 };
 use crate::multiplayer::MultiplayerState;
 use crate::souls::freight_station::freight_station_system;
@@ -44,6 +44,7 @@ pub fn init() {
         }
     }
 
+    register_system("electricity_flow_system", electricity_flow_system);
     register_system("dispatch_system", dispatch_system);
     register_system("update_decision_system", update_decision_system);
     register_system("company_system", company_system);
@@ -71,6 +72,7 @@ pub fn init() {
     register_resource_noserialize::<ParCommandBuffer<CompanyEnt>>();
     register_resource_noinit::<SimulationOptions, Bincode>("simoptions");
 
+    register_resource_default::<ElectricityFlow, Bincode>("electricity_flow");
     register_resource_default::<Market, Bincode>("market");
     register_resource_default::<EcoStats, Bincode>("ecostats");
     register_resource_default::<MultiplayerState, Bincode>("multiplayer_state");

@@ -52,6 +52,7 @@ macro_rules! gen_prototypes {
                 &prototypes.orderings.$name
             }
 
+            #[inline]
             fn storage(prototypes: &Prototypes) -> &common::TransparentMap<Self::ID, Self> {
                 &prototypes.$name
             }

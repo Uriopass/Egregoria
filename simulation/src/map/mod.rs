@@ -28,7 +28,7 @@ pub mod procgen {
 }
 
 mod change_detection;
-mod electricity;
+mod electricity_cache;
 mod height_override;
 mod light_policy;
 #[allow(clippy::module_inception)]
@@ -44,7 +44,7 @@ mod turn_policy;
 // Use self or else it would be ambiguous with "pathfinding" crate
 pub use self::pathfinding::*;
 pub use change_detection::*;
-pub use electricity::*;
+pub use electricity_cache::*;
 pub use light_policy::*;
 pub use map::*;
 pub use spatial_map::*;

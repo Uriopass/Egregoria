@@ -1,4 +1,4 @@
-use crate::map::electricity::ElectricityCache;
+use crate::map::electricity_cache::ElectricityCache;
 use crate::map::height_override::find_overrides;
 use crate::map::serializing::SerializedMap;
 use crate::map::{
@@ -215,12 +215,13 @@ impl Map {
                 .dispatch_chunk(UpdateType::Terrain, tree_chunk)
         });
 
-        self.spatial_map.insert(id, z.poly.clone());
-
         let toclean = self
             .spatial_map
             .query(&z.poly, ProjectFilter::LOT)
             .collect();
+
+        self.spatial_map.update(b);
+
         self.clean_lots_inner(toclean);
 
         self.check_invariants()
@@ -455,8 +456,7 @@ impl Map {
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
 
-        self.spatial_map
-            .update(inter.id, inter.bcircle(&self.roads));
+        self.spatial_map.update(inter);
     }
 
     /// Only removes road from Roads and spatial map but keeps lots, buildings connection

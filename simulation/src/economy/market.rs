@@ -343,7 +343,10 @@ impl Market {
 fn calculate_prices(price_multiplier: f32) -> BTreeMap<ItemID, Money> {
     let mut item_graph: BTreeMap<ItemID, Vec<GoodsCompanyID>> = BTreeMap::new();
     for company in GoodsCompanyPrototype::iter() {
-        for item in &company.recipe.production {
+        let Some(ref recipe) = company.recipe else {
+            continue;
+        };
+        for item in &recipe.production {
             item_graph.entry(item.id).or_default().push(company.id);
         }
     }
@@ -363,20 +366,21 @@ fn calculate_prices(price_multiplier: f32) -> BTreeMap<ItemID, Money> {
         for &comp in item_graph.get(&id).unwrap_or(&vec![]) {
             let company = &comp.prototype();
             let mut price_consumption = Money::ZERO;
-            for recipe_item in &company.recipe.consumption {
+            let Some(ref recipe) = company.recipe else {
+                continue;
+            };
+            for recipe_item in &recipe.consumption {
                 calculate_price_inner(item_graph, recipe_item.id, prices, price_multiplier);
                 price_consumption += prices[&recipe_item.id] * recipe_item.amount as i64;
             }
-            let qty = company
-                .recipe
+            let qty = recipe
                 .production
                 .iter()
                 .find_map(|x| (x.id == id).then_some(x.amount))
                 .unwrap_or(0) as i64;
 
-            let price_workers = company.recipe.complexity as i64
-                * company.n_workers as i64
-                * WORKER_CONSUMPTION_PER_SECOND;
+            let price_workers =
+                recipe.complexity as i64 * company.n_workers as i64 * WORKER_CONSUMPTION_PER_SECOND;
 
             let newprice = (price_consumption
                 + Money::new_inner((price_workers.inner() as f32 * price_multiplier) as i64))

@@ -1,9 +1,10 @@
 use crate::map::{BuildingID, Buildings, IntersectionID, Intersections, Map, RoadID, Roads};
+use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// A network object is an object that can be connected to an electricity network
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum NetworkObjectID {
     Building(BuildingID),
     Intersection(IntersectionID),
@@ -30,7 +31,7 @@ impl From<RoadID> for NetworkObjectID {
 
 /// The id of a network is the id of its lowest object. This is necessary to keep everything
 /// deterministic even though we don't serialize the electricity cache
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ElectricityNetworkID(NetworkObjectID);
 
 /// A network is a set of sources and sinks that is connected together
@@ -185,8 +186,8 @@ impl ElectricityCache {
 
     /// Gets the network id of a network object
     /// Note that network ids change all the time, so this should not be kept as state
-    pub fn net_id(&self, object_id: NetworkObjectID) -> Option<ElectricityNetworkID> {
-        self.ids.get(&object_id).copied()
+    pub fn net_id(&self, object_id: impl Into<NetworkObjectID>) -> Option<ElectricityNetworkID> {
+        self.ids.get(&object_id.into()).copied()
     }
 
     pub fn networks(&self) -> impl Iterator<Item = &ElectricityNetwork> {
@@ -369,23 +370,19 @@ impl ElectricityCache {
             new_network_objects: BTreeSet<NetworkObjectID>,
         ) {
             let kept_net = cache.networks.get_mut(&kept_network_id).unwrap();
+            let mut new_buildings = BTreeSet::new();
             for v in new_network_objects.iter() {
                 kept_net.objects.remove(v);
                 if let NetworkObjectID::Building(b) = v {
                     kept_net.buildings.remove(b);
+                    new_buildings.insert(*b);
                 }
                 cache.ids.insert(*v, new_network_id);
             }
 
             let new_network = ElectricityNetwork {
                 id: new_network_id,
-                buildings: new_network_objects
-                    .iter()
-                    .filter_map(|v| match v {
-                        NetworkObjectID::Building(b) => Some(*b),
-                        _ => None,
-                    })
-                    .collect(),
+                buildings: new_buildings,
                 objects: new_network_objects,
             };
 
@@ -404,7 +401,7 @@ impl ElectricityCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::map::electricity::ElectricityCache;
+    use crate::map::ElectricityCache;
     use crate::map::{BuildingKind, LanePatternBuilder, Map, MapProject, NetworkObjectID, RoadID};
     use common::logger::MyLog;
     use geom::{vec3, Vec2, OBB};
@@ -483,14 +480,14 @@ mod tests {
         assert_eq!(e, &mut e_from_map);
 
         assert_eq!(e.networks.len(), 1);
-        assert_eq!(e.networks[&e.net_id(b.into()).unwrap()].objects.len(), 4);
-        assert_eq!(e.networks[&e.net_id(b.into()).unwrap()].buildings.len(), 1);
+        assert_eq!(e.networks[&e.net_id(b).unwrap()].objects.len(), 4);
+        assert_eq!(e.networks[&e.net_id(b).unwrap()].buildings.len(), 1);
 
         e.remove_edge(r, b);
 
         assert_eq!(e.networks.len(), 2);
-        assert_eq!(e.networks[&e.net_id(b.into()).unwrap()].buildings.len(), 1);
-        assert_eq!(e.networks[&e.net_id(r.into()).unwrap()].buildings.len(), 0);
+        assert_eq!(e.networks[&e.net_id(b).unwrap()].buildings.len(), 1);
+        assert_eq!(e.networks[&e.net_id(r).unwrap()].buildings.len(), 0);
 
         e.add_edge(r, b);
 
@@ -498,6 +495,6 @@ mod tests {
 
         let e = &mut m.electricity;
         assert_eq!(e.networks.len(), 1);
-        assert_eq!(e.networks[&e.net_id(b.into()).unwrap()].buildings.len(), 1);
+        assert_eq!(e.networks[&e.net_id(b).unwrap()].buildings.len(), 1);
     }
 }

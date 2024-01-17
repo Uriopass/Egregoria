@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use thiserror::Error;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 /// Power in watts (J/s)
 pub struct Power(pub i64);
 debug_inspect_impl!(Power);
@@ -80,7 +80,13 @@ impl Display for Power {
             _ => ("GW", 1_000_000_000.0),
         };
 
-        write!(f, "{:.2}{}", self.0 as f64 / div, unit)
+        let v = self.0 as f64 / div;
+
+        if (v.round() - v).abs() < 0.01 {
+            write!(f, "{}{}", v.round(), unit)
+        } else {
+            write!(f, "{:.2}{}", v, unit)
+        }
     }
 }
 
@@ -108,5 +114,93 @@ impl<'lua> FromLua<'lua> for Power {
                 message: Some("expected nil, string or number".into()),
             }),
         }
+    }
+}
+
+impl std::ops::Mul<Power> for f64 {
+    type Output = Power;
+
+    fn mul(self, rhs: Power) -> Self::Output {
+        Power((self * rhs.0 as f64) as i64)
+    }
+}
+
+impl std::ops::Mul<Power> for i64 {
+    type Output = Power;
+
+    fn mul(self, rhs: Power) -> Self::Output {
+        Power(self * rhs.0)
+    }
+}
+
+impl std::ops::Neg for Power {
+    type Output = Power;
+
+    fn neg(self) -> Self::Output {
+        Power(-self.0)
+    }
+}
+
+impl std::iter::Sum for Power {
+    fn sum<I: Iterator<Item = Power>>(iter: I) -> Self {
+        iter.fold(Power::ZERO, |a, b| a + b)
+    }
+}
+
+impl std::fmt::Debug for Power {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
+    }
+}
+
+impl std::ops::Sub for Power {
+    type Output = Power;
+
+    fn sub(self, other: Power) -> Power {
+        Power(self.0 - other.0)
+    }
+}
+
+impl std::ops::SubAssign for Power {
+    fn sub_assign(&mut self, other: Power) {
+        self.0 -= other.0;
+    }
+}
+
+impl std::ops::Add for Power {
+    type Output = Power;
+
+    fn add(self, other: Power) -> Power {
+        Power(self.0 + other.0)
+    }
+}
+
+impl std::ops::AddAssign for Power {
+    fn add_assign(&mut self, other: Power) {
+        self.0 += other.0;
+    }
+}
+
+impl std::ops::Mul<i64> for Power {
+    type Output = Power;
+
+    fn mul(self, rhs: i64) -> Self::Output {
+        Power(self.0 * rhs)
+    }
+}
+
+impl std::ops::Mul<f64> for Power {
+    type Output = Power;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Power((self.0 as f64 * rhs) as i64)
+    }
+}
+
+impl std::ops::Div<i64> for Power {
+    type Output = Power;
+
+    fn div(self, rhs: i64) -> Self::Output {
+        Power(self.0 / rhs)
     }
 }

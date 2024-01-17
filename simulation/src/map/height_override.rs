@@ -73,7 +73,7 @@ pub fn find_overrides(map: &mut Map, chunk: SubscriberChunkID) {
             ProjectKind::Inter(i) => {
                 let i = map.get(i).unwrap();
 
-                let mut bounds = i.bcircle(&map.roads);
+                let mut bounds = i.bcircle();
                 bounds.radius *= 2.0;
 
                 bounds.bbox()
@@ -111,7 +111,7 @@ pub fn find_overrides(map: &mut Map, chunk: SubscriberChunkID) {
                 ProjectKind::Inter(i) => {
                     let i = map.get(i).unwrap();
 
-                    let mut bounds = i.bcircle(&map.roads);
+                    let mut bounds = i.bcircle();
                     bounds.radius *= 2.0;
 
                     setter

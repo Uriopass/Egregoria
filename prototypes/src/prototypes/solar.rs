@@ -1,12 +1,10 @@
-use crate::{get_with_err, GoodsCompanyPrototype, Power, Prototype, SolarPanelID};
+use crate::{GoodsCompanyPrototype, Prototype, SolarPanelID};
 use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct SolarPanelPrototype {
     pub base: GoodsCompanyPrototype,
     pub id: SolarPanelID,
-    /// The maximum power output when the sun is at its peak
-    pub max_power: Power,
 }
 
 impl Prototype for SolarPanelPrototype {
@@ -19,7 +17,6 @@ impl Prototype for SolarPanelPrototype {
         Ok(Self {
             id: SolarPanelID::new(&base.name),
             base,
-            max_power: get_with_err(table, "max_power")?,
         })
     }
 

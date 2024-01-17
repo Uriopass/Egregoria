@@ -1,4 +1,7 @@
-use crate::map::{BuildingID, CanonicalPosition, IntersectionID, LotID, Map, RoadID};
+use crate::map::{
+    Building, BuildingID, CanonicalPosition, Intersection, IntersectionID, Lot, LotID, Map, Road,
+    RoadID,
+};
 use derive_more::From;
 use flat_spatial::aabbgrid::AABBGridHandle;
 use flat_spatial::AABBGrid;
@@ -69,6 +72,11 @@ impl ProjectKind {
     }
 }
 
+pub trait SpatialMapObject {
+    fn kind(&self) -> ProjectKind;
+    fn shape(&self) -> ShapeEnum;
+}
+
 pub struct SpatialMap {
     broad: AABBGrid<ProjectKind, AABB>,
     near: BTreeMap<ProjectKind, ShapeEnum>,
@@ -86,9 +94,9 @@ impl Default for SpatialMap {
 }
 
 impl SpatialMap {
-    pub fn insert(&mut self, kind: impl Into<ProjectKind>, shape: impl Into<ShapeEnum>) {
-        let kind = kind.into();
-        let shape = shape.into();
+    pub fn insert(&mut self, obj: &impl SpatialMapObject) {
+        let kind = obj.kind();
+        let shape = obj.shape();
         let handle = self.broad.insert(shape.bbox(), kind);
         if let Some(old_handle) = self.ids.insert(kind, handle) {
             self.broad.remove(old_handle);
@@ -109,9 +117,9 @@ impl SpatialMap {
         }
     }
 
-    pub fn update(&mut self, kind: impl Into<ProjectKind>, shape: impl Into<ShapeEnum>) {
-        let kind = kind.into();
-        let shape = shape.into();
+    pub fn update(&mut self, obj: &impl SpatialMapObject) {
+        let kind = obj.kind();
+        let shape = obj.shape();
         if let Some(id) = self.ids.get(&kind) {
             self.broad.set_aabb(*id, shape.bbox());
             self.near.insert(kind, shape);
@@ -160,6 +168,49 @@ impl SpatialMap {
 
     pub fn objects(&self) -> impl Iterator<Item = &ProjectKind> + '_ {
         self.ids.keys()
+    }
+}
+
+impl SpatialMapObject for Intersection {
+    fn kind(&self) -> ProjectKind {
+        ProjectKind::Inter(self.id)
+    }
+
+    fn shape(&self) -> ShapeEnum {
+        self.bcircle().into()
+    }
+}
+
+impl SpatialMapObject for Road {
+    fn kind(&self) -> ProjectKind {
+        ProjectKind::Road(self.id)
+    }
+
+    fn shape(&self) -> ShapeEnum {
+        self.boldline().into()
+    }
+}
+
+impl SpatialMapObject for Lot {
+    fn kind(&self) -> ProjectKind {
+        ProjectKind::Lot(self.id)
+    }
+
+    fn shape(&self) -> ShapeEnum {
+        self.shape.into()
+    }
+}
+
+impl SpatialMapObject for Building {
+    fn kind(&self) -> ProjectKind {
+        ProjectKind::Building(self.id)
+    }
+
+    fn shape(&self) -> ShapeEnum {
+        if let Some(ref z) = self.zone {
+            return z.poly.clone().into();
+        }
+        self.obb.into()
     }
 }
 

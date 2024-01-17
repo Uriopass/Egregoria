@@ -2,17 +2,17 @@ use serde::{Deserialize, Serialize};
 
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
-use prototypes::{CompanyKind, GoodsCompanyID, ItemID, Recipe};
+use prototypes::{CompanyKind, GoodsCompanyID, GoodsCompanyPrototype, ItemID, Power, Recipe};
 
 use crate::economy::{find_trade_place, Market};
 use crate::map::{Building, BuildingID, Map, Zone, MAX_ZONE_AREA};
-use crate::map_dynamic::BuildingInfos;
+use crate::map_dynamic::{BuildingInfos, ElectricityFlow};
 use crate::souls::desire::WorkKind;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
-use crate::{ParCommandBuffer, SoulID};
+use crate::{ParCommandBuffer, SoulID, VehicleEnt};
 use crate::{Simulation, World};
 
 use super::desire::Work;
@@ -36,6 +36,8 @@ pub fn recipe_should_produce(recipe: &Recipe, soul: SoulID, market: &Market) -> 
             recipe.production.iter().all(move |item| {
                 market.capital(soul, item.id) < item.amount * (recipe.storage_multiplier + 1)
             })
+        // has something to do
+    && (!recipe.consumption.is_empty() || !recipe.production.is_empty())
 }
 
 pub fn recipe_act(recipe: &Recipe, soul: SoulID, near: Vec2, market: &mut Market) {
@@ -58,16 +60,44 @@ pub fn recipe_act(recipe: &Recipe, soul: SoulID, near: Vec2, market: &mut Market
 pub struct GoodsCompanyState {
     pub proto: GoodsCompanyID,
     pub building: BuildingID,
-    pub max_workers: i32,
+    pub max_workers: u32,
     /// In [0; 1] range, to show how much has been made until new product
     pub progress: f32,
     pub driver: Option<HumanID>,
     pub trucks: Vec<VehicleID>,
 }
 
-impl GoodsCompanyState {
-    pub fn productivity(&self, workers: usize, zone: Option<&Zone>) -> f32 {
-        workers as f32 / self.max_workers as f32 * zone.map_or(1.0, |z| z.area / MAX_ZONE_AREA)
+impl CompanyEnt {
+    /// Returns the productivity of the company, in [0; 1] range _before_ taking electricity into account
+    pub fn raw_productivity(&self, proto: &GoodsCompanyPrototype, zone: Option<&Zone>) -> f32 {
+        let mut p = 1.0;
+        if proto.n_workers > 0 {
+            p = self.workers.0.len() as f32 / proto.n_workers as f32;
+        }
+        if let Some(z) = zone {
+            p *= z.area / MAX_ZONE_AREA
+        }
+
+        p
+    }
+
+    /// Returns the productivity of the company, in [0; 1] range
+    pub fn productivity(
+        &self,
+        proto: &GoodsCompanyPrototype,
+        zone: Option<&Zone>,
+        map: &Map,
+        elec_flow: &ElectricityFlow,
+    ) -> f32 {
+        let mut p = self.raw_productivity(proto, zone);
+
+        if proto.power_consumption > Power::ZERO {
+            if let Some(net_id) = map.electricity.net_id(self.comp.building) {
+                p *= elec_flow.productivity(net_id);
+            }
+        }
+
+        p
     }
 }
 
@@ -91,7 +121,10 @@ pub fn company_soul(
         for _ in 0..proto.n_trucks {
             trucks.extend(spawn_parked_vehicle(sim, VehicleKind::Truck, door_pos))
         }
-        if trucks.is_empty() {
+        if trucks.len() as u32 != proto.n_trucks {
+            for truck in trucks {
+                sim.write::<ParCommandBuffer<VehicleEnt>>().kill(truck);
+            }
             return None;
         }
     }
@@ -121,10 +154,12 @@ pub fn company_soul(
 
     {
         let m = &mut *sim.write::<Market>();
-        m.produce(soul, job_opening, company.max_workers);
+        m.produce(soul, job_opening, company.max_workers as i32);
         m.sell_all(soul, door_pos.xy(), job_opening, 0);
 
-        recipe_init(&proto.recipe, soul, door_pos.xy(), m);
+        if let Some(ref r) = proto.recipe {
+            recipe_init(r, soul, door_pos.xy(), m);
+        }
     }
 
     sim.write::<BuildingInfos>()
@@ -141,9 +176,9 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
     let binfos: &BuildingInfos = &res.read();
     let market: &Market = &res.read();
     let map: &Map = &res.read();
+    let elec_flow: &ElectricityFlow = &res.read();
 
     world.companies.iter_mut().for_each(|(me, c)| {
-        let n_workers = c.workers.0.len();
         let soul = SoulID::GoodsCompany(me);
         let b: &Building = unwrap_or!(map.buildings.get(c.comp.building), {
             cbuf.kill(me);
@@ -152,22 +187,24 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
 
         let proto = c.comp.proto.prototype();
 
-        if recipe_should_produce(&proto.recipe, soul, market) {
-            c.comp.progress += c.comp.productivity(n_workers, b.zone.as_ref())
-                / proto.recipe.complexity as f32
-                * delta;
-        }
+        if let Some(recipe) = &proto.recipe {
+            if recipe_should_produce(recipe, soul, market) {
+                let productivity = c.productivity(proto, b.zone.as_ref(), map, elec_flow);
 
-        if c.comp.progress >= 1.0 {
-            c.comp.progress -= 1.0;
-            let kind = c.comp.proto;
-            let bpos = b.door_pos;
+                c.comp.progress += productivity * delta / recipe.complexity as f32;
+            }
 
-            cbuf.exec_on(me, move |market| {
-                let recipe = &kind.prototype().recipe;
-                recipe_act(recipe, soul, bpos.xy(), market);
-            });
-            return;
+            if c.comp.progress >= 1.0 {
+                c.comp.progress -= 1.0;
+                let kind = c.comp.proto;
+                let bpos = b.door_pos;
+
+                cbuf.exec_on(me, move |market| {
+                    let recipe = kind.prototype().recipe.as_ref().unwrap();
+                    recipe_act(recipe, soul, bpos.xy(), market);
+                });
+                return;
+            }
         }
 
         for (_, trades) in c.bought.0.iter_mut() {

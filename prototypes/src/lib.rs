@@ -122,7 +122,7 @@ pub fn try_prototype<ID: PrototypeID>(id: ID) -> Option<&'static <ID as Prototyp
 where
     ID::Prototype: ConcretePrototype,
 {
-    <ID as PrototypeID>::Prototype::storage(try_prototypes()?).get(&id)
+    <ID as PrototypeID>::Prototype::storage(prototypes()).get(&id)
 }
 
 #[inline]

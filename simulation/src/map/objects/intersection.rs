@@ -23,6 +23,7 @@ impl IntersectionID {
 pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vec3,
+    pub radius: f32,
 
     turns: BTreeSet<Turn>,
 
@@ -38,12 +39,13 @@ impl Intersection {
         let id = store.insert_with_key(|id| Intersection {
             id,
             pos,
+            radius: 0.0,
             turns: Default::default(),
             roads: Default::default(),
             turn_policy: Default::default(),
             light_policy: Default::default(),
         });
-        spatial.insert(id, pos.xy());
+        spatial.insert(&store[id]);
         id
     }
 
@@ -58,18 +60,22 @@ impl Intersection {
         });
     }
 
-    pub fn bcircle(&self, roads: &Roads) -> Circle {
+    pub fn bcircle(&self) -> Circle {
         Circle {
             center: self.pos.xy(),
-            radius: self
-                .roads
-                .iter()
-                .flat_map(|x| roads.get(*x))
-                .map(|x| OrderedFloat(x.interface_from(self.id)))
-                .max()
-                .map(|x| x.0)
-                .unwrap_or(10.0),
+            radius: self.radius,
         }
+    }
+
+    fn update_radius(&mut self, roads: &Roads) {
+        self.radius = self
+            .roads
+            .iter()
+            .flat_map(|x| roads.get(*x))
+            .map(|x| OrderedFloat(x.interface_from(self.id)))
+            .max()
+            .map(|x| x.0)
+            .unwrap_or(10.0);
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) {
@@ -149,6 +155,8 @@ impl Intersection {
             roads[r1_id].max_interface(id, min_dist);
             roads[r2_id].max_interface(id, min_dist);
         }
+
+        self.update_radius(roads);
     }
 
     fn interface_calc(w1: f32, w2: f32, dir1: Vec2, dir2: Vec2) -> f32 {

@@ -20,6 +20,7 @@ use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use prototypes::{
     prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
+    Power,
 };
 use serde::{Deserialize, Serialize};
 use simulation::economy::Government;
@@ -620,26 +621,41 @@ impl Gui {
                             .resizable(false)
                             .show(ui.ctx(), |ui| {
                                 ui.label(format!("workers: {}", descr.n_workers));
-                                ui.add_space(10.0);
-                                if !descr.recipe.consumption.is_empty() {
-                                    ui.label("consumption:");
-                                    for item in &descr.recipe.consumption {
-                                        item_icon(ui, uiworld, item.id, item.amount);
-                                    }
+
+                                if let Some(ref recipe) = descr.recipe {
                                     ui.add_space(10.0);
-                                }
-                                if !descr.recipe.production.is_empty() {
-                                    ui.label("production:");
-                                    for item in &descr.recipe.production {
-                                        item_icon(ui, uiworld, item.id, item.amount);
+                                    if !recipe.consumption.is_empty() {
+                                        ui.label("consumption:");
+                                        for item in &recipe.consumption {
+                                            item_icon(ui, uiworld, item.id, item.amount);
+                                        }
+                                        ui.add_space(10.0);
                                     }
-                                    ui.add_space(10.0);
+                                    if !recipe.production.is_empty() {
+                                        ui.label("production:");
+                                        for item in &recipe.production {
+                                            item_icon(ui, uiworld, item.id, item.amount);
+                                        }
+                                        ui.add_space(10.0);
+                                    }
+                                    ui.label(format!("time: {}s", recipe.complexity));
+                                    ui.label(format!(
+                                        "storage multiplier: {}",
+                                        recipe.storage_multiplier
+                                    ));
                                 }
-                                ui.label(format!("time: {}s", descr.recipe.complexity));
-                                ui.label(format!(
-                                    "storage multiplier: {}",
-                                    descr.recipe.storage_multiplier
-                                ));
+
+                                if descr.power_consumption > Power::ZERO {
+                                    ui.add_space(10.0);
+                                    ui.label(format!("Power: {}", descr.power_consumption));
+                                }
+                                if descr.power_production > Power::ZERO {
+                                    ui.add_space(10.0);
+                                    ui.label(format!(
+                                        "Power production: {}",
+                                        descr.power_production
+                                    ));
+                                }
                             });
                     }
                 });

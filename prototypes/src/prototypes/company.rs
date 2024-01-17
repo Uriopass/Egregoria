@@ -1,5 +1,7 @@
 use crate::prototypes::PrototypeBase;
-use crate::{get_with_err, GoodsCompanyID, Money, NoParent, Prototype, Recipe, Size2D, Zone};
+use crate::{
+    get_with_err, GoodsCompanyID, Money, NoParent, Power, Prototype, Recipe, Size2D, Zone,
+};
 use egui_inspect::{debug_inspect_impl, Inspect};
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
@@ -25,8 +27,6 @@ pub enum CompanyKind {
     Store,
     /// Buyers get their goods delivered to them
     Factory,
-    /// Buyers get their goods instantly delivered, useful for things like electricity/water/..
-    Network,
 }
 
 #[derive(Debug, Clone)]
@@ -35,12 +35,14 @@ pub struct GoodsCompanyPrototype {
     pub id: GoodsCompanyID,
     pub bgen: BuildingGen,
     pub kind: CompanyKind,
-    pub recipe: Recipe,
-    pub n_trucks: i32,
-    pub n_workers: i32,
+    pub recipe: Option<Recipe>,
+    pub n_trucks: u32,
+    pub n_workers: u32,
     pub size: Size2D,
     pub asset_location: String,
     pub price: Money,
+    pub power_consumption: Power,
+    pub power_production: Power,
     pub zone: Option<Zone>,
 }
 
@@ -57,11 +59,13 @@ impl Prototype for GoodsCompanyPrototype {
             bgen: get_with_err(table, "bgen")?,
             kind: get_with_err(table, "kind")?,
             recipe: get_with_err(table, "recipe")?,
-            n_trucks: table.get::<_, Option<i32>>("n_trucks")?.unwrap_or(0),
-            n_workers: get_with_err(table, "n_workers")?,
+            n_trucks: get_with_err::<Option<u32>>(table, "n_trucks")?.unwrap_or(0),
+            n_workers: get_with_err::<Option<u32>>(table, "n_workers")?.unwrap_or(0),
             size: get_with_err(table, "size")?,
             asset_location: get_with_err(table, "asset_location")?,
             price: get_with_err(table, "price")?,
+            power_consumption: get_with_err(table, "power_consumption")?,
+            power_production: get_with_err(table, "power_production")?,
             zone: get_with_err(table, "zone").ok(),
         })
     }
@@ -85,7 +89,6 @@ impl<'a> FromLua<'a> for CompanyKind {
         match &*s {
             "store" => Ok(Self::Store),
             "factory" => Ok(Self::Factory),
-            "network" => Ok(Self::Network),
             _ => Err(mlua::Error::external(format!(
                 "Unknown company kind: {}",
                 s

@@ -19,6 +19,7 @@ data:extend {
         size = 10.0,
         asset_location = "bakery.glb",
         price = 1000,
+        power_consumption = "200W",
     },
     {
         type = "goods-company",
@@ -41,6 +42,7 @@ data:extend {
         size = 80.0,
         asset_location = "flour_factory.glb",
         price = 1000,
+        power_consumption = "10kW",
     },
     {
         type = "goods-company",
@@ -66,6 +68,7 @@ data:extend {
             price_per_area = 100,
             randomize_filler = true,
         },
+        power_consumption = "100W",
     },
     {
         type = "solar-panel",
@@ -77,13 +80,7 @@ data:extend {
             kind = "centered_door",
             vertical_factor = 1.0,
         },
-        kind = "network",
-        recipe = {
-            consumption = {},
-            production = {},
-            complexity = 1,
-            storage_multiplier = 5,
-        },
+        kind = "factory",
         n_workers = 0,
         size = 120.0,
         asset_location = "assets/sprites/cement.jpg",
@@ -93,6 +90,7 @@ data:extend {
             filler = "solarpanel.glb",
             price_per_area = 10,
         },
+        power_production = "10kW",
     },
     {
         type = "goods-company",
@@ -103,18 +101,18 @@ data:extend {
             kind = "centered_door",
             vertical_factor = 1.0,
         },
-        kind = "network",
+        kind = "factory",
         recipe = {
             consumption = {{"coal", 1}},
             production = {},
             complexity = 100,
             storage_multiplier = 5,
-            power_generation = "2.46MW",
         },
         n_workers = 10,
         size = 165.0,
         asset_location = "coal_power_plant.glb",
         price = 1000,
+        power_production = "2.46MW",
     },
     {
         type = "goods-company",
@@ -136,6 +134,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/supermarket.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -157,6 +156,7 @@ data:extend {
         size = 10.0,
         asset_location = "assets/sprites/clothes_store.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -179,6 +179,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/cloth_factory.png",
         price = 1000,
+        power_consumption = "10kW",
     },
     {
         type = "goods-company",
@@ -201,6 +202,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/textile_processing_facility.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -223,6 +225,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/polyester_refinery.png",
         price = 1000,
+        power_consumption = "10kW",
     },
     {
         type = "goods-company",
@@ -245,6 +248,7 @@ data:extend {
         size = 20.0,
         asset_location = "assets/sprites/oil_pump.png",
         price = 1000,
+        power_consumption = "10kW",
     },
     {
         type = "goods-company",
@@ -289,6 +293,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/wool_farm.png",
         price = 1000,
+        power_consumption = "100W",
     },
     {
         type = "goods-company",
@@ -310,6 +315,7 @@ data:extend {
         size = 10.0,
         asset_location = "assets/sprites/florist.png",
         price = 1000,
+        power_consumption = "100W",
     },
     {
         type = "goods-company",
@@ -332,6 +338,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/horticulturalist.png",
         price = 1000,
+        power_consumption = "500W",
     },
     {
         type = "goods-company",
@@ -353,6 +360,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/hightech_store.png",
         price = 1000,
+        power_consumption = "2kW",
     },
     {
         type = "goods-company",
@@ -375,6 +383,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/hightech_facility.png",
         price = 1000,
+        power_consumption = "100kW",
     },
     {
         type = "goods-company",
@@ -397,6 +406,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/iron_mine.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -419,6 +429,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/rare_metal_mine.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -438,6 +449,7 @@ data:extend {
         size = 200.0,
         asset_location = "assets/sprites/lumber_yard.png",
         price = 1000,
+        power_consumption = "100W",
     },
     {
         type = "goods-company",
@@ -460,6 +472,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/woodmill.png",
         price = 1000,
+        power_consumption = "5kW",
     },
     {
         type = "goods-company",
@@ -481,6 +494,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/furniture_store.png",
         price = 1000,
+        power_consumption = "500W",
     },
     {
         type = "goods-company",
@@ -503,6 +517,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/foundry.png",
         price = 1000,
+        power_consumption = "10kW",
     },
     {
         type = "goods-company",
@@ -525,6 +540,7 @@ data:extend {
         size = 50.0,
         asset_location = "assets/sprites/slaughterhouse.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -544,6 +560,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/animal_farm.png",
         price = 1000,
+        power_consumption = "100W",
     },
     {
         type = "goods-company",
@@ -566,6 +583,7 @@ data:extend {
         size = 80.0,
         asset_location = "assets/sprites/meat_facility.png",
         price = 1000,
+        power_consumption = "1kW",
     },
     {
         type = "goods-company",
@@ -590,5 +608,6 @@ data:extend {
             filler = "salad.glb",
             price_per_area = 100,
         },
+        power_consumption = "100W",
     },
 }

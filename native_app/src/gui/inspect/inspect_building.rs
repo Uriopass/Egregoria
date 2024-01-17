@@ -7,9 +7,9 @@ use simulation::{Simulation, SoulID};
 use crate::gui::inspect::entity_link;
 use crate::gui::item_icon;
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
-use prototypes::{ItemID, Recipe};
+use prototypes::{ItemID, Power, Recipe};
 use simulation::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
-use simulation::map_dynamic::BuildingInfos;
+use simulation::map_dynamic::{BuildingInfos, ElectricityFlow};
 use simulation::souls::freight_station::FreightTrainState;
 
 /// Inspect a specific building, showing useful information about it
@@ -136,8 +136,12 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
     };
     let goods = &c.comp;
     let workers = &c.workers;
+    let proto = c.comp.proto.prototype();
 
-    let market = sim.read::<Market>();
+    let market = &*sim.read::<Market>();
+    let map = &*sim.map();
+    let elec_flow = &*sim.read::<ElectricityFlow>();
+
     let max_workers = goods.max_workers;
     egui::ProgressBar::new(workers.0.len() as f32 / max_workers as f32)
         .text(format!("workers: {}/{}", workers.0.len(), max_workers))
@@ -149,16 +153,51 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
             entity_link(uiworld, sim, ui, driver);
         });
     }
-    let productivity = goods.productivity(workers.0.len(), b.zone.as_ref());
-    let productivity = (productivity * 100.0).round();
-    if productivity < 100.0 {
+    let productivity = c.productivity(proto, b.zone.as_ref(), map, elec_flow);
+    if productivity < 1.0 {
         egui::ProgressBar::new(productivity)
-            .text(format!("productivity: {productivity:.0}%"))
+            .text(format!(
+                "productivity: {:.0}%",
+                (productivity * 100.0).round()
+            ))
             .desired_width(200.0)
             .ui(ui);
     }
 
-    render_recipe(ui, uiworld, &goods.proto.prototype().recipe);
+    if let Some(ref r) = proto.recipe {
+        render_recipe(ui, uiworld, r);
+    }
+
+    if let Some(net_id) = map.electricity.net_id(b.id) {
+        let elec_productivity = elec_flow.productivity(net_id);
+
+        if proto.power_consumption > Power::ZERO {
+            egui::ProgressBar::new(productivity * elec_productivity)
+                .text(format!(
+                    "power: {}/{}",
+                    (productivity * elec_productivity) as f64 * proto.power_consumption,
+                    proto.power_consumption
+                ))
+                .desired_width(200.0)
+                .ui(ui);
+        }
+
+        if proto.power_production > Power::ZERO {
+            ui.label(format!(
+                "producing power: {}",
+                proto.power_production * productivity as f64
+            ));
+
+            let stats = elec_flow.network_stats(net_id);
+            egui::ProgressBar::new(elec_productivity)
+                .text(format!(
+                    "Network health: {}/{}",
+                    stats.produced_power, stats.consumed_power
+                ))
+                .desired_width(200.0)
+                .ui(ui);
+        }
+    }
 
     egui::ProgressBar::new(goods.progress)
         .show_percentage()
