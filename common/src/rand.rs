@@ -1,6 +1,8 @@
 //! Pseudo-random number generation.
 //! Useful for deterministic but random behavior based on provided seeds.
 
+use std::hash::Hash;
+
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
 fn hash(mut x: u32) -> u32 {
     x = x.wrapping_add(x << 10u32);
@@ -65,8 +67,9 @@ pub fn randu(x: u32) -> f32 {
 }
 
 #[inline]
-pub fn randu64(x: u64) -> f32 {
-    float_construct(hash2(x as u32, (x >> 32) as u32))
+pub fn randhash<T: Hash>(x: T) -> f32 {
+    let v = crate::hash_u64(x);
+    float_construct(v as u32)
 }
 
 #[inline]

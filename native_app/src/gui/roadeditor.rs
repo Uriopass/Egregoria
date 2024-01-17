@@ -40,7 +40,7 @@ pub fn roadeditor(sim: &Simulation, uiworld: &mut UiWorld) {
         if let Some(inter) = map.intersections().get(id) {
             let lanes = map.lanes();
             for turn in inter.turns() {
-                let r = common::rand::randu64(common::hash_u64(turn.id));
+                let r = common::rand::randhash(turn.id);
                 let col = Color::hsv(r * 360.0, 0.8, 0.6, 0.5);
 
                 let or_src = unwrap_cont!(lanes.get(turn.id.src)).orientation_from(inter.id);

@@ -1,3 +1,4 @@
+use std::f32::consts::TAU;
 use yakui::{Alignment, Color, Dim2, Vec2};
 
 use simulation::map_dynamic::ElectricityFlow;
@@ -39,10 +40,11 @@ impl Gui {
                     continue;
                 };
 
-                let pos = b
-                    .obb
-                    .center()
-                    .z(b.height + 20.0 + 1.0 * uiworld.time_always().cos());
+                let center = b.obb.center();
+
+                let pos = center.z(b.height
+                    + 20.0
+                    + 1.0 * f32::cos(uiworld.time_always() + center.mag() * 0.05));
                 let (screenpos, depth) = uiworld.camera().project(pos);
 
                 let size = 10000.0 / depth;
