@@ -6,9 +6,9 @@ edition = "2021"
 
 [dependencies]
 bytemuck      = "1.7.2"
-simulation     = { path = "../simulation" }
+simulation    = { path = "../simulation" }
 geom          = { path = "../geom" }
-engine   = { path = "../engine" }
+engine        = { path = "../engine", features = ["yakui"] }
 common        = { path = "../common" }
 networking    = { path = "../networking", optional=true }
 egui-inspect  = { path = "../egui-inspect" }
@@ -19,6 +19,7 @@ egui_plot     = { workspace = true }
 flat_spatial  = { workspace = true }
 ordered-float = { workspace = true }
 oddio         = { workspace = true }
+yakui         = { workspace = true }
 log           = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
 serde         = "1.0"

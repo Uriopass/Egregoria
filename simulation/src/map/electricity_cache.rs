@@ -51,15 +51,15 @@ pub struct ElectricityNetwork {
 /// It maintains a mapping from network objects to network ids that are connected to each other
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct ElectricityCache {
-    pub networks: BTreeMap<ElectricityNetworkID, ElectricityNetwork>,
+    pub(crate) networks: BTreeMap<ElectricityNetworkID, ElectricityNetwork>,
 
     /// The network that each intersection is connected to
-    pub ids: BTreeMap<NetworkObjectID, ElectricityNetworkID>,
+    pub(crate) ids: BTreeMap<NetworkObjectID, ElectricityNetworkID>,
 
     /// The memoized graph of electricity edges
     /// This is used to decouple the adding/removal of edges and actual removal in map
     /// Note that the ordering of the Vec isn't deterministic so shouldn't be used for anything
-    pub graph: BTreeMap<NetworkObjectID, Vec<NetworkObjectID>>,
+    pub(crate) graph: BTreeMap<NetworkObjectID, Vec<NetworkObjectID>>,
 }
 
 impl ElectricityCache {
@@ -192,6 +192,10 @@ impl ElectricityCache {
 
     pub fn networks(&self) -> impl Iterator<Item = &ElectricityNetwork> {
         self.networks.values()
+    }
+
+    pub fn graph(&self) -> &BTreeMap<NetworkObjectID, Vec<NetworkObjectID>> {
+        &self.graph
     }
 
     /// Build the electricity cache from a map. Should give the same result as the current cache in the map

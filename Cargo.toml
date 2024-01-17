@@ -26,6 +26,7 @@ egui_plot     = "0.25.0"
 ordered-float = { version = "4.2.0", default-features = false }
 oddio         = "0.7.4"
 derive_more   = "0.99.17"
+yakui         = { git = "https://github.com/SecondHalfGames/yakui" }
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]

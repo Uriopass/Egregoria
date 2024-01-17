@@ -18,7 +18,7 @@ use crate::Vec4;
 use std::ops::Mul;
 
 /// Column major matrix
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 #[repr(C)]
 pub struct Matrix4 {
     pub x: Vec4,
@@ -29,12 +29,7 @@ pub struct Matrix4 {
 
 impl Matrix4 {
     pub fn zero() -> Self {
-        Self {
-            x: Default::default(),
-            y: Default::default(),
-            z: Default::default(),
-            w: Default::default(),
-        }
+        Self::default()
     }
 
     pub fn determinent(&self) -> f32 {

@@ -32,7 +32,7 @@ cpal          = "0.15.0"
 lewton        = "0.10.2"
 serde         = { version = "1.0.183", features = ["derive"] }
 
-yakui         = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
+yakui         = { workspace = true, optional = true }
 yakui-wgpu    = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
 yakui-winit   = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
 lazy_static = "1.4.0"

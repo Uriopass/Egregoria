@@ -21,6 +21,7 @@ impl OrbitCamera {
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
+        self.camera.update();
         ctx.gfx.set_camera(self.camera);
 
         let params = ctx.gfx.render_params.value_mut();

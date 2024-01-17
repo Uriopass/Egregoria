@@ -29,6 +29,10 @@ pub struct Camera {
     up: Vec3,
     aspect: f32,
     pub fovy: f32,
+    #[serde(default, skip)]
+    pub proj_cache: Matrix4,
+    #[serde(default, skip)]
+    pub inv_proj_cache: Matrix4,
 }
 
 impl Camera {
@@ -43,6 +47,8 @@ impl Camera {
             up: (0.0, 0.0, 1.0).into(),
             aspect: viewport_w / viewport_h,
             fovy: 60.0,
+            proj_cache: Matrix4::zero(),
+            inv_proj_cache: Matrix4::zero(),
         }
     }
 
@@ -68,10 +74,7 @@ impl Camera {
     }
 
     pub fn unproj_ray(&self, pos: Vec2) -> Option<Ray3> {
-        let proj = self.build_view_projection_matrix();
-        let inv = proj.invert()?;
-
-        let v = inv
+        let v = self.inv_proj_cache
             * vec4(
                 2.0 * pos.x / self.viewport_w - 1.0,
                 -(2.0 * pos.y / self.viewport_h - 1.0),
@@ -90,7 +93,29 @@ impl Camera {
         })
     }
 
-    pub fn build_view_projection_matrix(&self) -> Matrix4 {
+    /// Project a 3D point to the screen
+    /// Returns the screen position (in viewport space) and the depth (inverse z)
+    pub fn project(&self, pos: Vec3) -> (Vec2, f32) {
+        let v = self.proj_cache * vec4(pos.x, pos.y, pos.z, 1.0);
+        let v = Vec3 {
+            x: v.x / v.w,
+            y: v.y / v.w,
+            z: v.z / v.w,
+        };
+
+        let x = (v.x + 1.0) * 0.5 * self.viewport_w;
+        let y = (1.0 - v.y) * 0.5 * self.viewport_h;
+        let depth = 1.0 / v.z; // we use reverse z
+
+        (vec2(x, y), depth)
+    }
+
+    pub fn update(&mut self) {
+        self.proj_cache = self.build_view_projection_matrix();
+        self.inv_proj_cache = self.proj_cache.invert().unwrap_or_else(Matrix4::zero);
+    }
+
+    fn build_view_projection_matrix(&self) -> Matrix4 {
         let eye = self.eye();
         let view = look_to_rh(eye, -self.dir(), self.up);
         let proj = PerspectiveFovReversedZ::new(

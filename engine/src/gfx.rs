@@ -544,13 +544,10 @@ impl GfxContext {
     }
 
     pub fn set_camera(&mut self, cam: Camera) {
-        let viewproj = cam.build_view_projection_matrix();
-        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
+        *self.projection.value_mut() = cam.proj_cache;
+        self.render_params.value_mut().inv_proj = cam.inv_proj_cache;
 
-        *self.projection.value_mut() = viewproj;
-        self.render_params.value_mut().inv_proj = inv_viewproj;
-
-        self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(cam.eye(), inv_viewproj);
+        self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(cam.eye(), cam.inv_proj_cache);
     }
 
     pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {

@@ -22,6 +22,7 @@ pub struct OrbitCamera {
 
 impl OrbitCamera {
     pub fn update(&mut self, ctx: &mut Context) {
+        self.camera.update();
         ctx.gfx.set_camera(self.camera);
         let params = ctx.gfx.render_params.value_mut();
         params.cam_pos = self.camera.eye();
@@ -55,6 +56,12 @@ impl OrbitCamera {
 
         let p = r.intersection_plane(&p)?.xy();
         Some(p.z(height(p)?))
+    }
+
+    /// Project a 3D point to the screen
+    /// Returns the screen position [0, 1] and the depth
+    pub fn project(&self, pos: Vec3) -> (Vec2, f32) {
+        self.camera.project(pos)
     }
 
     fn save(&self) {

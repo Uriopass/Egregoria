@@ -19,6 +19,7 @@ mod gui;
 mod init;
 mod inputmap;
 mod network;
+mod newgui;
 mod rendering;
 
 fn main() {

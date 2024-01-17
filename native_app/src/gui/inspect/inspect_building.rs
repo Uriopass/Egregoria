@@ -1,16 +1,17 @@
-use crate::uiworld::UiWorld;
 use egui::{Context, Ui, Widget};
+
+use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
+use prototypes::{ItemID, Power, Recipe};
 use simulation::economy::Market;
+use simulation::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
+use simulation::map_dynamic::{BuildingInfos, ElectricityFlow};
+use simulation::souls::freight_station::FreightTrainState;
 use simulation::world_command::WorldCommand;
 use simulation::{Simulation, SoulID};
 
 use crate::gui::inspect::entity_link;
 use crate::gui::item_icon;
-use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
-use prototypes::{ItemID, Power, Recipe};
-use simulation::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
-use simulation::map_dynamic::{BuildingInfos, ElectricityFlow};
-use simulation::souls::freight_station::FreightTrainState;
+use crate::uiworld::UiWorld;
 
 /// Inspect a specific building, showing useful information about it
 pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: BuildingID) {

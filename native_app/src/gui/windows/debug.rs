@@ -321,7 +321,7 @@ pub fn debug_electricity(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWo
         }
     }
 
-    for (k, v) in map.electricity.graph.iter() {
+    for (k, v) in map.electricity.graph().iter() {
         tess.set_color(random_color(common::hash_u64(map.electricity.net_id(*k)?)));
         for v in v {
             tess.draw_stroke(getpos(*k)?, getpos(*v)?, 3.0);

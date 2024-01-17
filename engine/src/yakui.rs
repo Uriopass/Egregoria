@@ -1,8 +1,10 @@
 use crate::{GfxContext, GuiRenderContext};
-use wgpu::TextureFormat;
+use std::path::PathBuf;
+use std::sync::Arc;
+use wgpu::{TextureFormat, TextureViewDescriptor};
 use winit::window::Window;
 use yakui::font::{Font, FontSettings, Fonts};
-use yakui::Yakui;
+use yakui::{TextureId, Yakui};
 
 pub struct YakuiWrapper {
     pub yakui: Yakui,
@@ -36,6 +38,15 @@ impl YakuiWrapper {
             zoom_factor: 1.0,
             format: gfx.fbos.format,
         }
+    }
+
+    pub fn add_texture(&mut self, gfx: &mut GfxContext, path: &PathBuf) -> TextureId {
+        let tex = gfx.texture(path, "yakui texture");
+        self.renderer.add_texture(
+            Arc::new(tex.texture.create_view(&TextureViewDescriptor::default())),
+            wgpu::FilterMode::Linear,
+            wgpu::FilterMode::Linear,
+        )
     }
 
     pub fn render(&mut self, gfx: &mut GuiRenderContext<'_>, ui_render: impl for<'ui> FnOnce()) {

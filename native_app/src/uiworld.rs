@@ -1,3 +1,4 @@
+use crate::gui::TimeAlways;
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
 use simulation::utils::resources::{Ref, RefMut, Resources};
 use simulation::world_command::{WorldCommand, WorldCommands};
@@ -55,6 +56,14 @@ impl UiWorld {
 
     pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {
         self.resources.insert(res);
+    }
+
+    pub fn time_always(&self) -> f32 {
+        self.read::<TimeAlways>().0
+    }
+
+    pub fn camera(&self) -> Ref<crate::rendering::OrbitCamera> {
+        self.read::<crate::rendering::OrbitCamera>()
     }
 
     pub fn camera_mut(&self) -> RefMut<crate::rendering::OrbitCamera> {

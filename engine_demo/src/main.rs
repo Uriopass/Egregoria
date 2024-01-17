@@ -101,6 +101,7 @@ impl engine::framework::State for State {
 
         let gfx = &mut ctx.gfx;
 
+        self.camera.update();
         gfx.set_camera(self.camera);
 
         let params = gfx.render_params.value_mut();

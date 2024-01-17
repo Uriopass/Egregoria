@@ -1940,6 +1940,7 @@ dependencies = [
  "serde",
  "simulation",
  "slotmapd",
+ "yakui",
 ]
 
 [[package]]

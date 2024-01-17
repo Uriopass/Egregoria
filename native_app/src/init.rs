@@ -11,7 +11,7 @@ use crate::gui::windows::settings::Settings;
 use crate::gui::zoneedit::ZoneEditState;
 use crate::gui::{
     ErrorTooltip, ExitState, FollowEntity, InspectedBuilding, InspectedEntity, PotentialCommands,
-    Tool,
+    TimeAlways, Tool,
 };
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
@@ -40,6 +40,7 @@ pub fn init() {
     register_resource_noserialize::<ExitState>();
     register_resource_noserialize::<FollowEntity>();
     register_resource_noserialize::<GUIChatState>();
+    register_resource_noserialize::<TimeAlways>();
     register_resource_noserialize::<ImmediateDraw>();
     register_resource_noserialize::<ImmediateSound>();
     register_resource_noserialize::<InputMap>();

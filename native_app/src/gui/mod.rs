@@ -4,6 +4,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use egui::{ColorImage, ImageData, TextureHandle, TextureId, TextureOptions};
+use engine::yakui::YakuiWrapper;
+use engine::GfxContext;
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
@@ -105,6 +107,11 @@ impl Default for InspectedEntity {
     }
 }
 
+/// Time that always progresses even when the game is paused
+/// Is moduloed to 3600
+#[derive(Copy, Clone, Debug, Default)]
+pub struct TimeAlways(pub f32);
+
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Tool {
     #[default]
@@ -146,13 +153,16 @@ impl Tool {
 #[derive(Default)]
 pub struct UiTextures {
     textures: FastMap<String, TextureHandle>,
+    yakui_textures: FastMap<String, yakui::TextureId>,
 }
 
 impl UiTextures {
-    pub fn new(ctx: &mut egui::Context) -> Self {
+    pub fn new(gfx: &mut GfxContext, yakui: &mut YakuiWrapper, ctx: &mut egui::Context) -> Self {
         let texdirs = [("assets/ui", ""), ("assets/ui/icons", "icon/")];
 
         let mut textures: FastMap<String, TextureHandle> = Default::default();
+        let mut yakui_textures: FastMap<String, yakui::TextureId> = Default::default();
+
         for (prefix, path) in texdirs.iter().flat_map(|(path, prefix)| {
             common::saveload::walkdir(Path::new(path)).map(move |x| (prefix, x))
         }) {
@@ -170,13 +180,21 @@ impl UiTextures {
                 TextureOptions::LINEAR,
             );
 
-            textures.insert(name, h);
+            textures.insert(name.clone(), h);
+            yakui_textures.insert(name, yakui.add_texture(gfx, &path));
         }
-        Self { textures }
+        Self {
+            textures,
+            yakui_textures,
+        }
     }
 
     pub fn get(&self, name: &str) -> TextureId {
         self.textures.get(name).unwrap().id()
+    }
+
+    pub fn get_yakui(&self, name: &str) -> yakui::TextureId {
+        self.yakui_textures.get(name).unwrap().clone()
     }
 
     pub fn try_get(&self, name: &str) -> Option<TextureId> {

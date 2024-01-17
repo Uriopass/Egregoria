@@ -13,7 +13,7 @@ use crate::audio::GameAudio;
 use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::{manage_settings, Settings};
-use crate::gui::{ExitState, FollowEntity, Gui, Tool, UiTextures};
+use crate::gui::{ExitState, FollowEntity, Gui, TimeAlways, Tool, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
@@ -59,7 +59,11 @@ impl engine::framework::State for State {
         uiworld.write::<InputMap>().build_input_tree(&mut bindings);
         drop(bindings);
 
-        uiworld.insert(UiTextures::new(&mut ctx.egui.platform.egui_ctx().clone()));
+        uiworld.insert(UiTextures::new(
+            &mut ctx.gfx,
+            &mut ctx.yakui,
+            &mut ctx.egui.platform.egui_ctx().clone(),
+        ));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
@@ -90,6 +94,7 @@ impl engine::framework::State for State {
 
     fn update(&mut self, ctx: &mut Context) {
         profiling::scope!("game_loop::update");
+        self.uiw.write::<TimeAlways>().0 += ctx.delta;
 
         let mut slstate = self.uiw.write::<SaveLoadState>();
         if slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
@@ -228,6 +233,11 @@ impl engine::framework::State for State {
         let sim = self.sim.read().unwrap();
         self.gui.render(ui, &mut self.uiw, &sim);
     }
+
+    fn render_yakui(&mut self) {
+        let sim = self.sim.read().unwrap();
+        self.gui.render_newgui(&mut self.uiw, &sim);
+    }
 }
 
 impl State {
@@ -248,7 +258,7 @@ impl State {
         self.uiw.insert(ctx.gfx.perf.as_static());
 
         let params = ctx.gfx.render_params.value_mut();
-        params.time_always = (params.time_always + ctx.delta) % 3600.0;
+        params.time_always = self.uiw.time_always();
         params.sun_col = 4.0
             * sun.z.max(0.0).sqrt().sqrt()
             * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
