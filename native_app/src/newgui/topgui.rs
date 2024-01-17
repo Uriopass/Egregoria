@@ -1,4 +1,3 @@
-use std::f32::consts::TAU;
 use yakui::{Alignment, Color, Dim2, Vec2};
 
 use simulation::map_dynamic::ElectricityFlow;

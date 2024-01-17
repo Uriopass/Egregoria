@@ -2,14 +2,14 @@ use crate::map::{BuildingKind, ElectricityNetworkID, Map};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::resources::Resources;
 use crate::{SoulID, World};
-use common::FastMap;
 use prototypes::Power;
 use serde::Deserialize;
 use slotmapd::__impl::Serialize;
+use std::collections::BTreeMap;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct ElectricityFlow {
-    flowmap: FastMap<ElectricityNetworkID, NetworkFlow>,
+    flowmap: BTreeMap<ElectricityNetworkID, NetworkFlow>,
 }
 
 impl ElectricityFlow {

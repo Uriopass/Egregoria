@@ -181,7 +181,9 @@ mod tests {
 
         test.apply(&[WorldCommand::MapBuildSpecialBuilding {
             pos: OBB::new(vec2(50.0, 50.0), vec2(1.0, 0.0), 5.0, 5.0),
-            kind: BuildingKind::RailFreightStation(FreightStationPrototypeID::new("test")),
+            kind: BuildingKind::RailFreightStation(FreightStationPrototypeID::new(
+                "freight-station",
+            )),
             gen: BuildingGen::NoWalkway {
                 door_pos: vec2(50.0, 50.0),
             },
