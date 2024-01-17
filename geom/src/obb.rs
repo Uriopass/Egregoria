@@ -10,6 +10,10 @@ pub struct OBB {
 }
 
 impl OBB {
+    pub const ZERO: Self = Self {
+        corners: [Vec2::ZERO; 4],
+    };
+
     /// cossin of `UNIT_X` makes this an AABB
     pub fn new(center: Vec2, cossin: Vec2, w: f32, h: f32) -> Self {
         let up = cossin * w * 0.5;

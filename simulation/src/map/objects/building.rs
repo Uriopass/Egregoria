@@ -89,7 +89,7 @@ impl Building {
         zone: Option<Zone>,
         mut connected_road: Option<RoadID>,
     ) -> Option<BuildingID> {
-        let at = obb.center().z(env.height(obb.center())?);
+        let at = obb.center().z(env.height(obb.center()).unwrap_or(0.0));
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
 

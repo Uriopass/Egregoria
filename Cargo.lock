@@ -2861,6 +2861,7 @@ dependencies = [
  "flat_spatial",
  "geom",
  "inline_tweak",
+ "itertools",
  "lazy_static",
  "log",
  "ordered-float",

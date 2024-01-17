@@ -1,3 +1,4 @@
+use crate::map::electricity::ElectricityCache;
 use crate::map::height_override::find_overrides;
 use crate::map::serializing::SerializedMap;
 use crate::map::{
@@ -35,6 +36,7 @@ pub struct Map {
     pub(crate) spatial_map: SpatialMap,
     pub(crate) external_train_stations: Vec<BuildingID>,
 
+    pub electricity: ElectricityCache,
     pub environment: Environment,
     pub parking: ParkingSpots,
     pub subscribers: MapSubscribers,
@@ -63,6 +65,7 @@ impl Map {
             environment: Environment::default(),
             spatial_map: SpatialMap::default(),
             external_train_stations: Default::default(),
+            electricity: Default::default(),
             override_suscriber: subscribers.subscribe(UpdateType::Road | UpdateType::Building),
             subscribers,
         }
@@ -105,6 +108,7 @@ impl Map {
             self.invalidate(o);
         }
 
+        self.electricity.remove_object(src);
         self.spatial_map.remove(src);
     }
 
@@ -125,7 +129,6 @@ impl Map {
         info!("remove_building {:?}", b);
 
         let b = self.buildings.remove(b)?;
-        self.spatial_map.remove(b.id);
         self.subscribers.dispatch(UpdateType::Building, &b);
 
         if b.kind == BuildingKind::ExternalTrading {
@@ -135,6 +138,9 @@ impl Map {
         if let Some(r) = b.connected_road {
             self.roads[r].connected_buildings.retain(|x| *x != b.id);
         }
+
+        self.electricity.remove_object(b.id);
+        self.spatial_map.remove(b.id);
 
         self.check_invariants();
 
@@ -248,7 +254,7 @@ impl Map {
                     .dispatch_chunk(UpdateType::Terrain, tree_chunk)
             });
 
-        let v = Building::make(
+        let Some(id) = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
             &mut self.roads,
@@ -258,29 +264,36 @@ impl Map {
             gen,
             zone,
             connected_road,
-        );
+        ) else {
+            self.check_invariants();
+            return None;
+        };
 
-        if let Some(id) = v {
-            self.subscribers
-                .dispatch(UpdateType::Building, &self.buildings[id]);
+        self.electricity.add_object(id);
 
-            if kind == BuildingKind::ExternalTrading {
-                self.external_train_stations.push(id);
-            }
+        if let Some(r) = connected_road {
+            self.electricity.add_edge(id, r);
+        }
+
+        self.subscribers
+            .dispatch(UpdateType::Building, &self.buildings[id]);
+
+        if kind == BuildingKind::ExternalTrading {
+            self.external_train_stations.push(id);
         }
 
         self.check_invariants();
-        v
+        Some(id)
     }
 
-    pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
-        info!("build house on {:?}", id);
+    pub fn build_house(&mut self, lot_id: LotID) -> Option<BuildingID> {
+        info!("build house on {:?}", lot_id);
 
-        let lot = self.lots.remove(id)?;
+        let lot = self.lots.remove(lot_id)?;
         self.subscribers.dispatch(UpdateType::Road, &lot);
         self.spatial_map.remove(lot.id);
 
-        let v = Building::make(
+        let Some(id) = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
             &mut self.roads,
@@ -290,13 +303,17 @@ impl Map {
             BuildingGen::House,
             None,
             Some(lot.parent),
-        );
-        if let Some(id) = v {
-            self.subscribers
-                .dispatch(UpdateType::Building, &self.buildings[id]);
-        }
+        ) else {
+            self.check_invariants();
+            return None;
+        };
+
+        self.subscribers
+            .dispatch(UpdateType::Building, &self.buildings[id]);
+        self.electricity.add_object(id);
+
         self.check_invariants();
-        v
+        Some(id)
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
@@ -346,8 +363,8 @@ impl Map {
         self.invalidate(road.src);
         self.invalidate(road.dst);
 
-        for b in &road.connected_buildings {
-            self.buildings[*b].connected_road = None;
+        for &building_id in &road.connected_buildings {
+            self.buildings[building_id].connected_road = None;
         }
 
         Some(road)
@@ -397,6 +414,7 @@ impl Map {
         let id = Intersection::make(&mut self.intersections, &mut self.spatial_map, pos);
         self.subscribers
             .dispatch(UpdateType::Building, &self.intersections[id]);
+        self.electricity.add_object(id);
         id
     }
 
@@ -447,6 +465,7 @@ impl Map {
         let road = self.roads.remove(road_id)?;
 
         self.spatial_map.remove(road_id);
+        self.electricity.remove_object(road_id);
 
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
@@ -463,12 +482,16 @@ impl Map {
     }
 
     #[allow(clippy::collapsible_else_if)]
-    pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec3) -> Option<IntersectionID> {
-        info!("split_road {:?} {:?}", r_id, pos);
+    pub(crate) fn split_road(
+        &mut self,
+        split_road_id: RoadID,
+        pos: Vec3,
+    ) -> Option<IntersectionID> {
+        info!("split_road {:?} {:?}", split_road_id, pos);
 
-        let pat = self.roads.get(r_id)?.pattern(&self.lanes);
+        let pat = self.roads.get(split_road_id)?.pattern(&self.lanes);
 
-        let r = unwrap_or!(self.remove_raw_road(r_id), {
+        let r = unwrap_or!(self.remove_raw_road(split_road_id), {
             log::error!("Trying to split unexisting road");
             return None;
         });
@@ -546,7 +569,7 @@ impl Map {
         }
 
         self.lots.retain(|_, lot| {
-            if lot.parent != r_id {
+            if lot.parent != split_road_id {
                 return true;
             }
             let p = lot.shape.corners[0].z(lot.height);
@@ -572,9 +595,10 @@ impl Map {
 
         for b in r.connected_buildings {
             let b = &self.buildings[b];
-            self.roads[b.connected_road.unwrap()]
-                .connected_buildings
-                .push(b.id);
+            let road_id = b.connected_road.unwrap();
+            self.roads[road_id].connected_buildings.push(b.id);
+
+            self.electricity.add_edge(b.id, road_id);
         }
 
         Some(id)
@@ -591,7 +615,7 @@ impl Map {
         let src = self.intersections.get(src_id)?;
         let dst = self.intersections.get(dst_id)?;
 
-        let id = Road::make(
+        let rid = Road::make(
             src,
             dst,
             segment,
@@ -602,8 +626,13 @@ impl Map {
             &mut self.parking,
             &mut self.spatial_map,
         );
+
+        self.electricity.add_object(rid);
+        self.electricity.add_edge(src_id, rid);
+        self.electricity.add_edge(dst_id, rid);
+
         #[allow(clippy::indexing_slicing)]
-        let r = &self.roads[id];
+        let r = &self.roads[rid];
 
         self.intersections.get_mut(src_id)?.add_road(&self.roads, r);
         self.intersections.get_mut(dst_id)?.add_road(&self.roads, r);
@@ -611,11 +640,11 @@ impl Map {
         self.invalidate(src_id);
         self.invalidate(dst_id);
 
-        Lot::remove_intersecting_lots(self, id);
-        Lot::generate_along_road(self, id);
+        Lot::remove_intersecting_lots(self, rid);
+        Lot::generate_along_road(self, rid);
 
         #[allow(clippy::indexing_slicing)]
-        let r = &self.roads[id];
+        let r = &self.roads[rid];
         let mut b = r.boldline();
         b.expand(40.0);
         self.environment.remove_trees_near(&b, |tree_chunk| {
@@ -623,7 +652,7 @@ impl Map {
                 .dispatch_chunk(UpdateType::Terrain, tree_chunk)
         });
 
-        Some(id)
+        Some(rid)
     }
 
     // Public helpers

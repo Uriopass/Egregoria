@@ -4,6 +4,7 @@ mod chunkid;
 pub mod error;
 mod hash;
 pub mod history;
+pub mod iter;
 pub mod logger;
 pub mod macros;
 pub mod rand;
