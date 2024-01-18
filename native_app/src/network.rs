@@ -108,10 +108,12 @@ mod inner {
     use networking::{
         ConnectConf, Frame, PollResult, ServerConfiguration, ServerPollResult, VirtualClientConf,
     };
+    use prototypes::DELTA_F64;
     use simulation::world_command::WorldCommands;
     use simulation::Simulation;
     use std::net::ToSocketAddrs;
     use std::sync::Mutex;
+    use std::time::Duration;
 
     pub type Client = Mutex<networking::Client<Simulation, WorldCommands>>;
     pub type Server = Mutex<networking::Server<Simulation, WorldCommands>>;
@@ -222,7 +224,7 @@ mod inner {
     pub fn start_server(info: &mut NetworkConnectionInfo, sim: &Simulation) -> Option<Server> {
         let server = match networking::Server::start(ServerConfiguration {
             start_frame: Frame(sim.get_tick()),
-            period: common::timestep::UP_DT,
+            period: Duration::from_secs_f64(DELTA_F64),
             port: None,
             virtual_client: Some(VirtualClientConf {
                 name: info.name.to_string(),
