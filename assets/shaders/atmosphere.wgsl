@@ -16,7 +16,7 @@ fn rsi(r0: vec3<f32>, rd: vec3<f32>, sr: f32) -> vec2<f32> {
     );
 }
 
-const PI: f32 = 3.141592653589793238462;
+const PI_atmo: f32 = 3.141592653589793238462;
 const iSteps: i32 = 12;
 const jSteps: i32 = 4;
 
@@ -62,8 +62,8 @@ fn atmosphere(r: vec3<f32>, pSun: vec3<f32>, maxDepth: f32) -> vec3<f32> {
     let mu: f32 = dot(r, pSun);
     let mumu: f32 = mu * mu;
     let gg: f32 = g * g;
-    let pRlh: f32 = 3.0 / (16.0 * PI) * (1.0 + mumu);
-    let pMie: f32 = 3.0 / (8.0 * PI) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
+    let pRlh: f32 = 3.0 / (16.0 * PI_atmo) * (1.0 + mumu);
+    let pMie: f32 = 3.0 / (8.0 * PI_atmo) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
 
     // Sample the primary ray.
     for (var i: i32 = 0; i < iSteps; i++) {

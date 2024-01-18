@@ -1,16 +1,16 @@
+use crate::background::BackgroundPipeline;
 use crate::pbr::PBR;
 use crate::perf_counters::PerfCounters;
 use crate::{
-    bg_layout_litmesh, ssao, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
-    MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError, TextureBuilder, Uniform,
-    UvVertex, TL,
+    background, bg_layout_litmesh, fog, ssao, CompiledModule, Drawable, IndexType, LampLights,
+    Material, MaterialID, MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError,
+    TextureBuilder, Uniform, UvVertex, TL,
 };
 use common::FastMap;
 use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -18,8 +18,8 @@ use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Face, FragmentState,
-    FrontFace, IndexFormat, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor,
-    PrimitiveState, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    FrontFace, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
+    Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
     RenderPipelineDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureAspect,
     TextureFormat, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
     VertexBufferLayout, VertexState,
@@ -377,14 +377,6 @@ impl GfxContext {
             .build(&me.device, &me.queue);
         me.set_texture("assets/sprites/palette.png", palette);
 
-        let starfield = me.texture("assets/sprites/starfield.png", "starfield");
-
-        me.sky_bg = Texture::multi_bindgroup(
-            &[&*starfield, &me.pbr.environment_cube],
-            &me.device,
-            &BackgroundPipeline::bglayout_texs(&me),
-        );
-
         me
     }
 
@@ -706,10 +698,7 @@ impl GfxContext {
             ssao::render_ssao(self, &mut encs.end);
         }
 
-        //if self.defines.contains_key("FOG") {
-        //    profiling::scope!("fog");
-        //    fog::render_fog(self, &mut encs.end);
-        //}
+        fog::render_fog(self, &mut encs.end);
 
         {
             profiling::scope!("main render pass");
@@ -743,7 +732,7 @@ impl GfxContext {
             }
         }
 
-        render_background(self, encs, &frame);
+        background::render_background(self, encs, &frame);
 
         start_time.elapsed()
     }
@@ -814,7 +803,7 @@ impl GfxContext {
         );
         let fog = Texture::create_fbo(
             device,
-            (size.0 / 2, size.1 / 2),
+            (size.0 / 3, size.1 / 3),
             TextureFormat::Rgba16Float,
             TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             None,
@@ -843,6 +832,7 @@ impl GfxContext {
         self.simplelit_bg = Texture::multi_bindgroup(
             &[
                 &self.fbos.ssao,
+                &self.fbos.fog,
                 self.read_texture("assets/sprites/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
@@ -854,6 +844,13 @@ impl GfxContext {
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),
+        );
+
+        let starfield = self.texture("assets/sprites/starfield.png", "starfield");
+        self.sky_bg = Texture::multi_bindgroup(
+            &[&*starfield, &self.fbos.fog, &self.pbr.environment_cube],
+            &self.device,
+            &BackgroundPipeline::bglayout_texs(&self),
         );
     }
 
@@ -1033,102 +1030,3 @@ const SCREEN_UV_VERTICES: &[UvVertex] = &[
 ];
 
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
-
-#[derive(Hash)]
-struct BackgroundPipeline;
-
-impl BackgroundPipeline {
-    pub fn bglayout_texs(gfx: &GfxContext) -> BindGroupLayout {
-        Texture::bindgroup_layout(&gfx.device, [TL::Float, TL::Cube])
-    }
-}
-
-impl PipelineBuilder for BackgroundPipeline {
-    fn build(
-        &self,
-        gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
-    ) -> RenderPipeline {
-        let bg = &mk_module("background");
-
-        let render_pipeline_layout = gfx
-            .device
-            .create_pipeline_layout(&PipelineLayoutDescriptor {
-                label: Some("background"),
-                bind_group_layouts: &[
-                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                    &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
-                    &Self::bglayout_texs(gfx),
-                ],
-                push_constant_ranges: &[],
-            });
-
-        let color_states = [Some(wgpu::ColorTargetState {
-            format: gfx.sc_desc.format,
-            blend: Some(BlendState::ALPHA_BLENDING),
-            write_mask: wgpu::ColorWrites::COLOR,
-        })];
-
-        let render_pipeline_desc = RenderPipelineDescriptor {
-            label: Some("background pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: VertexState {
-                module: bg,
-                entry_point: "vert",
-                buffers: &[UvVertex::desc()],
-            },
-            fragment: Some(FragmentState {
-                module: bg,
-                entry_point: "frag",
-                targets: &color_states,
-            }),
-            primitive: PrimitiveState::default(),
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: TextureFormat::Depth32Float,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil: Default::default(),
-                bias: DepthBiasState::default(),
-            }),
-            multisample: MultisampleState {
-                count: gfx.samples,
-                ..Default::default()
-            },
-            multiview: None,
-        };
-        gfx.device.create_render_pipeline(&render_pipeline_desc)
-    }
-}
-
-fn render_background(gfx: &GfxContext, encs: &mut Encoders, frame: &&TextureView) {
-    profiling::scope!("bg pass");
-    let mut bg_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-        label: Some("bg pass"),
-        color_attachments: &[Some(RenderPassColorAttachment {
-            view: &gfx.fbos.color_msaa,
-            resolve_target: Some(frame),
-            ops: wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: wgpu::StoreOp::Store,
-            },
-        })],
-        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-            view: &gfx.fbos.depth.view,
-            depth_ops: Some(wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: wgpu::StoreOp::Discard,
-            }),
-            stencil_ops: None,
-        }),
-        timestamp_writes: None,
-        occlusion_query_set: None,
-    });
-
-    bg_pass.set_pipeline(gfx.get_pipeline(BackgroundPipeline));
-    bg_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
-    bg_pass.set_bind_group(1, &gfx.bnoise_bg, &[]);
-    bg_pass.set_bind_group(2, &gfx.sky_bg, &[]);
-    bg_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
-    bg_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
-    bg_pass.draw_indexed(0..6, 0, 0..1);
-}

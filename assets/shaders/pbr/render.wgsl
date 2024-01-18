@@ -1,6 +1,7 @@
 #include "../dither.wgsl"
 #include "../tonemap.wgsl"
-#include "../atmosphere.wgsl"
+
+const PI: f32 = 3.141592653589793238462;
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -107,7 +108,7 @@ fn render(sun: vec3<f32>,
           t_lightdata: texture_2d<u32>,
           t_lightdata2: texture_2d<u32>,
           wpos: vec3<f32>,
-          depth: f32
+          fog: vec3<f32>,
           ) -> vec3<f32>  {
     let chunk_id: vec2<u32> = vec2<u32>(u32(wpos.x / LIGHTCHUNK_SIZE), u32(wpos.y / LIGHTCHUNK_SIZE));
     let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
@@ -159,12 +160,7 @@ fn render(sun: vec3<f32>,
     dkD *= 1.0 - vec3(metallic);
 
     let ambient: vec3<f32> = (0.2 * dkD * (0.04 + irradiance_diffuse) * albedo + specular) * ssao;
-    var color: vec3<f32>   = ambient + Lo;
-
-    #ifdef FOG
-    let atmo: vec3<f32> = atmosphere(-V, sun, depth * 0.2);
-    color += atmo;
-    #endif
+    var color: vec3<f32>   = ambient + Lo + fog;
 
     let autoexposure = 1.0 + smoothstep(0.0, 0.1, -sun.z) * 10.0;
 

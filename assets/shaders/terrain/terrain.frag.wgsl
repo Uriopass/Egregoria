@@ -1,6 +1,7 @@
 #include "../render_params.wgsl"
 #include "../shadow.wgsl"
 #include "../pbr/render.wgsl"
+#include "../atmosphere.wgsl"
 
 struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
@@ -21,20 +22,22 @@ struct ChunkData {
 
 @group(2) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(2) @binding(1)  var s_ssao: sampler;
-@group(2) @binding(2)  var t_bnoise: texture_2d<f32>;
-@group(2) @binding(3)  var s_bnoise: sampler;
-@group(2) @binding(4)  var t_sun_smap: texture_depth_2d_array;
-@group(2) @binding(5)  var s_sun_smap: sampler_comparison;
-@group(2) @binding(6)  var t_diffuse_irradiance: texture_cube<f32>;
-@group(2) @binding(7)  var s_diffuse_irradiance: sampler;
-@group(2) @binding(8)  var t_prefilter_specular: texture_cube<f32>;
-@group(2) @binding(9)  var s_prefilter_specular: sampler;
-@group(2) @binding(10) var t_brdf_lut: texture_2d<f32>;
-@group(2) @binding(11) var s_brdf_lut: sampler;
-@group(2) @binding(12) var t_lightdata: texture_2d<u32>;
-@group(2) @binding(13) var s_lightdata: sampler;
-@group(2) @binding(14) var t_lightdata2: texture_2d<u32>;
-@group(2) @binding(15) var s_lightdata2: sampler;
+@group(2) @binding(2)  var t_fog: texture_2d<f32>;
+@group(2) @binding(3)  var s_fog: sampler;
+@group(2) @binding(4)  var t_bnoise: texture_2d<f32>;
+@group(2) @binding(5)  var s_bnoise: sampler;
+@group(2) @binding(6)  var t_sun_smap: texture_depth_2d_array;
+@group(2) @binding(7)  var s_sun_smap: sampler_comparison;
+@group(2) @binding(8)  var t_diffuse_irradiance: texture_cube<f32>;
+@group(2) @binding(9)  var s_diffuse_irradiance: sampler;
+@group(2) @binding(10)  var t_prefilter_specular: texture_cube<f32>;
+@group(2) @binding(11)  var s_prefilter_specular: sampler;
+@group(2) @binding(12) var t_brdf_lut: texture_2d<f32>;
+@group(2) @binding(13) var s_brdf_lut: sampler;
+@group(2) @binding(14) var t_lightdata: texture_2d<u32>;
+@group(2) @binding(15) var s_lightdata: sampler;
+@group(2) @binding(16) var t_lightdata2: texture_2d<u32>;
+@group(2) @binding(17) var s_lightdata2: sampler;
 
 #ifdef TERRAIN_GRID
 fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
@@ -154,8 +157,8 @@ fn frag(@builtin(position) position: vec4<f32>,
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
     let V_denorm: vec3<f32> = params.cam_pos.xyz - in_wpos;
-    let depth: f32 = length(V_denorm);
-    let V: vec3<f32> = V_denorm / depth;
+    let dist: f32 = length(V_denorm);
+    let V: vec3<f32> = V_denorm / dist;
     let F0: vec3<f32> = vec3(0.01);
     let roughness: f32 = 1.3; // avoid specular highlights which look weird on terrain
     let normal: vec3<f32> = normalize(in_normal);
@@ -166,16 +169,29 @@ fn frag(@builtin(position) position: vec4<f32>,
     #endif
 
     if (params.terraforming_mode_radius > 0.0) {
-        let dist = length(params.unproj_pos - in_wpos.xy);
+        let dist_to_mouse = length(params.unproj_pos - in_wpos.xy);
         var fw = fwidthCoarse(in_wpos.z) * 2.5;
 
-        let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist);
+        let alpha = smoothstep(params.terraforming_mode_radius, params.terraforming_mode_radius*0.4, dist_to_mouse);
         let alpha4 = smoothstep(fw, 0.0, abs((in_wpos.z % 10.0) - 5.0)) * 0.1;
         let alpha5 = smoothstep(fw, 0.0, abs((in_wpos.z % 50.0) - 25.0)) * 0.1;
 
         c = mix(c, vec3(0.7, 0.4, 0.2), alpha * 0.15);
         c = mix(c, vec3(0.0, 0.0, 0.0), alpha4 + alpha5);
     }
+
+    var fog = vec3(0.0);
+    #ifdef FOG
+    var fogdist: vec4<f32> = textureSampleLevel(t_fog, s_fog, position.xy / params.viewport, 0.0);
+
+
+    if (abs(fogdist.a - dist) > 100.0) {
+        fog = atmosphere(-V, params.sun, dist * 0.2);
+    } else {
+        fog = fogdist.rgb;
+    }
+
+    #endif
 
     let final_rgb: vec3<f32> = render(params.sun,
                                       V,
@@ -194,7 +210,7 @@ fn frag(@builtin(position) position: vec4<f32>,
                                       t_lightdata,
                                       t_lightdata2,
                                       in_wpos,
-                                      depth
+                                      fog
                                       );
     return FragmentOutput(vec4(final_rgb, 1.0));
 }

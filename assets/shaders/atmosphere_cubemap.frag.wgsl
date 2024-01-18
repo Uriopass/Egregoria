@@ -7,6 +7,7 @@ struct FragmentOutput {
 #include "atmosphere.wgsl"
 
 const TAU: f32 = 6.283185307179586476925;
+const PI: f32 = 3.141592653589793238462;
 
 fn cartesian_to_spherical(v: vec3<f32>) -> vec2<f32> {
     let r: f32 = length(v);

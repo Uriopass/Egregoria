@@ -5,8 +5,10 @@ extern crate common;
 pub mod u8slice;
 
 mod audio;
+mod background;
 mod drawables;
 pub mod egui;
+mod fog;
 pub mod framework;
 mod geometry;
 mod gfx;
@@ -25,7 +27,6 @@ mod texture;
 mod uniform;
 mod vertex_types;
 
-//mod fog;
 #[cfg(feature = "yakui")]
 pub mod yakui;
 

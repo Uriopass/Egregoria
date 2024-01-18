@@ -1,4 +1,6 @@
-use crate::{CompiledModule, GfxContext, PipelineBuilder, Texture, UvVertex, TL};
+use crate::{
+    CompiledModule, GfxContext, PipelineBuilder, RenderParams, Texture, Uniform, UvVertex, TL,
+};
 use wgpu::{
     BlendComponent, BlendState, CommandEncoder, FragmentState, IndexFormat,
     PipelineLayoutDescriptor, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
@@ -6,20 +8,20 @@ use wgpu::{
 };
 
 #[derive(Copy, Clone, Hash)]
-pub struct SSAOPipeline;
+pub struct FogPipeline;
 
-pub fn render_ssao(gfx: &GfxContext, enc: &mut CommandEncoder) {
-    profiling::scope!("ssao");
-    let pipeline = gfx.get_pipeline(SSAOPipeline);
+pub fn render_fog(gfx: &mut GfxContext, enc: &mut CommandEncoder) {
+    profiling::scope!("fog");
+    let pipeline = gfx.get_pipeline(FogPipeline);
     let bg = gfx
         .fbos
         .depth
         .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(1));
 
-    let mut ssao_pass = enc.begin_render_pass(&RenderPassDescriptor {
-        label: Some("ssao pass"),
+    let mut fog_pass = enc.begin_render_pass(&RenderPassDescriptor {
+        label: Some("fog pass"),
         color_attachments: &[Some(RenderPassColorAttachment {
-            view: &gfx.fbos.ssao.view,
+            view: &gfx.fbos.fog.view,
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -36,15 +38,15 @@ pub fn render_ssao(gfx: &GfxContext, enc: &mut CommandEncoder) {
         occlusion_query_set: None,
     });
 
-    ssao_pass.set_pipeline(pipeline);
-    ssao_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
-    ssao_pass.set_bind_group(1, &bg, &[]);
-    ssao_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
-    ssao_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
-    ssao_pass.draw_indexed(0..6, 0, 0..1);
+    fog_pass.set_pipeline(pipeline);
+    fog_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
+    fog_pass.set_bind_group(1, &bg, &[]);
+    fog_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
+    fog_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
+    fog_pass.draw_indexed(0..6, 0, 0..1);
 }
 
-impl PipelineBuilder for SSAOPipeline {
+impl PipelineBuilder for FogPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
@@ -53,9 +55,9 @@ impl PipelineBuilder for SSAOPipeline {
         let render_pipeline_layout = gfx
             .device
             .create_pipeline_layout(&PipelineLayoutDescriptor {
-                label: Some("ssao pipeline"),
+                label: Some("fog pipeline"),
                 bind_group_layouts: &[
-                    &gfx.render_params.layout,
+                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                     &Texture::bindgroup_layout(
                         &gfx.device,
                         [if gfx.samples > 1 {
@@ -69,7 +71,7 @@ impl PipelineBuilder for SSAOPipeline {
             });
 
         let color_states = [Some(wgpu::ColorTargetState {
-            format: gfx.fbos.ssao.format,
+            format: gfx.fbos.fog.format,
             write_mask: wgpu::ColorWrites::ALL,
             blend: Some(BlendState {
                 color: BlendComponent::REPLACE,
@@ -77,18 +79,18 @@ impl PipelineBuilder for SSAOPipeline {
             }),
         })];
 
-        let ssao = mk_module("ssao");
+        let fog = mk_module("fog");
 
         let render_pipeline_desc = RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: VertexState {
-                module: &ssao,
+                module: &fog,
                 entry_point: "vert",
                 buffers: &[UvVertex::desc()],
             },
             fragment: Some(FragmentState {
-                module: &ssao,
+                module: &fog,
                 entry_point: "frag",
                 targets: &color_states,
             }),

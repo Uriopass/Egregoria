@@ -1,4 +1,5 @@
 #include "render_params.wgsl"
+#include "atmosphere.wgsl"
 
 struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
@@ -25,20 +26,22 @@ struct MaterialParams {
 
 @group(2) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(2) @binding(1)  var s_ssao: sampler;
-@group(2) @binding(2)  var t_bnoise: texture_2d<f32>;
-@group(2) @binding(3)  var s_bnoise: sampler;
-@group(2) @binding(4)  var t_sun_smap: texture_depth_2d_array;
-@group(2) @binding(5)  var s_sun_smap: sampler_comparison;
-@group(2) @binding(6)  var t_diffuse_irradiance: texture_cube<f32>;
-@group(2) @binding(7)  var s_diffuse_irradiance: sampler;
-@group(2) @binding(8)  var t_prefilter_specular: texture_cube<f32>;
-@group(2) @binding(9)  var s_prefilter_specular: sampler;
-@group(2) @binding(10) var t_brdf_lut: texture_2d<f32>;
-@group(2) @binding(11) var s_brdf_lut: sampler;
-@group(2) @binding(12) var t_lightdata: texture_2d<u32>;
-@group(2) @binding(13) var s_lightdata: sampler;
-@group(2) @binding(14) var t_lightdata2: texture_2d<u32>;
-@group(2) @binding(15) var s_lightdata2: sampler;
+@group(2) @binding(2)  var t_fog: texture_2d<f32>;
+@group(2) @binding(3)  var s_fog: sampler;
+@group(2) @binding(4)  var t_bnoise: texture_2d<f32>;
+@group(2) @binding(5)  var s_bnoise: sampler;
+@group(2) @binding(6)  var t_sun_smap: texture_depth_2d_array;
+@group(2) @binding(7)  var s_sun_smap: sampler_comparison;
+@group(2) @binding(8)  var t_diffuse_irradiance: texture_cube<f32>;
+@group(2) @binding(9)  var s_diffuse_irradiance: sampler;
+@group(2) @binding(10)  var t_prefilter_specular: texture_cube<f32>;
+@group(2) @binding(11)  var s_prefilter_specular: sampler;
+@group(2) @binding(12) var t_brdf_lut: texture_2d<f32>;
+@group(2) @binding(13) var s_brdf_lut: sampler;
+@group(2) @binding(14) var t_lightdata: texture_2d<u32>;
+@group(2) @binding(15) var s_lightdata: sampler;
+@group(2) @binding(16) var t_lightdata2: texture_2d<u32>;
+@group(2) @binding(17) var s_lightdata2: sampler;
 
 #include "shadow.wgsl"
 #include "pbr/render.wgsl"
@@ -88,8 +91,8 @@ fn frag(@location(0) in_tint: vec4<f32>,
     let c = mix(in_tint, vec4(1.0), metallic) * albedo;
 
     let V_denorm: vec3<f32> = params.cam_pos.xyz - in_wpos;
-    let depth: f32 = length(V_denorm);
-    let V: vec3<f32> = V_denorm / depth;
+    let dist: f32 = length(V_denorm);
+    let V: vec3<f32> = V_denorm / dist;
     let R: vec3<f32> = reflect(-V, normal);
 
     let prefilteredColor: vec3<f32> = textureSampleLevel(t_prefilter_specular, s_prefilter_specular, R, roughness * MAX_REFLECTION_LOD).rgb;
@@ -100,6 +103,18 @@ fn frag(@location(0) in_tint: vec4<f32>,
     let F_spec: vec3<f32>   = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
     let envBRDF: vec2<f32>  = textureSampleLevel(t_brdf_lut, s_brdf_lut, vec2(max(dot(normal, V), 0.0), roughness), 0.0).rg;
     let specular: vec3<f32> = prefilteredColor * (F_spec * envBRDF.x + envBRDF.y);
+
+    var fog = vec3(0.0);
+    #ifdef FOG
+    var fogdist: vec4<f32> = textureSampleLevel(t_fog, s_fog, position.xy / params.viewport, 0.0);
+
+    if (abs(fogdist.a - dist) > 100.0) {
+        fog = atmosphere(-V, params.sun, dist * 0.2);
+    } else {
+        fog = fogdist.rgb;
+    }
+
+    #endif
 
     let final_rgb: vec3<f32> = render(params.sun,
                                       V,
@@ -118,7 +133,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
                                       t_lightdata,
                                       t_lightdata2,
                                       in_wpos,
-                                      depth
+                                      fog
                                       );
 
     return FragmentOutput(vec4<f32>(final_rgb, c.a));
