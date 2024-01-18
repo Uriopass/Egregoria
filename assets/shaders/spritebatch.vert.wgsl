@@ -1,6 +1,4 @@
-struct Uniforms {
-    u_view_proj: mat4x4<f32>,
-}
+#include "render_params.wgsl"
 
 struct VertexOutput {
     @location(0) out_color: vec4<f32>,
@@ -11,7 +9,7 @@ struct VertexOutput {
     @builtin(position) member: vec4<f32>,
 }
 
-@group(0) @binding(0) var<uniform> globals: Uniforms;
+@group(0) @binding(0) var<uniform> globals: RenderParams;
 
 @vertex
 fn vert(@location(0) in_pos: vec3<f32>,
@@ -27,7 +25,7 @@ fn vert(@location(0) in_pos: vec3<f32>,
     let scaled: vec3<f32> = vec3(in_pos.xy * in_scale, in_pos.z);
     let wpos: vec3<f32> = scaled.x * x + scaled.y * y + scaled.z * z + in_instance_pos;
 
-    let position = globals.u_view_proj * vec4(wpos, 1.0);
+    let position = globals.proj * vec4(wpos, 1.0);
 
     return VertexOutput(in_tint, z, vec4(0.0), wpos, in_uv, position);
 }

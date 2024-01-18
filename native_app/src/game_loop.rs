@@ -95,6 +95,11 @@ impl engine::framework::State for State {
     fn update(&mut self, ctx: &mut Context) {
         profiling::scope!("game_loop::update");
         self.uiw.write::<TimeAlways>().0 += ctx.delta;
+        self.uiw
+            .write::<Timings>()
+            .engine_time
+            .add_value(ctx.engine_time);
+        self.uiw.write::<Timings>().gui_time.add_value(ctx.gui_time);
 
         let mut slstate = self.uiw.write::<SaveLoadState>();
         if slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
@@ -369,5 +374,7 @@ pub struct Timings {
     pub all: History,
     pub world_update: History,
     pub render: History,
+    pub engine_time: History,
+    pub gui_time: History,
     pub per_game_system: Vec<(String, f32)>,
 }

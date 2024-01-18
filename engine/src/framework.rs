@@ -134,8 +134,9 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                     state.update(&mut ctx);
 
                     let (mut enc, view) = ctx.gfx.start_frame(&sco);
-                    ctx.gfx.render_objs(&mut enc, &view, |fc| state.render(fc));
+                    ctx.engine_time = ctx.gfx.render_objs(&mut enc, &view, |fc| state.render(fc)).as_secs_f32();
 
+                    let gui_start = Instant::now();
                     #[allow(unused_mut)]
                     ctx.gfx
                         .render_gui(&mut enc, &view, |mut gctx| {
@@ -147,6 +148,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Window) {
                                 state.render_gui(ui);
                             });
                         });
+                    ctx.gui_time = gui_start.elapsed().as_secs_f32();
                     ctx.gfx.finish_frame(enc);
                     sco.present();
 
@@ -239,6 +241,8 @@ pub struct Context {
     pub input: InputContext,
     pub audio: AudioContext,
     pub delta: f32,
+    pub engine_time: f32,
+    pub gui_time: f32,
     pub egui: EguiWrapper,
     #[cfg(feature = "yakui")]
     pub yakui: crate::yakui::YakuiWrapper,
@@ -255,6 +259,8 @@ impl Context {
             input,
             audio,
             delta: 0.0,
+            engine_time: 0.0,
+            gui_time: 0.0,
             egui,
             #[cfg(feature = "yakui")]
             yakui: crate::yakui::YakuiWrapper::new(&gfx, &gfx.window),

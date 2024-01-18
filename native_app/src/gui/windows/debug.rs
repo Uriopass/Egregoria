@@ -127,7 +127,10 @@ pub fn debug(
         let cam = uiworld.read::<Camera>().pos;
 
         ui.label("Averaged over last 10 frames: ");
-        ui.label(format!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
+        ui.label(format!(
+            "Total time (incl. GPU): {:.1}ms",
+            timings.all.avg() * 1000.0
+        ));
         ui.label(format!(
             "World update time: {:.1}ms",
             timings.world_update.avg() * 1000.0
@@ -135,6 +138,14 @@ pub fn debug(
         ui.label(format!(
             "Render prepare time: {:.1}ms",
             timings.render.avg() * 1000.0
+        ));
+        ui.label(format!(
+            "Engine time: {:.1}ms",
+            timings.engine_time.avg() * 1000.0
+        ));
+        ui.label(format!(
+            "GUI time: {:.1}ms",
+            timings.gui_time.avg() * 1000.0
         ));
 
         let counters = uiworld.read::<PerfCountersStatic>();

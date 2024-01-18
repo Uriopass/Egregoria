@@ -11,7 +11,7 @@ use geom::{vec2, vec3, Camera, HeightmapChunk, Intersect3, Matrix4, Vec2, AABB3}
 
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
-    IndexType, PipelineBuilder, RenderParams, Texture, TextureBuilder, Uniform, TL,
+    IndexType, PipelineBuilder, Texture, TextureBuilder, Uniform, TL,
 };
 
 const LOD: usize = 5;
@@ -128,7 +128,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                             depth: false,
                             smap: false,
                         })
-                        .get_bind_group_layout(2),
+                        .get_bind_group_layout(1),
                     entries: &bg_entries,
                     label: Some("terrain bindgroup"),
                 }),
@@ -643,8 +643,7 @@ impl PipelineBuilder for TerrainPipeline {
             return gfx.color_pipeline(
                 "terrain",
                 &[
-                    &gfx.projection.layout,
-                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                    &gfx.render_params.layout,
                     &terrainlayout,
                     &bg_layout_litmesh(&gfx.device),
                 ],
@@ -659,11 +658,7 @@ impl PipelineBuilder for TerrainPipeline {
             vert,
             None,
             self.smap,
-            &[
-                &gfx.projection.layout,
-                &gfx.render_params.layout,
-                &terrainlayout,
-            ],
+            &[&gfx.render_params.layout, &terrainlayout],
         )
     }
 }
@@ -677,8 +672,7 @@ impl Drawable for TerrainPrepared {
 
         rp.set_pipeline(pipeline);
 
-        rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
+        rp.set_bind_group(2, &gfx.simplelit_bg, &[]);
 
         self.set_buffers(rp);
 
@@ -706,7 +700,6 @@ impl Drawable for TerrainPrepared {
             depth: true,
             smap: shadow_cascade.is_some(),
         }));
-        rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
 
         self.set_buffers(rp);
 
@@ -732,7 +725,7 @@ impl TerrainPrepared {
 
             let (ind, n_indices) = &self.indices[lod];
 
-            rp.set_bind_group(2, &self.terrainbgs[lod], &[]);
+            rp.set_bind_group(1, &self.terrainbgs[lod], &[]);
             rp.set_vertex_buffer(0, instances.slice().unwrap());
             rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
             rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);

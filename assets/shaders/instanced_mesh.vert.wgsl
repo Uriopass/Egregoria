@@ -1,6 +1,4 @@
-struct Uniforms {
-    u_view_proj: mat4x4<f32>,
-}
+#include "render_params.wgsl"
 
 struct VertexOutput {
     @location(0) out_color: vec4<f32>,
@@ -11,7 +9,7 @@ struct VertexOutput {
     @builtin(position) member: vec4<f32>,
 }
 
-@group(0) @binding(0) var<uniform> global: Uniforms;
+@group(0) @binding(0) var<uniform> global: RenderParams;
 
 @vertex
 fn vert(@location(0) in_pos: vec3<f32>,
@@ -31,7 +29,7 @@ fn vert(@location(0) in_pos: vec3<f32>,
     let normal: vec3<f32> = in_normal.x * x + in_normal.y * y + in_normal.z * z;
     let tangent: vec4<f32> = vec4(in_tangent.x * x + in_tangent.y * y + in_tangent.z * z, in_tangent.w);
 
-    let position: vec4<f32> = global.u_view_proj * vec4(off, 1.0);
+    let position: vec4<f32> = global.proj * vec4(off, 1.0);
     let out_color = in_instance_tint * in_color;
 
     return VertexOutput(out_color, normal, tangent, off, in_uv, position);

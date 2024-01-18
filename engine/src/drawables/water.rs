@@ -77,7 +77,6 @@ impl PipelineBuilder for WaterPipeline {
         let frag = &mk_module("water.frag");
 
         let layouts = &[
-            &gfx.projection.layout,
             &gfx.render_params.layout,
             &Texture::bindgroup_layout(
                 &gfx.device,
@@ -100,9 +99,8 @@ impl Drawable for Water {
 
         rp.set_pipeline(pipeline);
 
-        rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &gfx.fbos.depth_bg, &[]);
-        rp.set_bind_group(3, &self.wavy_bg, &[]);
+        rp.set_bind_group(1, &gfx.fbos.depth_bg, &[]);
+        rp.set_bind_group(2, &self.wavy_bg, &[]);
 
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

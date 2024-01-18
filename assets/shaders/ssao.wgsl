@@ -15,10 +15,11 @@ struct FragmentOutput {
     @location(0) out_ssao: f32,
 }
 
-@group(0) @binding(0) var t_depth: texture_multisampled_2d<f32>;
+@group(0) @binding(0) var<uniform> params: RenderParams;
 
-@group(0) @binding(1) var s_depth: sampler;
-@group(1) @binding(0) var<uniform> params: RenderParams;
+@group(1) @binding(0) var t_depth: texture_multisampled_2d<f32>;
+@group(1) @binding(1) var s_depth: sampler;
+
 
 const PHI: f32 = 1.6180340051651;
 

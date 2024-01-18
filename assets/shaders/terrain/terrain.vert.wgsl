@@ -1,10 +1,6 @@
 #include "../render_params.wgsl"
 #include "unpack.wgsl"
 
-struct Uniforms {
-    u_view_proj: mat4x4<f32>,
-}
-
 struct VertexOutput {
     @builtin(position) member: vec4<f32>,
     @location(0) out_normal: vec3<f32>,
@@ -23,15 +19,13 @@ struct ChunkData {
     inv_cell_size: f32,       // 1 / cell_size
 }
 
-@group(0) @binding(0) var<uniform> global: Uniforms;
+@group(0) @binding(0) var<uniform> params: RenderParams;
 
-@group(1) @binding(0) var<uniform> params: RenderParams;
-
-@group(2) @binding(0) var t_terrain: texture_2d<u32>;
-@group(2) @binding(1) var s_terrain: sampler;
-@group(2) @binding(2) var t_normals: texture_2d<u32>;
-@group(2) @binding(3) var s_normals: sampler;
-@group(2) @binding(8) var<uniform> cdata: ChunkData;
+@group(1) @binding(0) var t_terrain: texture_2d<u32>;
+@group(1) @binding(1) var s_terrain: sampler;
+@group(1) @binding(2) var t_normals: texture_2d<u32>;
+@group(1) @binding(3) var s_normals: sampler;
+@group(1) @binding(8) var<uniform> cdata: ChunkData;
 
 /*
 normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)
@@ -96,7 +90,7 @@ fn vert(@builtin(vertex_index) vid: u32,
         world_pos = mix(world_pos, world_pos_next, transition_alpha);
     }
 
-    let clip_pos: vec4<f32> = global.u_view_proj * vec4(world_pos, 1.0);
+    let clip_pos: vec4<f32> = params.proj * vec4(world_pos, 1.0);
 
 
     return VertexOutput(clip_pos,

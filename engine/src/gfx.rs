@@ -1,7 +1,7 @@
 use crate::pbr::PBR;
 use crate::perf_counters::PerfCounters;
 use crate::{
-    bg_layout_litmesh, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
+    bg_layout_litmesh, ssao, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
     MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError, TextureBuilder, Uniform,
     UvVertex, TL,
 };
@@ -13,9 +13,10 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, Backends, BindGroupLayout, BlendComponent, BlendState, CommandBuffer, CommandEncoder,
+    Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Face, FragmentState,
     FrontFace, IndexFormat, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor,
     PrimitiveState, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
@@ -30,6 +31,7 @@ pub struct FBOs {
     pub(crate) depth_bg: wgpu::BindGroup,
     pub(crate) color_msaa: TextureView,
     pub(crate) ssao: Texture,
+    pub(crate) fog: Texture,
     pub format: TextureFormat,
 }
 
@@ -48,9 +50,8 @@ pub struct GfxContext {
     pub(crate) default_material: Material,
     pub tick: u64,
     pub(crate) pipelines: RefCell<Pipelines>,
-    pub(crate) projection: Uniform<Matrix4>,
     pub frustrum: InfiniteFrustrum,
-    pub(crate) sun_projection: [Uniform<Matrix4>; N_CASCADES],
+    pub(crate) sun_params: [Uniform<RenderParams>; N_CASCADES],
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
@@ -159,6 +160,7 @@ pub const N_CASCADES: usize = 4;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct RenderParams {
+    pub proj: Matrix4,
     pub inv_proj: Matrix4,
     pub sun_shadow_proj: [Matrix4; N_CASCADES],
     pub cam_pos: Vec3,
@@ -192,6 +194,7 @@ fn test_renderparam_size() {
 impl Default for RenderParams {
     fn default() -> Self {
         Self {
+            proj: Matrix4::zero(),
             inv_proj: Matrix4::zero(),
             sun_shadow_proj: [Matrix4::zero(); N_CASCADES],
             sun_col: Default::default(),
@@ -297,8 +300,6 @@ impl GfxContext {
         let fbos = Self::create_textures(&device, &sc_desc, samples);
         surface.configure(&device, &sc_desc);
 
-        let projection = Uniform::new(Matrix4::zero(), &device);
-
         let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
@@ -344,9 +345,8 @@ impl GfxContext {
             materials: Default::default(),
             default_material: Material::new_default(&device, &queue, &null_texture),
             tick: 0,
-            projection,
             frustrum: InfiniteFrustrum::new([Plane::X; 5]),
-            sun_projection: [(); 4].map(|_| Uniform::new(Matrix4::zero(), &device)),
+            sun_params: [(); 4].map(|_| Uniform::new(Default::default(), &device)),
             render_params: Uniform::new(Default::default(), &device),
             texture_cache_paths: textures,
             texture_cache_bytes: Default::default(),
@@ -544,7 +544,7 @@ impl GfxContext {
     }
 
     pub fn set_camera(&mut self, cam: Camera) {
-        *self.projection.value_mut() = cam.proj_cache;
+        self.render_params.value_mut().proj = cam.proj_cache;
         self.render_params.value_mut().inv_proj = cam.inv_proj_cache;
 
         self.frustrum = InfiniteFrustrum::from_reversez_invviewproj(cam.eye(), cam.inv_proj_cache);
@@ -558,15 +558,16 @@ impl GfxContext {
             });
 
         for (uni, mat) in self
-            .sun_projection
+            .sun_params
             .iter_mut()
             .zip(self.render_params.value().sun_shadow_proj)
         {
-            *uni.value_mut() = mat;
+            let mut cpy = self.render_params.value().clone();
+            cpy.proj = mat;
+            *uni.value_mut() = cpy;
             uni.upload_to_gpu(&self.queue);
         }
 
-        self.projection.upload_to_gpu(&self.queue);
         self.render_params.upload_to_gpu(&self.queue);
         self.lamplights.apply_changes(&self.queue);
 
@@ -598,7 +599,7 @@ impl GfxContext {
         encs: &mut Encoders,
         frame: &TextureView,
         mut prepare: impl FnMut(&mut FrameContext<'_>),
-    ) {
+    ) -> Duration {
         profiling::scope!("gfx::render_objs");
         self.perf.clear();
 
@@ -609,6 +610,8 @@ impl GfxContext {
         };
 
         prepare(&mut fc);
+
+        let start_time = Instant::now();
 
         let objsref = &*objs;
         let enc_dep_ext = &mut encs.depth_prepass;
@@ -646,7 +649,7 @@ impl GfxContext {
                 occlusion_query_set: None,
             });
 
-            depth_prepass.set_bind_group(0, &self.projection.bindgroup, &[]);
+            depth_prepass.set_bind_group(0, &self.render_params.bindgroup, &[]);
 
             for obj in objsref.iter() {
                 obj.draw_depth(self, &mut depth_prepass, None);
@@ -661,7 +664,7 @@ impl GfxContext {
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("shadow map encoder"),
                 });
-            for (i, u) in self.sun_projection.iter().enumerate() {
+            for (i, u) in self.sun_params.iter().enumerate() {
                 let sun_view = self
                     .sun_shadowmap
                     .texture
@@ -693,47 +696,20 @@ impl GfxContext {
                 sun_shadow_pass.set_bind_group(0, &u.bindgroup, &[]);
 
                 for obj in objsref.iter() {
-                    obj.draw_depth(self, &mut sun_shadow_pass, Some(u.value()));
+                    obj.draw_depth(self, &mut sun_shadow_pass, Some(&u.value().proj));
                 }
             }
             *enc_smap_ext = Some(smap_enc.finish());
         }
 
         if self.defines.contains_key("SSAO") {
-            profiling::scope!("ssao");
-            let pipeline = self.get_pipeline(SSAOPipeline);
-            let bg = self
-                .fbos
-                .depth
-                .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
-
-            let mut ssao_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-                label: Some("ssao pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &self.fbos.ssao.view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 0.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            ssao_pass.set_pipeline(pipeline);
-            ssao_pass.set_bind_group(0, &bg, &[]);
-            ssao_pass.set_bind_group(1, &self.render_params.bindgroup, &[]);
-            ssao_pass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
-            ssao_pass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
-            ssao_pass.draw_indexed(0..6, 0, 0..1);
+            ssao::render_ssao(self, &mut encs.end);
         }
+
+        //if self.defines.contains_key("FOG") {
+        //    profiling::scope!("fog");
+        //    fog::render_fog(self, &mut encs.end);
+        //}
 
         {
             profiling::scope!("main render pass");
@@ -760,7 +736,7 @@ impl GfxContext {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            render_pass.set_bind_group(0, &self.projection.bindgroup, &[]);
+            render_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
 
             for obj in objsref.iter() {
                 obj.draw(self, &mut render_pass);
@@ -768,6 +744,8 @@ impl GfxContext {
         }
 
         render_background(self, encs, &frame);
+
+        start_time.elapsed()
     }
 
     pub fn render_gui(
@@ -834,11 +812,19 @@ impl GfxContext {
                 }],
             ),
         );
+        let fog = Texture::create_fbo(
+            device,
+            (size.0 / 2, size.1 / 2),
+            TextureFormat::Rgba16Float,
+            TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            None,
+        );
         FBOs {
             depth,
             depth_bg,
             color_msaa: Texture::create_color_msaa(device, desc, samples),
             ssao,
+            fog,
             format: desc.format,
         }
     }
@@ -943,7 +929,7 @@ impl GfxContext {
             vert_shader,
             frag_shader,
             shadow_map,
-            &[&self.projection.layout],
+            &[&self.render_params.layout],
         )
     }
 
@@ -1047,67 +1033,6 @@ const SCREEN_UV_VERTICES: &[UvVertex] = &[
 ];
 
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
-
-#[derive(Copy, Clone, Hash)]
-struct SSAOPipeline;
-
-impl PipelineBuilder for SSAOPipeline {
-    fn build(
-        &self,
-        gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
-    ) -> RenderPipeline {
-        let render_pipeline_layout = gfx
-            .device
-            .create_pipeline_layout(&PipelineLayoutDescriptor {
-                label: Some("ssao pipeline"),
-                bind_group_layouts: &[
-                    &Texture::bindgroup_layout(
-                        &gfx.device,
-                        [if gfx.samples > 1 {
-                            TL::NonfilterableFloatMultisampled
-                        } else {
-                            TL::NonfilterableFloat
-                        }],
-                    ),
-                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                ],
-                push_constant_ranges: &[],
-            });
-
-        let color_states = [Some(wgpu::ColorTargetState {
-            format: gfx.fbos.ssao.format,
-            write_mask: wgpu::ColorWrites::ALL,
-            blend: Some(BlendState {
-                color: BlendComponent::REPLACE,
-                alpha: BlendComponent::REPLACE,
-            }),
-        })];
-
-        let ssao = mk_module("ssao");
-
-        let render_pipeline_desc = RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: VertexState {
-                module: &ssao,
-                entry_point: "vert",
-                buffers: &[UvVertex::desc()],
-            },
-            fragment: Some(FragmentState {
-                module: &ssao,
-                entry_point: "frag",
-                targets: &color_states,
-            }),
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
-            multiview: None,
-        };
-
-        gfx.device.create_render_pipeline(&render_pipeline_desc)
-    }
-}
 
 #[derive(Hash)]
 struct BackgroundPipeline;

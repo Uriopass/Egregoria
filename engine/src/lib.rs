@@ -13,17 +13,19 @@ mod gfx;
 pub mod input;
 mod lamplights;
 mod material;
+mod meshbuild;
 pub mod meshload;
 mod pbr;
 pub mod pbuffer;
 mod perf_counters;
 mod pipelines;
 mod shader;
+mod ssao;
 mod texture;
 mod uniform;
 mod vertex_types;
 
-mod meshbuild;
+//mod fog;
 #[cfg(feature = "yakui")]
 pub mod yakui;
 

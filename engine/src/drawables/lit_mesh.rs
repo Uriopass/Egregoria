@@ -26,7 +26,7 @@ impl Mesh {
 
 /// Returns the screen area of a sphere between [0..1] where 1 is the entire screen (if the sphere fits within the screen)
 pub fn screen_coverage(gfx: &GfxContext, s: Sphere) -> f32 {
-    let v = gfx.projection.value();
+    let v = &gfx.render_params.value().proj;
     let proj_center = v * s.center.w(1.0);
     let proj_center_side =
         v * (s.center + s.radius * gfx.render_params.value().cam_dir.perp_up()).w(1.0);
@@ -69,7 +69,6 @@ impl PipelineBuilder for MeshPipeline {
             return gfx.color_pipeline(
                 "lit_mesh",
                 &[
-                    &gfx.projection.layout,
                     &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                     &Material::bindgroup_layout(&gfx.device),
                     &bg_layout_litmesh(&gfx.device),
@@ -91,7 +90,7 @@ impl PipelineBuilder for MeshPipeline {
             Some(&frag),
             self.smap,
             &[
-                &gfx.projection.layout,
+                &gfx.render_params.layout,
                 &Material::bindgroup_layout(&gfx.device),
             ],
         )
@@ -104,8 +103,7 @@ impl Drawable for Mesh {
             return;
         };
 
-        rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
+        rp.set_bind_group(2, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
 
@@ -117,7 +115,7 @@ impl Drawable for Mesh {
                 smap: false,
                 depth: false,
             }));
-            rp.set_bind_group(2, &mat.bg, &[]);
+            rp.set_bind_group(1, &mat.bg, &[]);
             rp.draw_indexed(index_range.clone(), 0, 0..1);
 
             gfx.perf.drawcall((index_range.end - index_range.start) / 3);

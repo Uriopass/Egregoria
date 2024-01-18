@@ -6,13 +6,13 @@ struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
 }
 
-@group(1) @binding(0) var<uniform> params: RenderParams;
+@group(0) @binding(0) var<uniform> params: RenderParams;
 
-@group(2) @binding(0) var t_depth: texture_multisampled_2d<f32>;
-@group(2) @binding(1) var s_depth: sampler;
+@group(1) @binding(0) var t_depth: texture_multisampled_2d<f32>;
+@group(1) @binding(1) var s_depth: sampler;
 
-@group(3) @binding(0) var t_wavy: texture_2d<f32>;
-@group(3) @binding(1) var s_wavy: sampler;
+@group(2) @binding(0) var t_wavy: texture_2d<f32>;
+@group(2) @binding(1) var s_wavy: sampler;
 
 fn sample_depth(coords: vec2<i32>) -> f32 {
     return textureLoad(t_depth, coords, 0).r;

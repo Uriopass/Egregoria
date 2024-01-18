@@ -1,6 +1,7 @@
 const N_SHADOWS: i32 = 4;
 
 struct RenderParams {
+    proj: mat4x4<f32>,
     invproj: mat4x4<f32>,
     sunproj: array<mat4x4<f32>, N_SHADOWS>,
     cam_pos: vec4<f32>,
