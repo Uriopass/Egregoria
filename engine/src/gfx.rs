@@ -247,7 +247,7 @@ impl GfxContext {
         let instance = wgpu::Instance::new(InstanceDescriptor {
             backends,
             dx12_shader_compiler: Default::default(),
-            flags: wgpu::InstanceFlags::default(),
+            flags: wgpu::InstanceFlags::default() | wgpu::InstanceFlags::DEBUG,
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
