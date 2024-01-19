@@ -337,7 +337,20 @@ impl FromStr for GameDuration {
 
 impl<'lua> FromLua<'lua> for GameDuration {
     fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
-        Ok(GameDuration(Tick::from_lua(value, lua)?))
+        let result = Tick::from_lua(value, lua);
+        match result {
+            Ok(tick) => Ok(GameDuration(tick)),
+            Err(mlua::Error::FromLuaConversionError {
+                from,
+                to: _,
+                message,
+            }) => Err(mlua::Error::FromLuaConversionError {
+                from,
+                to: "GameDuration",
+                message,
+            }),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -375,7 +388,6 @@ impl FromStr for Tick {
 impl<'lua> FromLua<'lua> for Tick {
     fn from_lua(value: Value<'lua>, _lua: &'lua Lua) -> mlua::Result<Self> {
         Ok(match value {
-            Value::Nil => Tick(0),
             Value::Integer(i) => {
                 if i < 0 {
                     return Err(mlua::Error::FromLuaConversionError {
@@ -441,7 +453,7 @@ impl<'lua> FromLua<'lua> for Tick {
                 return Err(mlua::Error::FromLuaConversionError {
                     from: value.type_name(),
                     to: "Tick",
-                    message: Some("expected nil, number, table or string".into()),
+                    message: Some("expected number, table or string".into()),
                 })
             }
         })

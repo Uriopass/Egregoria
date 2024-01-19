@@ -12,7 +12,7 @@ data:extend {
         recipe = {
             consumption = {{"flour", 1}},
             production = {{"bread", 1}},
-            complexity = "100s",
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 3,
@@ -35,7 +35,7 @@ data:extend {
         recipe = {
             consumption = {{"cereal", 1}},
             production = {{"flour", 10}},
-            complexity = 200,
+            duration = "200m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -55,7 +55,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"cereal", 1}},
-            complexity = 40,
+            duration = "40m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -74,7 +74,7 @@ data:extend {
         type = "solar-panel",
         order = "b-1",
         name = "solar-panel",
-        label = "Solar Panels",
+        label = "Solar Panelm",
         max_power = "1kW",
         bgen = {
             kind = "centered_door",
@@ -105,7 +105,7 @@ data:extend {
         recipe = {
             consumption = {{"coal", 1}},
             production = {},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -127,7 +127,7 @@ data:extend {
         recipe = {
             consumption = {{"meat", 1}, {"vegetable", 1}, {"cereal", 1}},
             production = {},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -149,7 +149,7 @@ data:extend {
         recipe = {
             consumption = {{"cloth", 1}},
             production = {},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -172,7 +172,7 @@ data:extend {
         recipe = {
             consumption = {{"polyester", 1}, {"wool", 1}},
             production = {{"cloth", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -195,7 +195,7 @@ data:extend {
         recipe = {
             consumption = {{"wool", 1}},
             production = {{"cloth", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -218,7 +218,7 @@ data:extend {
         recipe = {
             consumption = {{"oil", 1}},
             production = {{"polyester", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 5,
@@ -241,7 +241,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"oil", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 5,
@@ -264,7 +264,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"coal", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 5,
@@ -286,7 +286,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"wool", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -308,7 +308,7 @@ data:extend {
         recipe = {
             consumption = {{"flower", 1}},
             production = {},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -331,7 +331,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"flower", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 5,
@@ -353,7 +353,7 @@ data:extend {
         recipe = {
             consumption = {{"high-tech-product", 1}},
             production = {},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -376,7 +376,7 @@ data:extend {
         recipe = {
             consumption = {{"gold", 1}, {"metal", 1}},
             production = {{"high-tech-product", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -399,7 +399,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"iron-ore", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -422,7 +422,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"gold", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -442,7 +442,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"tree-log", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -465,7 +465,7 @@ data:extend {
         recipe = {
             consumption = {{"tree-log", 1}},
             production = {{"wood-plank", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -487,7 +487,7 @@ data:extend {
         recipe = {
             consumption = {{"metal", 1}, {"wood-plank", 1}},
             production = {{"furniture", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -510,7 +510,7 @@ data:extend {
         recipe = {
             consumption = {{"iron-ore", 1}},
             production = {{"metal", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -533,7 +533,7 @@ data:extend {
         recipe = {
             consumption = {{"carcass", 1}},
             production = {{"raw-meat", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 5,
@@ -553,7 +553,7 @@ data:extend {
         recipe = {
             consumption = {{"cereal", 1}},
             production = {{"carcass", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 5,
@@ -576,7 +576,7 @@ data:extend {
         recipe = {
             consumption = {{"raw-meat", 1}},
             production = {{"meat", 1}},
-            complexity = 100,
+            duration = "100m",
             storage_multiplier = 5,
         },
         n_workers = 10,
@@ -596,7 +596,7 @@ data:extend {
         recipe = {
             consumption = {},
             production = {{"vegetable", 2}},
-            complexity = 2,
+            duration = "2m",
             storage_multiplier = 5,
         },
         n_workers = 10,

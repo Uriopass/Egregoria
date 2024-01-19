@@ -1,6 +1,6 @@
 use crate::prototypes::PrototypeBase;
 use crate::{
-    get_with_err, GoodsCompanyID, Money, NoParent, Power, Prototype, Recipe, Size2D, Zone,
+    get_lua, get_lua_opt, GoodsCompanyID, Money, NoParent, Power, Prototype, Recipe, Size2D, Zone,
 };
 use egui_inspect::{debug_inspect_impl, Inspect};
 use geom::Vec2;
@@ -41,8 +41,8 @@ pub struct GoodsCompanyPrototype {
     pub size: Size2D,
     pub asset_location: String,
     pub price: Money,
-    pub power_consumption: Power,
-    pub power_production: Power,
+    pub power_consumption: Option<Power>,
+    pub power_production: Option<Power>,
     pub zone: Option<Zone>,
 }
 
@@ -56,17 +56,17 @@ impl Prototype for GoodsCompanyPrototype {
         Ok(Self {
             id: Self::ID::from(&base.name),
             base,
-            bgen: get_with_err(table, "bgen")?,
-            kind: get_with_err(table, "kind")?,
-            recipe: get_with_err(table, "recipe")?,
-            n_trucks: get_with_err::<Option<u32>>(table, "n_trucks")?.unwrap_or(0),
-            n_workers: get_with_err::<Option<u32>>(table, "n_workers")?.unwrap_or(0),
-            size: get_with_err(table, "size")?,
-            asset_location: get_with_err(table, "asset_location")?,
-            price: get_with_err(table, "price")?,
-            power_consumption: get_with_err(table, "power_consumption")?,
-            power_production: get_with_err(table, "power_production")?,
-            zone: get_with_err(table, "zone").ok(),
+            bgen: get_lua(table, "bgen")?,
+            kind: get_lua(table, "kind")?,
+            recipe: get_lua(table, "recipe")?,
+            n_trucks: get_lua_opt(table, "n_trucks")?.unwrap_or(0),
+            n_workers: get_lua_opt(table, "n_workers")?.unwrap_or(0),
+            size: get_lua(table, "size")?,
+            asset_location: get_lua(table, "asset_location")?,
+            price: get_lua(table, "price")?,
+            power_consumption: get_lua(table, "power_consumption")?,
+            power_production: get_lua(table, "power_production")?,
+            zone: get_lua(table, "zone").ok(),
         })
     }
 
@@ -118,15 +118,15 @@ impl<'a> FromLua<'a> for BuildingGen {
                 message: Some("expected string or table".into()),
             })?,
         };
-        let kind = get_with_err::<String>(&table, "kind")?;
+        let kind = get_lua::<String>(&table, "kind")?;
         match kind.as_str() {
             "house" => Ok(Self::House),
             "farm" => Ok(Self::Farm),
             "centered_door" => Ok(Self::CenteredDoor {
-                vertical_factor: get_with_err(&table, "vertical_factor")?,
+                vertical_factor: get_lua(&table, "vertical_factor")?,
             }),
             "no_walkway" => Ok(Self::NoWalkway {
-                door_pos: get_with_err(&table, "door_pos")?,
+                door_pos: get_lua(&table, "door_pos")?,
             }),
             _ => Err(mlua::Error::external(format!(
                 "Unknown building gen kind: {}",

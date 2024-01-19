@@ -1,6 +1,8 @@
-use crate::{CompanyKind, Prototypes};
-use common::error::MultiError;
 use thiserror::Error;
+
+use common::error::MultiError;
+
+use crate::{CompanyKind, Prototypes};
 
 #[derive(Debug, Error)]
 pub enum ValidationError {
@@ -54,7 +56,7 @@ pub(crate) fn validate(proto: &Prototypes) -> Result<(), MultiError<ValidationEr
             }
         }
 
-        if comp.power_consumption.0 < 0 {
+        if comp.power_consumption.map_or(false, |v| v.0 < 0) {
             errors.push(ValidationError::InvalidField(
                 comp.name.clone(),
                 "power_consumption",
@@ -62,7 +64,7 @@ pub(crate) fn validate(proto: &Prototypes) -> Result<(), MultiError<ValidationEr
             ));
         }
 
-        if comp.power_production.0 < 0 {
+        if comp.power_production.map_or(false, |v| v.0 < 0) {
             errors.push(ValidationError::InvalidField(
                 comp.name.clone(),
                 "power_production",

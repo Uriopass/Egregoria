@@ -1,4 +1,4 @@
-use crate::{get_with_err, Money, NoParent, Prototype, PrototypeBase, Size2D};
+use crate::{get_lua, Money, NoParent, Prototype, PrototypeBase, Size2D};
 use mlua::Table;
 use std::ops::Deref;
 
@@ -24,9 +24,9 @@ impl Prototype for FreightStationPrototype {
         Ok(Self {
             id: Self::ID::new(&base.name),
             base,
-            asset_location: get_with_err(table, "asset_location")?,
-            price: get_with_err(table, "price")?,
-            size: get_with_err(table, "size")?,
+            asset_location: get_lua(table, "asset_location")?,
+            price: get_lua(table, "price")?,
+            size: get_lua(table, "size")?,
         })
     }
 

@@ -93,7 +93,6 @@ impl Display for Power {
 impl<'lua> FromLua<'lua> for Power {
     fn from_lua(value: Value<'lua>, _: &'lua Lua) -> mlua::Result<Self> {
         match value {
-            Value::Nil => Ok(Self(0)),
             Value::Integer(i) => Ok(Self(i as i64)),
             Value::Number(n) => {
                 if n > i64::MAX as f64 {
@@ -111,7 +110,7 @@ impl<'lua> FromLua<'lua> for Power {
             _ => Err(mlua::Error::FromLuaConversionError {
                 from: value.type_name(),
                 to: "Power",
-                message: Some("expected nil, string or number".into()),
+                message: Some("expected string or number".into()),
             }),
         }
     }

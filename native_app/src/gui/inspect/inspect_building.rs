@@ -1,7 +1,7 @@
 use egui::{Context, Ui, Widget};
 
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
-use prototypes::{ItemID, Power, Recipe};
+use prototypes::{ItemID, Recipe};
 use simulation::economy::Market;
 use simulation::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
 use simulation::map_dynamic::{BuildingInfos, ElectricityFlow};
@@ -172,21 +172,21 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
     if let Some(net_id) = map.electricity.net_id(b.id) {
         let elec_productivity = elec_flow.productivity(net_id);
 
-        if proto.power_consumption > Power::ZERO {
+        if let Some(power_c) = proto.power_consumption {
             egui::ProgressBar::new(productivity * elec_productivity)
                 .text(format!(
                     "power: {}/{}",
-                    (productivity * elec_productivity) as f64 * proto.power_consumption,
-                    proto.power_consumption
+                    (productivity * elec_productivity) as f64 * power_c,
+                    power_c
                 ))
                 .desired_width(200.0)
                 .ui(ui);
         }
 
-        if proto.power_production > Power::ZERO {
+        if let Some(power_prod) = proto.power_production {
             ui.label(format!(
                 "producing power: {}",
-                proto.power_production * productivity as f64
+                power_prod * productivity as f64
             ));
 
             let stats = elec_flow.network_stats(net_id);

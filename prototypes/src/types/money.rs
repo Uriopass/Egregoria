@@ -104,7 +104,6 @@ impl FromStr for Money {
 impl<'lua> FromLua<'lua> for Money {
     fn from_lua(value: Value<'lua>, _lua: &'lua Lua) -> mlua::Result<Self> {
         match value {
-            Value::Nil => Ok(Money::ZERO),
             Value::Integer(i) => Ok(Money::new_bucks(i as i64)),
             Value::Number(n) => Ok(Money::from_float_bucks(n)),
             Value::String(s) => {
@@ -117,7 +116,7 @@ impl<'lua> FromLua<'lua> for Money {
             _ => Err(mlua::Error::FromLuaConversionError {
                 from: value.type_name(),
                 to: "Money",
-                message: Some("expected nil, a number or string".to_string()),
+                message: Some("expected a number or string".to_string()),
             }),
         }
     }
@@ -207,6 +206,6 @@ impl Mul<Money> for f64 {
     type Output = Money;
 
     fn mul(self, rhs: Money) -> Self::Output {
-        rhs * self
+        Money((rhs.0 as f64 * self) as i64)
     }
 }

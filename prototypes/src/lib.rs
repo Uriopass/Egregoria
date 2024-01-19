@@ -126,6 +126,16 @@ where
 }
 
 #[inline]
+pub(crate) fn try_prototype_preload<ID: PrototypeID>(
+    id: ID,
+) -> Option<&'static <ID as PrototypeID>::Prototype>
+where
+    ID::Prototype: ConcretePrototype,
+{
+    <ID as PrototypeID>::Prototype::storage(try_prototypes()?).get(&id)
+}
+
+#[inline]
 pub fn prototypes_iter<T: ConcretePrototype>() -> impl Iterator<Item = &'static T> {
     let p = prototypes();
     let storage = T::storage(p);
@@ -137,7 +147,12 @@ pub fn prototypes_iter_ids<T: ConcretePrototype>() -> impl Iterator<Item = T::ID
     T::ordering(prototypes()).iter().copied()
 }
 
-fn get_with_err<'a, T: FromLua<'a>>(t: &Table<'a>, field: &'static str) -> mlua::Result<T> {
+fn get_lua<'a, T: FromLua<'a>>(t: &Table<'a>, field: &'static str) -> mlua::Result<T> {
     t.get::<_, T>(field)
+        .map_err(|e| mlua::Error::external(format!("field {}: {}", field, e)))
+}
+
+fn get_lua_opt<'a, T: FromLua<'a>>(t: &Table<'a>, field: &'static str) -> mlua::Result<Option<T>> {
+    t.get::<_, Option<T>>(field)
         .map_err(|e| mlua::Error::external(format!("field {}: {}", field, e)))
 }

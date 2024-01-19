@@ -692,7 +692,6 @@ mod erosion {
                 let mut sediment = 0.0;
 
                 for _ in 0..MAX_DROPLET_LIFETIME {
-                    //dbg!((pos, dir, speed, water, sediment,));
                     //unsafe {
                     //    let size = 10.0 * (MAX_DROPLET_LIFETIME as f32 - i as f32)
                     //        / MAX_DROPLET_LIFETIME as f32;
@@ -790,7 +789,6 @@ mod erosion {
                                         {  *v -= delta_sediment * Self::CELL_SIZE }
 
 
-                                //dbg!(delta_sediment, weighed_erode_amount, amount_to_erode);
                                 sediment += delta_sediment;
                             }
                         }

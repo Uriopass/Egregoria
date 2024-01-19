@@ -1,5 +1,5 @@
 use crate::prototypes::PrototypeBase;
-use crate::{get_with_err, ItemID, NoParent, Prototype};
+use crate::{get_lua, ItemID, NoParent, Prototype};
 use mlua::Table;
 use std::ops::Deref;
 
@@ -21,7 +21,7 @@ impl Prototype for ItemPrototype {
         Ok(Self {
             id: Self::ID::new(&base.name),
             base,
-            optout_exttrade: get_with_err(table, "optout_exttrade").unwrap_or(false),
+            optout_exttrade: get_lua(table, "optout_exttrade").unwrap_or(false),
         })
     }
 

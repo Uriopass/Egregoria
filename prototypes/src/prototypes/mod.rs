@@ -71,11 +71,11 @@ impl crate::Prototype for PrototypeBase {
     const NAME: &'static str = "base";
 
     fn from_lua(table: &mlua::Table) -> mlua::Result<Self> {
-        use crate::get_with_err;
+        use crate::get_lua;
         Ok(Self {
-            name: get_with_err(table, "name")?,
-            order: get_with_err(table, "order").unwrap_or(String::new()),
-            label: get_with_err(table, "label")?,
+            name: get_lua(table, "name")?,
+            order: get_lua(table, "order").unwrap_or(String::new()),
+            label: get_lua(table, "label")?,
         })
     }
 

@@ -1,4 +1,4 @@
-use crate::{get_with_err, GameDuration, ItemID};
+use crate::{get_lua, GameDuration, ItemID};
 use egui_inspect::Inspect;
 use mlua::{FromLua, Lua, Table, Value};
 
@@ -21,9 +21,9 @@ impl<'lua> FromLua<'lua> for RecipeItem {
             });
         }
 
-        let name = get_with_err::<String>(&table, "id")?;
+        let name = get_lua::<String>(&table, "id")?;
         let item_id = ItemID::from(&name);
-        let amount = get_with_err(&table, "amount")?;
+        let amount = get_lua(&table, "amount")?;
 
         Ok(Self {
             id: item_id,
@@ -50,10 +50,10 @@ impl<'lua> FromLua<'lua> for Recipe {
     fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
         let table: Table = FromLua::from_lua(value, lua)?;
         Ok(Self {
-            consumption: get_with_err(&table, "consumption")?,
-            production: get_with_err(&table, "production")?,
-            duration: get_with_err(&table, "duration")?,
-            storage_multiplier: get_with_err(&table, "storage_multiplier")?,
+            consumption: get_lua(&table, "consumption")?,
+            production: get_lua(&table, "production")?,
+            duration: get_lua(&table, "duration")?,
+            storage_multiplier: get_lua(&table, "storage_multiplier")?,
         })
     }
 }

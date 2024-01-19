@@ -1,3 +1,27 @@
+use std::sync::atomic::Ordering;
+use std::time::{Duration, Instant};
+
+use egui::load::SizedTexture;
+use egui::{
+    Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
+    Widget, Window,
+};
+use serde::{Deserialize, Serialize};
+
+use common::saveload::Encoder;
+use egui_inspect::{Inspect, InspectArgs};
+use geom::{Polygon, Vec2};
+use prototypes::{
+    prototypes_iter, BuildingGen, FreightStationPrototype, GameTime, GoodsCompanyPrototype, ItemID,
+    Money,
+};
+use simulation::economy::Government;
+use simulation::map::{
+    BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
+};
+use simulation::world_command::WorldCommand;
+use simulation::Simulation;
+
 use crate::gui::bulldozer::BulldozerState;
 use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
@@ -10,27 +34,6 @@ use crate::gui::windows::GUIWindows;
 use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
-use common::saveload::Encoder;
-use egui::load::SizedTexture;
-use egui::{
-    Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
-    Widget, Window,
-};
-use egui_inspect::{Inspect, InspectArgs};
-use geom::{Polygon, Vec2};
-use prototypes::{
-    prototypes_iter, BuildingGen, FreightStationPrototype, GameTime, GoodsCompanyPrototype, ItemID,
-    Money, Power,
-};
-use serde::{Deserialize, Serialize};
-use simulation::economy::Government;
-use simulation::map::{
-    BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
-};
-use simulation::world_command::WorldCommand;
-use simulation::Simulation;
-use std::sync::atomic::Ordering;
-use std::time::{Duration, Instant};
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
@@ -644,16 +647,13 @@ impl Gui {
                                     ));
                                 }
 
-                                if descr.power_consumption > Power::ZERO {
+                                if let Some(p) = descr.power_consumption {
                                     ui.add_space(10.0);
-                                    ui.label(format!("Power: {}", descr.power_consumption));
+                                    ui.label(format!("Power: {}", p));
                                 }
-                                if descr.power_production > Power::ZERO {
+                                if let Some(p) = descr.power_production {
                                     ui.add_space(10.0);
-                                    ui.label(format!(
-                                        "Power production: {}",
-                                        descr.power_production
-                                    ));
+                                    ui.label(format!("Power production: {}", p));
                                 }
                             });
                     }

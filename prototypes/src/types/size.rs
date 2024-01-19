@@ -1,4 +1,4 @@
-use crate::get_with_err;
+use crate::get_lua;
 use geom::Vec2;
 use mlua::{FromLua, Lua, Value};
 
@@ -39,8 +39,8 @@ impl<'lua> FromLua<'lua> for Size2D {
             Value::Number(n) => Size2D::new(n as f32, n as f32),
             Value::Vector(v) => Size2D::new(v.x(), v.y()),
             Value::Table(ref t) => {
-                let w = get_with_err::<f32>(t, "w")?;
-                let h = get_with_err::<f32>(t, "h")?;
+                let w = get_lua::<f32>(t, "w")?;
+                let h = get_lua::<f32>(t, "h")?;
                 Size2D::new(w, h)
             }
             _ => {

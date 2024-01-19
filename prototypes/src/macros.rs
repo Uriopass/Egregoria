@@ -130,7 +130,7 @@ macro_rules! prototype_id {
 
         impl core::fmt::Debug for $id {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-                if let Some(v) = $crate::try_prototype(*self) {
+                if let Some(v) = $crate::try_prototype_preload(*self) {
                     return write!(f, "{}({:?})", stringify!($id), v.name);
                 }
                 write!(f, "{}({})", stringify!($id), self.0)

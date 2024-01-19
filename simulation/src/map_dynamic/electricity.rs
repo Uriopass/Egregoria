@@ -68,8 +68,8 @@ pub fn electricity_flow_system(world: &mut World, resources: &mut Resources) {
                     };
                     let productivity = ent.raw_productivity(proto, building.zone.as_ref()) as f64;
 
-                    consumed_power += proto.power_consumption * productivity;
-                    produced_power += proto.power_production * productivity;
+                    consumed_power += proto.power_consumption.unwrap_or(Power::ZERO) * productivity;
+                    produced_power += proto.power_production.unwrap_or(Power::ZERO) * productivity;
                 }
                 BuildingKind::RailFreightStation(_) => {}
                 BuildingKind::TrainStation => {}

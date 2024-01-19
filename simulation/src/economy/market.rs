@@ -490,7 +490,7 @@ mod tests {
                     {"cereal", 3}
                 },
                 consumption = {},
-                complexity = 3,
+                duration = "3m",
                 storage_multiplier = 5,
             },
             n_trucks = 1,
@@ -512,7 +512,7 @@ mod tests {
                 consumption = {
                     {"cereal", 2}
                 },
-                complexity = 10,
+                duration = "10m",
                 storage_multiplier = 5,
             },
             n_trucks = 1,

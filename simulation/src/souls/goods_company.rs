@@ -92,7 +92,7 @@ impl CompanyEnt {
     ) -> f32 {
         let mut p = self.raw_productivity(proto, zone);
 
-        if proto.power_consumption > Power::ZERO {
+        if proto.power_consumption > Some(Power::ZERO) {
             if let Some(net_id) = map.electricity.net_id(self.comp.building) {
                 p *= elec_flow.productivity(net_id);
             }
