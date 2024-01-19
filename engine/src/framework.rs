@@ -1,6 +1,7 @@
 use crate::egui::EguiWrapper;
 use crate::{get_cursor_icon, AudioContext, FrameContext, GfxContext, InputContext};
 use std::mem::ManuallyDrop;
+use std::sync::Arc;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -36,7 +37,7 @@ pub trait State: 'static {
     fn render_yakui(&mut self) {}
 }
 
-async fn run<S: State>(el: EventLoop<()>, window: Window) {
+async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
     let mut ctx = Context::new(window, &el).await;
     let mut state = S::new(&mut ctx);
     ctx.gfx.defines_changed = false;
@@ -199,7 +200,7 @@ pub fn start<S: State>() {
                     .ok()
             })
             .expect("Failed to append canvas to body");
-        wasm_bindgen_futures::spawn_local(run(el, window));
+        wasm_bindgen_futures::spawn_local(run(el, Arc::new(window)));
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -230,6 +231,7 @@ pub fn start<S: State>() {
             .with_title(format!("Egregoria {}", include_str!("../../VERSION")))
             .build(&el)
             .expect("Failed to create window");
+        let window = Arc::new(window);
         beul::execute(run::<S>(el, window))
     }
 }
@@ -249,7 +251,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub async fn new(window: Window, el: &EventLoop<()>) -> Self {
+    pub async fn new(window: Arc<Window>, el: &EventLoop<()>) -> Self {
         let gfx = GfxContext::new(window).await;
         let input = InputContext::default();
         let audio = AudioContext::new();

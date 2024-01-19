@@ -36,8 +36,8 @@ pub struct FBOs {
 }
 
 pub struct GfxContext {
-    pub window: Window,
-    pub surface: Surface,
+    pub window: Arc<Window>,
+    pub surface: Surface<'static>,
     pub device: Device,
     pub queue: Queue,
     pub fbos: FBOs,
@@ -238,7 +238,7 @@ impl<'a> FrameContext<'a> {
 }
 
 impl GfxContext {
-    pub async fn new(window: Window) -> Self {
+    pub async fn new(window: Arc<Window>) -> Self {
         let mut backends = backend_bits_from_env().unwrap_or_else(Backends::all);
         if std::env::var("RENDERDOC").is_ok() {
             backends = Backends::VULKAN;
@@ -251,7 +251,7 @@ impl GfxContext {
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
-        let surface = unsafe { instance.create_surface(&window).unwrap() };
+        let surface = instance.create_surface(window.clone()).unwrap();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -267,8 +267,8 @@ impl GfxContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
-                    limits: limit,
+                    required_features: wgpu::Features::empty(),
+                    required_limits: limit,
                 },
                 None,
             )
@@ -293,6 +293,7 @@ impl GfxContext {
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
+            desired_maximum_frame_latency: 2,
             alpha_mode: CompositeAlphaMode::Auto,
             view_formats: vec![],
         };

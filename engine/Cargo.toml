@@ -13,10 +13,10 @@ ordered-float = { workspace = true }
 egui          = { workspace = true }
 oddio         = { workspace = true }
 derive_more   = { workspace = true }
-wgpu          = { version = "0.18.0", default-features = false, features=["wgsl"] }
+wgpu          = { version = "0.19.0", default-features = false, features=["wgsl"] }
 winit         = { version = "0.29.4" }
 smol_str      = { version = "0.2.0", features = ["serde"]  }
-egui-winit    = { version = "0.25.0", default-features = false }
+egui-winit    = { git = "https://github.com/emilk/egui" , default-features = false }
 bytemuck      = "1.7.2"
 image         = { version = "0.24.3", default-features = false, features = ["png"] }
 log           = "0.4.11"
@@ -27,7 +27,7 @@ rayon         = "1.6"
 beul          = "1.0.0"
 slotmapd      = "1.0"
 inline_tweak  = "1.0.8"
-egui-wgpu     = "0.25.0"
+egui-wgpu     = { git = "https://github.com/emilk/egui" }
 cpal          = "0.15.0"
 lewton        = "0.10.2"
 serde         = { version = "1.0.183", features = ["derive"] }

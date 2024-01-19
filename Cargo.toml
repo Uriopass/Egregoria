@@ -19,10 +19,10 @@ resolver = "2"
 default-members = ["native_app"]
 
 [workspace.dependencies]
-egui          = "0.25.0"
+egui          = { git = "https://github.com/emilk/egui" }
 flat_spatial  = "0.6"
-egui_extras   = "0.25.0"
-egui_plot     = "0.25.0"
+egui_extras   = { git = "https://github.com/emilk/egui" }
+egui_plot     = { git = "https://github.com/emilk/egui" }
 ordered-float = { version = "4.2.0", default-features = false }
 oddio         = "0.7.4"
 derive_more   = "0.99.17"
