@@ -72,6 +72,7 @@ impl log::Log for MyLog {
             | "wgpu_core::hub"
             | "wgpu_core::device::global"
             | "wgpu_hal::vulkan::instance"
+            | "wgpu_hal::dx12::device"
             | "gfx_memory"
             | "gfx_backend_vulkan"
             | "gfx_descriptor" => l <= Level::Warn,
