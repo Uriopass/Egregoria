@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
+    Adapter, Backend, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Face, FragmentState,
     FrontFace, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
     Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
@@ -293,7 +293,11 @@ impl GfxContext {
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
-            desired_maximum_frame_latency: 2,
+            desired_maximum_frame_latency: if adapter.get_info().backend == Backend::Dx12 {
+                3
+            } else {
+                2
+            }, // TODO: fix when wgpu 0.19.1 is released
             alpha_mode: CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
