@@ -394,6 +394,9 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
     /// Casts a ray on the heightmap, returning the point of intersection and the normal at that point
     /// We assume height is between [-40.0; 2008]
     pub fn raycast(&self, ray: Ray3) -> Option<(Vec3, Vec3)> {
+        if !ray.dir.is_finite() {
+            return None;
+        }
         // Let's build an iterator over the chunks that intersect the ray (from nearest to furthest)
         let start = ray.from.xy() / SIZE as f32;
         let end = start + ray.dir.xy().normalize() * self.w.max(self.h) as f32 * 2.0;
