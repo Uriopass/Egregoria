@@ -1,13 +1,15 @@
 mod building;
-mod company;
 mod freightstation;
+mod goods_company;
 mod item;
+mod leisure;
 mod solar;
 
 pub use building::*;
-pub use company::*;
 pub use freightstation::*;
+pub use goods_company::*;
 pub use item::*;
+pub use leisure::*;
 pub use solar::*;
 
 crate::gen_prototypes!(
@@ -16,6 +18,7 @@ crate::gen_prototypes!(
     solar:     SolarPanelID   = SolarPanelPrototype => GoodsCompanyID,
     stations:  FreightStationPrototypeID = FreightStationPrototype,
     buildings: BuildingPrototypeID = BuildingPrototype,
+    leisure:  LeisurePrototypeID = LeisurePrototype => BuildingPrototypeID,
 );
 
 /** Prototype template. remplace $proto with the root name e.g Item
@@ -30,12 +33,12 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct $protoPrototype {
     pub base: $parent,
-    pub id: $protoID,
+    pub id: $protoPrototypeID,
 }
 
 impl Prototype for $protoPrototype {
     type Parent = $parent;
-    type ID = $protoID;
+    type ID = $protoPrototypeID;
     const NAME: &'static str = ;
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
