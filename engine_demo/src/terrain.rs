@@ -1,7 +1,7 @@
 use engine::meshload::load_mesh;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, InstancedMeshBuilder, MeshInstance};
-use geom::{vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
+use geom::{pack_height, vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
 
 use crate::DemoElement;
 
@@ -34,15 +34,17 @@ impl DemoElement for Terrain {
 
         for y in 0..MAP_SIZE {
             for x in 0..MAP_SIZE {
-                let mut c = [[0.0; CRESO]; CRESO];
+                let mut c = [[0; CRESO]; CRESO];
                 for i in 0..CRESO {
                     for j in 0..CRESO {
-                        c[i][j] = 3000.0
-                            * geom::fnoise::<6>(
-                                0.002 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
-                            )
-                            .0
-                            .powi(2);
+                        c[i][j] = pack_height(
+                            3000.0
+                                * geom::fnoise::<6>(
+                                    0.002 * vec2((x * CRESO + j) as f32, (y * CRESO + i) as f32),
+                                )
+                                .0
+                                .powi(2),
+                        );
                         //heights[y][x][i][j] =
                         //    (CSIZE / CRESO * i) as f32 + 0.5 * (CSIZE / CRESO * j) as f32;
                     }

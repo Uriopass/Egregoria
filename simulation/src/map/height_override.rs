@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use geom::{Shape, Vec2, AABB, NO_OVERRIDE};
+use geom::{pack_height, Shape, Vec2, AABB, NO_OVERRIDE};
 
 use crate::map::terrain::CELL_SIZE;
 use crate::map::{
@@ -10,7 +10,7 @@ use crate::map::{
 
 struct OverrideSetter {
     chunk: TerrainChunkID,
-    overrides: [[f32; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION],
+    overrides: [[u16; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION],
     chunk_bound: AABB,
 }
 
@@ -44,6 +44,10 @@ impl OverrideSetter {
                 let Some(h) = filter(pos) else {
                     continue;
                 };
+                let mut h = pack_height(h);
+                if h == NO_OVERRIDE {
+                    h += 1;
+                }
                 let v = self.overrides[y][x];
                 self.overrides[y][x] = if v == NO_OVERRIDE { h } else { v.min(h) }
             }

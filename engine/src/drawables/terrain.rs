@@ -510,7 +510,7 @@ fn downsample_update(
     height_tex: &Texture,
     mip: u32,
 ) {
-    let bg = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bg = gfx.device.create_bind_group(&BindGroupDescriptor {
         layout: &downsample_pipeline.get_bind_group_layout(0),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
@@ -548,7 +548,7 @@ fn upsample_update(
     height_tex: &Texture,
     mip: u32,
 ) {
-    let bg = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bg = gfx.device.create_bind_group(&BindGroupDescriptor {
         layout: &upsample_pipeline.get_bind_group_layout(0),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,

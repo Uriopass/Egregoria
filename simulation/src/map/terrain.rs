@@ -1,7 +1,7 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
 use flat_spatial::Grid;
-use geom::{lerp, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
+use geom::{lerp, pack_height, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
 use prototypes::{Tick, DELTA};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
@@ -142,7 +142,7 @@ impl Environment {
     pub fn set_overrides(
         &mut self,
         chunk: TerrainChunkID,
-        overrides: [[f32; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION],
+        overrides: [[u16; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION],
     ) {
         self.heightmap
             .set_override((chunk.0 as u16, chunk.1 as u16), overrides);
@@ -247,7 +247,7 @@ impl Environment {
     }
 
     fn generate_chunk(&self, (x, y): (u16, u16)) -> Option<(Chunk, Vec<Tree>)> {
-        let mut heights = [[0.0; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION];
+        let mut heights = [[0; TERRAIN_CHUNK_RESOLUTION]; TERRAIN_CHUNK_RESOLUTION];
 
         let offchunk = vec2(x as f32, y as f32) * TerrainChunkID::SIZE_F32;
         for (y, l) in heights.iter_mut().enumerate() {
@@ -259,7 +259,7 @@ impl Environment {
                     rh = 0.0;
                 }
 
-                *h = 1000.0 * rh;
+                *h = pack_height(1000.0 * rh);
             }
         }
 

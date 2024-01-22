@@ -10,19 +10,20 @@ const MIN_HEIGHT: f32 = -40.0007;
 const MAX_HEIGHT: f32 = MAX_HEIGHT_DIFF - MIN_HEIGHT;
 
 /// Special value for heights_override to indicate that the height is not overridden
-pub const NO_OVERRIDE: f32 = -40.0;
+pub const NO_OVERRIDE: u16 = 0;
 
 #[derive(Clone)]
 pub struct HeightmapChunk<const RESOLUTION: usize, const SIZE: u32> {
-    heights: [[f32; RESOLUTION]; RESOLUTION], // TODO: change to RESOLUTION * RESOLUTION when generic_const_exprs is stabilized
-    heights_override: [[f32; RESOLUTION]; RESOLUTION],
+    heights: [[u16; RESOLUTION]; RESOLUTION], // TODO: change to RESOLUTION * RESOLUTION when generic_const_exprs is stabilized
+    heights_override: [[u16; RESOLUTION]; RESOLUTION],
     max_height: f32,
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> Default for HeightmapChunk<RESOLUTION, SIZE> {
     fn default() -> Self {
+        let packed_zero = pack_height(0.0);
         Self {
-            heights: [[0.0; RESOLUTION]; RESOLUTION],
+            heights: [[packed_zero; RESOLUTION]; RESOLUTION],
             heights_override: [[NO_OVERRIDE; RESOLUTION]; RESOLUTION],
             max_height: 0.0,
         }
@@ -30,7 +31,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Default for HeightmapChunk<RESOLU
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> {
-    pub fn new(heights: [[f32; RESOLUTION]; RESOLUTION]) -> Self {
+    pub fn new(heights: [[u16; RESOLUTION]; RESOLUTION]) -> Self {
         let mut me = Self {
             heights,
             heights_override: [[NO_OVERRIDE; RESOLUTION]; RESOLUTION],
@@ -96,18 +97,18 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
         let height_override = *self.heights_override.get(y)?.get(x)?;
         let h = unsafe { *self.heights.get_unchecked(y).get_unchecked(x) };
         if height_override != NO_OVERRIDE && height_override < h {
-            return Some(height_override);
+            return Some(unpack_height(height_override));
         }
-        Some(h)
+        Some(unpack_height(h))
     }
 
     /// Always returns the normal heightmap height
-    fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
+    fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut u16> {
         self.heights.get_mut(y)?.get_mut(x)
     }
 
     #[inline]
-    pub fn heights(&self) -> &[[f32; RESOLUTION]; RESOLUTION] {
+    pub fn heights(&self) -> &[[u16; RESOLUTION]; RESOLUTION] {
         &self.heights
     }
 
@@ -169,7 +170,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
     pub fn set_override(
         &mut self,
         id: HeightmapChunkID,
-        override_heights: [[f32; RESOLUTION]; RESOLUTION],
+        override_heights: [[u16; RESOLUTION]; RESOLUTION],
     ) {
         if !self.check_valid(id) {
             return;
@@ -216,12 +217,13 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
                     for j in 0..RESOLUTION {
                         let p = corner + vec2(j as f32, i as f32) * Self::CELL_SIZE;
                         let h = chunk.heights[i][j];
+                        let h = unpack_height(h);
                         max_height = max_height.max(h);
                         if !bounds.contains(p) {
                             continue;
                         }
-                        let new_h = f(p.z(h)).clamp(MIN_HEIGHT, MAX_HEIGHT);
-                        chunk.heights[i][j] = new_h;
+                        let new_h = f(p.z(h));
+                        chunk.heights[i][j] = pack_height(new_h);
                         max_height = max_height.max(new_h);
                     }
                 }
@@ -248,13 +250,16 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
         let mut modified = Vec::with_capacity(((ur.x - ll.x) * (ur.y - ll.y)) as usize);
 
         let mut new_chunks = Vec::with_capacity(((ur.x - ll.x) * (ur.y - ll.y)) as usize);
+
+        let packed_zero = pack_height(0.0);
+
         for y in ll.y as u16..ur.y as u16 {
             for x in ll.x as u16..ur.x as u16 {
                 let id = (x, y);
                 modified.push(id);
                 let corner = vec2(x as f32, y as f32) * SIZE as f32;
                 let mut max_height: f32 = 0.0;
-                let mut new_heights = [[0.0; RESOLUTION]; RESOLUTION];
+                let mut new_heights = [[packed_zero; RESOLUTION]; RESOLUTION];
                 for i in 0..RESOLUTION {
                     for j in 0..RESOLUTION {
                         let p = corner + vec2(j as f32, i as f32) * Self::CELL_SIZE;
@@ -273,7 +278,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
                         if bounds.contains(p) {
                             new_h = f(p, conv_heights).clamp(MIN_HEIGHT, MAX_HEIGHT);
                         }
-                        new_heights[i][j] = new_h;
+                        new_heights[i][j] = pack_height(new_h);
                         max_height = max_height.max(new_h);
                     }
                 }
@@ -332,7 +337,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
     }
 
     /// Always returns the normal heightmap height
-    fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
+    fn height_idx_mut(&mut self, x: usize, y: usize) -> Option<&mut u16> {
         let chunkx = x / RESOLUTION;
         let chunky = y / RESOLUTION;
 
@@ -511,7 +516,8 @@ fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
     mid
 }
 
-fn pack_height(height: f32) -> u16 {
+pub fn pack_height(height: f32) -> u16 {
+    let height = height.clamp(MIN_HEIGHT, MAX_HEIGHT);
     ((height - MIN_HEIGHT) / MAX_HEIGHT_DIFF * u16::MAX as f32) as u16
 }
 
@@ -523,8 +529,8 @@ impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESO
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut seq = serializer.serialize_seq(Some(1 + RESOLUTION * RESOLUTION * 2))?;
         seq.serialize_element(&self.max_height)?;
-        Self::encode_delta(&mut seq, &self.heights, false)?;
-        Self::encode_delta(&mut seq, &self.heights_override, true)?;
+        Self::encode_delta(&mut seq, &self.heights)?;
+        Self::encode_delta(&mut seq, &self.heights_override)?;
         seq.end()
     }
 }
@@ -532,23 +538,14 @@ impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESO
 impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> {
     fn encode_delta<S: SerializeSeq>(
         seq: &mut S,
-        heights: &[[f32; RESOLUTION]; RESOLUTION],
-        handle_override: bool,
+        heights: &[[u16; RESOLUTION]; RESOLUTION],
     ) -> Result<(), S::Error> {
         let mut last = 0;
         for row in heights {
             for &height in row {
-                let mut packed = pack_height(height);
-                if handle_override {
-                    if height == NO_OVERRIDE {
-                        packed = 0;
-                    } else if packed == 0 {
-                        packed = 1;
-                    }
-                }
-                let delta = packed.wrapping_sub(last);
+                let delta = height.wrapping_sub(last);
                 seq.serialize_element(&delta)?;
-                last = packed;
+                last = height;
             }
         }
         Ok(())
@@ -573,8 +570,8 @@ struct HeightmapChunkVisitor<const RESOLUTION: usize>;
 
 impl<'de, const RESOLUTION: usize> Visitor<'de> for HeightmapChunkVisitor<RESOLUTION> {
     type Value = (
-        [[f32; RESOLUTION]; RESOLUTION],
-        [[f32; RESOLUTION]; RESOLUTION],
+        [[u16; RESOLUTION]; RESOLUTION],
+        [[u16; RESOLUTION]; RESOLUTION],
         f32,
     );
 
@@ -593,11 +590,11 @@ impl<'de, const RESOLUTION: usize> Visitor<'de> for HeightmapChunkVisitor<RESOLU
         let max_height = seq
             .next_element()?
             .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
-        let mut heights = [[0.0; RESOLUTION]; RESOLUTION];
-        let mut heights_override = [[0.0; RESOLUTION]; RESOLUTION];
+        let mut heights = [[0; RESOLUTION]; RESOLUTION];
+        let mut heights_override = [[0; RESOLUTION]; RESOLUTION];
 
-        Self::decode_delta(&mut seq, &mut heights, false)?;
-        Self::decode_delta(&mut seq, &mut heights_override, true)?;
+        Self::decode_delta(&mut seq, &mut heights)?;
+        Self::decode_delta(&mut seq, &mut heights_override)?;
 
         Ok((heights, heights_override, max_height))
     }
@@ -606,8 +603,7 @@ impl<'de, const RESOLUTION: usize> Visitor<'de> for HeightmapChunkVisitor<RESOLU
 impl<const RESOLUTION: usize> HeightmapChunkVisitor<RESOLUTION> {
     fn decode_delta<'de, A: SeqAccess<'de>>(
         seq: &mut A,
-        heights: &mut [[f32; RESOLUTION]; RESOLUTION],
-        handle_override: bool,
+        heights: &mut [[u16; RESOLUTION]; RESOLUTION],
     ) -> Result<(), A::Error> {
         let mut last = 0;
         for row in heights {
@@ -616,14 +612,7 @@ impl<const RESOLUTION: usize> HeightmapChunkVisitor<RESOLUTION> {
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &""))?;
                 let packed = delta.wrapping_add(last);
-
-                if handle_override && packed == 0 {
-                    *height = NO_OVERRIDE;
-                    last = packed;
-                    continue;
-                }
-
-                *height = unpack_height(packed);
+                *height = packed;
                 last = packed;
             }
         }
@@ -632,8 +621,10 @@ impl<const RESOLUTION: usize> HeightmapChunkVisitor<RESOLUTION> {
 }
 
 mod erosion {
-    use crate::heightmap::MIN_HEIGHT;
-    use crate::{vec2, Heightmap, HeightmapChunk, HeightmapChunkID, Radians, Vec2, AABB};
+    use crate::heightmap::{unpack_height, MIN_HEIGHT};
+    use crate::{
+        pack_height, vec2, Heightmap, HeightmapChunk, HeightmapChunkID, Radians, Vec2, AABB,
+    };
     use std::collections::BTreeSet;
     use std::ops::Div;
 
@@ -758,10 +749,10 @@ mod erosion {
 
                         let amount_to_deposit = amount_to_deposit * Self::CELL_SIZE;
                         {
-                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize)     { *v += amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y) };
-                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize)     { *v += amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y) };
-                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize + 1) { *v += amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y };
-                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1) { *v += amount_to_deposit * cell_offset.x         * cell_offset.y };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize)     { *v = pack_height(unpack_height(*v) + amount_to_deposit * (1.0 - cell_offset.x) * (1.0 - cell_offset.y)) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize)     { *v = pack_height(unpack_height(*v) + amount_to_deposit * cell_offset.x         * (1.0 - cell_offset.y)) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize    , pos.y as usize + 1) { *v = pack_height(unpack_height(*v) + amount_to_deposit * (1.0 - cell_offset.x) * cell_offset.y) };
+                            if let Some(v) = self.height_idx_mut(pos.x as usize + 1, pos.y as usize + 1) { *v = pack_height(unpack_height(*v) + amount_to_deposit * cell_offset.x         * cell_offset.y) };
                         }
                     } else {
                         // Erode a fraction of the droplet's current carry capacity.
@@ -791,7 +782,7 @@ mod erosion {
                                     .min(weighed_erode_amount);
 
                                 if let Some(v) = self.height_idx_mut(pos_radius.x as usize, pos_radius.y as usize)
-                                        {  *v -= delta_sediment * Self::CELL_SIZE }
+                                        {  *v = pack_height(unpack_height(*v) - delta_sediment * Self::CELL_SIZE) }
 
 
                                 sediment += delta_sediment;
