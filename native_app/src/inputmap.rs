@@ -61,7 +61,7 @@ pub struct InputMap {
     pub act: FastSet<InputAction>,
     /// Mouse wheel delta
     pub wheel: f32,
-    /// Mouse position in world space on the terrain
+    /// Mouse position in world space on the terrain (max height 0)
     pub unprojected: Option<Vec3>,
 
     pub unprojected_normal: Option<Vec3>,

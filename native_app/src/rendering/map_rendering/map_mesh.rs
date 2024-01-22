@@ -832,7 +832,7 @@ fn inter_pylon(
 ) {
     let interpos = inter.pos.up(ROAD_Z_OFFSET);
 
-    let h = unwrap_ret!(env.height(inter.pos.xy()));
+    let h = unwrap_ret!(env.true_height(inter.pos.xy()));
     if (h - interpos.z).abs() <= 2.0 {
         return;
     }

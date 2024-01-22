@@ -261,7 +261,7 @@ impl Road {
         interfaced_points
             .equipoints_dir(80.0, true)
             .filter_map(move |(pos, dir)| {
-                let h = env.height(pos.xy())?;
+                let h = env.true_height(pos.xy())?;
                 if (h - pos.z).abs() <= 2.0 {
                     return None;
                 }
@@ -331,13 +331,10 @@ impl Road {
             )
             .chain(std::iter::once(p.last()))
         {
-            let h = env
-                .height(pos)
-                .unwrap_or_else(|| {
-                    height_error = true;
-                    0.0
-                })
-                .max(0.0);
+            let h = env.height(pos).unwrap_or_else(|| {
+                height_error = true;
+                0.0
+            });
             contour.push(h);
             points.push(pos.z(h));
         }

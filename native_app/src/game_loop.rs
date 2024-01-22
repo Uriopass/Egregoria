@@ -136,8 +136,13 @@ impl engine::framework::State for State {
             if let Some(ray) = ray {
                 let cast = map.environment.raycast(ray);
 
-                self.uiw.write::<InputMap>().unprojected = cast.map(|x| x.0);
-                self.uiw.write::<InputMap>().unprojected_normal = cast.map(|x| x.1);
+                let inp = &mut self.uiw.write::<InputMap>();
+
+                inp.unprojected = cast.map(|(mut proj, _)| {
+                    proj.z = proj.z.max(0.0);
+                    proj
+                });
+                inp.unprojected_normal = cast.map(|x| x.1);
             }
         }
 

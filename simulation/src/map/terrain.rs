@@ -73,7 +73,13 @@ impl Environment {
         me
     }
 
+    /// Returns the height of the terrain at the given position in meters, capped at 0
     pub fn height(&self, pos: Vec2) -> Option<f32> {
+        self.heightmap.height(pos).map(|x| x.max(0.0))
+    }
+
+    /// Returns the height of the terrain at the given position in meters, not capped at 0 (can be negative in water)
+    pub fn true_height(&self, pos: Vec2) -> Option<f32> {
         self.heightmap.height(pos)
     }
 

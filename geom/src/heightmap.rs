@@ -442,7 +442,9 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
             .filter_map(|(x, y)| {
                 let chunk_id = (x as u16, y as u16);
                 let corner = vec2(x as f32, y as f32) * SIZE as f32;
-                let (t_min, t_max) = self.get_chunk(chunk_id)?.bbox(corner).raycast(ray)?;
+                let mut bbox = self.get_chunk(chunk_id)?.bbox(corner);
+                bbox.ll.z -= Self::CELL_SIZE; // give a bit of margin to avoid missing intersections when the heightmap is at the lowest
+                let (t_min, t_max) = bbox.raycast(ray)?;
                 Some((t_min, t_max))
             });
 
