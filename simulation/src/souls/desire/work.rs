@@ -67,7 +67,7 @@ impl Work {
     }
 
     pub fn score(&self, time: &GameTime) -> f32 {
-        if self.work_inter.dist_until(time.daytime) == 0 {
+        if self.work_inter.dist_start(&time.daytime) == 0 {
             0.5
         } else {
             0.0
