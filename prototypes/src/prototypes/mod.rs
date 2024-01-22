@@ -1,42 +1,45 @@
+mod building;
 mod company;
 mod freightstation;
 mod item;
 mod solar;
 
+pub use building::*;
 pub use company::*;
 pub use freightstation::*;
 pub use item::*;
 pub use solar::*;
 
 crate::gen_prototypes!(
-    companies: GoodsCompanyID = GoodsCompanyPrototype,
+    companies: GoodsCompanyID = GoodsCompanyPrototype => BuildingPrototypeID,
     items:     ItemID         = ItemPrototype,
     solar:     SolarPanelID   = SolarPanelPrototype => GoodsCompanyID,
     stations:  FreightStationPrototypeID = FreightStationPrototype,
+    buildings: BuildingPrototypeID = BuildingPrototype,
 );
 
 /** Prototype template. remplace $proto with the root name e.g Item
 ```rs
-use crate::{NoParent, Prototype, PrototypeBase};
+use crate::{NoParent, Prototype, PrototypeBase, get_lua};
 use mlua::Table;
 use std::ops::Deref;
 
 use super::*;
 
-/// $proto is
+/// $protoPrototype is
 #[derive(Clone, Debug)]
 pub struct $protoPrototype {
-    pub base: PrototypeBase,
+    pub base: $parent,
     pub id: $protoID,
 }
 
 impl Prototype for $protoPrototype {
-    type Parent = NoParent;
+    type Parent = $parent;
     type ID = $protoID;
     const NAME: &'static str = ;
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
-        let base = PrototypeBase::from_lua(table)?;
+        let base = $parent::from_lua(table)?;
         Ok(Self {
             id: Self::ID::new(&base.name),
             base,
@@ -49,7 +52,7 @@ impl Prototype for $protoPrototype {
 }
 
 impl Deref for $protoPrototype {
-    type Target = PrototypeBase;
+    type Target = $parent;
 
     fn deref(&self) -> &Self::Target {
         &self.base

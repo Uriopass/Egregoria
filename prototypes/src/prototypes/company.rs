@@ -1,25 +1,11 @@
-use crate::prototypes::PrototypeBase;
-use crate::{
-    get_lua, get_lua_opt, GoodsCompanyID, Money, NoParent, Power, Prototype, Recipe, Size2D, Zone,
-};
-use egui_inspect::{debug_inspect_impl, Inspect};
-use geom::Vec2;
-use mlua::{FromLua, Lua, Table, Value};
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub enum BuildingGen {
-    House,
-    Farm,
-    CenteredDoor {
-        vertical_factor: f32, // 1.0 means that the door is at the bottom, just on the street
-    },
-    NoWalkway {
-        door_pos: Vec2, // door_pos is relative to the center of the building
-    },
-}
-debug_inspect_impl!(BuildingGen);
+use mlua::{FromLua, Lua, Table, Value};
+use serde::{Deserialize, Serialize};
+
+use egui_inspect::Inspect;
+
+use crate::{get_lua, get_lua_opt, BuildingPrototype, GoodsCompanyID, Prototype, Recipe, Zone};
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug, PartialEq, Eq, Inspect)]
 pub enum CompanyKind {
@@ -31,41 +17,29 @@ pub enum CompanyKind {
 
 #[derive(Debug, Clone)]
 pub struct GoodsCompanyPrototype {
-    pub base: PrototypeBase,
+    pub base: BuildingPrototype,
     pub id: GoodsCompanyID,
-    pub bgen: BuildingGen,
     pub kind: CompanyKind,
     pub recipe: Option<Recipe>,
     pub n_trucks: u32,
     pub n_workers: u32,
-    pub size: Size2D,
-    pub asset_location: String,
-    pub price: Money,
-    pub power_consumption: Option<Power>,
-    pub power_production: Option<Power>,
     pub zone: Option<Zone>,
 }
 
 impl Prototype for GoodsCompanyPrototype {
-    type Parent = NoParent;
+    type Parent = BuildingPrototype;
     type ID = GoodsCompanyID;
     const NAME: &'static str = "goods-company";
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
-        let base = PrototypeBase::from_lua(table)?;
+        let base = BuildingPrototype::from_lua(table)?;
         Ok(Self {
             id: Self::ID::from(&base.name),
             base,
-            bgen: get_lua(table, "bgen")?,
             kind: get_lua(table, "kind")?,
             recipe: get_lua(table, "recipe")?,
             n_trucks: get_lua_opt(table, "n_trucks")?.unwrap_or(0),
             n_workers: get_lua_opt(table, "n_workers")?.unwrap_or(0),
-            size: get_lua(table, "size")?,
-            asset_location: get_lua(table, "asset_location")?,
-            price: get_lua(table, "price")?,
-            power_consumption: get_lua(table, "power_consumption")?,
-            power_production: get_lua(table, "power_production")?,
             zone: get_lua(table, "zone").ok(),
         })
     }
@@ -76,7 +50,7 @@ impl Prototype for GoodsCompanyPrototype {
 }
 
 impl Deref for GoodsCompanyPrototype {
-    type Target = PrototypeBase;
+    type Target = BuildingPrototype;
 
     fn deref(&self) -> &Self::Target {
         &self.base
@@ -92,45 +66,6 @@ impl<'a> FromLua<'a> for CompanyKind {
             _ => Err(mlua::Error::external(format!(
                 "Unknown company kind: {}",
                 s
-            ))),
-        }
-    }
-}
-
-impl<'a> FromLua<'a> for BuildingGen {
-    fn from_lua(value: Value<'a>, _: &'a Lua) -> mlua::Result<Self> {
-        let table = match value {
-            Value::String(s) => {
-                let s = s.to_str()?;
-                return match s {
-                    "house" => Ok(Self::House),
-                    "farm" => Ok(Self::Farm),
-                    _ => Err(mlua::Error::external(format!(
-                        "Unknown building gen kind: {}",
-                        s
-                    ))),
-                };
-            }
-            Value::Table(t) => t,
-            _ => Err(mlua::Error::FromLuaConversionError {
-                from: value.type_name(),
-                to: "BuildingGen",
-                message: Some("expected string or table".into()),
-            })?,
-        };
-        let kind = get_lua::<String>(&table, "kind")?;
-        match kind.as_str() {
-            "house" => Ok(Self::House),
-            "farm" => Ok(Self::Farm),
-            "centered_door" => Ok(Self::CenteredDoor {
-                vertical_factor: get_lua(&table, "vertical_factor")?,
-            }),
-            "no_walkway" => Ok(Self::NoWalkway {
-                door_pos: get_lua(&table, "door_pos")?,
-            }),
-            _ => Err(mlua::Error::external(format!(
-                "Unknown building gen kind: {}",
-                kind
             ))),
         }
     }
