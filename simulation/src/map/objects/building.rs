@@ -1,5 +1,7 @@
 use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
-use crate::map::{Buildings, Environment, LanePattern, RoadID, Roads, SpatialMap};
+use crate::map::{
+    Buildings, ElectricityCache, Environment, LanePattern, RoadID, Roads, SpatialMap,
+};
 use egui_inspect::debug_inspect_impl;
 use geom::{Color, Polygon, Vec2, Vec3, OBB};
 use prototypes::{BuildingGen, FreightStationPrototypeID, GoodsCompanyID};
@@ -81,6 +83,7 @@ impl Building {
     pub fn make(
         buildings: &mut Buildings,
         spatial_map: &mut SpatialMap,
+        electricity: &mut ElectricityCache,
         roads: &mut Roads,
         env: &Environment,
         obb: OBB,
@@ -127,7 +130,10 @@ impl Building {
         }
 
         let b = buildings.insert_with_key(move |id| {
+            electricity.add_object(id);
             if let Some(r) = connected_road {
+                electricity.add_edge(id, r);
+
                 if let Some(r) = roads.get_mut(r) {
                     r.connected_buildings.push(id);
                 } else {
@@ -148,6 +154,7 @@ impl Building {
         });
 
         spatial_map.insert(&buildings[b]);
+
         Some(b)
     }
 }

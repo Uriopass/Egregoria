@@ -257,6 +257,7 @@ impl Map {
         let Some(id) = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
+            &mut self.electricity,
             &mut self.roads,
             &self.environment,
             *obb,
@@ -268,12 +269,6 @@ impl Map {
             self.check_invariants();
             return None;
         };
-
-        self.electricity.add_object(id);
-
-        if let Some(r) = connected_road {
-            self.electricity.add_edge(id, r);
-        }
 
         self.subscribers
             .dispatch(UpdateType::Building, &self.buildings[id]);
@@ -296,6 +291,7 @@ impl Map {
         let Some(id) = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
+            &mut self.electricity,
             &mut self.roads,
             &self.environment,
             lot.shape,
