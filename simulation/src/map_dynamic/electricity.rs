@@ -38,6 +38,10 @@ pub struct NetworkFlow {
     pub productivity: f32,
 }
 
+/// Compute the electricity flow of the map and store it in the [`ElectricityFlow`] resource
+/// All producing buildings will produce power, and all consuming buildings will consume power
+/// The productivity of the network is the ratio of the two
+/// Buildings can then use this productivity to scale how much they work
 pub fn electricity_flow_system(world: &mut World, resources: &mut Resources) {
     let map = resources.read::<Map>();
     let binfos = resources.read::<BuildingInfos>();
