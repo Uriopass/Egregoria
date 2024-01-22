@@ -13,18 +13,18 @@ pub struct ElectricityFlow {
 }
 
 impl ElectricityFlow {
-    pub fn productivity(&self, network: ElectricityNetworkID) -> f32 {
+    pub fn blackout(&self, network: ElectricityNetworkID) -> bool {
         self.flowmap
             .get(&network)
-            .map(|f| f.productivity)
-            .unwrap_or(1.0)
+            .map(|f| f.blackout)
+            .unwrap_or(false)
     }
 
     pub fn network_stats(&self, network: ElectricityNetworkID) -> NetworkFlow {
         self.flowmap.get(&network).cloned().unwrap_or(NetworkFlow {
             consumed_power: Power::ZERO,
             produced_power: Power::ZERO,
-            productivity: 1.0,
+            blackout: false,
         })
     }
 }
@@ -33,15 +33,13 @@ impl ElectricityFlow {
 pub struct NetworkFlow {
     pub consumed_power: Power,
     pub produced_power: Power,
-    /// The productivity of the network, between 0 and 1
-    /// Ratio of the power produced by the network compared to the power consumed capped to 1
-    pub productivity: f32,
+    /// Whether the network is in a blackout
+    pub blackout: bool,
 }
 
 /// Compute the electricity flow of the map and store it in the [`ElectricityFlow`] resource
 /// All producing buildings will produce power, and all consuming buildings will consume power
-/// The productivity of the network is the ratio of the two
-/// Buildings can then use this productivity to scale how much they work
+/// If a network produces less power than it consumes, a blackout will occur
 pub fn electricity_flow_system(world: &mut World, resources: &mut Resources) {
     let map = resources.read::<Map>();
     let binfos = resources.read::<BuildingInfos>();
@@ -86,11 +84,7 @@ pub fn electricity_flow_system(world: &mut World, resources: &mut Resources) {
             NetworkFlow {
                 consumed_power,
                 produced_power,
-                productivity: if consumed_power == Power::ZERO {
-                    1.0
-                } else {
-                    f64::min(produced_power.0 as f64 / consumed_power.0 as f64, 1.0) as f32
-                },
+                blackout: consumed_power > produced_power,
             },
         );
     }

@@ -29,9 +29,7 @@ impl Gui {
         let no_power_img = uiworld.read::<UiTextures>().get_yakui("no_power");
 
         for network in map.electricity.networks() {
-            let prod = flow.productivity(network.id);
-
-            if prod >= 1.0 {
+            if !flow.blackout(network.id) {
                 continue;
             }
             for &building in &network.buildings {

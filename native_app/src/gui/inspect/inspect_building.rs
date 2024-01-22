@@ -170,13 +170,13 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
     }
 
     if let Some(net_id) = map.electricity.net_id(b.id) {
-        let elec_productivity = elec_flow.productivity(net_id);
+        let blackout = elec_flow.blackout(net_id);
 
         if let Some(power_c) = proto.power_consumption {
-            egui::ProgressBar::new(productivity * elec_productivity)
+            egui::ProgressBar::new(productivity)
                 .text(format!(
                     "power: {}/{}",
-                    (productivity * elec_productivity) as f64 * power_c,
+                    productivity as f64 * power_c,
                     power_c
                 ))
                 .desired_width(200.0)
@@ -190,10 +190,12 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: 
             ));
 
             let stats = elec_flow.network_stats(net_id);
-            egui::ProgressBar::new(elec_productivity)
+            egui::ProgressBar::new(if blackout { 0.0 } else { 1.0 })
                 .text(format!(
-                    "Network health: {}/{}",
-                    stats.produced_power, stats.consumed_power
+                    "Network health: {}/{}={:.0}%",
+                    stats.produced_power,
+                    stats.consumed_power,
+                    (100 * stats.produced_power.0) / stats.consumed_power.0.max(1)
                 ))
                 .desired_width(200.0)
                 .ui(ui);

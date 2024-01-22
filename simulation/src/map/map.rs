@@ -2,10 +2,10 @@ use crate::map::electricity_cache::ElectricityCache;
 use crate::map::height_override::find_overrides;
 use crate::map::serializing::SerializedMap;
 use crate::map::{
-    Building, BuildingID, BuildingKind, Environment, Intersection, IntersectionID, Lane, LaneID,
-    LaneKind, LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID,
-    ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
-    SubscriberChunkID, TerraformKind, UpdateType, Zone,
+    electricity_cache, Building, BuildingID, BuildingKind, Environment, Intersection,
+    IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot, LotID, LotKind, MapSubscriber,
+    MapSubscribers, ParkingSpotID, ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID,
+    RoadSegmentKind, SpatialMap, SubscriberChunkID, TerraformKind, UpdateType, Zone,
 };
 use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
@@ -866,6 +866,8 @@ impl Map {
                 )
             }
         }
+
+        electricity_cache::check_electricity_coherency(self);
 
         for b in self.external_train_stations.iter() {
             assert!(self.buildings.contains_key(*b));

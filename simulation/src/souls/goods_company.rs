@@ -90,11 +90,13 @@ impl CompanyEnt {
         map: &Map,
         elec_flow: &ElectricityFlow,
     ) -> f32 {
-        let mut p = self.raw_productivity(proto, zone);
+        let p = self.raw_productivity(proto, zone);
 
         if proto.power_consumption > Some(Power::ZERO) {
             if let Some(net_id) = map.electricity.net_id(self.comp.building) {
-                p *= elec_flow.productivity(net_id);
+                if elec_flow.blackout(net_id) {
+                    return 0.0;
+                }
             }
         }
 
