@@ -331,10 +331,13 @@ impl Road {
             )
             .chain(std::iter::once(p.last()))
         {
-            let h = env.height(pos).unwrap_or_else(|| {
-                height_error = true;
-                0.0
-            });
+            let h = env
+                .height(pos)
+                .unwrap_or_else(|| {
+                    height_error = true;
+                    0.0
+                })
+                .max(0.0);
             contour.push(h);
             points.push(pos.z(h));
         }
