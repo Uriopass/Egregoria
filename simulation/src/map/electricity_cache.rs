@@ -35,7 +35,7 @@ impl From<RoadID> for NetworkObjectID {
 pub struct ElectricityNetworkID(NetworkObjectID);
 
 /// A network is a set of sources and sinks that is connected together
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ElectricityNetwork {
     pub id: ElectricityNetworkID,
 
@@ -49,7 +49,7 @@ pub struct ElectricityNetwork {
 
 /// The electricity cache is a cache of all the electricity networks in the map
 /// It maintains a mapping from network objects to network ids that are connected to each other
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct ElectricityCache {
     pub(crate) networks: BTreeMap<ElectricityNetworkID, ElectricityNetwork>,
 
@@ -98,6 +98,7 @@ impl ElectricityCache {
     fn remove_object_inner(&mut self, object_id: NetworkObjectID) {
         // Even though we remove edges in "random order", it doesn't matter because
         // the network ids are defined by the smallest object in the network (which is deterministic)
+        // We don't remove the edges directly so we can remove edge by edge to maintain coherency
         let Some(edges) = self.graph.get(&object_id).cloned() else {
             return;
         };
@@ -107,6 +108,7 @@ impl ElectricityCache {
 
         let network_id = self.ids.remove(&object_id).unwrap();
         let network = self.networks.remove(&network_id).unwrap();
+        self.graph.remove(&object_id);
 
         debug_assert!(network.objects.len() == 1, "{:?}", object_id);
     }
@@ -403,9 +405,21 @@ impl ElectricityCache {
     }
 }
 
+pub fn check_electricity_coherency(map: &Map) {
+    let mut e_from_map = ElectricityCache::build(map);
+    let mut e = map.electricity.clone();
+    for v in e.graph.values_mut() {
+        v.sort();
+    }
+    for v in e_from_map.graph.values_mut() {
+        v.sort();
+    }
+    assert_eq!(e, e_from_map);
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::map::ElectricityCache;
+    use crate::map::{check_electricity_coherency, ElectricityCache};
     use crate::map::{BuildingKind, LanePatternBuilder, Map, MapProject, NetworkObjectID, RoadID};
     use common::logger::MyLog;
     use geom::{vec3, Vec2, OBB};
@@ -473,15 +487,8 @@ mod tests {
             )
             .unwrap();
 
-        let mut e_from_map = ElectricityCache::build(&m);
-        let e = &mut m.electricity;
-        for v in e.graph.values_mut() {
-            v.sort();
-        }
-        for v in e_from_map.graph.values_mut() {
-            v.sort();
-        }
-        assert_eq!(e, &mut e_from_map);
+        let mut e = ElectricityCache::build(&m);
+        check_electricity_coherency(&m);
 
         assert_eq!(e.networks.len(), 1);
         assert_eq!(e.networks[&e.net_id(b).unwrap()].objects.len(), 4);
