@@ -1,14 +1,15 @@
-use crate::egui::EguiWrapper;
-use crate::{get_cursor_icon, AudioContext, FrameContext, GfxContext, InputContext};
-use std::mem::ManuallyDrop;
 use std::sync::Arc;
 use std::time::Instant;
+
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
+
+use crate::egui::EguiWrapper;
+use crate::{get_cursor_icon, AudioContext, FrameContext, GfxContext, InputContext};
 
 #[allow(unused_variables)]
 pub trait State: 'static {
@@ -42,10 +43,8 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
     let mut state = S::new(&mut ctx);
     ctx.gfx.defines_changed = false;
 
-    let mut frame: Option<ManuallyDrop<_>> = None;
     let mut scale_factor = ctx.gfx.window.scale_factor();
     log::info!("initial scale factor: {:?}", scale_factor);
-    let mut new_size: Option<(PhysicalSize<u32>, f64)> = None;
     let mut last_update = Instant::now();
 
     el.run(move |event, target| {
@@ -56,10 +55,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
         }
 
         match event {
-            Event::DeviceEvent {
-                event,
-                ..
-            } => {
+            Event::DeviceEvent { event, .. } => {
                 ctx.input.handle_device(&event);
             }
             Event::WindowEvent { event, .. } => {
@@ -70,77 +66,61 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                 match event {
                     WindowEvent::Resized(physical_size) => {
                         log::info!("resized: {:?}", physical_size);
-                        new_size = Some((physical_size, scale_factor));
-                        frame.take().map(ManuallyDrop::into_inner);
+                        let size = (physical_size.width, physical_size.height, scale_factor);
+                        ctx.gfx.resize(size);
+                        state.resized(&mut ctx, size);
                     }
                     WindowEvent::ScaleFactorChanged {
-                        scale_factor: sf,
-                        ..
+                        scale_factor: sf, ..
                     } => {
                         log::info!("scale_factor: {:?}", scale_factor);
                         scale_factor = sf;
-                        new_size = Some((PhysicalSize::new(ctx.gfx.size.0, ctx.gfx.size.1), scale_factor));
-                        frame.take().map(ManuallyDrop::into_inner);
+                        let size = (ctx.gfx.size.0, ctx.gfx.size.1, scale_factor);
+                        ctx.gfx.resize(size);
+                        state.resized(&mut ctx, size);
                     }
                     WindowEvent::CloseRequested => {
                         if state.exit() {
                             target.exit();
                         }
-                    },
-                    _ => (),
-                }
-            }
-            Event::AboutToWait => match frame.take() {
-                None => {
-                    if let Some((new_size, sf)) = new_size.take() {
-                        if new_size.height != 0 || new_size.width != 0 {
-                            ctx.gfx.resize(new_size.width, new_size.height, sf);
-                            state.resized(&mut ctx, (new_size.width, new_size.height, sf));
-                            ctx.gfx.update_sc = false;
-                        }
                     }
+                    WindowEvent::RedrawRequested => {
+                        let sco = match ctx.gfx.surface.get_current_texture() {
+                            Ok(swapchainframe) => swapchainframe,
+                            Err(wgpu::SurfaceError::Timeout) => ctx
+                                .gfx
+                                .surface
+                                .get_current_texture()
+                                .expect("Failed to acquire next swap chain texture after timeout"),
+                            Err(wgpu::SurfaceError::Outdated)
+                            | Err(wgpu::SurfaceError::Lost)
+                            | Err(wgpu::SurfaceError::OutOfMemory) => {
+                                let size = ctx.gfx.size;
+                                ctx.gfx.resize(size);
+                                state.resized(&mut ctx, size);
+                                ctx.gfx
+                                    .surface
+                                    .get_current_texture()
+                                    .expect("Failed to acquire next swap chain texture after losing surface")
+                            }
+                        };
 
-                    let size = ctx.gfx.size;
-                    if ctx.gfx.update_sc {
-                        ctx.gfx.update_sc = false;
-                        ctx.gfx.resize(size.0, size.1, size.2);
-                        state.resized(
-                            &mut ctx,
-                            size,
-                        );
-                    }
+                        profiling::finish_frame!();
+                        profiling::scope!("frame");
+                        let d = last_update.elapsed();
+                        last_update = Instant::now();
+                        ctx.delta = d.as_secs_f32();
+                        state.update(&mut ctx);
 
-                    match ctx.gfx.surface.get_current_texture() {
-                        Ok(swapchainframe) => {
-                            frame = Some(ManuallyDrop::new(swapchainframe));
-                        }
-                        Err(wgpu::SurfaceError::Outdated)
-                        | Err(wgpu::SurfaceError::Lost)
-                        | Err(wgpu::SurfaceError::Timeout) => {
-                            ctx.gfx.resize(size.0, size.1, size.2);
-                            state.resized(&mut ctx, size);
-                            log::error!("swapchain has been lost or is outdated, recreating before retrying");
-                        }
-                        Err(e) => panic!("error getting swapchain: {e}"),
-                    };
-                }
-                Some(_) if new_size.is_some() => {}
-                Some(sco) => {
-                    let sco = ManuallyDrop::into_inner(sco);
-                    profiling::finish_frame!();
-                    profiling::scope!("frame");
-                    let d = last_update.elapsed();
-                    last_update = Instant::now();
-                    ctx.delta = d.as_secs_f32();
-                    state.update(&mut ctx);
+                        let (mut enc, view) = ctx.gfx.start_frame(&sco);
+                        ctx.engine_time = ctx
+                            .gfx
+                            .render_objs(&mut enc, &view, |fc| state.render(fc))
+                            .as_secs_f32();
 
-                    let (mut enc, view) = ctx.gfx.start_frame(&sco);
-                    ctx.engine_time = ctx.gfx.render_objs(&mut enc, &view, |fc| state.render(fc)).as_secs_f32();
-
-                    let gui_start = Instant::now();
-                    #[allow(unused_mut)]
-                    ctx.gfx
-                        .render_gui(&mut enc, &view, |mut gctx| {
+                        let gui_start = Instant::now();
+                        #[allow(unused_mut)]
+                        ctx.gfx.render_gui(&mut enc, &view, |mut gctx| {
                             #[cfg(feature = "yakui")]
                             ctx.yakui.render(&mut gctx, || {
                                 state.render_yakui();
@@ -149,18 +129,24 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                                 state.render_gui(ui);
                             });
                         });
-                    ctx.gui_time = gui_start.elapsed().as_secs_f32();
-                    ctx.gfx.finish_frame(enc);
-                    sco.present();
+                        ctx.gui_time = gui_start.elapsed().as_secs_f32();
+                        ctx.gfx.finish_frame(enc);
+                        sco.present();
 
-                    ctx.gfx.window.set_cursor_icon(get_cursor_icon());
+                        ctx.gfx.window.set_cursor_icon(get_cursor_icon());
 
-                    ctx.input.end_frame();
+                        ctx.input.end_frame();
+                        ctx.total_cpu_time = last_update.elapsed().as_secs_f32();
+
+                        ctx.gfx.window.request_redraw();
+                    }
+                    _ => (),
                 }
-            },
+            }
             _ => (),
         }
-    }).expect("Failed to run event loop");
+    })
+    .expect("Failed to run event loop");
 }
 
 pub fn init() {
@@ -245,6 +231,7 @@ pub struct Context {
     pub delta: f32,
     pub engine_time: f32,
     pub gui_time: f32,
+    pub total_cpu_time: f32,
     pub egui: EguiWrapper,
     #[cfg(feature = "yakui")]
     pub yakui: crate::yakui::YakuiWrapper,
@@ -263,6 +250,7 @@ impl Context {
             delta: 0.0,
             engine_time: 0.0,
             gui_time: 0.0,
+            total_cpu_time: 0.0,
             egui,
             #[cfg(feature = "yakui")]
             yakui: crate::yakui::YakuiWrapper::new(&gfx, &gfx.window),

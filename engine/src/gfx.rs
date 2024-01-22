@@ -819,8 +819,8 @@ impl GfxContext {
         }
     }
 
-    pub fn resize(&mut self, width: u32, height: u32, scale_factor: f64) {
-        self.size = (width, height, scale_factor);
+    pub fn resize(&mut self, size: (u32, u32, f64)) {
+        self.size = size;
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 

@@ -6,6 +6,7 @@ use crate::uiworld::UiWorld;
 use simulation::map_dynamic::ParkingManagement;
 use simulation::transportation::TransportGrid;
 use simulation::{Simulation, TrainID};
+use std::time::{Duration, Instant};
 
 use crate::inputmap::InputMap;
 use egui::Widget;
@@ -22,6 +23,7 @@ use simulation::world_command::WorldCommand;
 pub struct DebugState {
     pub connectivity: (Option<MapSubscriber>, Vec<Vec<IntersectionID>>),
     pub debug_inspector: bool,
+    pub timings_frozen: Option<(Timings, Instant)>,
 }
 
 pub struct DebugObjs(
@@ -122,9 +124,21 @@ pub fn debug(
 
         ui.label(format!("Tick: {}", time.tick));
 
-        let timings = uiworld.read::<Timings>();
         let mouse = uiworld.read::<InputMap>().unprojected;
         let cam = uiworld.read::<Camera>().pos;
+
+        let mut debug_st = uiworld.write::<DebugState>();
+
+        if let Some((timings_frozen, last_update)) = debug_st.timings_frozen.as_mut() {
+            if last_update.elapsed() > Duration::from_millis(300) {
+                *timings_frozen = uiworld.read::<Timings>().clone();
+                *last_update = Instant::now();
+            }
+        } else {
+            debug_st.timings_frozen = Some((uiworld.read::<Timings>().clone(), Instant::now()));
+        }
+
+        let (timings, _) = debug_st.timings_frozen.as_ref().unwrap();
 
         ui.label("Averaged over last 10 frames: ");
         ui.label(format!(
@@ -146,6 +160,10 @@ pub fn debug(
         ui.label(format!(
             "GUI time: {:.1}ms",
             timings.gui_time.avg() * 1000.0
+        ));
+        ui.label(format!(
+            "CPU time: {:.1}ms",
+            timings.total_cpu_time.avg() * 1000.0
         ));
 
         let counters = uiworld.read::<PerfCountersStatic>();
