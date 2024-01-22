@@ -9,7 +9,7 @@ edition = "2021"
 common       = { path = "../common" }
 geom         = { path = "../geom" }
 egui-inspect = { path = "../egui-inspect" }
-mlua         = { version = "0.9.4", features = ["luau"] }
+mlua         = { workspace = true }
 slotmapd     = "1.0.10"
 serde        = "1.0.195"
 thiserror    = "1.0.56"

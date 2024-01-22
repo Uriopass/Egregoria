@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize, Serializer};
 pub type HeightmapChunkID = (u16, u16);
 
 const MAX_HEIGHT_DIFF: f32 = 2048.0;
-const MIN_HEIGHT: f32 = -40.0007;
+const HALF_HEIGHT_DIFF: f32 = MAX_HEIGHT_DIFF / 4.0; // Point where half of the precision goes to
+const MIN_HEIGHT: f32 = -39.96997;
 const MAX_HEIGHT: f32 = MAX_HEIGHT_DIFF - MIN_HEIGHT;
 
 /// Special value for heights_override to indicate that the height is not overridden
@@ -516,13 +517,52 @@ fn binary_search(min: f32, max: f32, mut f: impl FnMut(f32) -> bool) -> f32 {
     mid
 }
 
+const HALF_U16: u16 = u16::MAX >> 1;
+
 pub fn pack_height(height: f32) -> u16 {
     let height = height.clamp(MIN_HEIGHT, MAX_HEIGHT);
-    ((height - MIN_HEIGHT) / MAX_HEIGHT_DIFF * u16::MAX as f32) as u16
+
+    let height_off = height - MIN_HEIGHT;
+
+    if height < HALF_HEIGHT_DIFF {
+        return (height_off / HALF_HEIGHT_DIFF * HALF_U16 as f32) as u16;
+    }
+
+    let height_off = height_off - HALF_HEIGHT_DIFF;
+    return (HALF_U16 as f32 + height_off / HALF_HEIGHT_DIFF * HALF_U16 as f32) as u16;
 }
 
 fn unpack_height(height: u16) -> f32 {
-    height as f32 / u16::MAX as f32 * MAX_HEIGHT_DIFF + MIN_HEIGHT
+    if height < HALF_U16 {
+        return MIN_HEIGHT + height as f32 / HALF_U16 as f32 * HALF_HEIGHT_DIFF;
+    }
+
+    let height = height - HALF_U16;
+    return MIN_HEIGHT + HALF_HEIGHT_DIFF + height as f32 / HALF_U16 as f32 * HALF_HEIGHT_DIFF;
+}
+
+#[cfg(test)]
+#[allow(dead_code)]
+mod tests {
+    use super::*;
+    //    #[test]
+    fn find_pack_zero() {
+        let mut min_height = -40.0;
+
+        for _ in 0..10000 {
+            min_height += 0.00001;
+
+            let height_off = 0.0 - min_height;
+
+            let packed = (height_off / HALF_HEIGHT_DIFF * HALF_U16 as f32) as u16;
+
+            let unpacked = min_height + packed as f32 / HALF_U16 as f32 * HALF_HEIGHT_DIFF;
+
+            if unpacked >= 0.0 {
+                println!("{} {}", min_height, unpacked);
+            }
+        }
+    }
 }
 
 impl<const RESOLUTION: usize, const SIZE: u32> Serialize for HeightmapChunk<RESOLUTION, SIZE> {
