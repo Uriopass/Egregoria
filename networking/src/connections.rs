@@ -275,9 +275,7 @@ mod tests {
         receiver.recv(&s[..2], |_| panic!("should not be called"));
         receiver.recv(&s[2..], |_| panic!("should not be called"));
         receiver.recv(&[1u8; 3], |_| panic!("should not be called"));
-        receiver.recv(&[2u8; 3], |d| {
-            assert_eq!(d, vec![1u8, 1u8, 1u8, 2u8, 2u8])
-        });
+        receiver.recv(&[2u8; 3], |d| assert_eq!(d, vec![1u8, 1u8, 1u8, 2u8, 2u8]));
         assert_eq!(receiver.buf, vec![2u8]);
         assert_eq!(receiver.last_frame_size, 0);
 

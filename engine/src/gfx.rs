@@ -293,11 +293,7 @@ impl GfxContext {
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
-            desired_maximum_frame_latency: if adapter.get_info().backend == Backend::Dx12 {
-                3
-            } else {
-                2
-            }, // TODO: fix when wgpu 0.19.1 is released
+            desired_maximum_frame_latency: 2,
             alpha_mode: CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
