@@ -167,22 +167,16 @@ pub fn debug(
         ));
 
         let counters = uiworld.read::<PerfCountersStatic>();
-        ui.label(format!("{}k drawcalls", counters.total_drawcalls / 1000));
+        ui.label(format!("{} drawcalls", counters.total_drawcalls));
         ui.label(format!("{}k triangles", counters.total_triangles / 1000));
         ui.add_space(5.0);
-        ui.label(format!(
-            "{}k depth drawcalls",
-            counters.depth_drawcalls / 1000
-        ));
+        ui.label(format!("{} depth drawcalls", counters.depth_drawcalls));
         ui.label(format!(
             "{}k depth triangles",
             counters.depth_triangles / 1000
         ));
         ui.add_space(5.0);
-        ui.label(format!(
-            "{}k shadow drawcalls",
-            counters.shadows_drawcalls / 1000
-        ));
+        ui.label(format!("{} shadow drawcalls", counters.shadows_drawcalls));
         ui.label(format!(
             "{}k shadow triangles",
             counters.shadows_triangles / 1000
