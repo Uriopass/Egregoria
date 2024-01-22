@@ -134,9 +134,7 @@ pub fn find_overrides(map: &mut Map, chunk: SubscriberChunkID) {
 
                     let obb = b.obb.expand(25.0);
 
-                    setter.set_override(obb.bbox(), |pos| {
-                        obb.contains(pos).then_some(b.height - 0.3)
-                    });
+                    setter.set_override(obb.bbox(), |pos| obb.contains(pos).then_some(b.height));
                 }
                 _ => {}
             }
