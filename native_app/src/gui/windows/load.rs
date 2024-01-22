@@ -1,6 +1,7 @@
 #![allow(unused)]
 use crate::uiworld::{SaveLoadState, UiWorld};
 use egui::{Color32, DroppedFile, Widget};
+use simulation::utils::scheduler::SeqSchedule;
 use simulation::Simulation;
 use std::path::PathBuf;
 
@@ -31,7 +32,10 @@ pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: 
                 let replay = Simulation::load_replay_from_disk("world");
 
                 if let Some(replay) = replay {
-                    let (sim, loader) = Simulation::from_replay(replay);
+                    let (mut sim, mut loader) = Simulation::from_replay(replay);
+                    let mut s = SeqSchedule::default();
+                    loader.advance_tick(&mut sim, &mut s); // advance by one tick to get the initial state (like map size info)
+
                     uiw.write::<SaveLoadState>().please_load = Some(loader);
                     uiw.write::<SaveLoadState>().please_load_sim = Some(sim);
                 } else {
@@ -65,6 +69,14 @@ pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: 
                     .clicked()
                 {
                     loading.speed = 100;
+                }
+
+                if ui
+                    .button("max")
+                    .on_hover_text("Load the replay as fast as possible")
+                    .clicked()
+                {
+                    loading.speed = 10000;
                 }
                 if ui.button("1").clicked() {
                     loading.speed = 0;
