@@ -1,9 +1,8 @@
-use crate::background::BackgroundPipeline;
-use crate::pbr::PBR;
+use crate::passes::{BackgroundPipeline, PBR};
 use crate::perf_counters::PerfCounters;
 use crate::{
-    background, bg_layout_litmesh, fog, ssao, CompiledModule, Drawable, IndexType, LampLights,
-    Material, MaterialID, MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError,
+    bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
+    MaterialID, MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError,
     TextureBuilder, Uniform, UvVertex, TL,
 };
 use common::FastMap;
@@ -696,10 +695,10 @@ impl GfxContext {
         }
 
         if self.defines.contains_key("SSAO") {
-            ssao::render_ssao(self, &mut encs.end);
+            passes::render_ssao(self, &mut encs.end);
         }
 
-        fog::render_fog(self, &mut encs.end);
+        passes::render_fog(self, &mut encs.end);
 
         {
             profiling::scope!("main render pass");
@@ -733,7 +732,7 @@ impl GfxContext {
             }
         }
 
-        background::render_background(self, encs, &frame);
+        passes::render_background(self, encs, &frame);
 
         start_time.elapsed()
     }

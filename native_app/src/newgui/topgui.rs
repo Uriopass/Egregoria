@@ -1,10 +1,10 @@
 use yakui::widgets::{List, Pad};
 use yakui::{
-    colored_box_container, column, constrained, pad, reflow, row, Alignment, Color, Dim2,
-    MainAxisAlignment, MainAxisSize, Vec2,
+    colored_box_container, pad, reflow, row, Alignment, Color, Dim2, MainAxisAlignment,
+    MainAxisSize, Vec2,
 };
 
-use goryak::{button_primary, constrained_viewport, debug_constraints, text};
+use goryak::{button_primary, constrained_viewport, text};
 use prototypes::GameTime;
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
