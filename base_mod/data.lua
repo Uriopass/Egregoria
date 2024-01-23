@@ -1,5 +1,6 @@
 require("items")
 require("companies")
+require("leisure")
 
 data:extend {
     {
