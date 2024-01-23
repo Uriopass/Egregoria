@@ -1,9 +1,17 @@
-use yakui::{Alignment, Color, Dim2, Vec2};
+use yakui::widgets::{List, Pad};
+use yakui::{
+    colored_box_container, column, constrained, pad, reflow, row, Alignment, Color, Dim2,
+    MainAxisAlignment, MainAxisSize, Vec2,
+};
 
+use goryak::{button_primary, constrained_viewport, debug_constraints, text};
+use prototypes::GameTime;
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
 
+use crate::gui::windows::settings::Settings;
 use crate::gui::{Gui, UiTextures};
+use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 
 impl Gui {
@@ -17,7 +25,80 @@ impl Gui {
         }
 
         yakui::column(|| {
+            self.time_controls(uiworld, sim);
             self.power_errors(uiworld, sim);
+        });
+    }
+
+    pub fn time_controls(&mut self, uiworld: &mut UiWorld, sim: &Simulation) {
+        profiling::scope!("topgui::time_controls");
+        let time = sim.read::<GameTime>().daytime;
+        let warp = &mut uiworld.write::<Settings>().time_warp;
+        let depause_warp = &mut self.depause_warp;
+        if uiworld
+            .read::<InputMap>()
+            .just_act
+            .contains(&InputAction::PausePlay)
+        {
+            if *warp == 0 {
+                *warp = *depause_warp;
+            } else {
+                *depause_warp = *warp;
+                *warp = 0;
+            }
+        }
+
+        if *warp == 0 {
+            yakui::canvas(|ctx| {
+                yakui::shapes::outline(
+                    ctx.paint,
+                    ctx.layout.viewport(),
+                    2.0,
+                    Color::rgba(255, 0, 0, 196),
+                );
+            });
+        }
+
+        let mut time_text = || {
+            row(|| {
+                text(format!(" Day {}", time.day));
+
+                text(format!(
+                    "{:02}:{:02}:{:02}",
+                    time.hour, time.minute, time.second
+                ));
+            });
+            row(|| {
+                if button_primary("||").clicked {
+                    *depause_warp = *warp;
+                    *warp = 0;
+                }
+                if button_primary("1x").clicked {
+                    *warp = 1;
+                }
+                if button_primary("3x").clicked {
+                    *warp = 3;
+                }
+                if button_primary("Max").clicked {
+                    *warp = 1000;
+                }
+            });
+        };
+
+        reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 40.0), || {
+            constrained_viewport(|| {
+                let mut l = List::row();
+                l.main_axis_alignment = MainAxisAlignment::End;
+                l.show(|| {
+                    colored_box_container(goryak::primary_container(), || {
+                        pad(Pad::all(3.0), || {
+                            let mut l = List::column();
+                            l.main_axis_size = MainAxisSize::Min;
+                            l.show(|| time_text());
+                        });
+                    });
+                });
+            });
         });
     }
 

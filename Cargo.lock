@@ -1908,6 +1908,7 @@ dependencies = [
  "engine",
  "flat_spatial",
  "geom",
+ "goryak",
  "include_dir",
  "inline_tweak",
  "log",

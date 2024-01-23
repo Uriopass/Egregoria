@@ -13,6 +13,7 @@ common        = { path = "../common" }
 networking    = { path = "../networking", optional=true }
 egui-inspect  = { path = "../egui-inspect" }
 prototypes    = { path = "../prototypes" }
+goryak        = { path = "../goryak" }
 egui          = { workspace = true }
 egui_extras   = { workspace = true }
 egui_plot     = { workspace = true }

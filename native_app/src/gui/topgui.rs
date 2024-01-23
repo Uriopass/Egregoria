@@ -2,18 +2,14 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use egui::load::SizedTexture;
-use egui::{
-    Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
-    Widget, Window,
-};
+use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
 use serde::{Deserialize, Serialize};
 
 use common::saveload::Encoder;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use prototypes::{
-    prototypes_iter, BuildingGen, FreightStationPrototype, GameTime, GoodsCompanyPrototype, ItemID,
-    Money,
+    prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
 };
 use simulation::economy::Government;
 use simulation::map::{
@@ -82,8 +78,6 @@ impl Gui {
         if self.hidden {
             return;
         }
-
-        self.time_controls(ui, uiworld, sim);
 
         self.menu_bar(ui, uiworld, sim);
 
@@ -659,81 +653,6 @@ impl Gui {
                     }
                 });
         }
-    }
-
-    pub fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
-        profiling::scope!("topgui::time_controls");
-        let time = sim.read::<GameTime>().daytime;
-        let warp = &mut uiworld.write::<Settings>().time_warp;
-        let depause_warp = &mut self.depause_warp;
-        if uiworld
-            .read::<InputMap>()
-            .just_act
-            .contains(&InputAction::PausePlay)
-        {
-            if *warp == 0 {
-                *warp = *depause_warp;
-            } else {
-                *depause_warp = *warp;
-                *warp = 0;
-            }
-        }
-
-        if *warp == 0 {
-            let p = ui.layer_painter(LayerId::background());
-            p.rect(
-                ui.screen_rect(),
-                Rounding::ZERO,
-                Color32::from_rgba_premultiplied(0, 0, 0, 0),
-                Stroke {
-                    width: 7.0,
-                    color: Color32::from_rgba_premultiplied(196, 0, 0, 196),
-                },
-            );
-        }
-
-        let [_, h]: [f32; 2] = ui.available_rect().size().into();
-
-        //let _tok1 = ui.push_style_var(StyleVar::WindowRounding(0.0));
-        //let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([10.0, 7.0]));
-        Window::new("Time controls")
-            .fixed_size([165.0, 55.0])
-            .fixed_pos([-1.0, h])
-            .title_bar(false)
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::LEFT_BOTTOM, [0.0, 0.0])
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(format!(" Day {}", time.day));
-                    ui.add_space(40.0);
-                    ui.label(format!(
-                        "{:02}:{:02}:{:02}",
-                        time.hour, time.minute, time.second
-                    ));
-                });
-
-                //let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
-
-                ui.horizontal(|ui| {
-                    if ui.selectable_label(*warp == 0, " || ").clicked() {
-                        *depause_warp = *warp;
-                        *warp = 0;
-                    }
-
-                    if ui.selectable_label(*warp == 1, " 1x ").clicked() {
-                        *warp = 1;
-                    }
-
-                    if ui.selectable_label(*warp == 3, " 3x ").clicked() {
-                        *warp = 3;
-                    }
-
-                    if ui.selectable_label(*warp == 1000, " Max ").clicked() {
-                        *warp = 1000;
-                    }
-                })
-            });
     }
 
     pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
