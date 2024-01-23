@@ -12,6 +12,7 @@ pub struct YakuiWrapper {
     platform: yakui_winit::YakuiWinit,
     pub zoom_factor: f32,
     pub format: TextureFormat,
+    pub blur_bg_texture: TextureId,
 }
 
 impl YakuiWrapper {
@@ -29,9 +30,18 @@ impl YakuiWrapper {
 
         let platform = yakui_winit::YakuiWinit::new(el);
 
-        let renderer = yakui_wgpu::YakuiWgpu::new(&gfx.device, &gfx.queue);
+        let mut renderer = yakui_wgpu::YakuiWgpu::new(&gfx.device, &gfx.queue);
+
+        let texture_id = renderer.add_texture(
+            gfx.null_texture.mip_view(0),
+            wgpu::FilterMode::Linear,
+            wgpu::FilterMode::Linear,
+        );
+
+        goryak::BLUR_TEXTURE.lock().unwrap().replace(texture_id);
 
         Self {
+            blur_bg_texture: texture_id,
             yakui,
             renderer,
             platform,
@@ -50,6 +60,9 @@ impl YakuiWrapper {
     }
 
     pub fn render(&mut self, gfx: &mut GuiRenderContext<'_>, ui_render: impl for<'ui> FnOnce()) {
+        self.renderer
+            .update_texture(self.blur_bg_texture, gfx.gfx.fbos.ui_blur.mip_view(0));
+
         self.yakui.set_scale_factor(self.zoom_factor);
 
         self.yakui.start();

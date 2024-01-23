@@ -1,10 +1,10 @@
 use yakui::widgets::{List, Pad};
 use yakui::{
-    colored_box_container, pad, reflow, row, Alignment, Color, Dim2, MainAxisAlignment,
+    colored_box_container, label, pad, reflow, row, Alignment, Color, Dim2, MainAxisAlignment,
     MainAxisSize, Vec2,
 };
 
-use goryak::{button_primary, constrained_viewport, text};
+use goryak::{blur_bg, button_primary, constrained_viewport, labelc, on_primary_container, text};
 use prototypes::GameTime;
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
@@ -27,6 +27,14 @@ impl Gui {
         yakui::column(|| {
             self.time_controls(uiworld, sim);
             self.power_errors(uiworld, sim);
+
+            reflow(Alignment::CENTER, Dim2::pixels(-220.0, -220.0), || {
+                blur_bg(goryak::primary_container().with_alpha(0.3), || {
+                    pad(Pad::all(100.0), || {
+                        labelc(on_primary_container(), "Blurring test!");
+                    });
+                });
+            });
         });
     }
 
@@ -90,7 +98,7 @@ impl Gui {
                 let mut l = List::row();
                 l.main_axis_alignment = MainAxisAlignment::End;
                 l.show(|| {
-                    colored_box_container(goryak::primary_container(), || {
+                    blur_bg(goryak::primary_container().with_alpha(0.5), || {
                         pad(Pad::all(3.0), || {
                             let mut l = List::column();
                             l.main_axis_size = MainAxisSize::Min;

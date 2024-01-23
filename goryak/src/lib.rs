@@ -1,3 +1,4 @@
+mod blur_bg;
 mod combo_box;
 mod constrained_viewport;
 mod count_grid;
@@ -13,6 +14,7 @@ mod text;
 mod theme;
 mod util;
 
+pub use blur_bg::*;
 pub use combo_box::*;
 pub use constrained_viewport::*;
 pub use count_grid::*;

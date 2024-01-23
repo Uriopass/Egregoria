@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 geom          = { path = "../geom" }
 common        = { path = "../common" }
+goryak        = { path = "../goryak", optional = true }
 ordered-float = { workspace = true }
 egui          = { workspace = true }
 oddio         = { workspace = true }
@@ -38,4 +39,4 @@ yakui-winit   = { git = "https://github.com/SecondHalfGames/yakui", optional = t
 lazy_static = "1.4.0"
 
 [features]
-yakui = ["dep:yakui", "dep:yakui-wgpu", "dep:yakui-winit"]
+yakui = ["dep:yakui", "dep:yakui-wgpu", "dep:yakui-winit", "dep:goryak"]
