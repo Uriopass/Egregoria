@@ -52,8 +52,8 @@ fn initial_downscale(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView)
 
 fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src: u32, dst: u32) {
     let tex = &gfx.fbos.ui_blur;
-    let src = tex.mip_view(src);
-    let dst = tex.mip_view(dst);
+    let src_view = tex.mip_view(src);
+    let dst_view = tex.mip_view(dst);
 
     let pipe = gfx.get_pipeline(pipeline);
 
@@ -63,7 +63,7 @@ fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src:
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(&src),
+                resource: wgpu::BindingResource::TextureView(&src_view),
             },
             wgpu::BindGroupEntry {
                 binding: 1,
@@ -73,9 +73,9 @@ fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src:
     });
 
     let mut blur_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-        label: Some("ui blur pass"),
+        label: Some(&*format!("ui blur pass {:?} {} -> {}", pipeline, src, dst)),
         color_attachments: &[Some(RenderPassColorAttachment {
-            view: &dst,
+            view: &dst_view,
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Load,
@@ -100,7 +100,7 @@ pub fn gen_blur_texture(device: &Device, sc: &SurfaceConfiguration) -> Texture {
         .build_no_queue(device)
 }
 
-#[derive(Hash)]
+#[derive(Copy, Clone, Debug, Hash)]
 pub enum UIBlurPipeline {
     Downscale,
     Upscale,
