@@ -19,20 +19,36 @@ const DOWNSCALE_PASSES: u32 = 2;
 pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
     profiling::scope!("ui blur pass");
 
+    let tex = &gfx.fbos.ui_blur;
+
     initial_downscale(gfx, encs, frame);
+
+    //do_pass(
+    //    gfx,
+    //    encs,
+    //    UIBlurPipeline::Downscale,
+    //    frame,
+    //    &tex.mip_view(0),
+    //);
 
     for mip_level in 0..DOWNSCALE_PASSES {
         do_pass(
             gfx,
             encs,
             UIBlurPipeline::Downscale,
-            mip_level,
-            mip_level + 1,
+            &tex.mip_view(mip_level),
+            &tex.mip_view(mip_level + 1),
         );
     }
 
     for mip_level in (0..DOWNSCALE_PASSES).rev() {
-        do_pass(gfx, encs, UIBlurPipeline::Upscale, mip_level + 1, mip_level);
+        do_pass(
+            gfx,
+            encs,
+            UIBlurPipeline::Upscale,
+            &tex.mip_view(mip_level + 1),
+            &tex.mip_view(mip_level),
+        );
     }
 }
 
@@ -50,11 +66,13 @@ fn initial_downscale(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView)
     );
 }
 
-fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src: u32, dst: u32) {
-    let tex = &gfx.fbos.ui_blur;
-    let src_view = tex.mip_view(src);
-    let dst_view = tex.mip_view(dst);
-
+fn do_pass(
+    gfx: &GfxContext,
+    encs: &mut Encoders,
+    pipeline: UIBlurPipeline,
+    src_view: &TextureView,
+    dst_view: &TextureView,
+) {
     let pipe = gfx.get_pipeline(pipeline);
 
     let bg = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -63,7 +81,7 @@ fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src:
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(&src_view),
+                resource: wgpu::BindingResource::TextureView(src_view),
             },
             wgpu::BindGroupEntry {
                 binding: 1,
@@ -73,12 +91,12 @@ fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src:
     });
 
     let mut blur_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-        label: Some(&*format!("ui blur pass {:?} {} -> {}", pipeline, src, dst)),
+        label: Some(&*format!("ui blur pass {:?}", pipeline)),
         color_attachments: &[Some(RenderPassColorAttachment {
-            view: &dst_view,
+            view: dst_view,
             resolve_target: None,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Load,
+                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                 store: wgpu::StoreOp::Store,
             },
         })],
@@ -87,7 +105,7 @@ fn do_pass(gfx: &GfxContext, encs: &mut Encoders, pipeline: UIBlurPipeline, src:
         occlusion_query_set: None,
     });
 
-    blur_pass.set_pipeline(gfx.get_pipeline(UIBlurPipeline::Downscale));
+    blur_pass.set_pipeline(pipe);
     blur_pass.set_bind_group(0, &bg, &[]);
     blur_pass.draw(0..3, 0..1);
 }

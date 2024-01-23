@@ -27,12 +27,30 @@ struct FragmentOutput {
 
 @fragment
 fn downscale(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
-    let o_Target = textureSampleLevel(t_Color, s_Color, v_TexCoord, 0.0);
-    return FragmentOutput(o_Target);
+    let dim: vec2<u32> = textureDimensions(t_Color, 0);
+    let halfpixel = vec2<f32>(0.5 / f32(dim.x), 0.5 / f32(dim.y));
+    let halfpixel_rot = vec2<f32>(halfpixel.x, -halfpixel.y);
+
+    var sum: vec3<f32> = textureSampleLevel(t_Color, s_Color, v_TexCoord, 0.0).rgb * 4.0;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + halfpixel, 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord - halfpixel, 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + halfpixel_rot, 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord - halfpixel_rot, 0.0).rgb;
+    return FragmentOutput(vec4(sum / 8.0, 1.0));
 }
 
 @fragment
 fn upscale(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
-    let o_Target = textureSampleLevel(t_Color, s_Color, v_TexCoord, 0.0);
-    return FragmentOutput(o_Target);
+    let dim: vec2<u32> = textureDimensions(t_Color, 0);
+    let halfpixel = vec2<f32>(0.5 / f32(dim.x), 0.5 / f32(dim.y));
+
+    var sum: vec3<f32> = textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(-halfpixel.x * 2.0, 0.0), 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(-halfpixel.x, halfpixel.y), 0.0).rgb * 2.0;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(0.0, halfpixel.y * 2.0), 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(halfpixel.x, halfpixel.y), 0.0).rgb * 2.0;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(halfpixel.x * 2.0, 0.0), 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(halfpixel.x, -halfpixel.y), 0.0).rgb * 2.0;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(0.0, -halfpixel.y * 2.0), 0.0).rgb;
+    sum += textureSampleLevel(t_Color, s_Color, v_TexCoord + vec2(-halfpixel.x, -halfpixel.y), 0.0).rgb * 2.0;
+    return FragmentOutput(vec4(sum / 12.0, 1.0));
 }
