@@ -2,8 +2,8 @@ use crate::passes::{BackgroundPipeline, PBR};
 use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
-    MaterialID, MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuildError,
-    TextureBuilder, Uniform, UvVertex, TL,
+    MaterialID, MaterialMap, MipmapGenerator, PipelineBuilder, Pipelines, Texture,
+    TextureBuildError, TextureBuilder, Uniform, UvVertex, TL,
 };
 use common::FastMap;
 use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
@@ -16,12 +16,12 @@ use std::time::{Duration, Instant};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
-    CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Face, FragmentState,
-    FrontFace, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
-    Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureAspect,
-    TextureFormat, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
-    VertexBufferLayout, VertexState,
+    CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Face, FilterMode,
+    FragmentState, FrontFace, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor,
+    PrimitiveState, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, SamplerDescriptor, Surface, SurfaceConfiguration, SurfaceTexture,
+    TextureAspect, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    TextureViewDimension, VertexBufferLayout, VertexState,
 };
 use winit::window::{Fullscreen, Window};
 
@@ -31,6 +31,7 @@ pub struct FBOs {
     pub(crate) color_msaa: TextureView,
     pub(crate) ssao: Texture,
     pub(crate) fog: Texture,
+    pub(crate) ui_blur: Texture,
     pub format: TextureFormat,
 }
 
@@ -40,6 +41,7 @@ pub struct GfxContext {
     pub device: Device,
     pub queue: Queue,
     pub fbos: FBOs,
+    pub mipmap_gen: MipmapGenerator,
     pub size: (u32, u32, f64),
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
@@ -55,6 +57,7 @@ pub struct GfxContext {
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
     pub(crate) null_texture: Texture,
+    pub(crate) linear_sampler: wgpu::Sampler,
 
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
@@ -287,7 +290,7 @@ impl GfxContext {
         let win_scale_factor = window.scale_factor();
 
         let sc_desc = SurfaceConfiguration {
-            usage: TextureUsages::RENDER_ATTACHMENT,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             format,
             width: win_width,
             height: win_height,
@@ -301,16 +304,18 @@ impl GfxContext {
         surface.configure(&device, &sc_desc);
 
         let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
+            label: Some("screen quad vertices"),
             contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
         let rect_indices = device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
+            label: Some("screen quad indices"),
             contents: bytemuck::cast_slice(UV_INDICES),
             usage: wgpu::BufferUsages::INDEX,
         });
+
+        let mipmap_gen = MipmapGenerator::new(&device);
 
         let blue_noise = TextureBuilder::from_path("assets/sprites/blue_noise_512.png")
             .with_label("blue noise")
@@ -333,6 +338,14 @@ impl GfxContext {
             .with_label("null texture")
             .build(&device, &queue);
 
+        let linear_sampler = device.create_sampler(&SamplerDescriptor {
+            label: Some("basic linear sampler"),
+            mag_filter: FilterMode::Linear,
+            min_filter: FilterMode::Linear,
+            mipmap_filter: FilterMode::Linear,
+            ..Default::default()
+        });
+
         let mut me = Self {
             window,
             size: (win_width, win_height, win_scale_factor),
@@ -341,7 +354,7 @@ impl GfxContext {
             adapter,
             fbos,
             surface,
-            pipelines: RefCell::new(Pipelines::new(&device)),
+            pipelines: RefCell::new(Pipelines::new()),
             materials: Default::default(),
             default_material: Material::new_default(&device, &queue, &null_texture),
             tick: 0,
@@ -351,6 +364,7 @@ impl GfxContext {
             texture_cache_paths: textures,
             texture_cache_bytes: Default::default(),
             null_texture,
+            linear_sampler,
             samples,
             screen_uv_vertices,
             rect_indices,
@@ -366,6 +380,7 @@ impl GfxContext {
             defines_changed: false,
             settings: None,
             perf: Default::default(),
+            mipmap_gen,
         };
 
         me.update_simplelit_bg();
@@ -373,7 +388,7 @@ impl GfxContext {
         let palette = TextureBuilder::from_path("assets/sprites/palette.png")
             .with_label("palette")
             .with_sampler(Texture::nearest_sampler())
-            .with_mipmaps(me.mipmap_module())
+            .with_mipmaps(&me.mipmap_gen)
             .build(&me.device, &me.queue);
         me.set_texture("assets/sprites/palette.png", palette);
 
@@ -465,7 +480,7 @@ impl GfxContext {
         let tex = Arc::new(
             TextureBuilder::try_from_path(&p)?
                 .with_label(label)
-                .with_mipmaps(self.mipmap_module())
+                .with_mipmaps(&self.mipmap_gen)
                 .build(&self.device, &self.queue),
         );
         self.texture_cache_paths.insert(p, tex.clone());
@@ -733,6 +748,7 @@ impl GfxContext {
         }
 
         passes::render_background(self, encs, &frame);
+        passes::gen_ui_blur(self, encs, &frame);
 
         start_time.elapsed()
     }
@@ -808,12 +824,15 @@ impl GfxContext {
             TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             None,
         );
+        let ui_blur = passes::gen_blur_texture(device, desc);
+
         FBOs {
             depth,
             depth_bg,
             color_msaa: Texture::create_color_msaa(device, desc, samples),
             ssao,
             fog,
+            ui_blur,
             format: desc.format,
         }
     }
@@ -996,17 +1015,6 @@ impl GfxContext {
     pub fn get_pipeline(&self, obj: impl PipelineBuilder) -> &'static RenderPipeline {
         let pipelines = &mut *self.pipelines.try_borrow_mut().unwrap();
         pipelines.get_pipeline(self, obj, &self.device)
-    }
-
-    pub fn mipmap_module(&self) -> CompiledModule {
-        // unwrap safety: added at startup
-        self.pipelines
-            .try_borrow()
-            .unwrap()
-            .shader_cache
-            .get("mipmap")
-            .unwrap()
-            .clone()
     }
 }
 

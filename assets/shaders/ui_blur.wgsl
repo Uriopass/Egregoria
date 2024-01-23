@@ -26,7 +26,13 @@ struct FragmentOutput {
 @group(0) @binding(1) var s_Color: sampler;
 
 @fragment
-fn frag(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
+fn downscale(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
+    let o_Target = textureSampleLevel(t_Color, s_Color, v_TexCoord, 0.0);
+    return FragmentOutput(o_Target);
+}
+
+@fragment
+fn upscale(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
     let o_Target = textureSampleLevel(t_Color, s_Color, v_TexCoord, 0.0);
     return FragmentOutput(o_Target);
 }

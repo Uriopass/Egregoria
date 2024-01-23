@@ -27,15 +27,9 @@ pub struct Pipelines {
 }
 
 impl Pipelines {
-    pub fn new(device: &Device) -> Pipelines {
-        let mut shader_cache = FastMap::default();
-        shader_cache.insert(
-            "mipmap".to_string(),
-            compile_shader(device, "mipmap", &FastMap::default()),
-        );
-
+    pub fn new() -> Pipelines {
         Pipelines {
-            shader_cache,
+            shader_cache: FastMap::default(),
             shader_watcher: Default::default(),
             pipelines: Default::default(),
             pipelines_deps: Default::default(),

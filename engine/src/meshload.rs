@@ -131,7 +131,7 @@ pub fn load_image(
         TextureBuilder::from_img(img)
             .with_label(tex.name().or(matname).unwrap_or("mesh texture"))
             .with_sampler(sampler)
-            .with_mipmaps(gfx.mipmap_module())
+            .with_mipmaps(&gfx.mipmap_gen)
             .with_srgb(srgb)
             .build(&gfx.device, &gfx.queue),
     );

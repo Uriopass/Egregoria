@@ -50,7 +50,7 @@ impl Water {
         let wavy = TextureBuilder::try_from_path("assets/sprites/wavy.jpeg")
             .expect("no wavy texture")
             .with_label("wavy")
-            .with_mipmaps(gfx.mipmap_module())
+            .with_mipmaps(&gfx.mipmap_gen)
             .with_srgb(false)
             .build(&gfx.device, &gfx.queue);
 
