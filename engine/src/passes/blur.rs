@@ -6,7 +6,7 @@ use wgpu::{
 
 use crate::{CompiledModule, Encoders, GfxContext, PipelineBuilder, Texture, TextureBuilder, TL};
 
-const DOWNSCALE_PASSES: u32 = 2;
+const DOWNSCALE_PASSES: u32 = 3;
 
 /// The blur pass to be used by the UI uses the "Dual Kawase Blur" algorithm as explained
 /// in the SIGGRAPH 2015 paper "Bandwidth-efficient Rendering" by Marius Bjørge
@@ -52,7 +52,7 @@ pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
     }
 }
 
-// Simple downscale we can use mipmap gen
+// Simple downscale we can use mipmap gen (less expensive: 1 sample vs 5)
 fn initial_downscale(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
     let pipe = gfx.mipmap_gen.get_pipeline(&gfx.device, gfx.fbos.format);
 
@@ -96,7 +96,7 @@ fn do_pass(
             view: dst_view,
             resolve_target: None,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
                 store: wgpu::StoreOp::Store,
             },
         })],

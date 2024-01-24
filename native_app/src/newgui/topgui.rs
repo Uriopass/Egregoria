@@ -1,8 +1,5 @@
 use yakui::widgets::{List, Pad};
-use yakui::{
-    colored_box_container, label, pad, reflow, row, Alignment, Color, Dim2, MainAxisAlignment,
-    MainAxisSize, Vec2,
-};
+use yakui::{pad, reflow, row, Alignment, Color, Dim2, MainAxisAlignment, MainAxisSize, Vec2};
 
 use goryak::{blur_bg, button_primary, constrained_viewport, labelc, on_primary_container, text};
 use prototypes::GameTime;

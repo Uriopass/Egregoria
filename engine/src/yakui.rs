@@ -38,7 +38,7 @@ impl YakuiWrapper {
             wgpu::FilterMode::Linear,
         );
 
-        goryak::BLUR_TEXTURE.lock().unwrap().replace(texture_id);
+        goryak::set_blur_texture(texture_id);
 
         Self {
             blur_bg_texture: texture_id,
