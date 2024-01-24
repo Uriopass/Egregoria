@@ -4030,7 +4030,7 @@ checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
 [[package]]
 name = "yakui"
 version = "0.2.0"
-source = "git+https://github.com/Uriopass/yakui?branch=rounded_cutout#4fdb7af116cebfff8156fea2e72ad5c615e99c04"
+source = "git+https://github.com/Uriopass/yakui?branch=dev#35cefe44dd833db1e90f7af8feccb11b7c4c3ecf"
 dependencies = [
  "yakui-core",
  "yakui-widgets",
@@ -4039,7 +4039,7 @@ dependencies = [
 [[package]]
 name = "yakui-core"
 version = "0.2.0"
-source = "git+https://github.com/Uriopass/yakui?branch=rounded_cutout#4fdb7af116cebfff8156fea2e72ad5c615e99c04"
+source = "git+https://github.com/Uriopass/yakui?branch=dev#35cefe44dd833db1e90f7af8feccb11b7c4c3ecf"
 dependencies = [
  "anymap",
  "bitflags 1.3.2",
@@ -4055,7 +4055,7 @@ dependencies = [
 [[package]]
 name = "yakui-wgpu"
 version = "0.2.0"
-source = "git+https://github.com/Uriopass/yakui?branch=rounded_cutout#4fdb7af116cebfff8156fea2e72ad5c615e99c04"
+source = "git+https://github.com/Uriopass/yakui?branch=dev#35cefe44dd833db1e90f7af8feccb11b7c4c3ecf"
 dependencies = [
  "bytemuck",
  "glam",
@@ -4068,7 +4068,7 @@ dependencies = [
 [[package]]
 name = "yakui-widgets"
 version = "0.2.0"
-source = "git+https://github.com/Uriopass/yakui?branch=rounded_cutout#4fdb7af116cebfff8156fea2e72ad5c615e99c04"
+source = "git+https://github.com/Uriopass/yakui?branch=dev#35cefe44dd833db1e90f7af8feccb11b7c4c3ecf"
 dependencies = [
  "fontdue",
  "smol_str 0.1.24",
@@ -4079,7 +4079,7 @@ dependencies = [
 [[package]]
 name = "yakui-winit"
 version = "0.2.0"
-source = "git+https://github.com/Uriopass/yakui?branch=rounded_cutout#4fdb7af116cebfff8156fea2e72ad5c615e99c04"
+source = "git+https://github.com/Uriopass/yakui?branch=dev#35cefe44dd833db1e90f7af8feccb11b7c4c3ecf"
 dependencies = [
  "winit",
  "yakui-core",

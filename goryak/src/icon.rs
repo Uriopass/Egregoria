@@ -4,11 +4,16 @@ use yakui_widgets::font::FontName;
 use yakui_widgets::widgets::Text;
 use yakui_widgets::{center, constrained};
 
-pub fn icon(c: Color, name: &str) {
+pub fn icon_map(name: &str) -> (&'static str, FontName) {
     let mapped = ICON_NAME_MAPPING.get(name).copied().unwrap_or("?");
+    (mapped, FontName::new("icons"))
+}
+
+pub fn icon(c: Color, name: &str) {
+    let (mapped, fontname) = icon_map(name);
     let mut t = Text::new(20.0, mapped);
     t.style.color = c;
-    t.style.font = FontName::new("icons");
+    t.style.font = fontname;
     constrained(Constraints::tight(Vec2::splat(24.0)), || {
         center(|| {
             t.show();

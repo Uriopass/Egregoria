@@ -21,7 +21,7 @@ pub use count_grid::*;
 pub use divider::*;
 pub use dragvalue::*;
 pub use hovered::*;
-pub use icon::icon;
+pub use icon::*;
 pub use interact_box::*;
 pub use layout::*;
 pub use roundrect::*;

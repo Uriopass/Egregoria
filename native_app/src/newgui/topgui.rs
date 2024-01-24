@@ -1,12 +1,13 @@
-use yakui::widgets::{List, Pad, PadWidget};
+use ordered_float::OrderedFloat;
+use yakui::widgets::{CutOut, List, Pad};
 use yakui::{
-    colored_box, column, constrained, draggable, offset, pad, reflow, row, spacer, use_state,
-    Alignment, Color, Constraints, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Vec2,
+    constrained, reflow, row, spacer, Alignment, Color, Constraints, CrossAxisAlignment, Dim2,
+    MainAxisAlignment, MainAxisSize, Vec2,
 };
 
 use goryak::{
-    blur_bg, button_primary, constrained_viewport, labelc, monospace, on_primary_container,
-    widget_inner,
+    blur_bg, button_primary, button_secondary, constrained_viewport, icon_map, monospace, padx,
+    padxy, secondary_container,
 };
 use prototypes::GameTime;
 use simulation::map_dynamic::ElectricityFlow;
@@ -30,29 +31,6 @@ impl Gui {
         yakui::column(|| {
             self.time_controls(uiworld, sim);
             self.power_errors(uiworld, sim);
-
-            reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
-                let off = use_state(|| Vec2::ZERO);
-
-                offset(off.get(), || {
-                    let v = draggable(|| {
-                        blur_bg(goryak::primary_container().with_alpha(0.3), 10.0, || {
-                            column(|| {
-                                colored_box(
-                                    on_primary_container().with_alpha(0.3),
-                                    Vec2::new(tweak!(500.0), 50.0),
-                                );
-                                pad(Pad::all(200.0), || {
-                                    labelc(on_primary_container(), "Blurring test!");
-                                });
-                            });
-                        });
-                    });
-                    if let Some(v) = v.dragging {
-                        off.set(v.current);
-                    }
-                });
-            });
         });
     }
 
@@ -87,55 +65,65 @@ impl Gui {
         }
 
         let mut time_text = || {
-            row(|| {
-                monospace(format!("Day {}", time.day));
-                spacer(1);
-                monospace(format!(
-                    "{:02}:{:02}:{:02}",
-                    time.hour, time.minute, time.second
-                ));
+            padx(5.0, || {
+                row(|| {
+                    monospace(format!("Day {}", time.day));
+                    spacer(1);
+                    monospace(format!(
+                        "{:02}:{:02}:{:02}",
+                        time.hour, time.minute, time.second
+                    ));
+                });
             });
-            row(|| {
-                let time_button = |text: &str| {
-                    widget_inner::<PadWidget, _, _>(
-                        || {
-                            let mut b = button_primary(text);
-                            b.padding = Pad::balanced(10.0, 3.0);
-                            b.show()
-                        },
-                        Pad::all(3.0),
-                    )
+            let mut l = List::row();
+            l.main_axis_alignment = MainAxisAlignment::SpaceBetween;
+            l.show(|| {
+                let mut time_button = |text: &str, b_warp: u32| {
+                    let (mapped, name) = icon_map(text);
+                    let mut b = if *warp == b_warp {
+                        button_primary(mapped)
+                    } else {
+                        button_secondary(mapped)
+                    };
+
+                    b.style.text.font = name.clone();
+                    b.hover_style.text.font = name.clone();
+                    b.down_style.text.font = name;
+
+                    b.padding = Pad::balanced(10.0, 3.0);
+                    if b.show().clicked {
+                        if b_warp == 0 {
+                            if *warp == 0 {
+                                *warp = *depause_warp;
+                            } else {
+                                *depause_warp = *warp;
+                            }
+                        }
+                        *warp = b_warp;
+                    }
                 };
 
-                if time_button("||").clicked {
-                    *depause_warp = *warp;
-                    *warp = 0;
-                }
-                if time_button("1x").clicked {
-                    *warp = 1;
-                }
-                if time_button("3x").clicked {
-                    *warp = 3;
-                }
-                if time_button("Max").clicked {
-                    *warp = 1000;
-                }
+                time_button("pause", 0);
+                time_button("play", 1);
+                time_button("forward", 3);
+                time_button("fast-forward", 1000);
             });
         };
 
-        reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 30.0), || {
+        reflow(Alignment::TOP_LEFT, Dim2::pixels(-10.0, 30.0), || {
             constrained_viewport(|| {
                 let mut l = List::row();
                 l.main_axis_alignment = MainAxisAlignment::End;
                 l.show(|| {
-                    blur_bg(goryak::primary_container().with_alpha(0.5), 10.0, || {
-                        pad(Pad::all(10.0), || {
+                    blur_bg(secondary_container().with_alpha(0.5), 10.0, || {
+                        padxy(10.0, 5.0, || {
                             constrained(
-                                Constraints::loose(Vec2::new(200.0, f32::INFINITY)),
+                                Constraints::loose(Vec2::new(170.0, f32::INFINITY)),
                                 || {
                                     let mut l = List::column();
                                     l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                                     l.main_axis_size = MainAxisSize::Min;
+                                    l.item_spacing = tweak!(5.0);
                                     l.show(|| time_text());
                                 },
                             );
@@ -157,6 +145,9 @@ impl Gui {
             if !flow.blackout(network.id) {
                 continue;
             }
+
+            let mut buildings_with_issues = Vec::with_capacity(network.buildings.len());
+
             for &building in &network.buildings {
                 let Some(b) = map.get(building) else {
                     continue;
@@ -171,13 +162,19 @@ impl Gui {
 
                 let size = 10000.0 / depth;
 
-                yakui::reflow(
+                buildings_with_issues.push((screenpos, size));
+            }
+
+            buildings_with_issues.sort_by_key(|x| OrderedFloat(x.1));
+
+            for (screenpos, size) in buildings_with_issues {
+                reflow(
                     Alignment::TOP_LEFT,
                     Dim2::pixels(screenpos.x - size * 0.5, screenpos.y - size * 0.5),
                     || {
                         let mut image =
                             yakui::widgets::Image::new(no_power_img, Vec2::new(size, size));
-                        image.color = Color::WHITE.with_alpha(0.5);
+                        image.color = Color::WHITE.with_alpha(0.7);
                         image.show();
                     },
                 );

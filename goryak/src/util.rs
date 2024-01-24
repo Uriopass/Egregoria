@@ -5,7 +5,7 @@ use yakui_core::geometry::{Color, Constraints, FlexFit, Vec2};
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
 use yakui_core::{context, Response, WidgetId};
 use yakui_widgets::util::widget;
-use yakui_widgets::widgets::{Button, ButtonResponse, Text};
+use yakui_widgets::widgets::{Button, Pad, PadResponse, Text};
 
 use crate::{on_primary, on_secondary, primary, secondary, Scrollable, ScrollableResponse};
 
@@ -23,6 +23,18 @@ pub fn use_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
         old_v.set(Some(v));
         f();
     }
+}
+
+pub fn padxy(x: f32, y: f32, children: impl FnOnce()) -> Response<PadResponse> {
+    Pad::balanced(x, y).show(children)
+}
+
+pub fn pady(y: f32, children: impl FnOnce()) -> Response<PadResponse> {
+    Pad::vertical(y).show(children)
+}
+
+pub fn padx(x: f32, children: impl FnOnce()) -> Response<PadResponse> {
+    Pad::horizontal(x).show(children)
 }
 
 pub fn labelc(c: Color, text: impl Into<Cow<'static, str>>) {
@@ -86,7 +98,7 @@ pub fn button_primary(text: impl Into<String>) -> Button {
     b
 }
 
-pub fn button_secondary(text: impl Into<String>) -> Response<ButtonResponse> {
+pub fn button_secondary(text: impl Into<String>) -> Button {
     let mut b = Button::styled(text.into());
     b.style.fill = secondary();
     b.style.text.color = on_secondary();
@@ -94,7 +106,7 @@ pub fn button_secondary(text: impl Into<String>) -> Response<ButtonResponse> {
     b.hover_style.text.color = on_secondary();
     b.down_style.fill = secondary().adjust(1.3);
     b.down_style.text.color = on_secondary();
-    b.show()
+    b
 }
 
 #[track_caller]

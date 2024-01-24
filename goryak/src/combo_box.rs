@@ -15,7 +15,10 @@ pub fn combo_box(selected: &mut usize, items: &[&str], w: f32) -> bool {
         l.show(|| {
             let open = use_state(|| false);
 
-            if button_secondary(items[*selected].to_string()).clicked {
+            if button_secondary(items[*selected].to_string())
+                .show()
+                .clicked
+            {
                 open.modify(|x| !x);
             }
 
@@ -34,7 +37,7 @@ pub fn combo_box(selected: &mut usize, items: &[&str], w: f32) -> bool {
                                                 continue;
                                             }
 
-                                            if button_secondary(item.to_string()).clicked {
+                                            if button_secondary(item.to_string()).show().clicked {
                                                 *selected = i;
                                                 open.set(false);
                                                 changed = true;
