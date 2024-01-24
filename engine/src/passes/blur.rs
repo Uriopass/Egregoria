@@ -45,7 +45,11 @@ pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
         do_pass(
             gfx,
             encs,
-            UIBlurPipeline::Upscale,
+            if mip_level == 0 {
+                UIBlurPipeline::UpscaleDeband
+            } else {
+                UIBlurPipeline::Upscale
+            },
             &tex.mip_view(mip_level + 1),
             &tex.mip_view(mip_level),
         );
@@ -96,7 +100,7 @@ fn do_pass(
             view: dst_view,
             resolve_target: None,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
+                load: wgpu::LoadOp::Clear(wgpu::Color::RED),
                 store: wgpu::StoreOp::Store,
             },
         })],
@@ -107,6 +111,11 @@ fn do_pass(
 
     blur_pass.set_pipeline(pipe);
     blur_pass.set_bind_group(0, &bg, &[]);
+
+    if matches!(pipeline, UIBlurPipeline::UpscaleDeband) {
+        blur_pass.set_bind_group(1, &gfx.bnoise_bg, &[]);
+    }
+
     blur_pass.draw(0..3, 0..1);
 }
 
@@ -122,6 +131,7 @@ pub fn gen_blur_texture(device: &Device, sc: &SurfaceConfiguration) -> Texture {
 pub enum UIBlurPipeline {
     Downscale,
     Upscale,
+    UpscaleDeband,
 }
 
 impl PipelineBuilder for UIBlurPipeline {
@@ -132,11 +142,18 @@ impl PipelineBuilder for UIBlurPipeline {
     ) -> RenderPipeline {
         let bg = &mk_module("ui_blur");
 
+        let l = Texture::bindgroup_layout(&gfx.device, [TL::Float]);
+
+        let mut bg_layout = vec![&l];
+        if matches!(self, UIBlurPipeline::UpscaleDeband) {
+            bg_layout.push(&l);
+        }
+
         let render_pipeline_layout = gfx
             .device
             .create_pipeline_layout(&PipelineLayoutDescriptor {
                 label: Some("ui blur"),
-                bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device, [TL::Float])],
+                bind_group_layouts: &bg_layout,
                 push_constant_ranges: &[],
             });
 
@@ -159,6 +176,7 @@ impl PipelineBuilder for UIBlurPipeline {
                 entry_point: match self {
                     UIBlurPipeline::Downscale => "downscale",
                     UIBlurPipeline::Upscale => "upscale",
+                    UIBlurPipeline::UpscaleDeband => "upscale_deband",
                 },
                 targets: &color_states,
             }),
