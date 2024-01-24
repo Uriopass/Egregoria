@@ -24,12 +24,14 @@ pub fn blur_texture() -> Option<TextureId> {
     }
 }
 
-pub fn blur_bg(overlay_color: Color, children: impl FnOnce()) {
+pub fn blur_bg(overlay_color: Color, radius: f32, children: impl FnOnce()) {
     let id = blur_texture();
     let Some(id) = id else {
         colored_box_container(overlay_color, children);
         return;
     };
 
-    CutOut::new(id, overlay_color).show_children(children);
+    let mut c = CutOut::new(id, overlay_color);
+    c.radius = radius;
+    c.show_children(children);
 }

@@ -26,7 +26,12 @@ egui_plot     = { git = "https://github.com/emilk/egui" }
 ordered-float = { version = "4.2.0", default-features = false }
 oddio         = "0.7.4"
 derive_more   = "0.99.17"
-yakui         = { git = "https://github.com/SecondHalfGames/yakui" }
+yakui         = { git = "https://github.com/Uriopass/yakui", branch = "rounded_cutout" }
+yakui-wgpu    = { git = "https://github.com/Uriopass/yakui", branch = "rounded_cutout" }
+yakui-winit   = { git = "https://github.com/Uriopass/yakui", branch = "rounded_cutout" }
+yakui-core    = { git = "https://github.com/Uriopass/yakui", branch = "rounded_cutout" }
+yakui-widgets = { git = "https://github.com/Uriopass/yakui", branch = "rounded_cutout" }
+
 mlua          = { version = "0.9.4", features = ["luau"] }
 
 # Set the settings for build scripts and proc-macros.

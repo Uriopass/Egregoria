@@ -1,5 +1,8 @@
 use yakui::widgets::{List, Pad};
-use yakui::{pad, reflow, row, Alignment, Color, Dim2, MainAxisAlignment, MainAxisSize, Vec2};
+use yakui::{
+    colored_box, column, draggable, offset, pad, reflow, row, use_state, Alignment, Color, Dim2,
+    MainAxisAlignment, MainAxisSize, Vec2,
+};
 
 use goryak::{blur_bg, button_primary, constrained_viewport, labelc, on_primary_container, text};
 use prototypes::GameTime;
@@ -25,11 +28,26 @@ impl Gui {
             self.time_controls(uiworld, sim);
             self.power_errors(uiworld, sim);
 
-            reflow(Alignment::CENTER, Dim2::pixels(-220.0, -220.0), || {
-                blur_bg(goryak::primary_container().with_alpha(0.3), || {
-                    pad(Pad::all(100.0), || {
-                        labelc(on_primary_container(), "Blurring test!");
+            reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
+                let off = use_state(|| Vec2::ZERO);
+
+                offset(off.get(), || {
+                    let v = draggable(|| {
+                        blur_bg(goryak::primary_container().with_alpha(0.3), 10.0, || {
+                            column(|| {
+                                colored_box(
+                                    on_primary_container().with_alpha(0.3),
+                                    Vec2::new(tweak!(500.0), 50.0),
+                                );
+                                pad(Pad::all(200.0), || {
+                                    labelc(on_primary_container(), "Blurring test!");
+                                });
+                            });
+                        });
                     });
+                    if let Some(v) = v.dragging {
+                        off.set(v.current);
+                    }
                 });
             });
         });
@@ -95,7 +113,7 @@ impl Gui {
                 let mut l = List::row();
                 l.main_axis_alignment = MainAxisAlignment::End;
                 l.show(|| {
-                    blur_bg(goryak::primary_container().with_alpha(0.5), || {
+                    blur_bg(goryak::primary_container().with_alpha(0.5), 10.0, || {
                         pad(Pad::all(3.0), || {
                             let mut l = List::column();
                             l.main_axis_size = MainAxisSize::Min;

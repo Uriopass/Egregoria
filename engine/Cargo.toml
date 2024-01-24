@@ -34,8 +34,8 @@ lewton        = "0.10.2"
 serde         = { version = "1.0.183", features = ["derive"] }
 
 yakui         = { workspace = true, optional = true }
-yakui-wgpu    = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
-yakui-winit   = { git = "https://github.com/SecondHalfGames/yakui", optional = true }
+yakui-wgpu    = { workspace = true, optional = true }
+yakui-winit   = { workspace = true, optional = true }
 lazy_static = "1.4.0"
 
 [features]

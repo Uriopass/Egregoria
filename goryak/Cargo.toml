@@ -5,8 +5,8 @@ edition = "2021"
 description = "Egregoria's yakui component library"
 
 [dependencies]
-yakui-core    = { git = "https://github.com/SecondHalfGames/yakui" }
-yakui-widgets = { git = "https://github.com/SecondHalfGames/yakui" }
+yakui-core    = { workspace = true }
+yakui-widgets = { workspace = true }
 nanoserde     = "0.1.35"
 lazy_static = "1.4.0"
 serde = { version = "1.0.193", features = ["derive"] }
