@@ -70,10 +70,10 @@ impl State {
                         l.main_axis_alignment = MainAxisAlignment::Center;
                         Pad::all(5.0).show(|| {
                             l.show(|| {
-                                if button_primary("Dark theme").clicked {
+                                if button_primary("Dark theme").show().clicked {
                                     set_theme(Theme::Dark);
                                 }
-                                if button_primary("Light theme").clicked {
+                                if button_primary("Light theme").show().clicked {
                                     set_theme(Theme::Light);
                                 }
                             });
@@ -197,7 +197,7 @@ impl State {
                                         params
                                     });
                                 });
-                            if button_primary("Generate LODs").clicked {
+                            if button_primary("Generate LODs").show().clicked {
                                 let asset_path = &props.asset_path;
 
                                 self.actions

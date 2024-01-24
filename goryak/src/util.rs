@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::panic::Location;
 
-use yakui_core::geometry::{Color, Constraints, Vec2};
+use yakui_core::geometry::{Color, Constraints, FlexFit, Vec2};
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
-use yakui_core::{Response, WidgetId};
+use yakui_core::{context, Response, WidgetId};
 use yakui_widgets::util::widget;
 use yakui_widgets::widgets::{Button, ButtonResponse, Text};
 
@@ -31,7 +31,51 @@ pub fn labelc(c: Color, text: impl Into<Cow<'static, str>>) {
     t.show();
 }
 
-pub fn button_primary(text: impl Into<String>) -> Response<ButtonResponse> {
+#[derive(Debug)]
+pub struct FixedSizeWidget {
+    props: Vec2,
+}
+
+pub fn fixed_spacer(size: impl Into<Vec2>) -> Response<<FixedSizeWidget as Widget>::Response> {
+    widget::<FixedSizeWidget>(size.into())
+}
+
+impl Widget for FixedSizeWidget {
+    type Props<'a> = Vec2;
+    type Response = ();
+
+    fn new() -> Self {
+        Self { props: Vec2::ZERO }
+    }
+
+    fn update(&mut self, props: Self::Props<'_>) -> Self::Response {
+        self.props = props;
+    }
+
+    fn flex(&self) -> (u32, FlexFit) {
+        (0, FlexFit::Tight)
+    }
+
+    fn layout(&self, _ctx: LayoutContext<'_>, _constraints: Constraints) -> Vec2 {
+        self.props
+    }
+
+    fn paint(&self, _ctx: PaintContext<'_>) {}
+}
+
+pub fn widget_inner<T, F, U>(children: F, props: T::Props<'_>) -> U
+where
+    T: Widget,
+    F: FnOnce() -> U,
+{
+    let dom = context::dom();
+    let response = dom.begin_widget::<T>(props);
+    let r = children();
+    dom.end_widget::<T>(response.id);
+    r
+}
+
+pub fn button_primary(text: impl Into<String>) -> Button {
     let mut b = Button::styled(text.into());
     b.style.fill = primary();
     b.style.text.color = on_primary();
@@ -39,7 +83,7 @@ pub fn button_primary(text: impl Into<String>) -> Response<ButtonResponse> {
     b.hover_style.text.color = on_primary();
     b.down_style.fill = primary().adjust(1.3);
     b.down_style.text.color = on_primary();
-    b.show()
+    b
 }
 
 pub fn button_secondary(text: impl Into<String>) -> Response<ButtonResponse> {

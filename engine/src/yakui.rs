@@ -25,8 +25,14 @@ impl YakuiWrapper {
             FontSettings::default(),
         )
         .unwrap();
-
         fonts.add(font, Some("icons"));
+
+        let font = Font::from_bytes(
+            include_bytes!("../../assets/SpaceMono-Regular.ttf").as_slice(),
+            FontSettings::default(),
+        )
+        .unwrap();
+        fonts.add(font, Some("monospace"));
 
         let platform = yakui_winit::YakuiWinit::new(el);
 

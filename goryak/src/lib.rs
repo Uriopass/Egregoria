@@ -30,4 +30,4 @@ pub use text::*;
 pub use theme::*;
 pub use util::*;
 
-const DEFAULT_FONT_SIZE: f32 = 14.0;
+pub const DEFAULT_FONT_SIZE: f32 = 14.0;

@@ -1,10 +1,13 @@
-use yakui::widgets::{List, Pad};
+use yakui::widgets::{List, Pad, PadWidget};
 use yakui::{
-    colored_box, column, draggable, offset, pad, reflow, row, use_state, Alignment, Color, Dim2,
-    MainAxisAlignment, MainAxisSize, Vec2,
+    colored_box, column, constrained, draggable, offset, pad, reflow, row, spacer, use_state,
+    Alignment, Color, Constraints, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Vec2,
 };
 
-use goryak::{blur_bg, button_primary, constrained_viewport, labelc, on_primary_container, text};
+use goryak::{
+    blur_bg, button_primary, constrained_viewport, labelc, monospace, on_primary_container,
+    widget_inner,
+};
 use prototypes::GameTime;
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
@@ -73,51 +76,69 @@ impl Gui {
 
         if *warp == 0 {
             yakui::canvas(|ctx| {
+                let w = ctx.layout.viewport().size().length() * 0.002;
                 yakui::shapes::outline(
                     ctx.paint,
                     ctx.layout.viewport(),
-                    2.0,
-                    Color::rgba(255, 0, 0, 196),
+                    w,
+                    Color::rgba(255, 0, 0, 128),
                 );
             });
         }
 
         let mut time_text = || {
             row(|| {
-                text(format!(" Day {}", time.day));
-
-                text(format!(
+                monospace(format!("Day {}", time.day));
+                spacer(1);
+                monospace(format!(
                     "{:02}:{:02}:{:02}",
                     time.hour, time.minute, time.second
                 ));
             });
             row(|| {
-                if button_primary("||").clicked {
+                let time_button = |text: &str| {
+                    widget_inner::<PadWidget, _, _>(
+                        || {
+                            let mut b = button_primary(text);
+                            b.padding = Pad::balanced(10.0, 3.0);
+                            b.show()
+                        },
+                        Pad::all(3.0),
+                    )
+                };
+
+                if time_button("||").clicked {
                     *depause_warp = *warp;
                     *warp = 0;
                 }
-                if button_primary("1x").clicked {
+                if time_button("1x").clicked {
                     *warp = 1;
                 }
-                if button_primary("3x").clicked {
+                if time_button("3x").clicked {
                     *warp = 3;
                 }
-                if button_primary("Max").clicked {
+                if time_button("Max").clicked {
                     *warp = 1000;
                 }
             });
         };
 
-        reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 40.0), || {
+        reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 30.0), || {
             constrained_viewport(|| {
                 let mut l = List::row();
                 l.main_axis_alignment = MainAxisAlignment::End;
                 l.show(|| {
                     blur_bg(goryak::primary_container().with_alpha(0.5), 10.0, || {
-                        pad(Pad::all(3.0), || {
-                            let mut l = List::column();
-                            l.main_axis_size = MainAxisSize::Min;
-                            l.show(|| time_text());
+                        pad(Pad::all(10.0), || {
+                            constrained(
+                                Constraints::loose(Vec2::new(200.0, f32::INFINITY)),
+                                || {
+                                    let mut l = List::column();
+                                    l.cross_axis_alignment = CrossAxisAlignment::Stretch;
+                                    l.main_axis_size = MainAxisSize::Min;
+                                    l.show(|| time_text());
+                                },
+                            );
                         });
                     });
                 });
