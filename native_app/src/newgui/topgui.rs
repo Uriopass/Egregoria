@@ -6,15 +6,15 @@ use yakui::{
 };
 
 use goryak::{
-    blur_bg, button_primary, button_secondary, constrained_viewport, icon_map, monospace, padx,
-    padxy, secondary_container,
+    blur_bg, button_primary, button_secondary, constrained_viewport, icon_map, image_button,
+    monospace, padx, padxy, primary, secondary_container,
 };
 use prototypes::GameTime;
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
 
 use crate::gui::windows::settings::Settings;
-use crate::gui::{Gui, UiTextures};
+use crate::gui::{Gui, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 
@@ -31,6 +31,7 @@ impl Gui {
         yakui::column(|| {
             self.time_controls(uiworld, sim);
             self.power_errors(uiworld, sim);
+            self.new_toolbox(uiworld, sim);
         });
     }
 
@@ -127,6 +128,67 @@ impl Gui {
                                     l.show(|| time_text());
                                 },
                             );
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    fn new_toolbox(&self, uiworld: &mut UiWorld, _sim: &Simulation) {
+        if uiworld
+            .read::<InputMap>()
+            .just_act
+            .contains(&InputAction::Close)
+        {
+            *uiworld.write::<Tool>() = Tool::Hand;
+        }
+
+        let tools = [
+            ("straight_road", Tool::RoadbuildStraight),
+            ("curved_road", Tool::RoadbuildCurved),
+            //("road_edit", Tool::RoadEditor),
+            //("housebrush", Tool::LotBrush),
+            //("buildings", Tool::SpecialBuilding),
+            //("bulldozer", Tool::Bulldozer),
+            //("traintool", Tool::Train),
+            //("terraform", Tool::Terraforming),
+        ];
+
+        yakui::reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
+            constrained_viewport(|| {
+                let mut l = List::column();
+                l.cross_axis_alignment = CrossAxisAlignment::Stretch;
+
+                l.show(|| {
+                    spacer(1);
+                    yakui::opaque(|| {
+                        blur_bg(secondary_container().with_alpha(0.3), 0.0, || {
+                            padxy(0.0, 10.0, || {
+                                let mut l = List::row();
+                                l.main_axis_alignment = MainAxisAlignment::Center;
+                                l.show(|| {
+                                    for (name, tool) in &tools {
+                                        let tint = if *tool == *uiworld.read::<Tool>() {
+                                            primary()
+                                        } else {
+                                            Color::WHITE
+                                        };
+
+                                        if image_button(
+                                            uiworld.read::<UiTextures>().get_yakui(name),
+                                            Vec2::new(64.0, 64.0),
+                                            tint,
+                                            Color::WHITE.with_alpha(0.7),
+                                            primary(),
+                                        )
+                                        .clicked
+                                        {
+                                            *uiworld.write::<Tool>() = *tool;
+                                        }
+                                    }
+                                });
+                            });
                         });
                     });
                 });

@@ -392,7 +392,7 @@ impl RoadBuildResource {
         points: Option<PolyLine3>,
     ) {
         let mut proj_pos = proj.pos;
-        proj_pos.z += 0.1;
+        proj_pos.z += 0.4;
         let col = if is_valid {
             simulation::config().gui_primary
         } else {
@@ -413,7 +413,11 @@ impl RoadBuildResource {
                 for i in 0..=32 {
                     let ang = std::f32::consts::PI * i as f32 * (2.0 / 32.0);
                     let mut v = Vec3::from_angle(ang, dir.z);
-                    let center = if v.dot(dir) < 0.0 { x.pos } else { proj.pos };
+                    let center = if v.dot(dir) < 0.0 {
+                        x.pos.up(0.4)
+                    } else {
+                        proj_pos
+                    };
 
                     v = v * patwidth * 0.5;
                     v.z = 0.0;
@@ -439,8 +443,17 @@ impl RoadBuildResource {
                 .color(col);
         }
 
-        immdraw.circle(p.first(), patwidth * 0.5).color(col);
-        immdraw.circle(p.last(), patwidth * 0.5).color(col);
-        immdraw.polyline(p.into_vec(), patwidth, false).color(col);
+        immdraw.circle(p.first().up(0.4), patwidth * 0.5).color(col);
+        immdraw.circle(p.last().up(0.4), patwidth * 0.5).color(col);
+        immdraw
+            .polyline(
+                p.into_vec()
+                    .into_iter()
+                    .map(|v| v.up(0.4))
+                    .collect::<Vec<_>>(),
+                patwidth,
+                false,
+            )
+            .color(col);
     }
 }

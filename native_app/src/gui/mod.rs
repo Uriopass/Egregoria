@@ -187,7 +187,10 @@ impl UiTextures {
     }
 
     pub fn get_yakui(&self, name: &str) -> yakui::TextureId {
-        self.yakui_textures.get(name).unwrap().clone()
+        match self.yakui_textures.get(name) {
+            None => panic!("Couldn't find texture {}", name),
+            Some(x) => *x,
+        }
     }
 
     pub fn try_get(&self, name: &str) -> Option<TextureId> {

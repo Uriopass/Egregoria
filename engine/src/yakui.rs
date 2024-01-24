@@ -42,6 +42,7 @@ impl YakuiWrapper {
             gfx.null_texture.mip_view(0),
             wgpu::FilterMode::Linear,
             wgpu::FilterMode::Linear,
+            wgpu::FilterMode::Linear,
         );
 
         goryak::set_blur_texture(texture_id);
@@ -60,6 +61,7 @@ impl YakuiWrapper {
         let tex = gfx.texture(path, "yakui texture");
         self.renderer.add_texture(
             Arc::new(tex.texture.create_view(&TextureViewDescriptor::default())),
+            wgpu::FilterMode::Linear,
             wgpu::FilterMode::Linear,
             wgpu::FilterMode::Linear,
         )
