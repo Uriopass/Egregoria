@@ -14,23 +14,16 @@ use simulation::map::BuildingID;
 use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};
 
-pub mod addtrain;
-pub mod bulldozer;
 pub mod chat;
 pub mod follow;
 pub mod inspect;
 pub mod inspected_aura;
-pub mod lotbrush;
-pub mod roadbuild;
-pub mod roadeditor;
-pub mod selectable;
-pub mod specialbuilding;
-pub mod terraforming;
+mod tools;
 pub mod topgui;
 pub mod windows;
-pub mod zoneedit;
 
 pub use follow::FollowEntity;
+pub use tools::*;
 pub use topgui::*;
 
 pub fn run_ui_systems(sim: &Simulation, uiworld: &mut UiWorld) {

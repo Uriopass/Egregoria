@@ -1,5 +1,4 @@
-use super::Tool;
-use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands};
+use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands, Tool};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;

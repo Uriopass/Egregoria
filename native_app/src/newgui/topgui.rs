@@ -1,5 +1,5 @@
 use ordered_float::OrderedFloat;
-use yakui::widgets::{CutOut, List, Pad};
+use yakui::widgets::{List, Pad};
 use yakui::{
     constrained, reflow, row, spacer, Alignment, Color, Constraints, CrossAxisAlignment, Dim2,
     MainAxisAlignment, MainAxisSize, Vec2,

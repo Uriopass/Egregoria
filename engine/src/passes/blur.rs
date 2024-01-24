@@ -6,7 +6,7 @@ use wgpu::{
 
 use crate::{CompiledModule, Encoders, GfxContext, PipelineBuilder, Texture, TextureBuilder, TL};
 
-const DOWNSCALE_PASSES: u32 = 3;
+const DOWNSCALE_PASSES: u32 = 2;
 
 /// The blur pass to be used by the UI uses the "Dual Kawase Blur" algorithm as explained
 /// in the SIGGRAPH 2015 paper "Bandwidth-efficient Rendering" by Marius Bjørge

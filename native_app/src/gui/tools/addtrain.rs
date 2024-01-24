@@ -1,5 +1,4 @@
-use super::Tool;
-use crate::gui::PotentialCommands;
+use crate::gui::{PotentialCommands, Tool};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
