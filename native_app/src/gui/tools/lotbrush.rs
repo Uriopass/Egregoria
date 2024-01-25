@@ -16,7 +16,7 @@ pub struct LotBrushResource {
 /// Allows to build houses on lots
 pub fn lotbrush(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::lotbrush");
-    let res = uiworld.read::<LotBrushResource>();
+    let mut res = uiworld.write::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();
     let mut draw = uiworld.write::<ImmediateDraw>();
@@ -26,6 +26,14 @@ pub fn lotbrush(sim: &Simulation, uiworld: &mut UiWorld) {
     if !matches!(tool, Tool::LotBrush) {
         return;
     }
+
+    if inp.just_act.contains(&InputAction::SizeUp) {
+        res.radius *= 1.1;
+    }
+    if inp.just_act.contains(&InputAction::SizeDown) {
+        res.radius /= 1.1;
+    }
+    res.radius = res.radius.clamp(1.0, 300.0);
 
     let kind = res.kind;
 

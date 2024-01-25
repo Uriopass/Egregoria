@@ -21,7 +21,6 @@ use simulation::Simulation;
 use crate::gui::bulldozer::BulldozerState;
 use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
-use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::terraforming::TerraformingResource;
@@ -470,27 +469,6 @@ impl Gui {
                             pat.n_lanes = 10;
                         }
                     });
-                });
-        }
-
-        if matches!(*uiworld.read::<Tab>(), Tab::Housebrush) {
-            let lbw = 120.0;
-            Window::new("House Brush")
-                .fixed_size([lbw, 50.0])
-                .fixed_pos([w - toolbox_w - lbw - 10.0, h * 0.5 - 30.0])
-                .hscroll(false)
-                .title_bar(true)
-                .collapsible(false)
-                .resizable(false)
-                .show(ui, |ui| {
-                    let mut cur_brush = uiworld.write::<LotBrushResource>();
-
-                    ui.horizontal(|ui| {
-                        egui::DragValue::new(&mut cur_brush.radius)
-                            .clamp_range(10.0..=300.0f32)
-                            .ui(ui);
-                        ui.label("radius");
-                    })
                 });
         }
 
