@@ -1,8 +1,8 @@
 use ordered_float::OrderedFloat;
 use yakui::widgets::{List, Pad};
 use yakui::{
-    constrained, reflow, row, spacer, Alignment, Color, Constraints, CrossAxisAlignment, Dim2,
-    MainAxisAlignment, MainAxisSize, Vec2,
+    column, constrained, image, reflow, row, spacer, Alignment, Color, Constraints,
+    CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Vec2,
 };
 
 use goryak::{
@@ -145,14 +145,14 @@ impl Gui {
         }
 
         let tools = [
-            ("straight_road", Tool::RoadbuildStraight),
-            ("curved_road", Tool::RoadbuildCurved),
-            //("road_edit", Tool::RoadEditor),
-            //("housebrush", Tool::LotBrush),
-            //("buildings", Tool::SpecialBuilding),
-            //("bulldozer", Tool::Bulldozer),
-            //("traintool", Tool::Train),
-            //("terraform", Tool::Terraforming),
+            ("toolbar_straight_road", Tool::RoadbuildStraight),
+            ("toolbar_curved_road", Tool::RoadbuildCurved),
+            ("toolbar_road_edit", Tool::RoadEditor),
+            ("toolbar_housetool", Tool::LotBrush),
+            ("toolbar_companies", Tool::SpecialBuilding),
+            ("toolbar_bulldozer", Tool::Bulldozer),
+            ("toolbar_train", Tool::Train),
+            ("toolbar_terraform", Tool::Terraforming),
         ];
 
         yakui::reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
@@ -167,25 +167,45 @@ impl Gui {
                             padxy(0.0, 10.0, || {
                                 let mut l = List::row();
                                 l.main_axis_alignment = MainAxisAlignment::Center;
+                                l.item_spacing = 10.0;
                                 l.show(|| {
                                     for (name, tool) in &tools {
-                                        let tint = if *tool == *uiworld.read::<Tool>() {
-                                            primary()
-                                        } else {
-                                            Color::WHITE
-                                        };
+                                        let (default_col, hover_col) =
+                                            if *tool == *uiworld.read::<Tool>() {
+                                                let c = primary().lerp(&Color::WHITE, 0.3);
+                                                (c, c)
+                                            } else {
+                                                (Color::WHITE, Color::WHITE.with_alpha(0.7))
+                                            };
 
-                                        if image_button(
-                                            uiworld.read::<UiTextures>().get_yakui(name),
-                                            Vec2::new(64.0, 64.0),
-                                            tint,
-                                            Color::WHITE.with_alpha(0.7),
-                                            primary(),
-                                        )
-                                        .clicked
-                                        {
-                                            *uiworld.write::<Tool>() = *tool;
-                                        }
+                                        column(|| {
+                                            if image_button(
+                                                uiworld.read::<UiTextures>().get_yakui(name),
+                                                Vec2::new(64.0, 64.0),
+                                                default_col,
+                                                hover_col,
+                                                primary(),
+                                            )
+                                            .clicked
+                                            {
+                                                *uiworld.write::<Tool>() = *tool;
+                                            }
+
+                                            if *tool == *uiworld.read::<Tool>() {
+                                                reflow(
+                                                    Alignment::CENTER_LEFT,
+                                                    Dim2::pixels(0.0, 32.0),
+                                                    || {
+                                                        image(
+                                                            uiworld
+                                                                .read::<UiTextures>()
+                                                                .get_yakui("select_triangle_under"),
+                                                            Vec2::new(64.0, 10.0),
+                                                        );
+                                                    },
+                                                );
+                                            }
+                                        });
                                     }
                                 });
                             });

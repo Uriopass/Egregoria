@@ -183,12 +183,15 @@ impl UiTextures {
     }
 
     pub fn get(&self, name: &str) -> TextureId {
-        self.textures.get(name).unwrap().id()
+        match self.textures.get(name) {
+            None => panic!("Couldn't find texture (egui) {}", name),
+            Some(x) => x.id(),
+        }
     }
 
     pub fn get_yakui(&self, name: &str) -> yakui::TextureId {
         match self.yakui_textures.get(name) {
-            None => panic!("Couldn't find texture {}", name),
+            None => panic!("Couldn't find texture (yakui) {}", name),
             Some(x) => *x,
         }
     }

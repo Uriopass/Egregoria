@@ -185,10 +185,10 @@ impl Gui {
         let tools = [
             ("road", Tab::Roadbuild, Tool::RoadbuildStraight),
             ("curved", Tab::Roadcurved, Tool::RoadbuildCurved),
-            ("road_edit", Tab::Roadeditor, Tool::RoadEditor),
+            ("road_edit_old", Tab::Roadeditor, Tool::RoadEditor),
             ("housebrush", Tab::Housebrush, Tool::LotBrush),
             ("buildings", Tab::Roadbuilding, Tool::SpecialBuilding),
-            ("bulldozer", Tab::Bulldozer, Tool::Bulldozer),
+            ("bulldozer_old", Tab::Bulldozer, Tool::Bulldozer),
             ("traintool", Tab::Train, Tool::Train),
             ("terraform", Tab::Terraforming, Tool::Terraforming),
         ];
