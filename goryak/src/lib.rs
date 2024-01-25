@@ -13,6 +13,7 @@ mod roundrect;
 mod scroll;
 mod text;
 mod theme;
+mod tooltip;
 mod util;
 
 pub use blur_bg::*;

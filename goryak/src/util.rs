@@ -37,9 +37,10 @@ pub fn padx(x: f32, children: impl FnOnce()) -> Response<PadResponse> {
     Pad::horizontal(x).show(children)
 }
 
-pub fn labelc(c: Color, text: impl Into<Cow<'static, str>>) {
+pub fn textc(c: Color, text: impl Into<Cow<'static, str>>) {
     let mut t = Text::label(text.into());
     t.style.color = c;
+    t.padding = Pad::all(0.0);
     t.show();
 }
 
@@ -87,6 +88,7 @@ where
     r
 }
 
+#[must_use = "call show() to show the widget"]
 pub fn button_primary(text: impl Into<String>) -> Button {
     let mut b = Button::styled(text.into());
     b.style.fill = primary();
@@ -98,6 +100,7 @@ pub fn button_primary(text: impl Into<String>) -> Button {
     b
 }
 
+#[must_use = "call show() to show the widget"]
 pub fn button_secondary(text: impl Into<String>) -> Button {
     let mut b = Button::styled(text.into());
     b.style.fill = secondary();

@@ -1,12 +1,25 @@
 use phf::phf_map;
+use std::borrow::Cow;
 use yakui_core::geometry::{Color, Constraints, Vec2};
 use yakui_widgets::font::FontName;
-use yakui_widgets::widgets::Text;
+use yakui_widgets::widgets::{Button, Text};
 use yakui_widgets::{center, constrained};
 
 pub fn icon_map(name: &str) -> (&'static str, FontName) {
     let mapped = ICON_NAME_MAPPING.get(name).copied().unwrap_or("?");
     (mapped, FontName::new("icons"))
+}
+
+#[must_use = "call show() to show the widget"]
+pub fn icon_button(mut b: Button) -> Button {
+    let (mapped, name) = icon_map(&b.text);
+
+    b.text = Cow::Borrowed(mapped);
+    b.style.text.font = name.clone();
+    b.hover_style.text.font = name.clone();
+    b.down_style.text.font = name;
+
+    b
 }
 
 pub fn icon(c: Color, name: &str) {

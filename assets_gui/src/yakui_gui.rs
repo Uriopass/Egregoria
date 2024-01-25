@@ -10,9 +10,9 @@ use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, InstancedMesh, M
 use geom::Matrix4;
 use goryak::{
     background, button_primary, checkbox_value, divider, dragvalue, icon, interact_box_radius,
-    is_hovered, labelc, on_secondary_container, on_surface, outline_variant, round_rect,
-    scroll_vertical, secondary_container, set_theme, surface, surface_variant, use_changed,
-    CountGrid, RoundRect, Theme,
+    is_hovered, on_secondary_container, on_surface, outline_variant, round_rect, scroll_vertical,
+    secondary_container, set_theme, surface, surface_variant, textc, use_changed, CountGrid,
+    RoundRect, Theme,
 };
 use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype};
 
@@ -149,7 +149,7 @@ impl State {
                             let triangle = if v { "caret-down" } else { "caret-right" };
                             icon(on_surface(), triangle);
                         }
-                        labelc(on_surface(), name);
+                        textc(on_surface(), name);
                     });
                 });
             },
@@ -162,13 +162,13 @@ impl State {
     fn model_properties(&mut self) {
         Self::model_properties_container(|| {
             let tc = on_secondary_container(); // text color
-            labelc(tc, "Model properties");
+            textc(tc, "Model properties");
             match self.gui.shown {
                 Shown::None => {
-                    labelc(tc, "No model selected");
+                    textc(tc, "No model selected");
                 }
                 Shown::Error(ref e) => {
-                    labelc(tc, e.clone());
+                    textc(tc, e.clone());
                 }
                 Shown::Model((ref mesh, _, ref mut props)) => {
                     let params = use_state(|| LodGenerateParams {
@@ -185,13 +185,13 @@ impl State {
                                 .main_axis_size(MainAxisSize::Min)
                                 .show(|| {
                                     params.modify(|mut params| {
-                                        labelc(tc, "n_lods");
+                                        textc(tc, "n_lods");
                                         dragvalue().min(1.0).max(4.0).show(&mut params.n_lods);
 
-                                        labelc(tc, "quality");
+                                        textc(tc, "quality");
                                         dragvalue().min(0.0).max(1.0).show(&mut params.quality);
 
-                                        labelc(tc, "sloppy");
+                                        textc(tc, "sloppy");
                                         checkbox_value(&mut params.sloppy);
 
                                         params
@@ -208,35 +208,35 @@ impl State {
                         let mut lod_details = CountGrid::col(1 + mesh.lods.len());
                         lod_details.main_axis_size = MainAxisSize::Min;
                         lod_details.show(|| {
-                            labelc(tc, "");
+                            textc(tc, "");
                             for (i, _) in mesh.lods.iter().enumerate() {
-                                labelc(tc, format!("LOD{}", i));
+                                textc(tc, format!("LOD{}", i));
                             }
 
-                            labelc(tc, "Vertices");
+                            textc(tc, "Vertices");
                             for lod in &*mesh.lods {
-                                labelc(tc, format!("{}", lod.n_vertices));
+                                textc(tc, format!("{}", lod.n_vertices));
                             }
 
-                            labelc(tc, "Triangles");
+                            textc(tc, "Triangles");
                             for lod in &*mesh.lods {
-                                labelc(tc, format!("{}", lod.n_indices / 3));
+                                textc(tc, format!("{}", lod.n_indices / 3));
                             }
 
-                            labelc(tc, "Draw calls");
+                            textc(tc, "Draw calls");
                             for lod in &*mesh.lods {
-                                labelc(tc, format!("{}", lod.primitives.len()));
+                                textc(tc, format!("{}", lod.primitives.len()));
                             }
 
-                            labelc(tc, "Coverage");
+                            textc(tc, "Coverage");
                             for lod in &*mesh.lods {
-                                labelc(tc, format!("{:.3}", lod.screen_coverage));
+                                textc(tc, format!("{:.3}", lod.screen_coverage));
                             }
                         });
                     });
                 }
                 Shown::Sprite(ref _sprite) => {
-                    labelc(tc, "Sprite");
+                    textc(tc, "Sprite");
                 }
             }
         });

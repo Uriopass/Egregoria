@@ -4,7 +4,7 @@ use yakui_widgets::widgets::{List, Pad};
 use yakui_widgets::{draggable, pad, use_state};
 
 use crate::roundrect::RoundRect;
-use crate::{labelc, on_primary, outline, secondary};
+use crate::{on_primary, outline, secondary, textc};
 
 pub trait Draggable: Copy {
     const DEFAULT_STEP: f64;
@@ -95,7 +95,7 @@ impl DragValue {
                     .color(secondary())
                     .show_children(|| {
                         pad(Pad::horizontal(10.0), || {
-                            labelc(on_primary(), format!("{:.3}", T::to_f64(*value)));
+                            textc(on_primary(), format!("{:.3}", T::to_f64(*value)));
                         });
                     });
             });

@@ -18,7 +18,7 @@ mod inspect_train;
 mod inspect_vehicle;
 
 pub fn inspector(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
-    profiling::scope!("topgui::inspector");
+    profiling::scope!("hud::inspector");
     let inspected_building = *uiworld.read::<InspectedBuilding>();
     if let Some(b) = inspected_building.e {
         inspect_building(uiworld, sim, ui, b);

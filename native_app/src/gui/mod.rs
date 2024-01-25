@@ -16,15 +16,15 @@ use simulation::{AnyEntity, Simulation};
 
 pub mod chat;
 pub mod follow;
+pub mod hud;
 pub mod inspect;
 pub mod inspected_aura;
 mod tools;
-pub mod topgui;
 pub mod windows;
 
 pub use follow::FollowEntity;
+pub use hud::*;
 pub use tools::*;
-pub use topgui::*;
 
 pub fn run_ui_systems(sim: &Simulation, uiworld: &mut UiWorld) {
     profiling::scope!("gui::run_ui_systems");

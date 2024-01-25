@@ -1,9 +1,14 @@
+use std::time::Instant;
+
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
-use yakui_core::geometry::{Color, Constraints, Rect, Vec2};
+use yakui_core::geometry::{Color, Constraints, Dim2, Rect, Vec2};
 use yakui_core::input::MouseButton;
 use yakui_core::paint::PaintRect;
 use yakui_core::widget::{EventContext, LayoutContext, PaintContext, Widget};
-use yakui_core::{Response, TextureId};
+use yakui_core::{Alignment, Response, TextureId};
+use yakui_widgets::{offset, reflow};
+
+use crate::{on_primary, padxy, primary, round_rect, textc};
 
 /**
 A button based on an image
@@ -17,6 +22,7 @@ pub struct ImageButton {
     pub color: Color,
     pub hover_color: Color,
     pub active_color: Color,
+    pub tooltip: &'static str,
 }
 
 impl ImageButton {
@@ -27,6 +33,7 @@ impl ImageButton {
             color: Color::WHITE,
             hover_color: Color::WHITE,
             active_color: Color::WHITE,
+            tooltip: "",
         }
     }
 
@@ -43,6 +50,7 @@ impl ImageButton {
             color,
             hover_color,
             active_color,
+            tooltip: "",
         }
     }
 
@@ -57,6 +65,7 @@ pub fn image_button(
     color: Color,
     hover_color: Color,
     active_color: Color,
+    tooltip: &'static str,
 ) -> Response<ImageButtonResponse> {
     ImageButton {
         texture: Some(texture),
@@ -64,6 +73,7 @@ pub fn image_button(
         color,
         hover_color,
         active_color,
+        tooltip,
     }
     .show()
 }
@@ -72,6 +82,8 @@ pub fn image_button(
 pub struct ImageButtonWidget {
     props: ImageButton,
     resp: ImageButtonResponse,
+    stopped_moving: Option<Instant>,
+    show_tooltip: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -90,6 +102,8 @@ impl Widget for ImageButtonWidget {
         Self {
             props: ImageButton::empty(),
             resp: ImageButtonResponse::default(),
+            stopped_moving: None,
+            show_tooltip: false,
         }
     }
 
@@ -98,6 +112,26 @@ impl Widget for ImageButtonWidget {
         let resp = self.resp;
         self.resp.mouse_entered = false;
         self.resp.clicked = false;
+
+        if !self.props.tooltip.is_empty() {
+            if let Some(i) = self.stopped_moving {
+                if i.elapsed().as_millis() > 500 {
+                    self.show_tooltip = true;
+                }
+                if self.show_tooltip {
+                    reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 0.0), || {
+                        offset(Vec2::new(-10.0, -50.0), || {
+                            round_rect(5.0, primary(), || {
+                                padxy(5.0, 4.0, || {
+                                    textc(on_primary(), self.props.tooltip);
+                                });
+                            });
+                        });
+                    });
+                }
+            }
+        }
+
         resp
     }
 
@@ -130,11 +164,20 @@ impl Widget for ImageButtonWidget {
     }
 
     fn layout(&self, _ctx: LayoutContext<'_>, input: Constraints) -> Vec2 {
+        let _ = self.default_layout(_ctx, input); // tooltip is reflowed
+
         input.constrain_min(self.props.size)
     }
 
     fn event(&mut self, _: EventContext<'_>, event: &WidgetEvent) -> EventResponse {
-        match event {
+        match *event {
+            WidgetEvent::MouseMoved(Some(_)) => {
+                if self.resp.hovering {
+                    self.stopped_moving = Some(Instant::now());
+                }
+                self.show_tooltip = false;
+                EventResponse::Bubble
+            }
             WidgetEvent::MouseEnter => {
                 self.resp.mouse_entered = true;
                 self.resp.hovering = true;
@@ -142,6 +185,8 @@ impl Widget for ImageButtonWidget {
             }
             WidgetEvent::MouseLeave => {
                 self.resp.hovering = false;
+                self.show_tooltip = false;
+                self.stopped_moving = None;
                 EventResponse::Bubble
             }
             WidgetEvent::MouseButtonChanged {
@@ -150,7 +195,7 @@ impl Widget for ImageButtonWidget {
                 inside,
                 ..
             } => {
-                if *down && *inside {
+                if down && inside {
                     self.resp.clicked = true;
                     self.resp.mouse_down = true;
                 } else {

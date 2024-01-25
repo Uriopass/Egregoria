@@ -71,7 +71,7 @@ impl Gui {
 
     /// Root GUI entrypoint
     pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
-        profiling::scope!("topgui::render");
+        profiling::scope!("hud::render");
         self.auto_save(uiworld);
 
         if self.hidden {
@@ -149,7 +149,7 @@ impl Gui {
     }
 
     pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, _sim: &Simulation) {
-        profiling::scope!("topgui::toolbox");
+        profiling::scope!("hud::toolbox");
         #[derive(Copy, Clone)]
         pub enum Tab {
             Hand,
@@ -634,7 +634,7 @@ impl Gui {
     }
 
     pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
-        profiling::scope!("topgui::menu_bar");
+        profiling::scope!("hud::menu_bar");
         //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
         egui::TopBottomPanel::top("top_menu").show(ui, |ui| {
