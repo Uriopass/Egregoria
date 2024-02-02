@@ -22,7 +22,7 @@ ordered-float = { workspace = true }
 oddio         = { workspace = true }
 yakui         = { workspace = true }
 log           = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
-inline_tweak  = "1.0.6"
+inline_tweak  = { version = "1.1", features = ["derive"] }
 serde         = "1.0"
 slotmapd      = { version = "1.0", default-features = false }
 rayon         = "1.6"

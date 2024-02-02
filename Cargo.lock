@@ -1474,11 +1474,26 @@ checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
 
 [[package]]
 name = "inline_tweak"
-version = "1.0.11"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0af55456b6effef89fe011ee0316a749984fd3ff0bcc3cd6ae0a3f3a4d752edf"
+checksum = "b7b57581af32af1202434451167ba6b6a0456f4370955c0a85d3ce6a8bfb27ef"
 dependencies = [
+ "inline_tweak_derive",
  "lazy_static",
+ "proc-macro2",
+ "rustc-hash",
+ "syn 2.0.48",
+]
+
+[[package]]
+name = "inline_tweak_derive"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10964eba503073c116c9baf3f11b3a1d48d7bba4f95d1954667d8d38d314b68a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
 ]
 
 [[package]]

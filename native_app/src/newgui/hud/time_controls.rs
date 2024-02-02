@@ -6,7 +6,7 @@ use yakui::{
 
 use goryak::{
     blur_bg, button_primary, button_secondary, constrained_viewport, icon_button, monospace,
-    on_primary, on_secondary, on_secondary_container, padx, padxy, secondary_container,
+    on_secondary_container, padx, padxy, secondary_container,
 };
 use prototypes::GameTime;
 use simulation::Simulation;

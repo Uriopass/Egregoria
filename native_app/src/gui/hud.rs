@@ -18,7 +18,6 @@ use simulation::map::{
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
-use crate::gui::bulldozer::BulldozerState;
 use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
 use crate::gui::roadeditor::RoadEditorResource;
@@ -26,7 +25,7 @@ use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTextures};
+use crate::gui::{ErrorTooltip, PotentialCommands, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 
@@ -150,19 +149,6 @@ impl Gui {
 
     pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, _sim: &Simulation) {
         profiling::scope!("hud::toolbox");
-        #[derive(Copy, Clone)]
-        pub enum Tab {
-            Hand,
-            Roadbuild,
-            Roadcurved,
-            Roadeditor,
-            Housebrush,
-            Roadbuilding,
-            Bulldozer,
-            Train,
-            Terraforming,
-        }
-        uiworld.check_present(|| Tab::Hand);
 
         if uiworld
             .read::<InputMap>()
@@ -170,7 +156,6 @@ impl Gui {
             .contains(&InputAction::Close)
         {
             *uiworld.write::<Tool>() = Tool::Hand;
-            *uiworld.write::<Tab>() = Tab::Hand;
         }
 
         let [w, h]: [f32; 2] = ui.available_rect().size().into();
@@ -182,14 +167,10 @@ impl Gui {
         let toolbox_w = 85.0;
 
         let tools = [
-            ("road", Tab::Roadbuild, Tool::RoadbuildStraight),
-            ("curved", Tab::Roadcurved, Tool::RoadbuildCurved),
-            ("road_edit_old", Tab::Roadeditor, Tool::RoadEditor),
-            ("housebrush", Tab::Housebrush, Tool::LotBrush),
-            ("buildings", Tab::Roadbuilding, Tool::SpecialBuilding),
-            ("bulldozer_old", Tab::Bulldozer, Tool::Bulldozer),
-            ("traintool", Tab::Train, Tool::Train),
-            ("terraform", Tab::Terraforming, Tool::Terraforming),
+            ("road_edit_old", Tool::RoadEditor),
+            ("buildings", Tool::SpecialBuilding),
+            ("traintool", Tool::Train),
+            ("terraform", Tool::Terraforming),
         ];
 
         Window::new("Toolbox")
@@ -203,24 +184,23 @@ impl Gui {
             .resizable(false)
             .auto_sized()
             .show(ui, |ui| {
-                let cur_tab = *uiworld.read::<Tab>();
+                let cur_tool = *uiworld.read::<Tool>();
 
-                for (name, tab, default_tool) in &tools {
+                for (name, tool) in &tools {
                     if egui::ImageButton::new(SizedTexture::new(
                         uiworld.read::<UiTextures>().get(name),
                         [toolbox_w, 30.0],
                     ))
-                    .selected(std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab))
+                    .selected(tool == &cur_tool)
                     .ui(ui)
                     .clicked()
                     {
-                        uiworld.insert::<Tool>(*default_tool);
-                        uiworld.insert(*tab);
+                        uiworld.insert::<Tool>(*tool);
                     }
                 }
             });
 
-        if matches!(*uiworld.read::<Tab>(), Tab::Roadeditor) {
+        if matches!(*uiworld.read::<Tool>(), Tool::RoadEditor) {
             let state = &mut *uiworld.write::<RoadEditorResource>();
             if let Some(ref mut v) = state.inspect {
                 let dirty = &mut state.dirty;
@@ -263,7 +243,7 @@ impl Gui {
             }
         }
 
-        if matches!(*uiworld.read::<Tab>(), Tab::Train) {
+        if matches!(*uiworld.read::<Tool>(), Tool::Train) {
             let rbw = 150.0;
             Window::new("Trains")
                 .fixed_size([rbw, 83.0])
@@ -357,147 +337,7 @@ impl Gui {
                 });
         }
 
-        if matches!(*uiworld.read::<Tab>(), Tab::Roadbuild | Tab::Roadcurved) {
-            let rbw = 220.0;
-            Window::new("Road Properties")
-                .fixed_size([rbw, 380.0])
-                .fixed_pos([w - rbw - toolbox_w + tweak!(40.0), h * 0.5 - tweak!(125.0)])
-                .title_bar(true)
-                .collapsible(false)
-                .resizable(false)
-                .show(ui, |ui| {
-                    let mut roadbuild = uiworld.write::<RoadBuildResource>();
-                    ui.checkbox(&mut roadbuild.snap_to_grid, "snap to grid");
-                    ui.horizontal(|ui| {
-                        if ui.button("zero").clicked() {
-                            roadbuild.height_offset = 0.0;
-                        }
-                        egui::DragValue::new(&mut roadbuild.height_offset)
-                            .clamp_range(0.0..=100.0f32)
-                            .speed(1.0)
-                            .ui(ui);
-                        ui.label("height off");
-                    });
-                    let pat = &mut roadbuild.pattern_builder;
-
-                    static BUILDERS: &[(&str, LanePatternBuilder)] = &[
-                        ("Rail", LanePatternBuilder::new().rail(true)),
-                        (
-                            "Rail one-way",
-                            LanePatternBuilder::new().rail(true).one_way(true),
-                        ),
-                        ("Street", LanePatternBuilder::new()),
-                        ("Street one-way", LanePatternBuilder::new().one_way(true)),
-                        (
-                            "Avenue",
-                            LanePatternBuilder::new().n_lanes(2).speed_limit(13.0),
-                        ),
-                        (
-                            "Avenue one-way",
-                            LanePatternBuilder::new()
-                                .n_lanes(2)
-                                .one_way(true)
-                                .speed_limit(13.0),
-                        ),
-                        (
-                            "Drive",
-                            LanePatternBuilder::new()
-                                .parking(false)
-                                .sidewalks(false)
-                                .speed_limit(13.0),
-                        ),
-                        (
-                            "Drive one-way",
-                            LanePatternBuilder::new()
-                                .parking(false)
-                                .sidewalks(false)
-                                .one_way(true)
-                                .speed_limit(13.0),
-                        ),
-                        (
-                            "Highway",
-                            LanePatternBuilder::new()
-                                .n_lanes(3)
-                                .speed_limit(25.0)
-                                .parking(false)
-                                .sidewalks(false),
-                        ),
-                        (
-                            "Highway one-way",
-                            LanePatternBuilder::new()
-                                .n_lanes(3)
-                                .speed_limit(25.0)
-                                .parking(false)
-                                .sidewalks(false)
-                                .one_way(true),
-                        ),
-                    ];
-
-                    let before = ui.style().spacing.interact_size;
-                    ui.style_mut().spacing.interact_size = [rbw, 30.0].into();
-                    for (name, lpat) in BUILDERS {
-                        let mut text = RichText::new(*name);
-                        if lpat == pat {
-                            text = text.strong();
-                        }
-                        if ui.button(text).clicked() {
-                            *pat = *lpat;
-                        }
-                    }
-                    ui.style_mut().spacing.interact_size = before;
-
-                    ui.add_space(10.0);
-
-                    egui::CollapsingHeader::new("custom").show(ui, |ui| {
-                        <LanePatternBuilder as Inspect<LanePatternBuilder>>::render_mut(
-                            pat,
-                            "Road shape",
-                            ui,
-                            &InspectArgs {
-                                header: Some(false),
-                                indent_children: Some(false),
-                                ..Default::default()
-                            },
-                        );
-
-                        if pat.n_lanes == 0 {
-                            pat.sidewalks = true;
-                            pat.parking = false;
-                        }
-
-                        if pat.n_lanes > 10 {
-                            pat.n_lanes = 10;
-                        }
-                    });
-                });
-        }
-
-        if matches!(*uiworld.read::<Tab>(), Tab::Bulldozer) {
-            let lbw = 120.0;
-            Window::new("Bulldozer")
-                .min_width(lbw)
-                .auto_sized()
-                .fixed_pos([w - toolbox_w - lbw, h * 0.5 - 30.0])
-                .hscroll(false)
-                .title_bar(true)
-                .collapsible(false)
-                .resizable(false)
-                .show(ui, |ui| {
-                    let mut state = uiworld.write::<BulldozerState>();
-                    <BulldozerState as Inspect<BulldozerState>>::render_mut(
-                        &mut *state,
-                        "Bulldozer",
-                        ui,
-                        &InspectArgs {
-                            header: Some(false),
-                            indent_children: Some(false),
-                            ..Default::default()
-                        },
-                    );
-                });
-        }
-
-        if matches!(*uiworld.read::<Tab>(), Tab::Terraforming) {
+        if matches!(*uiworld.read::<Tool>(), Tool::Terraforming) {
             let lbw = 150.0;
             Window::new("Terraforming")
                 .min_width(lbw)
@@ -530,7 +370,7 @@ impl Gui {
 
         let building_select_w = 200.0;
 
-        if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
+        if matches!(*uiworld.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new("Buildings")
                 .min_width(building_select_w)
                 .default_height(500.0f32.min(h * 0.5))

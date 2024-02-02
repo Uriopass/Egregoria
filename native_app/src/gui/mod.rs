@@ -9,7 +9,6 @@ use engine::GfxContext;
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
-use roadbuild::RoadBuildResource;
 use simulation::map::BuildingID;
 use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};

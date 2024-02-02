@@ -6,8 +6,8 @@ use yakui::{
 
 use goryak::{
     blur_bg, button_primary, constrained_viewport, fixed_spacer, icon_button, image_button,
-    monospace, on_primary, outline, outline_variant, padxy, primary, primary_container, round_rect,
-    secondary, secondary_container, textc,
+    monospace, on_primary, outline, padxy, primary, primary_container, round_rect,
+    secondary_container,
 };
 use simulation::map::LanePatternBuilder;
 use simulation::Simulation;
