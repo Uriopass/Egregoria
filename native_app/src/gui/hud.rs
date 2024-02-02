@@ -12,9 +12,7 @@ use prototypes::{
     prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
 };
 use simulation::economy::Government;
-use simulation::map::{
-    BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TerraformKind, TurnPolicy, Zone,
-};
+use simulation::map::{BuildingKind, LanePatternBuilder, MapProject, TerraformKind, Zone};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
@@ -24,7 +22,6 @@ use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
 use crate::gui::UiTextures;
 use crate::inputmap::{InputAction, InputMap};
-use crate::newgui::roadeditor::RoadEditorResource;
 use crate::newgui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::{ErrorTooltip, PotentialCommands, Tool};
@@ -168,7 +165,6 @@ impl Gui {
         let toolbox_w = 85.0;
 
         let tools = [
-            ("road_edit_old", Tool::RoadEditor),
             ("buildings", Tool::SpecialBuilding),
             ("traintool", Tool::Train),
             ("terraform", Tool::Terraforming),
@@ -200,49 +196,6 @@ impl Gui {
                     }
                 }
             });
-
-        if matches!(*uiworld.read::<Tool>(), Tool::RoadEditor) {
-            let state = &mut *uiworld.write::<RoadEditorResource>();
-            if let Some(ref mut v) = state.inspect {
-                let dirty = &mut state.dirty;
-                Window::new("Editor")
-                    .fixed_size([150.0, 200.0])
-                    .fixed_pos([w - 150.0 - toolbox_w, h * 0.5 - 30.0])
-                    .vscroll(false)
-                    .title_bar(true)
-                    .collapsible(false)
-                    .resizable(false)
-                    .show(ui, |ui| {
-                        ui.label("Light policy");
-                        *dirty |= <LightPolicy as Inspect<LightPolicy>>::render_mut(
-                            &mut v.light_policy,
-                            "",
-                            ui,
-                            &InspectArgs {
-                                header: Some(false),
-                                indent_children: Some(false),
-                                ..Default::default()
-                            },
-                        );
-                        ui.add_space(10.0);
-                        ui.label("Turn policy");
-                        let had_roundabout = v.turn_policy.roundabout.is_some();
-                        *dirty |= <TurnPolicy as Inspect<TurnPolicy>>::render_mut(
-                            &mut v.turn_policy,
-                            "Turn policy",
-                            ui,
-                            &InspectArgs {
-                                header: Some(false),
-                                indent_children: Some(false),
-                                ..Default::default()
-                            },
-                        );
-                        if !had_roundabout && v.turn_policy.roundabout.is_some() {
-                            v.light_policy = LightPolicy::StopSigns;
-                        }
-                    });
-            }
-        }
 
         if matches!(*uiworld.read::<Tool>(), Tool::Train) {
             let rbw = 150.0;

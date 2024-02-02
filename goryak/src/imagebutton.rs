@@ -59,6 +59,21 @@ impl ImageButton {
     }
 }
 
+pub fn primary_image_button(
+    texture: TextureId,
+    size: Vec2,
+    enabled: bool,
+    tooltip: &'static str,
+) -> Response<ImageButtonResponse> {
+    let (default_col, hover_col) = if enabled {
+        let c = primary().lerp(&Color::WHITE, 0.3);
+        (c, c.with_alpha(0.7))
+    } else {
+        (Color::WHITE.with_alpha(0.3), Color::WHITE.with_alpha(0.5))
+    };
+    image_button(texture, size, default_col, hover_col, primary(), tooltip)
+}
+
 pub fn image_button(
     texture: TextureId,
     size: Vec2,
