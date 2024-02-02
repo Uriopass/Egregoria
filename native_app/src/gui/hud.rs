@@ -6,13 +6,12 @@ use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, W
 use serde::{Deserialize, Serialize};
 
 use common::saveload::Encoder;
-use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use prototypes::{
     prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
 };
 use simulation::economy::Government;
-use simulation::map::{BuildingKind, LanePatternBuilder, MapProject, TerraformKind, Zone};
+use simulation::map::{BuildingKind, LanePatternBuilder, MapProject, Zone};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
@@ -23,7 +22,6 @@ use crate::gui::windows::GUIWindows;
 use crate::gui::UiTextures;
 use crate::inputmap::{InputAction, InputMap};
 use crate::newgui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
-use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::{ErrorTooltip, PotentialCommands, Tool};
 use crate::uiworld::{SaveLoadState, UiWorld};
 
@@ -167,7 +165,6 @@ impl Gui {
         let tools = [
             ("buildings", Tool::SpecialBuilding),
             ("traintool", Tool::Train),
-            ("terraform", Tool::Terraforming),
         ];
 
         Window::new("Toolbox")
@@ -288,37 +285,6 @@ impl Gui {
                                 });
                         }
                     }
-                });
-        }
-
-        if matches!(*uiworld.read::<Tool>(), Tool::Terraforming) {
-            let lbw = 150.0;
-            Window::new("Terraforming")
-                .min_width(lbw)
-                .auto_sized()
-                .fixed_pos([w - toolbox_w - lbw, h * 0.5 - 30.0])
-                .hscroll(false)
-                .title_bar(true)
-                .collapsible(false)
-                .resizable(false)
-                .show(ui, |ui| {
-                    let mut state = uiworld.write::<TerraformingResource>();
-                    <TerraformingResource as Inspect<TerraformingResource>>::render_mut(
-                        &mut *state,
-                        "Terraforming",
-                        ui,
-                        &InspectArgs {
-                            header: Some(false),
-                            indent_children: Some(false),
-                            ..Default::default()
-                        },
-                    );
-
-                    ui.radio_value(&mut state.kind, TerraformKind::Elevation, "Raise/Lower");
-                    ui.radio_value(&mut state.kind, TerraformKind::Smooth, "Smooth");
-                    ui.radio_value(&mut state.kind, TerraformKind::Level, "Level");
-                    ui.radio_value(&mut state.kind, TerraformKind::Slope, "Slope");
-                    ui.radio_value(&mut state.kind, TerraformKind::Erode, "Erode");
                 });
         }
 

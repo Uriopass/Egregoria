@@ -1,24 +1,19 @@
-use crate::inputmap::{InputAction, InputMap};
-use crate::newgui::Tool;
-use crate::rendering::immediate::ImmediateDraw;
-use crate::uiworld::UiWorld;
-use egui_inspect::Inspect;
 use geom::{Vec2, Vec3, OBB};
 use simulation::map::TerraformKind;
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
-#[derive(Inspect)]
+use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::Tool;
+use crate::rendering::immediate::ImmediateDraw;
+use crate::uiworld::UiWorld;
+
 pub struct TerraformingResource {
-    #[inspect(skip)]
     pub kind: TerraformKind,
     pub radius: f32,
     pub amount: f32,
-    #[inspect(skip)]
     level: Option<f32>,
-    #[inspect(skip)]
     slope_start: Option<Vec3>,
-    #[inspect(skip)]
     slope_end: Option<Vec3>,
 }
 
@@ -146,7 +141,7 @@ impl Default for TerraformingResource {
         Self {
             kind: TerraformKind::Elevation,
             radius: 200.0,
-            amount: 200.0,
+            amount: 300.0,
             level: None,
             slope_start: None,
             slope_end: None,

@@ -1,12 +1,13 @@
-use yakui::widgets::List;
+use yakui::widgets::{Button, List, Pad};
 use yakui::{
     colored_box_container, column, image, reflow, spacer, Alignment, Color, CrossAxisAlignment,
-    Dim2, MainAxisAlignment, Vec2,
+    Dim2, MainAxisAlignment, MainAxisSize, Vec2,
 };
 
 use goryak::{
-    blur_bg, constrained_viewport, fixed_spacer, image_button, outline, padxy, primary,
-    primary_container, secondary_container,
+    blur_bg, button_primary, constrained_viewport, fixed_spacer, icon_button, image_button,
+    monospace, on_primary, outline, padxy, primary, primary_container, round_rect,
+    secondary_container,
 };
 use simulation::Simulation;
 
@@ -17,6 +18,7 @@ use crate::uiworld::UiWorld;
 
 mod roadbuild;
 mod roadedit;
+mod terraforming;
 
 pub fn new_toolbox(uiworld: &mut UiWorld, sim: &Simulation) {
     if uiworld
@@ -78,7 +80,9 @@ fn tool_properties(uiw: &UiWorld, _sim: &Simulation) -> bool {
         }
         Tool::SpecialBuilding => {}
         Tool::Train => {}
-        Tool::Terraforming => {}
+        Tool::Terraforming => {
+            terraforming::terraform_properties(uiw);
+        }
     }
     true
 }
@@ -132,4 +136,37 @@ pub(crate) fn select_triangle(uiworld: &UiWorld) {
             Vec2::new(64.0, 10.0),
         );
     });
+}
+
+pub fn updown_button(text: &str) -> Button {
+    let mut b = icon_button(button_primary(text));
+    b.padding = Pad::balanced(5.0, 2.0);
+    b.style.text.font_size = 13.0;
+    b.down_style.text.font_size = 13.0;
+    b.hover_style.text.font_size = 13.0;
+    b
+}
+
+pub fn updown_value(v: &mut f32, step: f32, suffix: &'static str) -> bool {
+    let mut changed = false;
+    let mut l = List::column();
+    l.cross_axis_alignment = CrossAxisAlignment::Center;
+    l.main_axis_size = MainAxisSize::Min;
+    l.item_spacing = 3.0;
+    l.show(|| {
+        if updown_button("caret-up").show().clicked {
+            *v += step;
+            changed = true;
+        }
+        round_rect(3.0, primary(), || {
+            padxy(5.0, 1.0, || {
+                monospace(on_primary(), format!("{:.0}{}", *v, suffix));
+            });
+        });
+        if updown_button("caret-down").show().clicked {
+            *v -= step;
+            changed = true;
+        }
+    });
+    changed
 }

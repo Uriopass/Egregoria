@@ -1,15 +1,16 @@
-use crate::gui::UiTextures;
-use crate::newgui::roadbuild::RoadBuildResource;
-use crate::uiworld::UiWorld;
-use goryak::{
-    button_primary, icon_button, image_button, monospace, on_primary, padxy, primary, round_rect,
-};
-use simulation::map::LanePatternBuilder;
-use yakui::widgets::{Button, List, Pad};
+use yakui::widgets::List;
 use yakui::{
     image, reflow, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize,
     Vec2,
 };
+
+use goryak::{image_button, padxy, primary};
+use simulation::map::LanePatternBuilder;
+
+use crate::gui::UiTextures;
+use crate::newgui::hud::toolbox::updown_value;
+use crate::newgui::roadbuild::RoadBuildResource;
+use crate::uiworld::UiWorld;
 
 pub fn roadbuild_properties(uiw: &UiWorld) {
     let mut state = uiw.write::<RoadBuildResource>();
@@ -41,23 +42,7 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
             }
 
             // Road elevation
-            let mut l = List::column();
-            l.cross_axis_alignment = CrossAxisAlignment::Center;
-            l.main_axis_size = MainAxisSize::Min;
-            l.item_spacing = 3.0;
-            l.show(|| {
-                if updown_button("caret-up").show().clicked {
-                    state.height_offset += 2.0;
-                }
-                round_rect(3.0, primary(), || {
-                    padxy(5.0, 2.0, || {
-                        monospace(on_primary(), format!("{:.0}m", state.height_offset));
-                    });
-                });
-                if updown_button("caret-down").show().clicked {
-                    state.height_offset -= 2.0;
-                }
-            });
+            updown_value(&mut state.height_offset, 2.0, "m");
 
             // image name, label, builder
             let builders: &[(&str, &str, LanePatternBuilder)] = &[
@@ -164,13 +149,4 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
             }
         });
     });
-}
-
-pub fn updown_button(text: &str) -> Button {
-    let mut b = icon_button(button_primary(text));
-    b.padding = Pad::balanced(5.0, 3.0);
-    b.style.text.font_size = 13.0;
-    b.down_style.text.font_size = 13.0;
-    b.hover_style.text.font_size = 13.0;
-    b
 }

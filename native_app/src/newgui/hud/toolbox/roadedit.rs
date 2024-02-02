@@ -1,14 +1,11 @@
 use yakui::widgets::List;
-use yakui::{
-    column, image, reflow, Alignment, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize,
-    Vec2,
-};
+use yakui::{column, image, reflow, Alignment, CrossAxisAlignment, Dim2, MainAxisAlignment, Vec2};
 
-use goryak::{monospace, on_primary, padxy, primary, primary_image_button, round_rect};
+use goryak::{padxy, primary_image_button};
 use simulation::map::LightPolicy;
 
 use crate::gui::UiTextures;
-use crate::newgui::hud::toolbox::roadbuild::updown_button;
+use crate::newgui::hud::toolbox;
 use crate::newgui::hud::toolbox::select_triangle;
 use crate::newgui::roadeditor::RoadEditorResource;
 use crate::uiworld::UiWorld;
@@ -108,25 +105,7 @@ pub fn roadedit_properties(uiw: &UiWorld) {
             }
 
             if let Some(ref mut roundabout) = v.turn_policy.roundabout {
-                let mut l = List::column();
-                l.cross_axis_alignment = CrossAxisAlignment::Center;
-                l.main_axis_size = MainAxisSize::Min;
-                l.item_spacing = 3.0;
-                l.show(|| {
-                    if updown_button("caret-up").show().clicked {
-                        roundabout.radius += 2.0;
-                        state.dirty = true;
-                    }
-                    round_rect(3.0, primary(), || {
-                        padxy(5.0, 2.0, || {
-                            monospace(on_primary(), format!("{:.0}m", roundabout.radius));
-                        });
-                    });
-                    if updown_button("caret-down").show().clicked {
-                        roundabout.radius -= 2.0;
-                        state.dirty = true;
-                    }
-                });
+                state.dirty |= toolbox::updown_value(&mut roundabout.radius, 2.0, "m");
             }
         });
     });
