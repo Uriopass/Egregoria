@@ -1,5 +1,4 @@
 use crate::{Circle, Intersect, Polygon, Radians, Shape, Vec3, Vec3d, AABB, OBB};
-use mlua::{FromLua, Value};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -1168,29 +1167,6 @@ impl From<[f64; 2]> for Vec2d {
     #[inline]
     fn from(v: [f64; 2]) -> Self {
         Self { x: v[0], y: v[1] }
-    }
-}
-
-impl<'a> FromLua<'a> for Vec2 {
-    fn from_lua(value: Value<'a>, _: &'a mlua::Lua) -> mlua::Result<Self> {
-        let t = match value {
-            Value::Vector(v) => return Ok(Self { x: v.x(), y: v.y() }),
-            Value::Table(t) => t,
-            _ => {
-                return Err(mlua::Error::FromLuaConversionError {
-                    from: value.type_name(),
-                    to: "Vec2",
-                    message: Some("expected a table or vector".to_string()),
-                })
-            }
-        };
-        if let Ok(x) = t.get(1) {
-            return Ok(Self { x, y: t.get(2)? });
-        }
-
-        let x = t.get("x")?;
-        let y = t.get("y")?;
-        Ok(Vec2::new(x, y))
     }
 }
 

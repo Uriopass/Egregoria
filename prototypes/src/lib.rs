@@ -1,4 +1,5 @@
 use common::TransparentMap;
+use geom::Vec2;
 use mlua::{FromLua, Table};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -155,4 +156,9 @@ fn get_lua<'a, T: FromLua<'a>>(t: &Table<'a>, field: &'static str) -> mlua::Resu
 fn get_lua_opt<'a, T: FromLua<'a>>(t: &Table<'a>, field: &'static str) -> mlua::Result<Option<T>> {
     t.get::<_, Option<T>>(field)
         .map_err(|e| mlua::Error::external(format!("field {}: {}", field, e)))
+}
+
+fn get_v2(t: &Table, field: &'static str) -> mlua::Result<Vec2> {
+    let v = get_lua::<LuaVec2>(t, field)?;
+    Ok(v.0)
 }

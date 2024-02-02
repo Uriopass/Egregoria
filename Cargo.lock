@@ -1155,7 +1155,6 @@ dependencies = [
  "flat_spatial",
  "fnv",
  "inline_tweak",
- "mlua",
  "ordered-float",
  "serde",
 ]

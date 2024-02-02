@@ -1,4 +1,4 @@
-use crate::{get_lua, Money, NoParent, Power, Prototype, PrototypeBase, Size2D};
+use crate::{get_lua, get_v2, Money, NoParent, Power, Prototype, PrototypeBase, Size2D};
 use egui_inspect::debug_inspect_impl;
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
@@ -94,7 +94,7 @@ impl<'a> FromLua<'a> for BuildingGen {
                 vertical_factor: get_lua(&table, "vertical_factor")?,
             }),
             "no_walkway" => Ok(Self::NoWalkway {
-                door_pos: get_lua(&table, "door_pos")?,
+                door_pos: get_v2(&table, "door_pos")?.into(),
             }),
             _ => Err(mlua::Error::external(format!(
                 "Unknown building gen kind: {}",

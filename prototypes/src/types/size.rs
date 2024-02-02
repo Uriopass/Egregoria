@@ -1,5 +1,4 @@
-use crate::get_lua;
-use geom::Vec2;
+use crate::{get_lua, LuaVec2};
 use mlua::{FromLua, Lua, Value};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -29,8 +28,8 @@ impl Size2D {
 
 impl<'lua> FromLua<'lua> for Size2D {
     fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
-        if let Ok(v) = <Vec2 as FromLua>::from_lua(value.clone(), lua) {
-            return Ok(Self { w: v.x, h: v.y });
+        if let Ok(v) = <LuaVec2 as FromLua>::from_lua(value.clone(), lua) {
+            return Ok(Self { w: v.0.x, h: v.0.y });
         }
 
         Ok(match value {
