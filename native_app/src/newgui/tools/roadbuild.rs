@@ -9,8 +9,8 @@ use simulation::Simulation;
 use BuildState::{Hover, Interpolation, Start, StartInterp};
 use ProjectKind::{Building, Ground, Inter, Road};
 
-use crate::gui::{PotentialCommands, Tool};
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::{PotentialCommands, Tool};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 

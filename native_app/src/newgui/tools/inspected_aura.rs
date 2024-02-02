@@ -1,5 +1,5 @@
-use crate::gui::selectable::select_radius;
-use crate::gui::{InspectedBuilding, InspectedEntity};
+use crate::newgui::selectable::select_radius;
+use crate::newgui::{InspectedBuilding, InspectedEntity};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use geom::Color;

@@ -1,6 +1,7 @@
 use crate::gui::inspect::inspect_train::inspect_train;
 use crate::gui::windows::debug::DebugState;
-use crate::gui::{FollowEntity, InspectedBuilding, InspectedEntity};
+use crate::gui::FollowEntity;
+use crate::newgui::{InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;
 use egui::{Context, Ui, Window};
 use inspect_building::inspect_building;

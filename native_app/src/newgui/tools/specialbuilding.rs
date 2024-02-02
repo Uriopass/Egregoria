@@ -1,5 +1,5 @@
-use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands, Tool};
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::{ErrorTooltip, InspectedBuilding, PotentialCommands, Tool};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use engine::AudioKind;

@@ -1,5 +1,5 @@
-use crate::gui::{InspectedBuilding, InspectedEntity, Tool};
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::{InspectedBuilding, InspectedEntity, Tool};
 use crate::uiworld::UiWorld;
 use geom::Vec2;
 use simulation::map::ProjectFilter;

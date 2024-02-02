@@ -9,11 +9,12 @@ use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::Simulation;
 
 use crate::audio::GameAudio;
-use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::{manage_settings, Settings};
-use crate::gui::{ExitState, FollowEntity, Gui, TimeAlways, Tool, UiTextures};
+use crate::gui::{ExitState, FollowEntity, Gui, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
+use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::{TimeAlways, Tool};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
@@ -151,7 +152,7 @@ impl engine::framework::State for State {
             !ctx.egui.last_kb_captured,
             !ctx.egui.last_mouse_captured,
         );
-        crate::gui::run_ui_systems(&self.sim.read().unwrap(), &mut self.uiw);
+        crate::newgui::run_ui_systems(&self.sim.read().unwrap(), &mut self.uiw);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();

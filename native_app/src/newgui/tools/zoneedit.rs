@@ -1,5 +1,5 @@
-use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands};
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::{ErrorTooltip, InspectedBuilding, PotentialCommands};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use geom::{Polygon, Vec2};

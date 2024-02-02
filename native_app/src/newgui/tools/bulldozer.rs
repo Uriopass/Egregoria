@@ -1,6 +1,6 @@
-use crate::gui::specialbuilding::SpecialBuildingResource;
-use crate::gui::Tool;
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::specialbuilding::SpecialBuildingResource;
+use crate::newgui::Tool;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egui_inspect::Inspect;

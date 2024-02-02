@@ -12,9 +12,10 @@ use goryak::{
 use simulation::map::LanePatternBuilder;
 use simulation::Simulation;
 
-use crate::gui::roadbuild::RoadBuildResource;
-use crate::gui::{Tool, UiTextures};
+use crate::gui::UiTextures;
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::roadbuild::RoadBuildResource;
+use crate::newgui::Tool;
 use crate::uiworld::UiWorld;
 
 pub fn new_toolbox(uiworld: &mut UiWorld, sim: &Simulation) {

@@ -1,5 +1,6 @@
 pub mod addtrain;
 pub mod bulldozer;
+pub mod inspected_aura;
 pub mod lotbrush;
 pub mod roadbuild;
 pub mod roadeditor;

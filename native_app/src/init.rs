@@ -1,20 +1,20 @@
 use crate::game_loop::Timings;
-use crate::gui::bulldozer::BulldozerState;
 use crate::gui::chat::GUIChatState;
-use crate::gui::lotbrush::LotBrushResource;
-use crate::gui::roadbuild::RoadBuildResource;
-use crate::gui::roadeditor::RoadEditorResource;
-use crate::gui::specialbuilding::SpecialBuildingResource;
-use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
 use crate::gui::windows::settings::Settings;
-use crate::gui::zoneedit::ZoneEditState;
-use crate::gui::{
-    ErrorTooltip, ExitState, FollowEntity, InspectedBuilding, InspectedEntity, PotentialCommands,
-    TimeAlways, Tool,
-};
+use crate::gui::{ExitState, FollowEntity};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
+use crate::newgui::bulldozer::BulldozerState;
+use crate::newgui::lotbrush::LotBrushResource;
+use crate::newgui::roadbuild::RoadBuildResource;
+use crate::newgui::roadeditor::RoadEditorResource;
+use crate::newgui::specialbuilding::SpecialBuildingResource;
+use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::zoneedit::ZoneEditState;
+use crate::newgui::{
+    ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
+};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;

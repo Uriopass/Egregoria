@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 
 use crate::game_loop::Timings;
-use crate::gui::InspectedEntity;
+use crate::newgui::InspectedEntity;
 use crate::uiworld::UiWorld;
 use simulation::map_dynamic::ParkingManagement;
 use simulation::transportation::TransportGrid;

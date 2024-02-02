@@ -20,13 +20,14 @@ use simulation::Simulation;
 
 use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
-use crate::gui::roadeditor::RoadEditorResource;
-use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
-use crate::gui::terraforming::TerraformingResource;
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{ErrorTooltip, PotentialCommands, Tool, UiTextures};
+use crate::gui::UiTextures;
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::roadeditor::RoadEditorResource;
+use crate::newgui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
+use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::{ErrorTooltip, PotentialCommands, Tool};
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 #[derive(Serialize, Deserialize)]
