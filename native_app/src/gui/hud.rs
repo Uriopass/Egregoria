@@ -34,10 +34,6 @@ pub struct Gui {
     #[serde(skip)]
     pub last_gui_save: Instant,
     #[serde(skip)]
-    pub n_cars: i32,
-    #[serde(skip)]
-    pub n_pedestrians: i32,
-    #[serde(skip)]
     pub depause_warp: u32,
     #[serde(skip)]
     pub hidden: bool,
@@ -49,8 +45,6 @@ impl Default for Gui {
             windows: GUIWindows::default(),
             last_save: Instant::now(),
             last_gui_save: Instant::now(),
-            n_cars: 100,
-            n_pedestrians: 100,
             depause_warp: 1,
             hidden: false,
         }
