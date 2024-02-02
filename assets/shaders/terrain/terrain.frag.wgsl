@@ -135,22 +135,24 @@ fn frag(@builtin(position) position: vec4<f32>,
     }
 
     var c: vec3<f32> = vec3(0.0, 0.0, 0.0);
-    #ifdef TERRAIN_GRID
-    c.g += grid(in_wpos, fwidthCoarse(in_wpos.x)) * 0.015;
-    #endif
-
-    // tri-planar mapping
-    let grass = textureNoTile(t_grass, s_grass, in_wpos.xy / 200.0).rgb;
-    let cliffE = textureSample(t_cliff, s_cliff, in_wpos.xz / 100.0).rgb;
-    let cliffN = textureSample(t_cliff, s_cliff, in_wpos.yz / 100.0).rgb;
-
     let wcliffN = pow(abs(in_normal.x), 16.0);
     let wcliffE = pow(abs(in_normal.y), 16.0);
     let wgrass  = pow(abs(in_normal.z)*0.8, 16.0);
 
     let sum = wgrass + wcliffE + wcliffN;
 
-    c = c + (grass * wgrass + cliffE * wcliffE + cliffN * wcliffN) / sum;
+    let min_contribution = 0.01 * sum;
+
+    // tri-planar mapping
+    if (wgrass  > min_contribution) { c += wgrass  * textureNoTile(t_grass, s_grass, in_wpos.xy / 200.0).rgb; }
+    if (wcliffE > min_contribution) { c += wcliffE * textureSample(t_cliff, s_cliff, in_wpos.xz / 100.0).rgb; }
+    if (wcliffN > min_contribution) { c += wcliffN * textureSample(t_cliff, s_cliff, in_wpos.yz / 100.0).rgb; }
+
+    c = c / sum;
+
+    #ifdef TERRAIN_GRID
+    c.g += grid(in_wpos, fwidthCoarse(in_wpos.x)) * 0.015;
+    #endif
 
     c = mix(params.sand_col.rgb, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
