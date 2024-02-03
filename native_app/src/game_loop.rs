@@ -39,6 +39,8 @@ pub struct State {
 
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
+        goryak::set_blur_texture(ctx.yakui.blur_bg_texture);
+
         let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
 
         Gui::set_style(ctx.egui.platform.egui_ctx());

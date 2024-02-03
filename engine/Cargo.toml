@@ -12,7 +12,6 @@ crate-type = ["dylib"]
 [dependencies]
 geom          = { path = "../geom" }
 common        = { path = "../common" }
-goryak        = { path = "../goryak", optional = true }
 ordered-float = { workspace = true }
 egui          = { workspace = true }
 oddio         = { workspace = true }
@@ -42,4 +41,4 @@ yakui-winit   = { workspace = true, optional = true }
 lazy_static = "1.4.0"
 
 [features]
-yakui = ["dep:yakui", "dep:yakui-wgpu", "dep:yakui-winit", "dep:goryak"]
+yakui = ["dep:yakui", "dep:yakui-wgpu", "dep:yakui-winit"]

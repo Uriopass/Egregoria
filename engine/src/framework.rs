@@ -134,13 +134,11 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                         });
                         ctx.gui_time = gui_start.elapsed().as_secs_f32();
                         ctx.gfx.finish_frame(enc);
-                        sco.present();
-
                         ctx.gfx.window.set_cursor_icon(get_cursor_icon());
-
                         ctx.input.end_frame();
                         ctx.total_cpu_time = last_update.elapsed().as_secs_f32();
 
+                        sco.present();
                         ctx.gfx.window.request_redraw();
                     }
                     _ => (),

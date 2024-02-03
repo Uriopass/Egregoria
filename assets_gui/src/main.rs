@@ -30,6 +30,8 @@ struct State {
 
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
+        goryak::set_blur_texture(ctx.yakui.blur_bg_texture);
+
         let gfx = &mut ctx.gfx;
 
         gfx.render_params.value_mut().shadow_mapping_resolution = 2048;
