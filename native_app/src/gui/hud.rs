@@ -1,4 +1,3 @@
-use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use egui::load::SizedTexture;
@@ -66,8 +65,6 @@ impl Gui {
         if self.hidden {
             return;
         }
-
-        self.menu_bar(ui, uiworld, sim);
 
         inspector(ui, uiworld, sim);
 
@@ -385,99 +382,6 @@ impl Gui {
                     }
                 });
         }
-    }
-
-    pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
-        profiling::scope!("hud::menu_bar");
-        //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
-
-        egui::TopBottomPanel::top("top_menu").show(ui, |ui| {
-            egui::menu::bar(ui, |ui| {
-                self.windows.menu(ui);
-
-                let mut name = "Save";
-                let mut enabled = true;
-                let mut slstate = uiworld.write::<SaveLoadState>();
-                if slstate.saving_status.load(Ordering::SeqCst) {
-                    name = "Saving...";
-                    enabled = false;
-                }
-
-                if ui.add_enabled(enabled, egui::Button::new(name)).clicked() {
-                    slstate.please_save = true;
-                    self.last_save = Instant::now();
-                    uiworld.save_to_disk();
-                }
-
-                ui.label(format!("Money: {}", sim.read::<Government>().money));
-
-                let mut estate = uiworld.write::<ExitState>();
-
-                match *estate {
-                    ExitState::NoExit => {}
-                    ExitState::ExitAsk | ExitState::Saving => {
-                        let [w, h]: [f32; 2] = ui.available_size().into();
-                        let mut opened = true;
-                        Window::new("Exit Menu")
-                            .default_pos([w * 0.5, h * 0.5])
-                            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-                            .auto_sized()
-                            .open(&mut opened)
-                            .show(ui.ctx(), |ui| {
-                                //let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
-                                if let ExitState::Saving = *estate {
-                                    ui.label("Saving...");
-                                    if !slstate.please_save
-                                        && !slstate.saving_status.load(Ordering::SeqCst)
-                                    {
-                                        std::process::exit(0);
-                                    }
-                                    return;
-                                }
-                                if ui.button("Save and exit").clicked() {
-                                    if let ExitState::ExitAsk = *estate {
-                                        slstate.please_save = true;
-                                        *estate = ExitState::Saving;
-                                    }
-                                }
-                                if ui.button("Exit without saving").clicked() {
-                                    std::process::exit(0);
-                                }
-                                if ui.button("Cancel").clicked() {
-                                    *estate = ExitState::NoExit;
-                                }
-                            });
-                        if !opened
-                            || uiworld
-                                .read::<InputMap>()
-                                .just_act
-                                .contains(&InputAction::Close)
-                        {
-                            *estate = ExitState::NoExit;
-                        }
-                    }
-                }
-
-                match *estate {
-                    ExitState::NoExit => {
-                        if ui.button("Exit").clicked() {
-                            *estate = ExitState::ExitAsk;
-                        }
-                    }
-                    ExitState::ExitAsk => {
-                        if ui.button("Save and exit").clicked() {
-                            if let ExitState::ExitAsk = *estate {
-                                slstate.please_save = true;
-                                *estate = ExitState::Saving;
-                            }
-                        }
-                    }
-                    ExitState::Saving => {
-                        ui.label("Saving...");
-                    }
-                }
-            });
-        });
     }
 }
 

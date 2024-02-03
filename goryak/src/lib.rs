@@ -15,6 +15,7 @@ mod text;
 mod theme;
 mod tooltip;
 mod util;
+mod window;
 
 pub use blur_bg::*;
 pub use combo_box::*;
@@ -32,5 +33,6 @@ pub use scroll::*;
 pub use text::*;
 pub use theme::*;
 pub use util::*;
+pub use window::*;
 
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;

@@ -11,6 +11,7 @@ use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;
 use crate::newgui::specialbuilding::SpecialBuildingResource;
 use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::windows::Windows;
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
     ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
@@ -59,6 +60,7 @@ pub fn init() {
     register_resource_noserialize::<WorldCommands>();
     register_resource_noserialize::<crate::gui::windows::load::LoadState>();
     register_resource_noserialize::<crate::uiworld::SaveLoadState>();
+    register_resource_noserialize::<Windows>()
 }
 
 pub struct InitFunc {
@@ -73,7 +75,7 @@ pub struct SaveLoadFunc {
 pub static mut INIT_FUNCS: Vec<InitFunc> = Vec::new();
 pub static mut SAVELOAD_FUNCS: Vec<SaveLoadFunc> = Vec::new();
 
-fn register_resource_noserialize<T: 'static + Default + Send + Sync>() {
+fn register_resource_noserialize<T: 'static + Default>() {
     unsafe {
         INIT_FUNCS.push(InitFunc {
             f: Box::new(|uiw| uiw.insert(T::default())),
@@ -81,9 +83,7 @@ fn register_resource_noserialize<T: 'static + Default + Send + Sync>() {
     }
 }
 
-fn register_resource<T: 'static + Default + Send + Sync + Serialize + DeserializeOwned>(
-    name: &'static str,
-) {
+fn register_resource<T: 'static + Default + Serialize + DeserializeOwned>(name: &'static str) {
     unsafe {
         INIT_FUNCS.push(InitFunc {
             f: Box::new(|uiw| uiw.insert(T::default())),

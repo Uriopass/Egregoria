@@ -49,6 +49,11 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
 
     el.run(move |event, target| {
         target.set_control_flow(ControlFlow::Poll);
+
+        if let Event::WindowEvent { event, .. } = &event {
+            ctx.egui.handle_event(&ctx.gfx.window, &event);
+        }
+
         #[cfg(feature = "yakui")]
         if ctx.yakui.handle_event(&event) {
             return;
@@ -59,8 +64,6 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                 ctx.input.handle_device(&event);
             }
             Event::WindowEvent { event, .. } => {
-                ctx.egui.handle_event(&ctx.gfx.window, &event);
-
                 ctx.input.handle(&event);
 
                 match event {

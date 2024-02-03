@@ -5,9 +5,9 @@ use simulation::{AnyEntity, Simulation};
 use std::borrow::Cow;
 
 mod hud;
+mod tools;
 
-pub mod tools;
-
+pub use hud::*;
 pub use tools::*;
 
 pub fn run_ui_systems(sim: &Simulation, uiworld: &mut UiWorld) {

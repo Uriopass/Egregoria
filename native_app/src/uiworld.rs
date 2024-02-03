@@ -1,6 +1,9 @@
+use crate::gui::Gui;
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
+use crate::newgui::windows::Windows;
 use crate::newgui::TimeAlways;
-use simulation::utils::resources::{Ref, RefMut, Resources};
+use goryak::Window;
+use simulation::utils::resources::{RefMutSingle, RefSingle, ResourcesSingleThread};
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::{Simulation, SimulationReplayLoader};
 use std::any::Any;
@@ -9,7 +12,7 @@ use std::sync::Arc;
 
 #[derive(Default)]
 pub struct UiWorld {
-    resources: Resources,
+    resources: ResourcesSingleThread,
 }
 
 #[derive(Default)]
@@ -34,27 +37,27 @@ impl UiWorld {
         w
     }
 
-    pub fn commands(&self) -> RefMut<WorldCommands> {
+    pub fn commands(&self) -> RefMutSingle<WorldCommands> {
         self.write::<WorldCommands>()
     }
 
-    pub fn received_commands(&self) -> Ref<ReceivedCommands> {
+    pub fn received_commands(&self) -> RefSingle<ReceivedCommands> {
         self.read::<ReceivedCommands>()
     }
 
-    pub fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
+    pub fn try_write<T: Any>(&self) -> Option<RefMutSingle<T>> {
         self.resources.try_write().ok()
     }
 
-    pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
+    pub fn write<T: Any>(&self) -> RefMutSingle<T> {
         self.resources.write()
     }
 
-    pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
+    pub fn read<T: Any>(&self) -> RefSingle<T> {
         self.resources.read()
     }
 
-    pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {
+    pub fn insert<T: Any>(&mut self, res: T) {
         self.resources.insert(res);
     }
 
@@ -62,15 +65,24 @@ impl UiWorld {
         self.read::<TimeAlways>().0
     }
 
-    pub fn camera(&self) -> Ref<crate::rendering::OrbitCamera> {
+    pub fn camera(&self) -> RefSingle<crate::rendering::OrbitCamera> {
         self.read::<crate::rendering::OrbitCamera>()
     }
 
-    pub fn camera_mut(&self) -> RefMut<crate::rendering::OrbitCamera> {
+    pub fn camera_mut(&self) -> RefMutSingle<crate::rendering::OrbitCamera> {
         self.write::<crate::rendering::OrbitCamera>()
     }
 
-    pub fn check_present<T: Any + Send + Sync>(&mut self, res: fn() -> T) {
+    pub fn window(
+        &self,
+        window: Window,
+        children: impl FnOnce(&mut Gui, &UiWorld, &Simulation) + 'static,
+    ) {
+        let mut window_state = self.write::<Windows>();
+        window_state.show(window, children);
+    }
+
+    pub fn check_present<T: Any>(&mut self, res: fn() -> T) {
         self.resources.write_or_insert_with(res);
     }
 

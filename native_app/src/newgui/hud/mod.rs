@@ -5,12 +5,16 @@ use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
 
 use crate::gui::{Gui, UiTextures};
+use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
+use crate::newgui::windows::Windows;
 use crate::uiworld::UiWorld;
 
+mod menu;
 mod time_controls;
 mod toolbox;
+pub mod windows;
 
 impl Gui {
     /// Root GUI entrypoint
@@ -23,9 +27,11 @@ impl Gui {
         }
 
         yakui::column(|| {
-            time_controls(self, uiworld, sim);
             self.power_errors(uiworld, sim);
             new_toolbox(uiworld, sim);
+            menu_bar(self, uiworld, sim);
+            time_controls(self, uiworld, sim);
+            Windows::finish(self, uiworld, sim);
         });
     }
 

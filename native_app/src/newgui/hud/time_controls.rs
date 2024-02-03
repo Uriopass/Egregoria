@@ -87,7 +87,7 @@ pub fn time_controls(gui: &mut Gui, uiworld: &mut UiWorld, sim: &Simulation) {
         });
     };
 
-    reflow(Alignment::TOP_LEFT, Dim2::pixels(-10.0, 30.0), || {
+    reflow(Alignment::TOP_LEFT, Dim2::pixels(-10.0, 10.0), || {
         constrained_viewport(|| {
             let mut l = List::row();
             l.main_axis_alignment = MainAxisAlignment::End;

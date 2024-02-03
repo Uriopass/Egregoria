@@ -1,4 +1,5 @@
-use egui::{Context, Ui};
+use egui::Context;
+use goryak::button_primary;
 use serde::{Deserialize, Serialize};
 
 use crate::inputmap::{InputAction, InputMap};
@@ -79,13 +80,13 @@ impl GUIWindows {
         }
     }
 
-    pub fn menu(&mut self, ui: &mut Ui) {
+    pub fn menu(&mut self) {
         if self.opened.len() < self.windows.len() {
             self.opened
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
         }
         for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
-            *opened ^= ui.selectable_label(*opened, w.name).clicked();
+            *opened ^= button_primary(w.name).show().clicked;
         }
     }
 
