@@ -28,6 +28,10 @@ impl Prototype for ItemPrototype {
     fn id(&self) -> Self::ID {
         self.id
     }
+
+    fn parent(&self) -> Option<&Self::Parent> {
+        None
+    }
 }
 
 impl Deref for ItemPrototype {

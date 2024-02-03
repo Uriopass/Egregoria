@@ -33,7 +33,7 @@ pub fn addtrain(sim: &Simulation, uiworld: &mut UiWorld) {
         Some(x) => x,
         None => {
             draw.circle(mpos, 10.0)
-                .color(simulation::config().gui_danger);
+                .color(simulation::colors().gui_danger);
             return;
         }
     };
@@ -52,11 +52,11 @@ pub fn addtrain(sim: &Simulation, uiworld: &mut UiWorld) {
     };
 
     if dist <= trainlength {
-        drawtrain(simulation::config().gui_danger);
+        drawtrain(simulation::colors().gui_danger);
         return;
     }
 
-    drawtrain(simulation::config().gui_primary);
+    drawtrain(simulation::colors().gui_primary);
 
     let cmd = WorldCommand::AddTrain {
         dist,

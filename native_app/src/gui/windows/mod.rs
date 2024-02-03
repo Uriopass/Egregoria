@@ -6,7 +6,6 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use simulation::Simulation;
 
-mod config;
 pub mod debug;
 mod economy;
 pub mod load;
@@ -59,7 +58,6 @@ impl Default for GUIWindows {
             opened: vec![],
         };
         s.insert("Economy", economy::economy, false);
-        s.insert("Config", config::config, false);
         s.insert("Debug", debug::debug, false);
         s.insert("Settings", settings::settings, false);
         #[cfg(feature = "multiplayer")]

@@ -68,14 +68,14 @@ pub fn roadeditor(sim: &Simulation, uiworld: &mut UiWorld) {
         if Some(id) != state.inspect.as_ref().map(|x| x.id) {
             proj_pos = cur_proj.pos;
         }
-        proj_col = simulation::config().gui_primary;
+        proj_col = simulation::colors().gui_primary;
     } else {
-        proj_col = simulation::config().gui_disabled;
+        proj_col = simulation::colors().gui_disabled;
     }
 
     if inp.act.contains(&InputAction::Select) {
         if let ProjectKind::Inter(id) = cur_proj.kind {
-            proj_col = simulation::config().gui_success;
+            proj_col = simulation::colors().gui_success;
             proj_pos = cur_proj.pos;
             let inter = &map.intersections()[id];
             state.inspect = Some(IntersectionComponent {

@@ -61,7 +61,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
 
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
-        let col = simulation::config().gui_primary.a(alpha);
+        let col = simulation::colors().gui_primary.a(alpha);
         let screen = AABB::new(unproj.xy(), unproj.xy()).expand(300.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         let starty = (screen.ll.y / grid_size).ceil() * grid_size;
@@ -394,9 +394,9 @@ impl RoadBuildResource {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.4;
         let col = if is_valid {
-            simulation::config().gui_primary
+            simulation::colors().gui_primary
         } else {
-            simulation::config().gui_danger
+            simulation::colors().gui_danger
         };
 
         let p = match self.build_state {

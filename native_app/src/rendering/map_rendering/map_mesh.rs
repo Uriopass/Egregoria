@@ -397,7 +397,6 @@ impl MapBuilders {
             if SubscriberChunkID::new(building.canonical_position()) != chunk {
                 continue;
             }
-            dbg!(building);
             self.zone_mesh(building);
             self.houses_mesh(building);
 
@@ -595,10 +594,10 @@ impl MapBuilders {
         self.tess_map.meshbuilder.clear();
         self.tess_lots.meshbuilder.clear();
 
-        let low_col: LinearColor = simulation::config().road_low_col.into();
-        let mid_col: LinearColor = simulation::config().road_mid_col.into();
-        let hig_col: LinearColor = simulation::config().road_hig_col.into();
-        let line_col: LinearColor = simulation::config().road_line_col.into();
+        let low_col: LinearColor = simulation::colors().road_low_col.into();
+        let mid_col: LinearColor = simulation::colors().road_mid_col.into();
+        let hig_col: LinearColor = simulation::colors().road_hig_col.into();
+        let line_col: LinearColor = simulation::colors().road_line_col.into();
 
         let objs = map.spatial_map().query(
             chunk.bbox(),
@@ -772,8 +771,8 @@ impl MapBuilders {
         for lot in chunk_lots {
             let lot = &lots[lot];
             let col = match lot.kind {
-                LotKind::Unassigned => simulation::config().lot_unassigned_col,
-                LotKind::Residential => simulation::config().lot_residential_col,
+                LotKind::Unassigned => simulation::colors().lot_unassigned_col,
+                LotKind::Residential => simulation::colors().lot_residential_col,
             };
             self.tess_lots.set_color(col);
             self.tess_lots
@@ -791,7 +790,7 @@ fn add_polyon(
         dir,
     }: PylonPosition,
 ) {
-    let color = LinearColor::from(simulation::config().road_pylon_col);
+    let color = LinearColor::from(simulation::colors().road_pylon_col);
     let color: [f32; 4] = color.into();
 
     let up = pos.up(-0.2);
@@ -994,7 +993,7 @@ fn intersection_mesh(
 
     polygon.simplify();
 
-    let col = LinearColor::from(simulation::config().road_mid_col).into();
+    let col = LinearColor::from(simulation::colors().road_mid_col).into();
     tess.meshbuilder
         .extend_with(None, move |vertices, add_idx| {
             vertices.extend(polygon.iter().map(|pos| MeshVertex {

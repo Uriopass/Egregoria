@@ -136,7 +136,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
         );
 
         let mut roofs = ColoredMesh::default();
-        let roof_col = LinearColor::from(crate::config().roof_col);
+        let roof_col = LinearColor::from(crate::colors().roof_col);
 
         let height = 4.0 + gen_range(0.0, 2.0);
 
@@ -175,7 +175,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
 
         for (&a, &b, _) in geom::skeleton::window(&walls) {
             let face = vec![a, b, b.xy().z0(), a.xy().z0()];
-            roofs.faces.push((face, crate::config().house_col.into()));
+            roofs.faces.push((face, crate::colors().house_col.into()));
         }
 
         return (roofs, lowest_segment.middle());

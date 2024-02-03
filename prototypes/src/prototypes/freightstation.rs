@@ -33,6 +33,10 @@ impl Prototype for FreightStationPrototype {
     fn id(&self) -> Self::ID {
         self.id
     }
+
+    fn parent(&self) -> Option<&Self::Parent> {
+        None
+    }
 }
 
 impl Deref for FreightStationPrototype {

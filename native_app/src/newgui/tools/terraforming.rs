@@ -119,7 +119,7 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
                     ),
                     res.level.unwrap_or(mpos.z) - 0.5,
                 )
-                .color(simulation::config().gui_primary.a(0.2));
+                .color(simulation::colors().gui_primary.a(0.2));
             }
         }
         TerraformKind::Slope => {
@@ -130,7 +130,7 @@ pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
             } else {
                 draw.line(res.slope_start.unwrap(), res.slope_end.unwrap(), res.radius)
             }
-            .color(simulation::config().gui_primary.a(0.2));
+            .color(simulation::colors().gui_primary.a(0.2));
         }
         TerraformKind::Erode => {}
     }

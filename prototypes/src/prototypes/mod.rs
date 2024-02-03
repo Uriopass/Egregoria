@@ -1,4 +1,5 @@
 mod building;
+mod colors;
 mod freightstation;
 mod goods_company;
 mod item;
@@ -6,6 +7,7 @@ mod leisure;
 mod solar;
 
 pub use building::*;
+pub use colors::*;
 pub use freightstation::*;
 pub use goods_company::*;
 pub use item::*;
@@ -13,12 +15,14 @@ pub use leisure::*;
 pub use solar::*;
 
 crate::gen_prototypes!(
-    companies: GoodsCompanyID = GoodsCompanyPrototype => BuildingPrototypeID,
-    items:     ItemID         = ItemPrototype,
-    solar:     SolarPanelID   = SolarPanelPrototype => GoodsCompanyID,
-    stations:  FreightStationPrototypeID = FreightStationPrototype,
+    items:     ItemID              = ItemPrototype,
     buildings: BuildingPrototypeID = BuildingPrototype,
-    leisure:  LeisurePrototypeID = LeisurePrototype => BuildingPrototypeID,
+    companies: GoodsCompanyID      = GoodsCompanyPrototype => BuildingPrototypeID,
+    leisure:   LeisurePrototypeID  = LeisurePrototype => BuildingPrototypeID,
+    solar:     SolarPanelID        = SolarPanelPrototype => GoodsCompanyID,
+
+    colors:    ColorsPrototypeID   = ColorsPrototype,
+    stations:  FreightStationPrototypeID = FreightStationPrototype,
 );
 
 /** Prototype template. remplace $proto with the root name e.g Item
@@ -51,6 +55,10 @@ impl Prototype for $protoPrototype {
 
     fn id(&self) -> Self::ID {
         self.id
+    }
+
+    fn parent(&self) -> Option<&Self::Parent> {
+        Some(&self.base)
     }
 }
 
@@ -86,4 +94,8 @@ impl crate::Prototype for PrototypeBase {
     }
 
     fn id(&self) -> Self::ID {}
+
+    fn parent(&self) -> Option<&Self::Parent> {
+        None
+    }
 }

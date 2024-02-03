@@ -34,9 +34,9 @@ pub fn bulldozer(sim: &Simulation, uiworld: &mut UiWorld) {
         cur_proj.kind,
         ProjectKind::Inter(_) | ProjectKind::Road(_) | ProjectKind::Building(_)
     ) {
-        simulation::config().gui_danger
+        simulation::colors().gui_danger
     } else {
-        simulation::config().gui_disabled
+        simulation::colors().gui_disabled
     };
 
     draw.circle(cur_proj.pos.up(0.5), 2.0).color(col);

@@ -34,9 +34,7 @@ pub trait Prototype: 'static + Sized {
     fn id(&self) -> Self::ID;
 
     /// The parent of the prototype
-    fn parent(&self) -> Option<&Self::Parent> {
-        None
-    }
+    fn parent(&self) -> Option<&Self::Parent>;
 
     /// util function to recursively insert the parents of this prototype into the prototypes lists
     fn insert_parents(&self, prototypes: &mut Prototypes) {
@@ -73,6 +71,10 @@ impl Prototype for NoParent {
 
     fn id(&self) -> Self::ID {
         unreachable!()
+    }
+
+    fn parent(&self) -> Option<&Self::Parent> {
+        None
     }
 }
 
@@ -160,5 +162,10 @@ fn get_lua_opt<'a, T: FromLua<'a>>(t: &Table<'a>, field: &'static str) -> mlua::
 
 fn get_v2(t: &Table, field: &'static str) -> mlua::Result<Vec2> {
     let v = get_lua::<LuaVec2>(t, field)?;
+    Ok(v.0)
+}
+
+fn get_color(t: &Table, field: &'static str) -> mlua::Result<geom::Color> {
+    let v = get_lua::<LuaColor>(t, field)?;
     Ok(v.0)
 }

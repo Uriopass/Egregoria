@@ -1,6 +1,7 @@
 require("items")
 require("companies")
 require("leisure")
+require("colors")
 
 data:extend {
     {

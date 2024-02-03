@@ -38,8 +38,8 @@ pub fn lotbrush(sim: &Simulation, uiworld: &mut UiWorld) {
     let kind = res.kind;
 
     let mut col = match kind {
-        LotKind::Unassigned => simulation::config().lot_unassigned_col,
-        LotKind::Residential => simulation::config().lot_residential_col,
+        LotKind::Unassigned => simulation::colors().lot_unassigned_col,
+        LotKind::Residential => simulation::colors().lot_residential_col,
     };
 
     col.a = 0.2;

@@ -45,6 +45,6 @@ pub fn inspected_aura(sim: &Simulation, uiworld: &mut UiWorld) {
         }
 
         draw.obb(b.obb, b.height + 0.01)
-            .color(simulation::config().gui_primary);
+            .color(simulation::colors().gui_primary);
     }
 }

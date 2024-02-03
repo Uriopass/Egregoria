@@ -67,7 +67,11 @@ macro_rules! gen_prototypes {
         impl Prototypes {
             pub(crate) fn print_stats(&self) {
                 $(
-                    log::info!("loaded {} {}", <$t as $crate::ConcretePrototype>::storage(self).len(), <$t as $crate::Prototype>::NAME);
+                    if <$t as $crate::ConcretePrototype>::storage(self).is_empty() {
+                        log::warn!("no {} loaded", <$t as $crate::Prototype>::NAME);
+                    } else {
+                        log::info!("loaded {} {}", <$t as $crate::ConcretePrototype>::storage(self).len(), <$t as $crate::Prototype>::NAME);
+                    }
                 )+
             }
 

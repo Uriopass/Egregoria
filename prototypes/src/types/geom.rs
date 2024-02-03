@@ -1,4 +1,4 @@
-use geom::{vec2, vec3, Vec2, Vec3};
+use geom::{vec2, vec3, Color, Vec2, Vec3};
 use mlua::{FromLua, Value};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -8,6 +8,10 @@ pub struct LuaVec2(pub Vec2);
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
 pub struct LuaVec3(pub Vec3);
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(transparent)]
+pub struct LuaColor(pub Color);
 
 impl Into<Vec2> for LuaVec2 {
     fn into(self) -> Vec2 {
@@ -30,6 +34,50 @@ impl From<Vec3> for LuaVec3 {
 impl From<Vec2> for LuaVec2 {
     fn from(v: Vec2) -> Self {
         Self(v)
+    }
+}
+
+impl From<Color> for LuaColor {
+    fn from(c: Color) -> Self {
+        Self(c)
+    }
+}
+
+impl From<LuaColor> for Color {
+    fn from(c: LuaColor) -> Self {
+        c.0
+    }
+}
+
+impl<'a> FromLua<'a> for LuaColor {
+    fn from_lua(value: Value<'a>, _: &'a mlua::Lua) -> mlua::Result<Self> {
+        let t = match value {
+            Value::Vector(v) => {
+                return Ok(Self(Color::new(v.x(), v.y(), v.z(), 1.0)));
+            }
+            Value::Table(t) => t,
+            _ => {
+                return Err(mlua::Error::FromLuaConversionError {
+                    from: value.type_name(),
+                    to: "Color",
+                    message: Some("expected a table or vector".to_string()),
+                })
+            }
+        };
+        if let Ok(r) = t.get(1) {
+            return Ok(Self(Color::new(
+                r,
+                t.get(2)?,
+                t.get(3)?,
+                t.get(4).unwrap_or(1.0),
+            )));
+        }
+
+        let r = t.get("r")?;
+        let g = t.get("g")?;
+        let b = t.get("b")?;
+        let a = t.get("a").unwrap_or(1.0);
+        Ok(Self(Color::new(r, g, b, a)))
     }
 }
 

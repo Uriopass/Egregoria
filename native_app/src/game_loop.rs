@@ -299,10 +299,9 @@ impl State {
             .then(|| self.uiw.read::<TerraformingResource>().radius)
             .unwrap_or_default();
         drop(camera);
-        let c = simulation::config();
+        let c = simulation::colors();
         params.sand_col = c.sand_col.into();
         params.sea_col = c.sea_col.into();
-        drop(c);
     }
 
     fn manage_io(&mut self, ctx: &mut Context) {

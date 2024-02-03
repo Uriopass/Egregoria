@@ -1,14 +1,19 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 
+use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryLeader};
 use crate::souls::add_souls_to_empty_buildings;
 use crate::utils::resources::{Ref, RefMut, Resources};
+use crate::utils::scheduler::RunnableSystem;
 use crate::world_command::WorldCommand;
+use crate::world_command::WorldCommand::Init;
 use common::saveload::Encoder;
+use common::FastMap;
 use derive_more::{From, TryInto};
 use geom::Vec3;
+use prototypes::{prototype, ColorsPrototype, ColorsPrototypeID, GameTime, Tick};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::any::Any;
 use std::collections::BTreeMap;
@@ -46,14 +51,12 @@ pub mod world_command;
 
 pub use world::*;
 
-use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::utils::scheduler::RunnableSystem;
-use crate::world_command::WorldCommand::Init;
-use common::FastMap;
-use prototypes::{GameTime, Tick};
-pub use utils::config::*;
 pub use utils::par_command_buffer::ParCommandBuffer;
 pub use utils::replay::*;
+
+pub fn colors() -> &'static ColorsPrototype {
+    prototype::<ColorsPrototypeID>(ColorsPrototypeID::new("colors"))
+}
 
 #[derive(
     Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, From, TryInto,
