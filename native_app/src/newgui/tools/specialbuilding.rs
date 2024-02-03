@@ -86,9 +86,11 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
     let mut draw = |obb, red| {
         let p = asset.to_string();
         let col = if red {
-            simulation::config().special_building_invalid_col
+            simulation::config().gui_danger.adjust_luminosity(1.3)
         } else {
-            simulation::config().special_building_col
+            simulation::config()
+                .gui_primary
+                .adjust_luminosity(tweak!(1.5))
         };
 
         if p.ends_with(".png") || p.ends_with(".jpg") {

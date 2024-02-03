@@ -300,7 +300,6 @@ impl State {
             .unwrap_or_default();
         drop(camera);
         let c = simulation::config();
-        params.grass_col = c.grass_col.into();
         params.sand_col = c.sand_col.into();
         params.sea_col = c.sea_col.into();
         drop(c);

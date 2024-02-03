@@ -10,19 +10,12 @@ use std::sync::Arc;
 #[derive(Default, Clone, Serialize, Deserialize, Inspect)]
 #[serde(default)]
 pub struct Config {
-    pub disable_trees: bool,
-
-    pub tree_col: Color,
-
-    pub grass_col: Color,
     pub sand_col: Color,
     pub sea_col: Color,
 
     pub roof_col: Color,
     pub house_col: Color,
 
-    pub gui_bg_col: Color,
-    pub gui_title_col: Color,
     pub gui_success: Color,
     pub gui_danger: Color,
     pub gui_primary: Color,
@@ -36,10 +29,6 @@ pub struct Config {
 
     pub lot_unassigned_col: Color,
     pub lot_residential_col: Color,
-    pub lot_commercial_col: Color,
-
-    pub special_building_col: Color,
-    pub special_building_invalid_col: Color,
 }
 
 fn load_config_start() -> Config {

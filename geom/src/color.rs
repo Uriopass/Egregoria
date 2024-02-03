@@ -46,11 +46,18 @@ impl Color {
 
         let m = val - c;
         Self {
-            r: (r + m),
-            g: (g + m),
-            b: (b + m),
+            r: r + m,
+            g: g + m,
+            b: b + m,
             a,
         }
+    }
+
+    pub fn adjust_luminosity(mut self, factor: f32) -> Self {
+        self.r = (self.r * factor).min(1.0);
+        self.g = (self.g * factor).min(1.0);
+        self.b = (self.b * factor).min(1.0);
+        self
     }
 
     pub fn a(self, a: f32) -> Self {

@@ -7,7 +7,6 @@ use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
 };
 use geom::{vec3, vec4, Camera, HeightmapChunk, Intersect3, LinearColor, Matrix4, Vec3, AABB3};
-use simulation::config;
 use simulation::map::{Map, MapSubscriber, SubscriberChunkID, UpdateType};
 
 pub struct TreesRender {
@@ -57,10 +56,6 @@ impl TreesRender {
     pub fn draw(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
         profiling::scope!("draw trees");
         self.build(map, ctx);
-
-        if config().disable_trees {
-            return;
-        }
 
         let camcenter = cam.pos.xy();
 
