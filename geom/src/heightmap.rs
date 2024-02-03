@@ -529,7 +529,7 @@ pub fn pack_height(height: f32) -> u16 {
     }
 
     let height_off = height_off - HALF_HEIGHT_DIFF;
-    return (HALF_U16 as f32 + height_off / HALF_HEIGHT_DIFF * HALF_U16 as f32) as u16;
+    (HALF_U16 as f32 + height_off / HALF_HEIGHT_DIFF * HALF_U16 as f32) as u16
 }
 
 fn unpack_height(height: u16) -> f32 {
@@ -538,7 +538,7 @@ fn unpack_height(height: u16) -> f32 {
     }
 
     let height = height - HALF_U16;
-    return MIN_HEIGHT + HALF_HEIGHT_DIFF + height as f32 / HALF_U16 as f32 * HALF_HEIGHT_DIFF;
+    MIN_HEIGHT + HALF_HEIGHT_DIFF + height as f32 / HALF_U16 as f32 * HALF_HEIGHT_DIFF
 }
 
 #[cfg(test)]

@@ -98,7 +98,7 @@ impl<'a> FromLua<'a> for BuildingGen {
                 vertical_factor: get_lua(&table, "vertical_factor")?,
             }),
             "no_walkway" => Ok(Self::NoWalkway {
-                door_pos: get_v2(&table, "door_pos")?.into(),
+                door_pos: get_v2(&table, "door_pos")?,
             }),
             _ => Err(mlua::Error::external(format!(
                 "Unknown building gen kind: {}",

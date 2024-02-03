@@ -128,11 +128,11 @@ impl ElectricityCache {
         self.graph.get_mut(src).unwrap().push(*dst);
         self.graph.get_mut(dst).unwrap().push(*src);
 
-        let Some(src) = self.ids.get(&src) else {
+        let Some(src) = self.ids.get(src) else {
             log::error!("electricity add_edge src {:?} not found", src);
             return;
         };
-        let Some(dst) = self.ids.get(&dst) else {
+        let Some(dst) = self.ids.get(dst) else {
             log::error!("electricity add_edge dst {:?} not found", dst);
             return;
         };
@@ -162,11 +162,11 @@ impl ElectricityCache {
         self.graph.get_mut(src).unwrap().retain(|v| v != dst);
         self.graph.get_mut(dst).unwrap().retain(|v| v != src);
 
-        let Some(src_net) = self.ids.get(&src) else {
+        let Some(src_net) = self.ids.get(src) else {
             log::error!("electricity remove_edge src {:?} not found", src);
             return;
         };
-        let Some(dst_net) = self.ids.get(&dst) else {
+        let Some(dst_net) = self.ids.get(dst) else {
             log::error!("electricity remove_edge dst {:?} not found", dst);
             return;
         };

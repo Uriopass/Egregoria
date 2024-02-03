@@ -46,7 +46,7 @@ pub fn time_controls(gui: &mut Gui, uiworld: &mut UiWorld, sim: &Simulation) {
         });
     }
 
-    let mut time_text = || {
+    let time_text = || {
         padx(5.0, || {
             row(|| {
                 monospace(on_secondary_container(), format!("Day {}", time.day));
@@ -99,7 +99,7 @@ pub fn time_controls(gui: &mut Gui, uiworld: &mut UiWorld, sim: &Simulation) {
                             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                             l.main_axis_size = MainAxisSize::Min;
                             l.item_spacing = tweak!(5.0);
-                            l.show(|| time_text());
+                            l.show(time_text);
                         });
                     });
                 });

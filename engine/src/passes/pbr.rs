@@ -12,7 +12,7 @@ use wgpu::{
     VertexState,
 };
 
-pub struct PBR {
+pub struct Pbr {
     pub environment_cube: Texture,
     environment_uniform: Uniform<Vec4>,
     environment_bg: BindGroup,
@@ -27,7 +27,7 @@ pub struct PBR {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-enum PBRPipeline {
+enum PbrPipeline {
     Environment,
     DiffuseIrradiance,
     SpecularPrefilter,
@@ -49,7 +49,7 @@ struct DiffuseParams {
 u8slice_impl!(SpecularParams);
 u8slice_impl!(DiffuseParams);
 
-impl PBR {
+impl Pbr {
     pub fn new(device: &Device, queue: &Queue) -> Self {
         let environment_cube = TextureBuilder::empty(128, 128, 6, TextureFormat::Rgba16Float)
             .with_label("environment cubemap")
@@ -154,7 +154,7 @@ impl PBR {
         profiling::scope!("gfx::write_environment_cubemap");
         self.environment_uniform
             .write_direct(&gfx.queue, &sun_pos.normalize().w(0.0));
-        let pipe = gfx.get_pipeline(PBRPipeline::Environment);
+        let pipe = gfx.get_pipeline(PbrPipeline::Environment);
 
         for face in 0..6u32 {
             let view = &self.cube_views[face as usize];
@@ -177,7 +177,7 @@ impl PBR {
 
     pub fn write_diffuse_irradiance(&self, gfx: &GfxContext, enc: &mut CommandEncoder) {
         profiling::scope!("gfx::write_diffuse_irradiance");
-        let pipe = gfx.get_pipeline(PBRPipeline::DiffuseIrradiance);
+        let pipe = gfx.get_pipeline(PbrPipeline::DiffuseIrradiance);
         self.diffuse_uniform.write_direct(
             &gfx.queue,
             &DiffuseParams {
@@ -209,7 +209,7 @@ impl PBR {
 
     pub fn write_specular_prefilter(&self, gfx: &GfxContext, enc: &mut CommandEncoder) {
         profiling::scope!("gfx::write_specular_prefilter");
-        let pipe = gfx.get_pipeline(PBRPipeline::SpecularPrefilter);
+        let pipe = gfx.get_pipeline(PbrPipeline::SpecularPrefilter);
         for mip in 0..self.specular_prefilter_cube.n_mips() {
             let roughness = mip as f32 / (self.specular_prefilter_cube.n_mips() - 1) as f32;
             let uni = &self.specular_uniforms[mip as usize];
@@ -316,14 +316,14 @@ impl PBR {
     }
 }
 
-impl PipelineBuilder for PBRPipeline {
+impl PipelineBuilder for PbrPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
         mut mk_module: impl FnMut(&str) -> CompiledModule,
     ) -> RenderPipeline {
         match self {
-            PBRPipeline::Environment => {
+            PbrPipeline::Environment => {
                 let cubemap_vert = &mk_module("to_cubemap.vert");
                 let cubemap_frag = &mk_module("atmosphere_cubemap.frag");
                 let cubemappipelayout =
@@ -358,7 +358,7 @@ impl PipelineBuilder for PBRPipeline {
                         multiview: None,
                     })
             }
-            PBRPipeline::DiffuseIrradiance => {
+            PbrPipeline::DiffuseIrradiance => {
                 let cubemap_vert = &mk_module("to_cubemap.vert");
                 let cubemap_frag = &mk_module("pbr/convolute_diffuse_irradiance.frag");
                 let bg_layout = Texture::bindgroup_layout(&gfx.device, [TL::Cube]);
@@ -396,7 +396,7 @@ impl PipelineBuilder for PBRPipeline {
                         multiview: None,
                     })
             }
-            PBRPipeline::SpecularPrefilter => {
+            PbrPipeline::SpecularPrefilter => {
                 let cubemap_vert = &mk_module("to_cubemap.vert");
                 let cubemap_frag = &mk_module("pbr/specular_prefilter.frag");
                 let bg_layout = Texture::bindgroup_layout(&gfx.device, [TL::Cube]);

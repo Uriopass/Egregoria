@@ -51,7 +51,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
         target.set_control_flow(ControlFlow::Poll);
 
         if let Event::WindowEvent { event, .. } = &event {
-            ctx.egui.handle_event(&ctx.gfx.window, &event);
+            ctx.egui.handle_event(&ctx.gfx.window, event);
         }
 
         #[cfg(feature = "yakui")]

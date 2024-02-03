@@ -101,7 +101,7 @@ impl Widget for WindowBase {
 
         let mut pos = vp * 0.5 - size * 0.5 + self.off + self.resp.off.get();
         let overflow = (pos + size - vp).max(Vec2::ZERO);
-        pos = pos - overflow;
+        pos -= overflow;
         pos = pos.max(Vec2::ZERO);
 
         ctx.layout.set_pos(child, pos);

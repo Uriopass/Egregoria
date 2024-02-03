@@ -1,4 +1,4 @@
-use crate::passes::{BackgroundPipeline, PBR};
+use crate::passes::{BackgroundPipeline, Pbr};
 use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
@@ -63,7 +63,7 @@ pub struct GfxContext {
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
     pub sun_shadowmap: Texture,
-    pub pbr: PBR,
+    pub pbr: Pbr,
     pub lamplights: LampLights,
     pub(crate) defines: FastMap<String, String>,
     pub(crate) defines_changed: bool,
@@ -330,7 +330,7 @@ impl GfxContext {
             Arc::new(blue_noise),
         );
 
-        let pbr = PBR::new(&device, &queue);
+        let pbr = Pbr::new(&device, &queue);
         let null_texture = TextureBuilder::empty(1, 1, 1, TextureFormat::Rgba8Unorm)
             .with_srgb(false)
             .with_label("null texture")
@@ -567,7 +567,7 @@ impl GfxContext {
             .iter_mut()
             .zip(self.render_params.value().sun_shadow_proj)
         {
-            let mut cpy = self.render_params.value().clone();
+            let mut cpy = *self.render_params.value();
             cpy.proj = mat;
             *uni.value_mut() = cpy;
             uni.upload_to_gpu(&self.queue);
@@ -745,8 +745,8 @@ impl GfxContext {
             }
         }
 
-        passes::render_background(self, encs, &frame);
-        passes::gen_ui_blur(self, encs, &frame);
+        passes::render_background(self, encs, frame);
+        passes::gen_ui_blur(self, encs, frame);
 
         start_time.elapsed()
     }
@@ -867,7 +867,7 @@ impl GfxContext {
         self.sky_bg = Texture::multi_bindgroup(
             &[&*starfield, &self.fbos.fog, &self.pbr.environment_cube],
             &self.device,
-            &BackgroundPipeline::bglayout_texs(&self),
+            &BackgroundPipeline::bglayout_texs(self),
         );
     }
 

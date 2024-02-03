@@ -18,6 +18,7 @@ pub trait PipelineBuilder: Hash + 'static {
 type ShaderPath = String;
 type PipelineHash = u64;
 
+#[derive(Default)]
 pub struct Pipelines {
     pub(crate) shader_cache: FastMap<ShaderPath, CompiledModule>,
     pub(crate) shader_watcher: FastMap<ShaderPath, (Vec<ShaderPath>, Option<SystemTime>)>,
@@ -28,12 +29,7 @@ pub struct Pipelines {
 
 impl Pipelines {
     pub fn new() -> Pipelines {
-        Pipelines {
-            shader_cache: FastMap::default(),
-            shader_watcher: Default::default(),
-            pipelines: Default::default(),
-            pipelines_deps: Default::default(),
-        }
+        Pipelines::default()
     }
 
     pub fn get_module(

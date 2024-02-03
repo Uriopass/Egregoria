@@ -742,7 +742,7 @@ impl MipmapGenerator {
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&src),
+                    resource: wgpu::BindingResource::TextureView(src),
                 },
                 BindGroupEntry {
                     binding: 1,
@@ -755,7 +755,7 @@ impl MipmapGenerator {
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(&format!("mip generation for {label}")),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &dst,
+                view: dst,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
@@ -766,7 +766,7 @@ impl MipmapGenerator {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        rpass.set_pipeline(&pipeline);
+        rpass.set_pipeline(pipeline);
         rpass.set_bind_group(0, &bind_group, &[]);
         rpass.draw(0..3, 0..1);
     }

@@ -13,15 +13,15 @@ pub struct LuaVec3(pub Vec3);
 #[repr(transparent)]
 pub struct LuaColor(pub Color);
 
-impl Into<Vec2> for LuaVec2 {
-    fn into(self) -> Vec2 {
-        self.0
+impl From<LuaVec2> for Vec2 {
+    fn from(v: LuaVec2) -> Self {
+        v.0
     }
 }
 
-impl Into<Vec3> for LuaVec3 {
-    fn into(self) -> Vec3 {
-        self.0
+impl From<LuaVec3> for Vec3 {
+    fn from(v: LuaVec3) -> Self {
+        v.0
     }
 }
 

@@ -181,7 +181,7 @@ impl RecTimeInterval {
         if t_day >= self.end_seconds {
             return d + SECONDS_PER_DAY;
         }
-        return d;
+        d
     }
 }
 
@@ -462,7 +462,7 @@ impl<'lua> FromLua<'lua> for Tick {
                 for kv in t.pairs::<String, Number>() {
                     let (k, v) = kv?;
 
-                    let v = parse_tick_suffix(v, &*k).ok_or_else(|| {
+                    let v = parse_tick_suffix(v, &k).ok_or_else(|| {
                         mlua::Error::FromLuaConversionError {
                             from: "string",
                             to: "Tick",
@@ -521,7 +521,7 @@ fn parse_daytime(s: &str) -> Result<(DayTime, &str), DayTimeParsingError> {
     if rest.is_empty() {
         return Err(InvalidHourSuffix);
     }
-    let rest = match rest.split_once(&[':', 'h']) {
+    let rest = match rest.split_once([':', 'h']) {
         Some((_, rest)) => rest,
         None => return Err(InvalidHourSuffix),
     };
@@ -644,13 +644,11 @@ impl<'lua> FromLua<'lua> for RecTimeInterval {
                 let end: DayTime = get_lua(&t, "end")?;
                 Ok(RecTimeInterval::new_daysec(start.daysec(), end.daysec()))
             }
-            _ => {
-                return Err(mlua::Error::FromLuaConversionError {
-                    from: value.type_name(),
-                    to: "RecTimeInterval",
-                    message: Some("expected string or table".into()),
-                })
-            }
+            _ => Err(mlua::Error::FromLuaConversionError {
+                from: value.type_name(),
+                to: "RecTimeInterval",
+                message: Some("expected string or table".into()),
+            }),
         }
     }
 }

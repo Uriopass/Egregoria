@@ -8,7 +8,7 @@ use wgpu::{
     RenderPipeline, RenderPipelineDescriptor, TextureFormat, TextureView, VertexState,
 };
 
-pub fn render_background(gfx: &GfxContext, encs: &mut Encoders, frame: &&TextureView) {
+pub fn render_background(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
     profiling::scope!("bg pass");
     let mut bg_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
         label: Some("bg pass"),
