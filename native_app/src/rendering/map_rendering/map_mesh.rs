@@ -30,10 +30,19 @@ pub struct MapMeshHandler {
 
 #[derive(Default)]
 struct CachedObj {
-    road: Vec<Rc<dyn Drawable>>,
+    road: Vec<Rc<Mesh>>,
     build: Vec<Rc<dyn Drawable>>,
     lots: Option<Mesh>,
     arrows: Option<SpriteBatch>,
+}
+
+impl CachedObj {
+    fn is_empty(&self) -> bool {
+        self.road.is_empty()
+            && self.lots.is_none()
+            && self.arrows.is_none()
+            && self.build.is_empty()
+    }
 }
 
 struct MapBuilders {
@@ -173,50 +182,82 @@ impl MapMeshHandler {
         options: MapRenderOptions,
         ctx: &mut FrameContext<'_>,
     ) {
+        profiling::scope!("draw map mesh");
         for chunk in self.road_sub.take_updated_chunks() {
+            profiling::scope!("build road chunk");
             let b = &mut self.builders;
             b.map_mesh(map, chunk);
 
             let cached = self.cache.entry(chunk).or_default();
 
-            cached.road = vec![
-                Rc::new(b.tess_map.meshbuilder.build(ctx.gfx)),
-                Rc::new(b.crosswalk_builder.build(ctx.gfx)),
-            ];
+            cached.road.clear();
+            cached.road.reserve(2);
+
+            if let Some(mesh) = b.tess_map.meshbuilder.build(ctx.gfx) {
+                cached.road.push(Rc::new(mesh));
+            }
+            if let Some(mesh) = b.crosswalk_builder.build(ctx.gfx) {
+                cached.road.push(Rc::new(mesh));
+            }
 
             cached.lots = b.tess_lots.meshbuilder.build(ctx.gfx);
             cached.arrows = b.arrow_builder.build(ctx.gfx);
+
+            if cached.is_empty() {
+                self.cache.remove(&chunk);
+            }
         }
 
         for chunk in self.building_sub.take_updated_chunks() {
+            profiling::scope!("build building chunk");
+
             let b = &mut self.builders;
             b.buildings_mesh(map, chunk);
 
             let cached = self.cache.entry(chunk).or_default();
 
-            cached.build = vec![
-                Rc::new(
-                    b.buildsprites
-                        .values_mut()
-                        .flat_map(|x| x.build(ctx.gfx))
-                        .collect::<Vec<_>>(),
-                ),
-                Rc::new(
-                    b.buildmeshes
-                        .values_mut()
-                        .flat_map(|x| x.build(ctx.gfx))
-                        .collect::<Vec<_>>(),
-                ),
-                Rc::new(b.houses_mesh.build(ctx.gfx)),
-                Rc::new(
-                    b.zonemeshes
-                        .values_mut()
-                        .map(|(a, b, _)| (a.build(ctx.gfx), b.build(ctx.gfx)))
-                        .collect::<Vec<_>>(),
-                ),
-            ];
+            cached.build.clear();
+            cached.build.reserve(4);
+
+            let sprites = b
+                .buildsprites
+                .values_mut()
+                .flat_map(|x| x.build(ctx.gfx))
+                .collect::<Vec<_>>();
+
+            if !sprites.is_empty() {
+                cached.build.push(Rc::new(sprites));
+            }
+
+            let buildmeshes = b
+                .buildmeshes
+                .values_mut()
+                .flat_map(|x| x.build(ctx.gfx))
+                .collect::<Vec<_>>();
+
+            if !buildmeshes.is_empty() {
+                cached.build.push(Rc::new(buildmeshes));
+            }
+
+            if let Some(mesh) = b.houses_mesh.build(ctx.gfx) {
+                cached.build.push(Rc::new(mesh));
+            }
+
+            let zonemeshes = b
+                .zonemeshes
+                .values_mut()
+                .flat_map(|(a, b, _)| a.build(ctx.gfx).zip(b.build(ctx.gfx)))
+                .collect::<Vec<_>>();
+            if !zonemeshes.is_empty() {
+                cached.build.push(Rc::new(zonemeshes));
+            }
+
+            if cached.is_empty() {
+                self.cache.remove(&chunk);
+            }
         }
 
+        profiling::scope!("prepare map mesh");
         for v in self.cache.values() {
             ctx.draw(v.build.clone());
             ctx.draw(v.road.clone());
@@ -356,6 +397,7 @@ impl MapBuilders {
             if SubscriberChunkID::new(building.canonical_position()) != chunk {
                 continue;
             }
+            dbg!(building);
             self.zone_mesh(building);
             self.houses_mesh(building);
 

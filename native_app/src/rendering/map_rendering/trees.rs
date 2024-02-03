@@ -55,6 +55,7 @@ impl TreesRender {
     }
 
     pub fn draw(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
+        profiling::scope!("draw trees");
         self.build(map, ctx);
 
         if config().disable_trees {
