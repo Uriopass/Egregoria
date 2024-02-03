@@ -76,10 +76,11 @@ impl UiWorld {
     pub fn window(
         &self,
         window: Window,
+        on_close: impl FnOnce(&UiWorld) + 'static,
         children: impl FnOnce(&mut Gui, &UiWorld, &Simulation) + 'static,
     ) {
         let mut window_state = self.write::<Windows>();
-        window_state.show(window, children);
+        window_state.show(window, children, on_close);
     }
 
     pub fn check_present<T: Any>(&mut self, res: fn() -> T) {

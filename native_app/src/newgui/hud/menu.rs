@@ -61,7 +61,12 @@ fn save_window(gui: &mut Gui, uiw: &UiWorld) {
             uiw.window(
                 Window {
                     title: "Exit Menu",
-                    pad: Pad::all(10.0),
+                    pad: Pad::all(15.0),
+                    radius: 10.0,
+                },
+                |uiw| {
+                    let mut estate = uiw.write::<ExitState>();
+                    *estate = ExitState::NoExit;
                 },
                 |_, uiw, _sim| {
                     let mut slstate = uiw.write::<SaveLoadState>();

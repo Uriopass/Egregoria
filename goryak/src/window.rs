@@ -2,13 +2,15 @@ use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use yakui_core::geometry::{Constraints, Dim2, Vec2};
+use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
 use yakui_core::widget::{LayoutContext, Widget};
 use yakui_core::{context, Alignment, Flow, MainAxisSize};
-use yakui_widgets::widgets::{List, Pad};
-use yakui_widgets::{draggable, row};
+use yakui_widgets::widgets::{Button, List, Pad};
+use yakui_widgets::{center, constrained, draggable, offset, reflow, row};
 
-use crate::{blur_bg, divider, on_secondary_container, outline, secondary_container, textc};
+use crate::{
+    blur_bg, divider, icon_button, on_secondary_container, outline, secondary_container, textc,
+};
 
 thread_local! {
     /// Remember which windows were drawn. That what we can put them at the bottom of the widget tree to be drawn on top of the rest.
@@ -19,19 +21,43 @@ thread_local! {
 pub struct Window {
     pub title: &'static str,
     pub pad: Pad,
+    pub radius: f32,
 }
 
 impl Window {
-    pub fn show(self, children: impl FnOnce()) {
+    pub fn show(self, children: impl FnOnce(), on_close: impl FnOnce()) {
         let dom = context::dom();
         let response = dom.begin_widget::<WindowBase>(());
 
         let off = draggable(|| {
-            blur_bg(secondary_container().with_alpha(0.7), 5.0, || {
+            blur_bg(secondary_container().with_alpha(0.7), self.radius, || {
                 self.pad.show(|| {
                     let mut l = List::column();
                     l.main_axis_size = MainAxisSize::Min;
                     l.show(|| {
+                        reflow(Alignment::TOP_RIGHT, Dim2::ZERO, || {
+                            offset(Vec2::new(-25.0, -15.0), || {
+                                constrained(Constraints::tight(Vec2::splat(40.0)), || {
+                                    center(|| {
+                                        let mut b = Button::unstyled("close");
+                                        b.padding = Pad::balanced(4.0, 2.0);
+                                        b.border_radius = 10.0;
+                                        b.style.fill = Color::CLEAR;
+                                        b.style.text.font_size = 20.0;
+                                        b.style.text.color = on_secondary_container();
+                                        b.down_style.fill = Color::CLEAR;
+                                        b.down_style.text = b.style.text.clone();
+                                        b.hover_style.fill = Color::CLEAR;
+                                        b.hover_style.text = b.style.text.clone();
+                                        b.hover_style.text.font_size = 25.0;
+
+                                        if icon_button(b).show().clicked {
+                                            on_close();
+                                        }
+                                    });
+                                });
+                            });
+                        });
                         row(|| {
                             textc(on_secondary_container(), Cow::Borrowed(self.title));
                         });

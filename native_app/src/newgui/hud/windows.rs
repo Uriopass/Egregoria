@@ -5,7 +5,13 @@ use simulation::Simulation;
 
 #[derive(Default)]
 pub struct Windows {
-    pub windows: Vec<(Window, Box<dyn FnOnce(&mut Gui, &UiWorld, &Simulation)>)>,
+    windows: Vec<WindowHolder>,
+}
+
+struct WindowHolder {
+    window: Window,
+    children: Box<dyn FnOnce(&mut Gui, &UiWorld, &Simulation)>,
+    on_close: Box<dyn FnOnce(&UiWorld)>,
 }
 
 impl Windows {
@@ -13,8 +19,13 @@ impl Windows {
         &mut self,
         window: Window,
         children: impl FnOnce(&mut Gui, &UiWorld, &Simulation) + 'static,
+        on_close: impl FnOnce(&UiWorld) + 'static,
     ) {
-        self.windows.push((window, Box::new(children)));
+        self.windows.push(WindowHolder {
+            window,
+            children: Box::new(children),
+            on_close: Box::new(on_close),
+        });
     }
 
     pub fn finish(gui: &mut Gui, uiw: &UiWorld, sim: &Simulation) {
@@ -23,10 +34,20 @@ impl Windows {
         window_state.windows = Vec::with_capacity(windows.len());
         drop(window_state);
 
-        for (window, children) in windows {
-            window.show(|| {
-                children(gui, uiw, sim);
-            });
+        for WindowHolder {
+            window,
+            children,
+            on_close,
+        } in windows
+        {
+            window.show(
+                || {
+                    children(gui, uiw, sim);
+                },
+                || {
+                    on_close(uiw);
+                },
+            );
         }
     }
 }
