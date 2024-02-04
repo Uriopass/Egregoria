@@ -8,6 +8,7 @@ use simulation::transportation::TransportGrid;
 use simulation::{Simulation, TrainID};
 use std::time::{Duration, Instant};
 
+use crate::gui::windows::settings::Settings;
 use crate::inputmap::InputMap;
 use egui::Widget;
 use engine::{PerfCountersStatic, Tesselator};
@@ -81,6 +82,10 @@ pub fn debug(
         ui.checkbox(
             &mut uiworld.write::<DebugState>().debug_inspector,
             "Debug inspector",
+        );
+        ui.checkbox(
+            &mut uiworld.write::<Settings>().gfx.fog_shader_debug,
+            "Debug fog shader",
         );
         drop(objs);
 

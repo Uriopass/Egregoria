@@ -3,7 +3,7 @@ use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
     MaterialID, MaterialMap, MipmapGenerator, PipelineBuilder, Pipelines, Texture,
-    TextureBuildError, TextureBuilder, Uniform, UvVertex, TL,
+    TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
 };
 use common::FastMap;
 use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
@@ -71,6 +71,8 @@ pub struct GfxContext {
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
     pub sky_bg: wgpu::BindGroup,
+    pub water_bg: wgpu::BindGroup,
+
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
 
@@ -133,6 +135,7 @@ pub struct GfxSettings {
     pub terrain_grid: bool,
     pub shader_debug: bool,
     pub pbr_enabled: bool,
+    pub fog_shader_debug: bool,
 }
 
 impl Default for GfxSettings {
@@ -146,6 +149,7 @@ impl Default for GfxSettings {
             terrain_grid: true,
             shader_debug: false,
             pbr_enabled: true,
+            fog_shader_debug: false,
         }
     }
 }
@@ -368,6 +372,7 @@ impl GfxContext {
             rect_indices,
             simplelit_bg: Uniform::new([0.0f32; 4], &device).bindgroup, // bogus
             sky_bg: Uniform::new([0.0f32; 4], &device).bindgroup,       // bogus
+            water_bg: Uniform::new([0.0f32; 4], &device).bindgroup,     // bogus
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             lamplights: LampLights::new(&device, &queue),
@@ -539,6 +544,7 @@ impl GfxContext {
         self.set_define_flag("SSAO", settings.ssao);
         self.set_define_flag("TERRAIN_GRID", settings.terrain_grid);
         self.set_define_flag("DEBUG", settings.shader_debug);
+        self.set_define_flag("FOG_DEBUG", settings.fog_shader_debug);
         self.set_define_flag("PBR_ENABLED", settings.pbr_enabled);
 
         self.settings = Some(settings);
@@ -867,7 +873,14 @@ impl GfxContext {
         self.sky_bg = Texture::multi_bindgroup(
             &[&*starfield, &self.fbos.fog, &self.pbr.environment_cube],
             &self.device,
-            &BackgroundPipeline::bglayout_texs(self),
+            &self
+                .get_pipeline(BackgroundPipeline)
+                .get_bind_group_layout(2),
+        );
+        self.water_bg = Texture::multi_bindgroup(
+            &[&self.fbos.fog],
+            &self.device,
+            &self.get_pipeline(WaterPipeline).get_bind_group_layout(3),
         );
     }
 

@@ -9,7 +9,7 @@ use yakui_widgets::widgets::{Button, List, Pad};
 use yakui_widgets::{center, constrained, draggable, offset, reflow, row};
 
 use crate::{
-    blur_bg, divider, icon_button, on_secondary_container, outline, secondary_container, textc,
+    blur_bg, divider, icon_button, on_primary_container, outline, primary_container, textc,
 };
 
 thread_local! {
@@ -30,7 +30,7 @@ impl Window {
         let response = dom.begin_widget::<WindowBase>(());
 
         let off = draggable(|| {
-            blur_bg(secondary_container().with_alpha(0.7), self.radius, || {
+            blur_bg(primary_container().with_alpha(0.5), self.radius, || {
                 self.pad.show(|| {
                     let mut l = List::column();
                     l.main_axis_size = MainAxisSize::Min;
@@ -44,7 +44,7 @@ impl Window {
                                         b.border_radius = 10.0;
                                         b.style.fill = Color::CLEAR;
                                         b.style.text.font_size = 20.0;
-                                        b.style.text.color = on_secondary_container();
+                                        b.style.text.color = on_primary_container();
                                         b.down_style.fill = Color::CLEAR;
                                         b.down_style.text = b.style.text.clone();
                                         b.hover_style.fill = Color::CLEAR;
@@ -59,7 +59,7 @@ impl Window {
                             });
                         });
                         row(|| {
-                            textc(on_secondary_container(), Cow::Borrowed(self.title));
+                            textc(on_primary_container(), Cow::Borrowed(self.title));
                         });
                         divider(outline(), 10.0, 1.0);
                         children();

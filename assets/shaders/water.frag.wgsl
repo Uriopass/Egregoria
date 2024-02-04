@@ -14,6 +14,9 @@ struct FragmentOutput {
 @group(2) @binding(0) var t_wavy: texture_2d<f32>;
 @group(2) @binding(1) var s_wavy: sampler;
 
+@group(3) @binding(0) var t_fog: texture_2d<f32>;
+@group(3) @binding(1) var s_fog: sampler;
+
 fn sample_depth(coords: vec2<i32>) -> f32 {
     return textureLoad(t_depth, coords, 0).r;
 }
@@ -56,20 +59,16 @@ fn frag(@location(0) _in_tint: vec4<f32>,
         @location(3) wpos: vec3<f32>,
         @location(4) _in_uv: vec2<f32>,
         @builtin(position) position: vec4<f32>) -> FragmentOutput {
-    let t: f32 = params.time;
-    let sun: vec3<f32> = params.sun;
-    let cam: vec3<f32> = params.cam_pos.xyz;
     var normal = gerstnerWaveNormal(wpos.xy * 0.01, params.time_always);
-    let sun_col: vec3<f32> = params.sun_col.xyz;
 
     let wavy: vec3<f32> = textureSample(t_wavy, s_wavy, params.time_always * 0.02 + wpos.xy * 0.001).xyz * 2.0 - 1.0;
     let wavy2: vec3<f32> = textureSample(t_wavy, s_wavy, 30.0 + params.time_always * 0.01 - wpos.yx * vec2(0.001, -0.001)).xyz * 2.0 - 1.0;
     normal = normalize(normal + wavy * 0.15 + wavy2 * 0.1);
 
-    let R: vec3<f32> = normalize(2.0 * normal * dot(normal,sun) - sun);
-    let cam_to_wpos: vec3<f32> = cam - wpos;
-    let depth: f32 = length(cam_to_wpos);
-    let V: vec3<f32> = cam_to_wpos / depth;
+    let R: vec3<f32> = normalize(2.0 * normal * dot(normal,params.sun) - params.sun);
+    let cam_to_wpos: vec3<f32> = params.cam_pos.xyz - wpos;
+    let dist: f32 = length(cam_to_wpos);
+    let V: vec3<f32> = cam_to_wpos / dist;
 
     let reflect_coeff = 1.0 - dot(V, normal);
 
@@ -78,10 +77,8 @@ fn frag(@location(0) _in_tint: vec4<f32>,
 
     let reflected: vec3<f32> = reflect(-V, normal);
 
-    let reflected_atmo = atmosphere(reflected, sun, 1e38);
-
-
-    let sun_contrib: f32 = clamp(dot(normal, sun), 0.0, 1.0);
+    let reflected_atmo = atmosphere(reflected, params.sun, 1e38);
+    let sun_contrib: f32 = clamp(dot(normal, params.sun), 0.0, 1.0);
 
     let base_color: vec3<f32> = 0.03 * vec3<f32>(0.262, 0.396, 0.508);
     let sunpower: f32 = 0.1 * reflect_coeff;
@@ -89,8 +86,20 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     var final_rgb: vec3<f32> = base_color + sunpower * reflected_atmo;
 
     #ifdef FOG
-    let view_atmo = atmosphere(-V, sun, depth * 0.2);
-    final_rgb += view_atmo;
+    var fog = vec3(0.0);
+    var fogdist: vec4<f32> = textureSampleLevel(t_fog, s_fog, position.xy / params.viewport, 0.0);
+
+    if (abs(fogdist.a - dist) > 300.0) {
+        #ifdef FOG_DEBUG
+        fog = vec3(1.0);
+        #else
+        fog = atmosphere(-V, params.sun, dist * 0.2);
+        #endif
+    } else {
+        fog = fogdist.rgb;
+    }
+
+    final_rgb += fog;
     #endif
 
     final_rgb = tonemap(final_rgb);

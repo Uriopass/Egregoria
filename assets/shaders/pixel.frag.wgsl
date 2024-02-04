@@ -109,7 +109,11 @@ fn frag(@location(0) in_tint: vec4<f32>,
     var fogdist: vec4<f32> = textureSampleLevel(t_fog, s_fog, position.xy / params.viewport, 0.0);
 
     if (abs(fogdist.a - dist) > 100.0) {
+        #ifdef FOG_DEBUG
+        fog = vec3(1.0);
+        #else
         fog = atmosphere(-V, params.sun, dist * 0.2);
+        #endif
     } else {
         fog = fogdist.rgb;
     }

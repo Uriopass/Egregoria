@@ -15,7 +15,7 @@ pub struct Water {
 }
 
 #[derive(Hash)]
-struct WaterPipeline;
+pub struct WaterPipeline;
 
 impl Water {
     pub fn new(gfx: &mut GfxContext, bounds: AABB) -> Self {
@@ -87,6 +87,7 @@ impl PipelineBuilder for WaterPipeline {
                 }],
             ),
             &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
+            &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
         ];
 
         gfx.color_pipeline("water pipeline", layouts, &[MeshVertex::desc()], vert, frag)
@@ -101,6 +102,7 @@ impl Drawable for Water {
 
         rp.set_bind_group(1, &gfx.fbos.depth_bg, &[]);
         rp.set_bind_group(2, &self.wavy_bg, &[]);
+        rp.set_bind_group(3, &gfx.water_bg, &[]);
 
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
