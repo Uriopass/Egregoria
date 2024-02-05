@@ -189,7 +189,7 @@ impl DayTime {
     /// Creates a new DayTime from the number of seconds elapsed since the start of the game
     pub fn new(seconds: i32) -> DayTime {
         DayTime {
-            day: 1 + seconds / SECONDS_PER_DAY,
+            day: seconds / SECONDS_PER_DAY,
             hour: (seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR,
             minute: (seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE,
             second: seconds % SECONDS_PER_MINUTE,
@@ -217,7 +217,8 @@ impl GameTime {
     pub const DAY: i32 = SECONDS_PER_DAY;
 
     pub fn new(tick: Tick) -> GameTime {
-        let timestamp = (tick.0 as f64 + 8.0 * TICKS_PER_HOUR as f64) / TICKS_PER_SECOND as f64;
+        let timestamp = Self::DAY as f64
+            + (tick.0 as f64 + 8.0 * TICKS_PER_HOUR as f64) / TICKS_PER_SECOND as f64;
         let seconds = timestamp as u32;
 
         GameTime {
