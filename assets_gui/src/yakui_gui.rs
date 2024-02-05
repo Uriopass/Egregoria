@@ -1,4 +1,4 @@
-use yakui::widgets::{List, Pad, StateResponse};
+use yakui::widgets::{CountGrid, List, Pad, StateResponse};
 use yakui::{
     colored_box_container, column, constrained, row, use_state, Constraints, CrossAxisAlignment,
     MainAxisAlignment, MainAxisSize, Response, Vec2,
@@ -11,8 +11,7 @@ use geom::Matrix4;
 use goryak::{
     background, button_primary, checkbox_value, divider, dragvalue, icon, interact_box_radius,
     is_hovered, on_secondary_container, on_surface, outline_variant, round_rect, scroll_vertical,
-    secondary_container, set_theme, surface, surface_variant, textc, use_changed, CountGrid,
-    RoundRect, Theme,
+    secondary_container, set_theme, surface, surface_variant, textc, use_changed, RoundRect, Theme,
 };
 use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype};
 

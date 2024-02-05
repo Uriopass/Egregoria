@@ -12,7 +12,7 @@ use crate::gui::item_icon;
 use crate::uiworld::UiWorld;
 
 /// Inspect a specific building, showing useful information about it
-pub fn inspect_human(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: HumanID) -> bool {
+pub fn inspect_human(uiworld: &UiWorld, sim: &Simulation, ui: &Context, id: HumanID) -> bool {
     let Some(human) = sim.get(id) else {
         return false;
     };

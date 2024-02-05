@@ -16,7 +16,7 @@ pub struct InspectRenderer {
 }
 
 impl InspectRenderer {
-    pub fn render(&mut self, uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui) {
+    pub fn render(&mut self, uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui) {
         let entity = self.entity;
         ui.label(format!("{:?}", self.entity));
 

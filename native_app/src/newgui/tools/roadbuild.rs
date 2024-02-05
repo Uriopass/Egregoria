@@ -25,7 +25,7 @@ pub enum BuildState {
 
 /// Road building tool
 /// Allows to build roads and intersections
-pub fn roadbuild(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::roadbuild");
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();

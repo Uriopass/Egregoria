@@ -7,7 +7,7 @@ use simulation::transportation::Location;
 use simulation::{AnyEntity, Simulation};
 
 /// InspectedAura shows the circle around the inspected entity
-pub fn inspected_aura(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn inspected_aura(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::inspected_aura");
     let inspected = uiworld.write::<InspectedEntity>();
     let inspected_b = uiworld.write::<InspectedBuilding>();

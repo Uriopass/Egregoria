@@ -14,7 +14,7 @@ use crate::gui::item_icon;
 use crate::uiworld::UiWorld;
 
 /// Inspect a specific building, showing useful information about it
-pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: BuildingID) {
+pub fn inspect_building(uiworld: &UiWorld, sim: &Simulation, ui: &Context, id: BuildingID) {
     let map = sim.map();
     let Some(building) = map.buildings().get(id) else {
         return;
@@ -72,7 +72,7 @@ pub fn inspect_building(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, i
         });
 }
 
-fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
+fn render_house(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, b: &Building) {
     let binfos = sim.read::<BuildingInfos>();
     let Some(info) = binfos.get(b.id) else {
         return;
@@ -95,7 +95,7 @@ fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Buildi
     }
 }
 
-fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
+fn render_freightstation(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, b: &Building) {
     let Some(SoulID::FreightStation(owner)) = sim.read::<BuildingInfos>().owner(b.id) else {
         return;
     };
@@ -126,7 +126,7 @@ fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b
     }
 }
 
-fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, sim: &Simulation, b: &Building) {
+fn render_goodscompany(ui: &mut Ui, uiworld: &UiWorld, sim: &Simulation, b: &Building) {
     let owner = sim.read::<BuildingInfos>().owner(b.id);
 
     let Some(SoulID::GoodsCompany(c_id)) = owner else {

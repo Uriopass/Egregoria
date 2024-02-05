@@ -2,7 +2,7 @@ use crate::game_loop::Timings;
 use crate::gui::chat::GUIChatState;
 use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
 use crate::gui::windows::settings::Settings;
-use crate::gui::{ExitState, FollowEntity};
+use crate::gui::{ExitState, FollowEntity, GuiState};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::newgui::bulldozer::BulldozerState;
@@ -11,7 +11,8 @@ use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;
 use crate::newgui::specialbuilding::SpecialBuildingResource;
 use crate::newgui::terraforming::TerraformingResource;
-use crate::newgui::windows::Windows;
+use crate::newgui::window_display::WindowDisplay;
+use crate::newgui::windows::economy::EconomyState;
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
     ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
@@ -33,6 +34,7 @@ pub fn init() {
     register_resource::<LotBrushResource>("lot_brush");
     register_resource::<Bindings>("bindings");
 
+    register_resource_noserialize::<GuiState>();
     register_resource_noserialize::<TerraformingResource>();
     register_resource_noserialize::<BulldozerState>();
     register_resource_noserialize::<DebugObjs>();
@@ -60,7 +62,8 @@ pub fn init() {
     register_resource_noserialize::<WorldCommands>();
     register_resource_noserialize::<crate::gui::windows::load::LoadState>();
     register_resource_noserialize::<crate::uiworld::SaveLoadState>();
-    register_resource_noserialize::<Windows>()
+    register_resource_noserialize::<WindowDisplay>();
+    register_resource_noserialize::<EconomyState>();
 }
 
 pub struct InitFunc {

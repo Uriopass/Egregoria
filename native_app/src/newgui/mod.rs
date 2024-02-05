@@ -10,7 +10,7 @@ mod tools;
 pub use hud::*;
 pub use tools::*;
 
-pub fn run_ui_systems(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn run_ui_systems(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::run_ui_systems");
     bulldozer::bulldozer(sim, uiworld);
     inspected_aura::inspected_aura(sim, uiworld);

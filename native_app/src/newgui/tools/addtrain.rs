@@ -11,7 +11,7 @@ use std::option::Option::None;
 
 /// Addtrain handles the "Adding a train" tool
 /// It allows to add a train to any rail lane
-pub fn addtrain(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::addtrain");
     let tool = *uiworld.read::<Tool>();
     if !matches!(tool, Tool::Train) {

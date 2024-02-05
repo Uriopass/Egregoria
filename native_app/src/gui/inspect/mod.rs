@@ -18,7 +18,7 @@ mod inspect_human;
 mod inspect_train;
 mod inspect_vehicle;
 
-pub fn inspector(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
+pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::inspector");
     let inspected_building = *uiworld.read::<InspectedBuilding>();
     if let Some(b) = inspected_building.e {
@@ -66,7 +66,7 @@ pub fn inspector(ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
     }
 }
 
-pub fn building_link(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, b: BuildingID) {
+pub fn building_link(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, b: BuildingID) {
     if ui.link(format!("{:?}", b.data())).clicked() {
         uiworld.write::<InspectedBuilding>().e = Some(b);
         if let Some(b) = sim.map().buildings().get(b) {
@@ -75,11 +75,11 @@ pub fn building_link(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, b: Bu
     }
 }
 
-pub fn entity_link(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, e: impl Into<AnyEntity>) {
+pub fn entity_link(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, e: impl Into<AnyEntity>) {
     entity_link_inner(uiworld, sim, ui, e.into())
 }
 
-fn entity_link_inner(uiworld: &mut UiWorld, sim: &Simulation, ui: &mut Ui, e: AnyEntity) {
+fn entity_link_inner(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, e: AnyEntity) {
     let linkname = match e {
         AnyEntity::HumanID(id) => {
             if let Some(human) = sim.world().humans.get(id) {

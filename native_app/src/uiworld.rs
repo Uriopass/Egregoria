@@ -1,6 +1,5 @@
-use crate::gui::Gui;
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::newgui::windows::Windows;
+use crate::newgui::window_display::WindowDisplay;
 use crate::newgui::TimeAlways;
 use goryak::Window;
 use simulation::utils::resources::{RefMutSingle, RefSingle, ResourcesSingleThread};
@@ -77,9 +76,9 @@ impl UiWorld {
         &self,
         window: Window,
         on_close: impl FnOnce(&UiWorld) + 'static,
-        children: impl FnOnce(&mut Gui, &UiWorld, &Simulation) + 'static,
+        children: impl FnOnce(&UiWorld, &Simulation) + 'static,
     ) {
-        let mut window_state = self.write::<Windows>();
+        let mut window_state = self.write::<WindowDisplay>();
         window_state.show(window, children, on_close);
     }
 

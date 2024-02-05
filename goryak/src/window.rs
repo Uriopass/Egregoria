@@ -4,12 +4,13 @@ use std::rc::Rc;
 
 use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
 use yakui_core::widget::{LayoutContext, Widget};
-use yakui_core::{context, Alignment, Flow, MainAxisSize};
-use yakui_widgets::widgets::{Button, List, Pad};
-use yakui_widgets::{center, constrained, draggable, offset, reflow, row};
+use yakui_core::{context, Alignment, Flow};
+use yakui_widgets::widgets::{Button, Pad};
+use yakui_widgets::{center, constrained, draggable, offset, reflow};
 
 use crate::{
-    blur_bg, divider, icon_button, on_primary_container, outline, primary_container, textc,
+    blur_bg, divider, icon_button, mincolumn, on_primary_container, outline, primary_container,
+    textc,
 };
 
 thread_local! {
@@ -32,9 +33,7 @@ impl Window {
         let off = draggable(|| {
             blur_bg(primary_container().with_alpha(0.5), self.radius, || {
                 self.pad.show(|| {
-                    let mut l = List::column();
-                    l.main_axis_size = MainAxisSize::Min;
-                    l.show(|| {
+                    mincolumn(|| {
                         reflow(Alignment::TOP_RIGHT, Dim2::ZERO, || {
                             offset(Vec2::new(-25.0, -15.0), || {
                                 constrained(Constraints::tight(Vec2::splat(40.0)), || {
@@ -44,12 +43,13 @@ impl Window {
                                         b.border_radius = 10.0;
                                         b.style.fill = Color::CLEAR;
                                         b.style.text.font_size = 20.0;
-                                        b.style.text.color = on_primary_container();
+                                        b.style.text.color = on_primary_container().adjust(0.5);
                                         b.down_style.fill = Color::CLEAR;
                                         b.down_style.text = b.style.text.clone();
                                         b.hover_style.fill = Color::CLEAR;
                                         b.hover_style.text = b.style.text.clone();
                                         b.hover_style.text.font_size = 25.0;
+                                        b.hover_style.text.color = on_primary_container();
 
                                         if icon_button(b).show().clicked {
                                             on_close();
@@ -58,9 +58,7 @@ impl Window {
                                 });
                             });
                         });
-                        row(|| {
-                            textc(on_primary_container(), Cow::Borrowed(self.title));
-                        });
+                        textc(on_primary_container(), Cow::Borrowed(self.title));
                         divider(outline(), 10.0, 1.0);
                         children();
                     });
@@ -114,14 +112,14 @@ impl Widget for WindowBase {
         }
     }
 
-    fn layout(&self, mut ctx: LayoutContext<'_>, constraints: Constraints) -> Vec2 {
+    fn layout(&self, mut ctx: LayoutContext<'_>, _: Constraints) -> Vec2 {
         let node = ctx.dom.get_current();
         if node.children.len() > 1 {
             panic!("Window can only have one child");
         }
 
         let child = *node.children.first().unwrap();
-        let size = ctx.calculate_layout(child, constraints);
+        let size = ctx.calculate_layout(child, Constraints::loose(ctx.layout.viewport().size()));
 
         let vp = ctx.layout.viewport().size();
 

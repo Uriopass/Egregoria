@@ -1,13 +1,11 @@
 use egui::Context;
 use goryak::button_primary;
-use serde::{Deserialize, Serialize};
 
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use simulation::Simulation;
 
 pub mod debug;
-mod economy;
 pub mod load;
 #[cfg(feature = "multiplayer")]
 pub mod network;
@@ -18,20 +16,20 @@ pub trait GUIWindow: Send + Sync {
         &mut self,
         window: egui::Window<'_>,
         ui: &Context,
-        uiworld: &mut UiWorld,
+        uiworld: &UiWorld,
         sim: &Simulation,
     );
 }
 
 impl<F> GUIWindow for F
 where
-    F: Fn(egui::Window<'_>, &Context, &mut UiWorld, &Simulation) + Send + Sync,
+    F: Fn(egui::Window<'_>, &Context, &UiWorld, &Simulation) + Send + Sync,
 {
     fn render_window(
         &mut self,
         window: egui::Window<'_>,
         ui: &Context,
-        uiworld: &mut UiWorld,
+        uiworld: &UiWorld,
         sim: &Simulation,
     ) {
         self(window, ui, uiworld, sim);
@@ -43,21 +41,17 @@ struct GUIWindowStruct {
     name: &'static str,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(default)]
-pub struct GUIWindows {
-    #[serde(skip)]
+pub struct OldGUIWindows {
     windows: Vec<GUIWindowStruct>,
     opened: Vec<bool>,
 }
 
-impl Default for GUIWindows {
+impl Default for OldGUIWindows {
     fn default() -> Self {
         let mut s = Self {
             windows: vec![],
             opened: vec![],
         };
-        s.insert("Economy", economy::economy, false);
         s.insert("Debug", debug::debug, false);
         s.insert("Settings", settings::settings, false);
         #[cfg(feature = "multiplayer")]
@@ -67,7 +61,7 @@ impl Default for GUIWindows {
     }
 }
 
-impl GUIWindows {
+impl OldGUIWindows {
     pub fn insert(&mut self, name: &'static str, w: impl GUIWindow + 'static, opened: bool) {
         self.windows.push(GUIWindowStruct {
             w: Box::new(w),
@@ -88,7 +82,7 @@ impl GUIWindows {
         }
     }
 
-    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
+    pub fn render(&mut self, ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
         profiling::scope!("windows::render");
         if uiworld
             .write::<InputMap>()

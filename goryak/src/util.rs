@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::panic::Location;
 
+use yakui_core::dom::Dom;
 use yakui_core::geometry::{Color, Constraints, FlexFit, Vec2};
+use yakui_core::layout::LayoutDom;
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
-use yakui_core::{context, Response, WidgetId};
+use yakui_core::{context, MainAxisSize, Response, WidgetId};
 use yakui_widgets::util::widget;
-use yakui_widgets::widgets::{Button, Pad, PadResponse, Text};
+use yakui_widgets::widgets::{Button, List, ListResponse, Pad, PadResponse, Text};
 
 use crate::{on_primary, on_secondary, primary, secondary, Scrollable, ScrollableResponse};
 
@@ -23,6 +25,18 @@ pub fn use_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
         old_v.set(Some(v));
         f();
     }
+}
+
+pub fn minrow<F: FnOnce()>(children: F) -> Response<ListResponse> {
+    let mut l = List::row();
+    l.main_axis_size = MainAxisSize::Min;
+    l.show(children)
+}
+
+pub fn mincolumn<F: FnOnce()>(children: F) -> Response<ListResponse> {
+    let mut l = List::column();
+    l.main_axis_size = MainAxisSize::Min;
+    l.show(children)
 }
 
 pub fn padxy(x: f32, y: f32, children: impl FnOnce()) -> Response<PadResponse> {
@@ -110,6 +124,54 @@ pub fn button_secondary(text: impl Into<String>) -> Button {
     b.down_style.fill = secondary().adjust(1.3);
     b.down_style.text.color = on_secondary();
     b
+}
+
+pub fn debug_layout() {
+    widget::<DebugLayout>(());
+}
+
+#[derive(Debug)]
+struct DebugLayout;
+
+impl Widget for DebugLayout {
+    type Props<'a> = ();
+    type Response = ();
+
+    fn new() -> Self {
+        Self
+    }
+
+    fn update(&mut self, _: Self::Props<'_>) -> Self::Response {}
+
+    fn layout(&self, ctx: LayoutContext<'_>, _: Constraints) -> Vec2 {
+        fn explore_layout(dom: &Dom, ctx: &LayoutDom, id: WidgetId, indent: &mut String) {
+            let Some(node) = ctx.get(id) else {
+                eprintln!("{}{:?}: not found in layout", &**indent, id);
+                return;
+            };
+            let Some(domnode) = dom.get(id) else {
+                eprintln!("{}{:?}: not found in dom", &**indent, id);
+                return;
+            };
+            eprintln!(
+                "{} p:{} s:{} ({})",
+                &**indent,
+                node.rect.pos(),
+                node.rect.size(),
+                domnode.widget.type_name().rsplit_once(':').unwrap().1
+            );
+
+            for &child in &domnode.children {
+                indent.push(' ');
+                explore_layout(dom, ctx, child, indent);
+                indent.pop();
+            }
+        }
+
+        explore_layout(ctx.dom, ctx.layout, ctx.dom.root(), &mut String::new());
+
+        Vec2::ZERO
+    }
 }
 
 #[track_caller]

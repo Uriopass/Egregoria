@@ -93,7 +93,7 @@ impl AsRef<str> for AutoSaveEvery {
 
 /// Settings window
 /// This window is used to change the settings of the game
-pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _: &Simulation) {
+pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &UiWorld, _: &Simulation) {
     let mut settings = uiworld.write::<Settings>();
     let [_, h]: [f32; 2] = ui.available_rect().size().into();
 

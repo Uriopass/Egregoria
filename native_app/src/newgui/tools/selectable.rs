@@ -17,7 +17,7 @@ pub fn select_radius(id: AnyEntity) -> f32 {
 }
 
 /// Selectable allows to select entities by clicking on them
-pub fn selectable(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn selectable(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::selectable");
     let mut inspected = uiworld.write::<InspectedEntity>();
     let mut inspected_b = uiworld.write::<InspectedBuilding>();

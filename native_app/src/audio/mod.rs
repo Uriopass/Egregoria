@@ -36,7 +36,7 @@ impl GameAudio {
         }
     }
 
-    pub fn update(&mut self, sim: &Simulation, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
+    pub fn update(&mut self, sim: &Simulation, uiworld: &UiWorld, ctx: &mut AudioContext) {
         self.music.update(ctx);
         self.ambiant.update(sim, uiworld);
         self.carsounds.update(sim, uiworld, ctx);

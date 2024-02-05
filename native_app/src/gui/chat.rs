@@ -17,7 +17,7 @@ pub struct GUIChatState {
     chat_bar_showed: bool,
 }
 
-pub fn chat(ui: &egui::Context, uiw: &mut UiWorld, sim: &Simulation) {
+pub fn chat(ui: &egui::Context, uiw: &UiWorld, sim: &Simulation) {
     const MAX_MESSAGES: usize = 30;
     let mut state = uiw.write::<GUIChatState>();
     let five_minute_ago = sim.read::<GameTime>().instant() - GameDuration::from_minutes(5);

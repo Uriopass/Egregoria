@@ -12,14 +12,15 @@ use prototypes::GameTime;
 use simulation::Simulation;
 
 use crate::gui::windows::settings::Settings;
-use crate::gui::Gui;
+use crate::gui::GuiState;
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 
-pub fn time_controls(gui: &mut Gui, uiworld: &mut UiWorld, sim: &Simulation) {
+pub fn time_controls(uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::time_controls");
     let time = sim.read::<GameTime>().daytime;
     let warp = &mut uiworld.write::<Settings>().time_warp;
+    let mut gui = uiworld.write::<GuiState>();
     let depause_warp = &mut gui.depause_warp;
     if uiworld
         .read::<InputMap>()

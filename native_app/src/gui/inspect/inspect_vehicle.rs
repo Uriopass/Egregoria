@@ -4,12 +4,7 @@ use egui::Context;
 use simulation::transportation::VehicleState;
 use simulation::{Simulation, VehicleID};
 
-pub fn inspect_vehicle(
-    uiworld: &mut UiWorld,
-    sim: &Simulation,
-    ui: &Context,
-    id: VehicleID,
-) -> bool {
+pub fn inspect_vehicle(uiworld: &UiWorld, sim: &Simulation, ui: &Context, id: VehicleID) -> bool {
     let Some(v) = sim.get(id) else {
         return false;
     };

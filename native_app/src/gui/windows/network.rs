@@ -17,7 +17,7 @@ pub struct NetworkConnectionInfo {
 /// Network window
 /// Allows to connect to a server or start a server
 #[cfg(feature = "multiplayer")]
-pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, sim: &Simulation) {
+pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     window.show(ui, |ui| {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();

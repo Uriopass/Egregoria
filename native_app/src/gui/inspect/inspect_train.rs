@@ -3,7 +3,7 @@ use crate::uiworld::UiWorld;
 use egui::Context;
 use simulation::{Simulation, TrainID};
 
-pub fn inspect_train(uiworld: &mut UiWorld, sim: &Simulation, ui: &Context, id: TrainID) -> bool {
+pub fn inspect_train(uiworld: &UiWorld, sim: &Simulation, ui: &Context, id: TrainID) -> bool {
     let Some(t) = sim.get(id) else {
         return false;
     };

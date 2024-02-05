@@ -33,7 +33,7 @@ pub struct SpecialBuildingResource {
 
 /// SpecialBuilding tool
 /// Allows to build special buildings like farms, factories, etc.
-pub fn specialbuilding(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn specialbuilding(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::specialbuilding");
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();

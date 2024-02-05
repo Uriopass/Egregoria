@@ -11,11 +11,11 @@ use goryak::{
 use simulation::economy::Government;
 use simulation::Simulation;
 
-use crate::gui::{ExitState, Gui};
+use crate::gui::{ExitState, GuiState};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 
-pub fn menu_bar(gui: &mut Gui, uiworld: &UiWorld, sim: &Simulation) {
+pub fn menu_bar(uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::menu_bar");
 
     reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
@@ -28,8 +28,10 @@ pub fn menu_bar(gui: &mut Gui, uiworld: &UiWorld, sim: &Simulation) {
                         l.cross_axis_alignment = CrossAxisAlignment::Center;
 
                         l.show(|| {
+                            let mut gui = uiworld.write::<GuiState>();
                             gui.windows.menu();
-                            save_window(gui, uiworld);
+                            gui.old_windows.menu();
+                            save_window(&mut *gui, uiworld);
                             textc(
                                 on_primary_container(),
                                 format!("Money: {}", sim.read::<Government>().money),
@@ -43,7 +45,7 @@ pub fn menu_bar(gui: &mut Gui, uiworld: &UiWorld, sim: &Simulation) {
     });
 }
 
-fn save_window(gui: &mut Gui, uiw: &UiWorld) {
+fn save_window(gui: &mut GuiState, uiw: &UiWorld) {
     let mut slstate = uiw.write::<SaveLoadState>();
     if slstate.saving_status.load(Ordering::SeqCst) {
         textc(on_secondary_container(), "Saving...");
@@ -68,7 +70,7 @@ fn save_window(gui: &mut Gui, uiw: &UiWorld) {
                     let mut estate = uiw.write::<ExitState>();
                     *estate = ExitState::NoExit;
                 },
-                |_, uiw, _sim| {
+                |uiw, _sim| {
                     let mut slstate = uiw.write::<SaveLoadState>();
                     let mut estate = uiw.write::<ExitState>();
                     let mut l = List::column();

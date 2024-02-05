@@ -22,7 +22,7 @@ pub struct RoadEditorResource {
 
 /// RoadEditor tool
 /// Allows to edit intersections properties like turns and signals
-pub fn roadeditor(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn roadeditor(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::roadeditor");
     let tool = uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();

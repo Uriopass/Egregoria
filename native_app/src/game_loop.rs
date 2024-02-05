@@ -11,13 +11,12 @@ use simulation::Simulation;
 use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::{manage_settings, Settings};
-use crate::gui::{ExitState, FollowEntity, Gui, UiTextures};
+use crate::gui::{render_oldgui, ExitState, FollowEntity, GuiState, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui::terraforming::TerraformingResource;
-use crate::newgui::{TimeAlways, Tool};
+use crate::newgui::{render_newgui, TimeAlways, Tool};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
-use common::saveload::Encoder;
 use prototypes::GameTime;
 use simulation::utils::scheduler::SeqSchedule;
 
@@ -31,7 +30,6 @@ pub struct State {
 
     instanced_renderer: InstancedRender,
     map_renderer: MapRenderer,
-    gui: Gui,
     immtess: Tesselator<true>,
 
     all_audio: GameAudio,
@@ -43,7 +41,7 @@ impl engine::framework::State for State {
 
         let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
 
-        Gui::set_style(ctx.egui.platform.egui_ctx());
+        GuiState::set_style(ctx.egui.platform.egui_ctx());
         log::info!("loaded egui_render");
 
         let sim: Simulation =
@@ -68,7 +66,6 @@ impl engine::framework::State for State {
             &mut ctx.egui.platform.egui_ctx().clone(),
         ));
 
-        let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
         uiworld.insert(camera);
 
@@ -86,7 +83,6 @@ impl engine::framework::State for State {
             game_schedule,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             map_renderer: MapRenderer::new(&mut ctx.gfx, &sim),
-            gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             sim: Arc::new(RwLock::new(sim)),
             immtess: Tesselator::new(&mut ctx.gfx, None, 1.0),
@@ -159,7 +155,7 @@ impl engine::framework::State for State {
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
 
-        self.gui.hidden ^= self
+        self.uiw.write::<GuiState>().hidden ^= self
             .uiw
             .read::<InputMap>()
             .just_act
@@ -228,7 +224,7 @@ impl engine::framework::State for State {
     }
 
     fn exit(&mut self) -> bool {
-        if self.gui.last_save.elapsed() < Duration::from_secs(30) {
+        if self.uiw.read::<GuiState>().last_save.elapsed() < Duration::from_secs(30) {
             return true;
         }
         let mut estate = self.uiw.write::<ExitState>();
@@ -246,12 +242,12 @@ impl engine::framework::State for State {
 
     fn render_gui(&mut self, ui: &egui::Context) {
         let sim = self.sim.read().unwrap();
-        self.gui.render(ui, &mut self.uiw, &sim);
+        render_oldgui(ui, &self.uiw, &sim);
     }
 
     fn render_yakui(&mut self) {
         let sim = self.sim.read().unwrap();
-        self.gui.render_newgui(&mut self.uiw, &sim);
+        render_newgui(&self.uiw, &sim);
     }
 }
 

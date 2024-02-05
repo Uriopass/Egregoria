@@ -19,7 +19,7 @@ pub struct TerraformingResource {
 
 /// Lot brush tool
 /// Allows to build houses on lots
-pub fn terraforming(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn terraforming(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::terraforming");
     let mut res = uiworld.write::<TerraformingResource>();
     let tool = *uiworld.read::<Tool>();

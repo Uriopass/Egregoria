@@ -18,7 +18,7 @@ pub struct ZoneEditState {
 
 /// ZoneEdit tool
 /// Allows to edit the zone of a building like a farm field or solarpanel field
-pub fn zoneedit(sim: &Simulation, uiworld: &mut UiWorld) {
+pub fn zoneedit(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::zoneedit");
     let mut inspected_b = uiworld.write::<InspectedBuilding>();
     let mut state = uiworld.write::<ZoneEditState>();

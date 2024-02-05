@@ -68,12 +68,7 @@ impl Default for TestFieldProperties {
 }
 
 /// debug window for various debug options
-pub fn debug(
-    window: egui::Window<'_>,
-    ui: &egui::Context,
-    uiworld: &mut UiWorld,
-    sim: &Simulation,
-) {
+pub fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, sim: &Simulation) {
     window.show(ui, |ui| {
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {

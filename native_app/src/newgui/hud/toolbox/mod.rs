@@ -20,7 +20,7 @@ mod roadbuild;
 mod roadedit;
 mod terraforming;
 
-pub fn new_toolbox(uiworld: &mut UiWorld, sim: &Simulation) {
+pub fn new_toolbox(uiworld: &UiWorld, sim: &Simulation) {
     if uiworld
         .read::<InputMap>()
         .just_act
@@ -87,7 +87,7 @@ fn tool_properties(uiw: &UiWorld, _sim: &Simulation) -> bool {
     true
 }
 
-fn tools_list(uiworld: &mut UiWorld) {
+fn tools_list(uiworld: &UiWorld) {
     let tools = [
         ("toolbar_straight_road", Tool::RoadbuildStraight),
         ("toolbar_curved_road", Tool::RoadbuildCurved),

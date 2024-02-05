@@ -34,7 +34,7 @@ impl Ambient {
         Self { wind, forest }
     }
 
-    pub fn update(&mut self, sim: &Simulation, uiworld: &mut UiWorld) {
+    pub fn update(&mut self, sim: &Simulation, uiworld: &UiWorld) {
         let eye = uiworld.read::<Camera>().eye();
         let map = sim.map();
 
