@@ -12,8 +12,18 @@ pub struct AABB {
 impl AABB {
     /// Create a new `AABB`.
     #[inline]
-    pub const fn new(ll: Vec2, ur: Vec2) -> Self {
+    pub fn new_ll_ur(ll: Vec2, ur: Vec2) -> Self {
+        debug_assert!(ll.x <= ur.x);
+        debug_assert!(ll.y <= ur.y);
         AABB { ll, ur }
+    }
+
+    /// Create a new `AABB`.
+    #[inline]
+    pub fn new_ll_size(ll: Vec2, size: Vec2) -> Self {
+        debug_assert!(size.x >= 0.0);
+        debug_assert!(size.y >= 0.0);
+        AABB { ll, ur: ll + size }
     }
 
     /// Create a new `AABB`.
@@ -126,10 +136,10 @@ impl AABB {
     #[inline]
     /// Checks whether the `AABB` contains a `Point`
     pub fn contains_within(&self, point: Vec2, tolerance: f32) -> bool {
-        point.x >= self.ll.x - tolerance
-            && point.x <= self.ur.x + tolerance
-            && point.y <= self.ur.y + tolerance
-            && point.y >= self.ll.y - tolerance
+        (point.x >= self.ll.x - tolerance)
+            & (point.x <= self.ur.x + tolerance)
+            & (point.y <= self.ur.y + tolerance)
+            & (point.y >= self.ll.y - tolerance)
     }
 
     #[inline]

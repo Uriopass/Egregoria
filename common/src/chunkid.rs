@@ -45,7 +45,7 @@ impl<const LEVEL: u16> ChunkID<LEVEL> {
 
     pub fn bbox(self) -> AABB {
         let ll = self.corner();
-        AABB::new(ll, ll + Vec2::splat(Self::SIZE_F32))
+        AABB::new_ll_size(ll, Vec2::splat(Self::SIZE_F32))
     }
 
     pub fn convert_up<const NEW_LEVEL: u16>(self) -> ChunkID<NEW_LEVEL> {
@@ -97,7 +97,7 @@ mod tests {
         assert_eq!(c.center(), vec2(-8.0, 24.0));
         assert_eq!(
             c.bbox(),
-            geom::AABB::new(vec2(-16.0, 16.0), vec2(0.0, 32.0))
+            geom::AABB::new_ll_ur(vec2(-16.0, 16.0), vec2(0.0, 32.0))
         );
         assert_eq!(c.size(), 16.0);
 
@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(c.center(), vec2(-16.0, 48.0));
         assert_eq!(
             c.bbox(),
-            geom::AABB::new(vec2(-32.0, 32.0), vec2(0.0, 64.0))
+            geom::AABB::new_ll_ur(vec2(-32.0, 32.0), vec2(0.0, 64.0))
         );
         assert_eq!(c.size(), 32.0);
     }

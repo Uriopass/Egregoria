@@ -169,7 +169,7 @@ impl Shape for OBB {
             None => unsafe { unreachable_unchecked() },
         };
 
-        AABB::new(min, max)
+        AABB::new_ll_ur(min, max)
     }
 }
 
@@ -247,7 +247,7 @@ impl Intersect<Segment> for OBB {
             src: (shape.src - self.corners[0]).rotated_by(axis[0].flipy()),
             dst: (shape.dst - self.corners[0]).rotated_by(axis[0].flipy()),
         };
-        AABB::new(Vec2::ZERO, vec2(w * w, h * w)).intersects(&tr)
+        AABB::new_ll_ur(Vec2::ZERO, vec2(w * w, h * w)).intersects(&tr)
     }
 }
 

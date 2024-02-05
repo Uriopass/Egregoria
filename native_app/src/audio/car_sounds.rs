@@ -1,7 +1,7 @@
 use crate::uiworld::UiWorld;
 use engine::{AudioContext, AudioKind, Gain, GainControl};
 use flat_spatial::grid::GridHandle;
-use geom::{Camera, AABB};
+use geom::{Camera, Vec2, AABB};
 use oddio::{Cycle, Mixed, Seek, Speed, SpeedControl};
 use simulation::transportation::TransportGrid;
 use simulation::Simulation;
@@ -37,7 +37,7 @@ impl CarSounds {
     pub fn update(&mut self, sim: &Simulation, uiworld: &UiWorld, ctx: &mut AudioContext) {
         let transport_grid = sim.read::<TransportGrid>();
         let campos = uiworld.read::<Camera>().eye();
-        let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);
+        let cambox = AABB::centered(campos.xy(), Vec2::splat(200.0));
 
         const HEAR_RADIUS: f32 = 200.0;
 

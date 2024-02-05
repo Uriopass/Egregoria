@@ -111,7 +111,7 @@ impl Spline {
             }
         }
 
-        AABB::new(mi, ma)
+        AABB::new_ll_ur(mi, ma)
     }
 
     pub fn wide_bbox(&self) -> AABB {
@@ -119,7 +119,7 @@ impl Spline {
         let p2 = self.to - self.to_derivative;
         let mi = self.from.min(self.to).min(p1).min(p2);
         let ma = self.from.max(self.to).max(p1).max(p2);
-        AABB::new(mi, ma)
+        AABB::new_ll_ur(mi, ma)
     }
 
     pub fn is_steep(&self, thickness: f32) -> bool {

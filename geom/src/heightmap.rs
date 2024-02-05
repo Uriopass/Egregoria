@@ -46,7 +46,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> HeightmapChunk<RESOLUTION, SIZE> 
     pub fn rect(id: HeightmapChunkID) -> AABB {
         let ll = vec2(id.0 as f32 * SIZE as f32, id.1 as f32 * SIZE as f32);
         let ur = ll + vec2(SIZE as f32, SIZE as f32);
-        AABB::new(ll, ur)
+        AABB::new_ll_ur(ll, ur)
     }
 
     #[inline]
@@ -141,7 +141,7 @@ impl<const RESOLUTION: usize, const SIZE: u32> Heightmap<RESOLUTION, SIZE> {
 
     #[inline]
     pub fn bounds(&self) -> AABB {
-        AABB::new(
+        AABB::new_ll_ur(
             vec2(0.0, 0.0),
             vec2(self.w as f32 * SIZE as f32, self.h as f32 * SIZE as f32),
         )

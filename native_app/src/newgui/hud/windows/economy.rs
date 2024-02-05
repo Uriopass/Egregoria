@@ -1,14 +1,17 @@
 use std::collections::HashSet;
 
+use engine::Tesselator;
+use geom::AABB;
+use yakui::paint::PaintMesh;
 use yakui::widgets::{CountGrid, List, Pad};
 use yakui::{
-    canvas, colored_box, constrained, use_state, Color, Constraints, CrossAxisAlignment,
+    colored_box, constrained, use_state, Color, Constraints, CrossAxisAlignment,
     MainAxisAlignItems, MainAxisSize, Vec2,
 };
 
 use goryak::{
     constrained_viewport, mincolumn, minrow, on_primary_container, padxy, pady,
-    selectable_label_primary, textc, Scrollable, Window,
+    selectable_label_primary, sized_canvas, textc, Scrollable, Window,
 };
 use prototypes::{ItemID, DELTA_F64};
 use simulation::economy::{
@@ -118,11 +121,34 @@ pub fn economy(uiw: &UiWorld, _: &Simulation) {
                         pady(5.0, || {
                             colored_box(Color::BLACK, Vec2::new(300.0, 200.0)); // plot placeholder
                         });
-                        canvas(|paint| {
-                            //let tess = Tesselator::new(
-                            //    Some(AABB::new((0.0, 0.0).into(), (300.0, 200.0).into())),
-                            //    1.0,
-                            //);
+                        sized_canvas(Vec2::new(300.0, 200.0), |paint| {
+                            let rect = paint.layout.get(paint.dom.current()).unwrap().rect;
+
+                            let mut vertices = Vec::new();
+                            let mut indices = Vec::new();
+
+                            let cull_rect = AABB::new_ll_size(
+                                <[f32; 2]>::from(rect.pos()).into(),
+                                <[f32; 2]>::from(rect.size()).into(),
+                            );
+                            let mut tess =
+                                Tesselator::new(&mut vertices, &mut indices, Some(cull_rect), 15.0);
+                            tess.set_color([1.0f32, 1.0, 1.0, 1.0]);
+
+                            let [x, y]: [f32; 2] = rect.pos().into();
+
+                            tess.draw_circle((x + 50.0, y + 50.0, 0.0).into(), 50.0);
+
+                            paint.paint.add_mesh(PaintMesh::new(
+                                vertices.into_iter().map(|v| {
+                                    yakui::paint::Vertex::new(
+                                        [v.position[0], v.position[1]],
+                                        v.uv,
+                                        v.color,
+                                    )
+                                }),
+                                indices.into_iter().map(|x| x as _),
+                            ));
                         });
 
                         let scroll_constrained = Constraints {

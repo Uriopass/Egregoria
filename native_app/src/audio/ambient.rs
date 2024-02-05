@@ -47,7 +47,7 @@ impl Ambient {
         }
 
         // Forest
-        let bbox = AABB::new(eye.xy() - Vec2::splat(100.0), eye.xy() + Vec2::splat(100.0));
+        let bbox = AABB::centered(eye.xy(), Vec2::splat(200.0));
         let mut volume = lerp(1.0, 0.0, h / 300.0);
 
         if volume > 0.0 {

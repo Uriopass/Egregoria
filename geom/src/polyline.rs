@@ -292,7 +292,7 @@ impl PolyLine {
             None => unsafe { unreachable_unchecked() },
         };
 
-        AABB::new(min, max)
+        AABB::new_ll_ur(min, max)
     }
 
     pub fn n_points(&self) -> usize {

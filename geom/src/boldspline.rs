@@ -165,7 +165,7 @@ impl Intersect<OBB> for BoldSpline {
         s.to = s.to.rotated_by(rot);
         s.to_derivative = s.to_derivative.rotated_by(rot);
 
-        let aabb = AABB::new(Vec2::ZERO, vec2(w * w, w * h));
+        let aabb = AABB::new_ll_ur(Vec2::ZERO, vec2(w * w, w * h));
 
         BoldSpline {
             spline: s,

@@ -35,7 +35,7 @@ impl OrbitCamera {
 
     pub fn cull_tess(&self, tess: &mut Tesselator) {
         let p = self.camera.pos;
-        tess.cull_rect = Some(AABB::new(p.xy(), p.xy()).expand(2000.0));
+        tess.cull_rect = Some(AABB::centered(p.xy(), Vec2::splat(4000.0)));
         tess.zoom = 1000.0 / self.height().max(1.0);
     }
 

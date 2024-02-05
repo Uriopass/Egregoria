@@ -421,7 +421,7 @@ impl Shape for Polygon {
             None => return AABB::zero(),
         };
 
-        AABB::new(min, max)
+        AABB::new_ll_ur(min, max)
     }
 }
 

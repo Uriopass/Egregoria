@@ -15,7 +15,7 @@ impl ColoredMesh {
             minmax(self.faces.iter().flat_map(|x| &x.0).map(|x| x.xy())),
             return AABB::zero()
         );
-        AABB::new(ll, ur)
+        AABB::new_ll_ur(ll, ur)
     }
 
     pub fn translate(&mut self, off: Vec2) {

@@ -218,7 +218,7 @@ impl Segmentd {
 impl Shape for Segment {
     #[inline]
     fn bbox(&self) -> AABB {
-        AABB::new(self.src, self.dst)
+        AABB::new_ll_ur(self.src.min(self.dst), self.src.max(self.dst))
     }
 }
 
