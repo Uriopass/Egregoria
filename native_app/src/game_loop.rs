@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::history::History;
-use engine::{Context, FrameContext, Tesselator};
+use engine::{Context, FrameContext, MeshBuilder};
 use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::Simulation;
 
@@ -30,7 +30,7 @@ pub struct State {
 
     instanced_renderer: InstancedRender,
     map_renderer: MapRenderer,
-    immtess: Tesselator<true>,
+    immediate_renderer: MeshBuilder<true>,
 
     all_audio: GameAudio,
 }
@@ -85,7 +85,7 @@ impl engine::framework::State for State {
             map_renderer: MapRenderer::new(&mut ctx.gfx, &sim),
             all_audio: GameAudio::new(&mut ctx.audio),
             sim: Arc::new(RwLock::new(sim)),
-            immtess: Tesselator::new(&mut ctx.gfx, None, 1.0),
+            immediate_renderer: MeshBuilder::new(ctx.gfx.tess_material),
         };
         me.sim.write().unwrap().map().dispatch_all();
         me
@@ -185,9 +185,7 @@ impl engine::framework::State for State {
         let start = Instant::now();
         let sim = self.sim.read().unwrap();
 
-        self.immtess.meshbuilder.clear();
         let camera = self.uiw.read::<OrbitCamera>();
-        camera.cull_tess(&mut self.immtess);
 
         let time: GameTime = *self.sim.read().unwrap().read::<GameTime>();
 
@@ -320,13 +318,19 @@ impl State {
     fn immediate_draw(&mut self, ctx: &mut FrameContext) {
         profiling::scope!("immediate_draw");
 
+        self.immediate_renderer.clear();
+
+        let mut tess = self.immediate_renderer.mk_tess();
+
+        self.uiw.read::<OrbitCamera>().cull_tess(&mut tess);
+
         {
             profiling::scope!("debug_objs");
             let sim = self.sim.read().unwrap();
             let objs = self.uiw.read::<DebugObjs>();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut self.immtess, &sim, &self.uiw);
+                    obj(&mut tess, &sim, &self.uiw);
                 }
             }
         }
@@ -362,11 +366,11 @@ impl State {
                 geom::DEBUG_POS.clear();
             }
 
-            immediate.apply(&mut self.immtess, ctx);
+            immediate.apply(&mut tess, ctx);
             immediate.orders.clear();
         }
 
-        if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx) {
+        if let Some(mut x) = self.immediate_renderer.build(ctx.gfx) {
             x.skip_depth = true;
             ctx.draw(x)
         }

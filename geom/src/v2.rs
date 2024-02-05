@@ -919,6 +919,20 @@ impl DivAssign<f32> for Vec2 {
     }
 }
 
+impl From<(f32, f32)> for Vec2 {
+    #[inline]
+    fn from(v: (f32, f32)) -> Self {
+        Self { x: v.0, y: v.1 }
+    }
+}
+
+impl From<Vec2> for (f32, f32) {
+    #[inline]
+    fn from(v: Vec2) -> Self {
+        (v.x, v.y)
+    }
+}
+
 impl From<Vec2> for [f32; 2] {
     #[inline]
     fn from(v: Vec2) -> Self {

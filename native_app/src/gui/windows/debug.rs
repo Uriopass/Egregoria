@@ -31,7 +31,7 @@ pub struct DebugObjs(
     pub  Vec<(
         bool,
         &'static str,
-        fn(&mut Tesselator<true>, &Simulation, &UiWorld) -> Option<()>,
+        fn(&mut Tesselator, &Simulation, &UiWorld) -> Option<()>,
     )>,
 );
 
@@ -256,7 +256,7 @@ pub fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, si
     });
 }
 
-pub fn debug_spline(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+pub fn debug_spline(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     for road in sim.map().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.points.first();
@@ -276,7 +276,7 @@ pub fn debug_spline(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) 
     Some(())
 }
 
-pub fn debug_lots(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+pub fn debug_lots(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     tess.set_color(Color::RED);
     for lot in sim.map().lots().values() {
         tess.draw_circle(lot.shape.corners[0].z(lot.height), 1.0);
@@ -285,7 +285,7 @@ pub fn debug_lots(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) ->
     Some(())
 }
 
-pub fn debug_road_points(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+pub fn debug_road_points(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     let map = sim.map();
     tess.set_color(Color::RED.a(0.5));
     for (_, road) in map.roads() {
@@ -327,7 +327,7 @@ fn random_color(i: u64) -> Color {
     Color::hsv(r * 360.0, 0.8, 0.6, 0.5)
 }
 
-pub fn debug_electricity(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+pub fn debug_electricity(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     let map = sim.map();
 
     let getpos = |object: NetworkObjectID| match object {
@@ -357,11 +357,7 @@ pub fn debug_electricity(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWo
     Some(())
 }
 
-pub fn debug_connectivity(
-    tess: &mut Tesselator<true>,
-    sim: &Simulation,
-    uiw: &UiWorld,
-) -> Option<()> {
+pub fn debug_connectivity(tess: &mut Tesselator, sim: &Simulation, uiw: &UiWorld) -> Option<()> {
     use simulation::map::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
     let mut state = uiw.write::<DebugState>();
     let map = sim.map();
@@ -395,7 +391,7 @@ pub fn debug_connectivity(
     Some(())
 }
 
-fn draw_spline(tess: &mut Tesselator<true>, mut sp: Spline3) {
+fn draw_spline(tess: &mut Tesselator, mut sp: Spline3) {
     sp.from = sp.from.up(0.3);
     sp.to = sp.to.up(0.3);
     tess.set_color(Color::RED);
@@ -417,7 +413,7 @@ fn draw_spline(tess: &mut Tesselator<true>, mut sp: Spline3) {
     tess.draw_circle(sp.to - sp.to_derivative, 0.7);
 }
 
-fn debug_transport_grid(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+fn debug_transport_grid(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     let transport_grid = sim.read::<TransportGrid>();
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
@@ -491,7 +487,7 @@ pub fn debug_obb(tess: &mut Tesselator<true, sim: &Simulation, uiworld: &UiWorld
 }
 */
 
-pub fn debug_parking(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+pub fn debug_parking(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     let map: &Map = &sim.map();
     let pm = sim.read::<ParkingManagement>();
 
@@ -510,7 +506,7 @@ pub fn debug_parking(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld)
 }
 
 pub fn debug_trainreservations(
-    tess: &mut Tesselator<true>,
+    tess: &mut Tesselator,
     sim: &Simulation,
     uiworld: &UiWorld,
 ) -> Option<()> {
@@ -582,11 +578,7 @@ pub fn debug_trainreservations(
     Some(())
 }
 
-pub fn debug_pathfinder(
-    tess: &mut Tesselator<true>,
-    sim: &Simulation,
-    uiworld: &UiWorld,
-) -> Option<()> {
+pub fn debug_pathfinder(tess: &mut Tesselator, sim: &Simulation, uiworld: &UiWorld) -> Option<()> {
     let map: &Map = &sim.map();
     let selected = uiworld.read::<InspectedEntity>().e?;
     let pos = sim.pos_any(selected)?;
@@ -680,7 +672,7 @@ pub fn debug_rays(tess: &mut Tesselator<true, sim: &Simulation, uiworld: &UiWorl
     Some(())
 }*/
 
-pub fn debug_spatialmap(tess: &mut Tesselator<true>, sim: &Simulation, _: &UiWorld) -> Option<()> {
+pub fn debug_spatialmap(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     let map: &Map = &sim.map();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor::BLUE.a(0.1));

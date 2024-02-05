@@ -52,8 +52,8 @@ struct MapBuilders {
     zonemeshes: FastMap<BuildingKind, (MeshBuilder<false>, InstancedMeshBuilder<false>, bool)>,
     arrow_builder: SpriteBatchBuilder<false>,
     crosswalk_builder: MeshBuilder<false>,
-    tess_map: Tesselator<false>,
-    tess_lots: Tesselator<false>,
+    mesh_map: MeshBuilder<false>,
+    mesh_lots: MeshBuilder<false>,
 }
 
 impl MapMeshHandler {
@@ -74,7 +74,7 @@ impl MapMeshHandler {
             }
             buildsprites.insert(
                 BuildingKind::GoodsCompany(descr.id),
-                SpriteBatchBuilder::new(gfx.texture(asset, "goods_company_tex"), gfx),
+                SpriteBatchBuilder::new(&gfx.texture(asset, "goods_company_tex"), gfx),
             );
         }
 
@@ -110,7 +110,7 @@ impl MapMeshHandler {
             let floor_tex = gfx.texture(floor, "zone_floor_tex");
             let floor_mat = gfx.register_material(Material::new(
                 gfx,
-                floor_tex,
+                &floor_tex,
                 MetallicRoughness {
                     metallic: 0.0,
                     roughness: 1.0,
@@ -139,7 +139,7 @@ impl MapMeshHandler {
         let crosswalk_tex = gfx.texture("assets/sprites/crosswalk.png", "crosswalk");
         let crosswalk_mat = gfx.register_material(Material::new(
             gfx,
-            crosswalk_tex,
+            &crosswalk_tex,
             MetallicRoughness {
                 metallic: 0.0,
                 roughness: 1.0,
@@ -149,7 +149,7 @@ impl MapMeshHandler {
         ));
         let houses_mat = gfx.register_material(Material::new(
             gfx,
-            gfx.palette(),
+            &gfx.palette(),
             MetallicRoughness {
                 metallic: 0.0,
                 roughness: 1.0,
@@ -161,11 +161,11 @@ impl MapMeshHandler {
             arrow_builder,
             buildsprites,
             crosswalk_builder: MeshBuilder::new(crosswalk_mat),
-            tess_map: Tesselator::new(gfx, None, 15.0),
+            mesh_map: MeshBuilder::new(gfx.tess_material),
             houses_mesh: MeshBuilder::new(houses_mat),
             buildmeshes,
             zonemeshes,
-            tess_lots: Tesselator::new(gfx, None, 15.0),
+            mesh_lots: MeshBuilder::new(gfx.tess_material),
         };
 
         Self {
@@ -193,14 +193,14 @@ impl MapMeshHandler {
             cached.road.clear();
             cached.road.reserve(2);
 
-            if let Some(mesh) = b.tess_map.meshbuilder.build(ctx.gfx) {
+            if let Some(mesh) = b.mesh_map.build(ctx.gfx) {
                 cached.road.push(Rc::new(mesh));
             }
             if let Some(mesh) = b.crosswalk_builder.build(ctx.gfx) {
                 cached.road.push(Rc::new(mesh));
             }
 
-            cached.lots = b.tess_lots.meshbuilder.build(ctx.gfx);
+            cached.lots = b.mesh_lots.build(ctx.gfx);
             cached.arrows = b.arrow_builder.build(ctx.gfx);
 
             if cached.is_empty() {
@@ -276,7 +276,7 @@ impl MapMeshHandler {
 }
 
 impl MapBuilders {
-    fn arrows(&mut self, road: &Road, lanes: &Lanes) {
+    fn arrows(arrow_builder: &mut SpriteBatchBuilder<false>, road: &Road, lanes: &Lanes) {
         let has_forward = road
             .outgoing_lanes_from(road.src)
             .iter()
@@ -310,7 +310,7 @@ impl MapBuilders {
                     .points
                     .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32));
 
-                self.arrow_builder.push(
+                arrow_builder.push(
                     mid.up(0.03),
                     dir,
                     LinearColor::gray(0.3 + fade * 0.1),
@@ -320,7 +320,7 @@ impl MapBuilders {
         }
     }
 
-    fn crosswalks(&mut self, inter: &Intersection, lanes: &Lanes) {
+    fn crosswalks(crosswalk_builder: &mut MeshBuilder<false>, inter: &Intersection, lanes: &Lanes) {
         const WALKING_W: f32 = LaneKind::Walking.width();
 
         for turn in inter.turns() {
@@ -341,29 +341,28 @@ impl MapBuilders {
                 let pos = from + dir * WALKING_W * 0.5;
                 let height = l - WALKING_W;
 
-                self.crosswalk_builder
-                    .extend_with(None, |vertices, add_index| {
-                        let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
-                            position: position.into(),
-                            uv: uv.into(),
-                            normal: Vec3::Z,
-                            color: [1.0; 4],
-                            tangent: [0.0; 4],
-                        };
+                crosswalk_builder.extend_with(None, |vertices, add_index| {
+                    let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
+                        position: position.into(),
+                        uv: uv.into(),
+                        normal: Vec3::Z,
+                        color: [1.0; 4],
+                        tangent: [0.0; 4],
+                    };
 
-                        vertices.push(mk_v(pos - perp, Vec2::ZERO));
-                        vertices.push(mk_v(pos + perp, Vec2::ZERO));
-                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height)));
-                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height)));
+                    vertices.push(mk_v(pos - perp, Vec2::ZERO));
+                    vertices.push(mk_v(pos + perp, Vec2::ZERO));
+                    vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height)));
+                    vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height)));
 
-                        add_index(0);
-                        add_index(1);
-                        add_index(2);
+                    add_index(0);
+                    add_index(1);
+                    add_index(2);
 
-                        add_index(0);
-                        add_index(2);
-                        add_index(3);
-                    });
+                    add_index(0);
+                    add_index(2);
+                    add_index(3);
+                });
             }
         }
     }
@@ -560,7 +559,7 @@ impl MapBuilders {
         }
     }
 
-    fn draw_rail(tess: &mut Tesselator<false>, cut: &PolyLine3, off: f32, limits: bool) {
+    fn draw_rail(tess: &mut Tesselator, cut: &PolyLine3, off: f32, limits: bool) {
         tess.set_color(Color::gray(0.5));
         tess.draw_polyline_full(
             cut.as_slice().iter().map(|v| vec3(v.x, v.y, v.z + 0.02)),
@@ -591,8 +590,11 @@ impl MapBuilders {
     fn map_mesh(&mut self, map: &Map, chunk: SubscriberChunkID) {
         self.arrow_builder.clear();
         self.crosswalk_builder.clear();
-        self.tess_map.meshbuilder.clear();
-        self.tess_lots.meshbuilder.clear();
+        self.mesh_map.clear();
+        self.mesh_lots.clear();
+
+        let mut tess_map = self.mesh_map.mk_tess();
+        let mut tess_lots = self.mesh_lots.mk_tess();
 
         let low_col: LinearColor = simulation::colors().road_low_col.into();
         let mid_col: LinearColor = simulation::colors().road_mid_col.into();
@@ -629,25 +631,25 @@ impl MapBuilders {
         for road in chunk_roads {
             let road = &roads[road];
 
-            self.arrows(road, lanes);
+            Self::arrows(&mut self.arrow_builder, road, lanes);
 
             let cut = road.interfaced_points();
             let first_dir = unwrap_cont!(cut.first_dir());
             let last_dir = unwrap_cont!(cut.last_dir());
 
-            road_pylons(&mut self.tess_map.meshbuilder, env, road);
+            road_pylons(&mut tess_map, env, road);
 
-            self.tess_map.normal.z = -1.0;
-            self.tess_map.draw_polyline_full(
+            tess_map.normal.z = -1.0;
+            tess_map.draw_polyline_full(
                 cut.iter().map(|x| x.up(-0.3)),
                 first_dir.xy(),
                 last_dir.xy(),
                 road.width,
                 0.0,
             );
-            self.tess_map.normal.z = 1.0;
+            tess_map.normal.z = 1.0;
 
-            let draw_off = |tess: &mut Tesselator<false>, col: LinearColor, w, off| {
+            let draw_off = |tess: &mut Tesselator, col: LinearColor, w, off| {
                 tess.set_color(col);
                 tess.draw_polyline_full(
                     cut.as_slice().iter().copied(),
@@ -662,14 +664,14 @@ impl MapBuilders {
             for l in road.lanes_iter().flat_map(|(l, _)| lanes.get(l)) {
                 if l.kind.is_rail() {
                     let off = l.dist_from_bottom - road.width * 0.5 + LaneKind::Rail.width() * 0.5;
-                    draw_off(&mut self.tess_map, mid_col, LaneKind::Rail.width(), off);
-                    Self::draw_rail(&mut self.tess_map, cut, off, true);
+                    draw_off(&mut tess_map, mid_col, LaneKind::Rail.width(), off);
+                    Self::draw_rail(&mut tess_map, cut, off, true);
                     start = true;
                     continue;
                 }
                 if start {
                     draw_off(
-                        &mut self.tess_map,
+                        &mut tess_map,
                         line_col,
                         0.25,
                         l.dist_from_bottom - road.width * 0.5,
@@ -677,7 +679,7 @@ impl MapBuilders {
                     start = false;
                 }
                 draw_off(
-                    &mut self.tess_map,
+                    &mut tess_map,
                     match l.kind {
                         LaneKind::Walking => hig_col,
                         LaneKind::Parking => low_col,
@@ -687,7 +689,7 @@ impl MapBuilders {
                     l.dist_from_bottom - road.width * 0.5 + l.kind.width() * 0.5,
                 );
                 draw_off(
-                    &mut self.tess_map,
+                    &mut tess_map,
                     line_col,
                     0.25,
                     l.dist_from_bottom - road.width * 0.5 + l.kind.width(),
@@ -704,25 +706,25 @@ impl MapBuilders {
             let interpos = inter.pos.up(ROAD_Z_OFFSET);
 
             if inter.roads.is_empty() {
-                self.tess_map.set_color(line_col);
-                self.tess_map.draw_circle(interpos, 5.5);
+                tess_map.set_color(line_col);
+                tess_map.draw_circle(interpos, 5.5);
 
-                self.tess_map.set_color(mid_col);
-                self.tess_map.draw_circle(interpos, 5.0);
+                tess_map.set_color(mid_col);
+                tess_map.draw_circle(interpos, 5.0);
                 continue;
             }
 
-            self.crosswalks(inter, lanes);
+            Self::crosswalks(&mut self.crosswalk_builder, inter, lanes);
 
-            inter_pylon(&mut self.tess_map.meshbuilder, env, inter, roads);
-            intersection_mesh(&mut self.tess_map, &hig_col, inter, roads);
+            inter_pylon(&mut tess_map, env, inter, roads);
+            intersection_mesh(&mut tess_map, &hig_col, inter, roads);
 
             // Walking corners
             for turn in inter
                 .turns()
                 .filter(|turn| matches!(turn.kind, TurnKind::WalkingCorner))
             {
-                self.tess_map.set_color(line_col);
+                tess_map.set_color(line_col);
                 let id = turn.id;
 
                 let w = lanes[id.src].kind.width();
@@ -733,28 +735,15 @@ impl MapBuilders {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                self.tess_map.draw_polyline_full(
-                    p.iter().copied(),
-                    first_dir,
-                    last_dir,
-                    0.25,
-                    w * 0.5,
-                );
-                self.tess_map.draw_polyline_full(
-                    p.iter().copied(),
-                    first_dir,
-                    last_dir,
-                    0.25,
-                    -w * 0.5,
-                );
+                tess_map.draw_polyline_full(p.iter().copied(), first_dir, last_dir, 0.25, w * 0.5);
+                tess_map.draw_polyline_full(p.iter().copied(), first_dir, last_dir, 0.25, -w * 0.5);
 
-                self.tess_map.set_color(hig_col);
+                tess_map.set_color(hig_col);
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                self.tess_map
-                    .draw_polyline_with_dir(&p, first_dir, last_dir, w - 0.25);
+                tess_map.draw_polyline_with_dir(&p, first_dir, last_dir, w - 0.25);
             }
 
             // Rail turns
@@ -763,7 +752,7 @@ impl MapBuilders {
                 .filter(|turn| matches!(turn.kind, TurnKind::Rail))
             {
                 ppoly.clear_extend(turn.points.as_slice());
-                Self::draw_rail(&mut self.tess_map, &ppoly, 0.0, false);
+                Self::draw_rail(&mut tess_map, &ppoly, 0.0, false);
             }
         }
 
@@ -774,15 +763,14 @@ impl MapBuilders {
                 LotKind::Unassigned => simulation::colors().lot_unassigned_col,
                 LotKind::Residential => simulation::colors().lot_residential_col,
             };
-            self.tess_lots.set_color(col);
-            self.tess_lots
-                .draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
+            tess_lots.set_color(col);
+            tess_lots.draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
         }
     }
 }
 
 fn add_polyon(
-    mut meshb: &mut MeshBuilder<false>,
+    mut tess: &mut Tesselator,
     w: f32,
     PylonPosition {
         terrain_height,
@@ -826,9 +814,9 @@ fn add_polyon(
         up - dir + dirp, // 7
     ];
 
-    let mr = &mut meshb;
+    let mr = &mut tess;
     let mut quad = move |a, b, c, d, nor| {
-        mr.extend_with(None, move |vertices, add_idx| {
+        mr.extend_with(move |vertices, add_idx| {
             let mut pvert = move |p: Vec3, normal: Vec3| {
                 vertices.push(MeshVertex {
                     position: p.into(),
@@ -859,18 +847,13 @@ fn add_polyon(
     quad(3, 0, 7, 4, d2p);
 }
 
-fn road_pylons(meshb: &mut MeshBuilder<false>, env: &Environment, road: &Road) {
+fn road_pylons(meshb: &mut Tesselator, env: &Environment, road: &Road) {
     for pylon in Road::pylons_positions(road.interfaced_points(), env) {
         add_polyon(meshb, road.width * 0.5, pylon);
     }
 }
 
-fn inter_pylon(
-    meshb: &mut MeshBuilder<false>,
-    env: &Environment,
-    inter: &Intersection,
-    roads: &Roads,
-) {
+fn inter_pylon(tess: &mut Tesselator, env: &Environment, inter: &Intersection, roads: &Roads) {
     let interpos = inter.pos.up(ROAD_Z_OFFSET);
 
     let h = unwrap_ret!(env.true_height(inter.pos.xy()));
@@ -893,7 +876,7 @@ fn inter_pylon(
     }
 
     add_polyon(
-        meshb,
+        tess,
         maxw,
         PylonPosition {
             terrain_height: h,
@@ -904,7 +887,7 @@ fn inter_pylon(
 }
 
 fn intersection_mesh(
-    tess: &mut Tesselator<false>,
+    tess: &mut Tesselator,
     center_col: &LinearColor,
     inter: &Intersection,
     roads: &Roads,
@@ -994,22 +977,21 @@ fn intersection_mesh(
     polygon.simplify();
 
     let col = LinearColor::from(simulation::colors().road_mid_col).into();
-    tess.meshbuilder
-        .extend_with(None, move |vertices, add_idx| {
-            vertices.extend(polygon.iter().map(|pos| MeshVertex {
-                position: pos.z(interpos.z - 0.001).into(),
-                normal: Vec3::Z,
-                uv: [0.0; 2],
-                color: col,
-                tangent: [0.0; 4],
-            }));
-            earcut(&polygon.0, &[], |a, b, c| {
-                add_idx(a as u32);
-                add_idx(b as u32);
-                add_idx(c as u32);
-                add_idx(c as u32);
-                add_idx(b as u32);
-                add_idx(a as u32);
-            });
+    tess.extend_with(move |vertices, add_idx| {
+        vertices.extend(polygon.iter().map(|pos| MeshVertex {
+            position: pos.z(interpos.z - 0.001).into(),
+            normal: Vec3::Z,
+            uv: [0.0; 2],
+            color: col,
+            tangent: [0.0; 4],
+        }));
+        earcut(&polygon.0, &[], |a, b, c| {
+            add_idx(a as u32);
+            add_idx(b as u32);
+            add_idx(c as u32);
+            add_idx(c as u32);
+            add_idx(b as u32);
+            add_idx(a as u32);
         });
+    });
 }

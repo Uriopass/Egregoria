@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use yakui::widgets::{CountGrid, List, Pad};
 use yakui::{
-    colored_box, constrained, use_state, Color, Constraints, CrossAxisAlignment,
+    canvas, colored_box, constrained, use_state, Color, Constraints, CrossAxisAlignment,
     MainAxisAlignItems, MainAxisSize, Vec2,
 };
 
@@ -115,9 +115,14 @@ pub fn economy(uiw: &UiWorld, _: &Simulation) {
                     mincolumn(|| {
                         let filterid = use_state(|| HashSet::<ItemID>::new());
 
-                        // TODO: plot
                         pady(5.0, || {
                             colored_box(Color::BLACK, Vec2::new(300.0, 200.0)); // plot placeholder
+                        });
+                        canvas(|paint| {
+                            //let tess = Tesselator::new(
+                            //    Some(AABB::new((0.0, 0.0).into(), (300.0, 200.0).into())),
+                            //    1.0,
+                            //);
                         });
 
                         let scroll_constrained = Constraints {

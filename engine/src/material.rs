@@ -17,10 +17,8 @@ pub type MaterialMap = slotmapd::SlotMap<MaterialID, Material>;
 
 pub struct Material {
     pub bg: BindGroup,
-    pub albedo: Arc<Texture>,
     pub mat_params: wgpu::Buffer,
     pub metallic_roughness_map: Option<Arc<Texture>>,
-    pub normal_map: Option<Arc<Texture>>,
     pub transparent: bool,
 }
 
@@ -46,9 +44,9 @@ u8slice_impl!(MaterialParams);
 impl Material {
     pub fn new(
         gfx: &GfxContext,
-        albedo: Arc<Texture>,
+        albedo: &Texture,
         metallic_roughness: MetallicRoughness,
-        normal_map: Option<Arc<Texture>>,
+        normal_map: Option<&Texture>,
     ) -> Self {
         Self::new_raw(
             &gfx.device,
@@ -61,9 +59,9 @@ impl Material {
 
     pub fn new_raw(
         device: &Device,
-        albedo: Arc<Texture>,
+        albedo: &Texture,
         metallic_roughness: MetallicRoughness,
-        normal_map: Option<Arc<Texture>>,
+        normal_map: Option<&Texture>,
         bogus_tex: &Texture,
     ) -> Self {
         let mut flags = 0;
@@ -158,9 +156,7 @@ impl Material {
             bg,
             mat_params,
             metallic_roughness_map: metallic_roughness.tex,
-            albedo,
             transparent: false,
-            normal_map,
         }
     }
 
@@ -240,7 +236,7 @@ impl Material {
 
         Self::new_raw(
             device,
-            albedo,
+            &albedo,
             MetallicRoughness {
                 roughness: 0.5,
                 metallic: 0.0,

@@ -145,7 +145,7 @@ fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> S
                             ))
                         }
                     };
-                    let mut sb: SpriteBatchBuilder<false> = SpriteBatchBuilder::new(tex, gfx);
+                    let mut sb: SpriteBatchBuilder<false> = SpriteBatchBuilder::new(&tex, gfx);
                     sb.push(Vec3::ZERO, Vec3::X, LinearColor::WHITE, (100.0, 100.0));
                     Shown::Sprite(sb.build(gfx).unwrap())
                 }

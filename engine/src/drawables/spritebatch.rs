@@ -50,7 +50,7 @@ impl InstanceRaw {
 impl<const PERSISTENT: bool> SpriteBatchBuilder<PERSISTENT> {
     pub fn from_path(gfx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
         let tex = gfx.texture(path, "some spritebatch tex");
-        Self::new(tex, gfx)
+        Self::new(&tex, gfx)
     }
 
     pub fn clear(&mut self) {
@@ -67,7 +67,7 @@ impl<const PERSISTENT: bool> SpriteBatchBuilder<PERSISTENT> {
         self
     }
 
-    pub fn new(albedo: Arc<Texture>, gfx: &mut GfxContext) -> Self {
+    pub fn new(albedo: &Texture, gfx: &mut GfxContext) -> Self {
         let max_extent = albedo.extent.width.max(albedo.extent.height) as f32;
 
         let stretch_x = 0.5 * albedo.extent.width as f32 / max_extent;

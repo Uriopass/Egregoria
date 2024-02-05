@@ -1,37 +1,49 @@
-use crate::geometry::earcut::earcut;
-use crate::meshbuild::MeshBuilder;
-use crate::{GfxContext, Material, MeshVertex, MetallicRoughness};
-use geom::{vec3, Intersect, LinearColor, Segment, Vec2, Vec3, AABB};
 use itertools::Itertools;
 
-pub struct Tesselator<const PERSISTENT: bool> {
+use geom::{vec3, Intersect, LinearColor, Segment, Vec2, Vec3, AABB};
+
+use crate::geometry::earcut::earcut;
+use crate::{IndexType, MeshVertex};
+
+pub struct Tesselator<'a> {
     pub color: LinearColor,
-    pub meshbuilder: MeshBuilder<PERSISTENT>,
+    pub vertices: &'a mut Vec<MeshVertex>,
+    pub indices: &'a mut Vec<IndexType>,
     pub cull_rect: Option<AABB>,
     pub zoom: f32,
     pub normal: Vec3,
 }
 
-impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
-    pub fn new(gfx: &mut GfxContext, cull_rect: Option<AABB>, zoom: f32) -> Self {
-        let mat = gfx.register_material(Material::new(
-            gfx,
-            gfx.palette(),
-            MetallicRoughness {
-                metallic: 0.0,
-                roughness: 1.0,
-                tex: None,
-            },
-            None,
-        ));
-
+impl<'a> Tesselator<'a> {
+    pub fn new(
+        vertices: &'a mut Vec<MeshVertex>,
+        indices: &'a mut Vec<IndexType>,
+        cull_rect: Option<AABB>,
+        zoom: f32,
+    ) -> Self {
         Tesselator {
             color: LinearColor::BLACK,
-            meshbuilder: MeshBuilder::new(mat),
+            vertices,
+            indices,
             cull_rect,
             zoom,
             normal: Vec3::Z,
         }
+    }
+
+    pub fn extend(&mut self, vertices: &[MeshVertex], indices: &[IndexType]) {
+        self.vertices.extend_from_slice(vertices);
+        self.indices.extend_from_slice(indices);
+    }
+
+    pub fn extend_with(&mut self, f: impl FnOnce(&mut Vec<MeshVertex>, &mut dyn FnMut(IndexType))) {
+        let offset = self.vertices.len() as IndexType;
+        let vertices = &mut self.vertices;
+        let indices = &mut self.indices;
+        let mut x = move |index: IndexType| {
+            indices.push(index + offset);
+        };
+        f(vertices, &mut x);
     }
 
     pub fn draw_circle(&mut self, p: Vec3, r: f32) -> bool {
@@ -66,7 +78,7 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
         let n_pointsu32 = n_points as u32;
         let normal = self.normal;
 
-        self.meshbuilder.extend_with(None, |vertices, index_push| {
+        self.extend_with(|vertices, index_push| {
             vertices.push(MeshVertex {
                 position: p.into(),
                 color,
@@ -108,7 +120,7 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
 
         let color: [f32; 4] = self.color.into();
         let normal = self.normal;
-        self.meshbuilder.extend_with(None, |vertices, index_push| {
+        self.extend_with(|vertices, index_push| {
             vertices.extend(points.iter().map(|p| MeshVertex {
                 position: [p.x, p.y, z],
                 color,
@@ -142,7 +154,7 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
 
         let color = self.color.into();
         let normal = self.normal;
-        self.meshbuilder.extend_with(None, |vertices, index_push| {
+        self.extend_with(|vertices, index_push| {
             vertices.push(MeshVertex {
                 position: (p + Vec3::x(r + halfthick)).into(),
                 color,
@@ -248,7 +260,7 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
                 tangent: [0.0; 4],
             },
         ];
-        self.meshbuilder.extend(None, &verts, &[2, 1, 0, 3, 2, 0]);
+        self.extend(&verts, &[2, 1, 0, 3, 2, 0]);
         true
     }
 
@@ -307,8 +319,7 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
             },
         ];
 
-        self.meshbuilder.extend(
-            None,
+        self.extend(
             &verts,
             if self.normal.z < 0.0 {
                 &[2, 1, 0, 3, 2, 0]
@@ -371,76 +382,75 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
         let color = self.color.into();
         let normal = self.normal;
         let swap = (self.normal.z < 0.0) as u32 * 2;
-        self.meshbuilder
-            .extend_with(None, move |verts, index_push| {
-                let mut idx_quad = move |index| {
-                    index_push(index * 2 + swap);
-                    index_push(index * 2 + 1);
-                    index_push(index * 2 + 2 - swap);
+        self.extend_with(move |verts, index_push| {
+            let mut idx_quad = move |index| {
+                index_push(index * 2 + swap);
+                index_push(index * 2 + 1);
+                index_push(index * 2 + 2 - swap);
 
-                    index_push(index * 2 + 3 - swap);
-                    index_push(index * 2 + 2);
-                    index_push(index * 2 + 1 + swap);
-                };
+                index_push(index * 2 + 3 - swap);
+                index_push(index * 2 + 2);
+                index_push(index * 2 + 1 + swap);
+            };
 
-                let mut pvert = move |pos: Vec3| {
-                    verts.push(MeshVertex {
-                        position: pos.into(),
-                        color,
-                        normal,
-                        uv: [0.0; 2],
-                        tangent: [0.0; 4],
-                    });
-                };
+            let mut pvert = move |pos: Vec3| {
+                verts.push(MeshVertex {
+                    position: pos.into(),
+                    color,
+                    normal,
+                    uv: [0.0; 2],
+                    tangent: [0.0; 4],
+                });
+            };
 
-                let mut index: u32 = 0;
-                for (a, elbow, c) in points.tuple_windows() {
-                    let a: Vec3 = a;
-                    let elbow: Vec3 = elbow;
-                    let c: Vec3 = c;
-                    if index == 0 {
-                        let nor = -first_dir.perpendicular();
-                        pvert(a + (nor * (offset + halfthick)).z0());
-                        pvert(a + (nor * (offset - halfthick)).z0());
-                    }
+            let mut index: u32 = 0;
+            for (a, elbow, c) in points.tuple_windows() {
+                let a: Vec3 = a;
+                let elbow: Vec3 = elbow;
+                let c: Vec3 = c;
+                if index == 0 {
+                    let nor = -first_dir.perpendicular();
+                    pvert(a + (nor * (offset + halfthick)).z0());
+                    pvert(a + (nor * (offset - halfthick)).z0());
+                }
 
-                    let ae = unwrap_or!((elbow - a).xy().try_normalize(), continue);
-                    let ce = unwrap_or!((elbow - c).xy().try_normalize(), continue);
+                let ae = unwrap_or!((elbow - a).xy().try_normalize(), continue);
+                let ce = unwrap_or!((elbow - c).xy().try_normalize(), continue);
 
-                    let dir = match (ae + ce).try_normalize() {
-                        Some(x) => {
-                            let d = ae.perp_dot(ce);
-                            if d.abs() < 0.01 {
-                                -ae.perpendicular()
-                            } else if d < 0.0 {
-                                -x
-                            } else {
-                                x
-                            }
+                let dir = match (ae + ce).try_normalize() {
+                    Some(x) => {
+                        let d = ae.perp_dot(ce);
+                        if d.abs() < 0.01 {
+                            -ae.perpendicular()
+                        } else if d < 0.0 {
+                            -x
+                        } else {
+                            x
                         }
-                        None => -ae.perpendicular(),
-                    };
+                    }
+                    None => -ae.perpendicular(),
+                };
 
-                    let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+                let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
-                    let p1 = elbow + (mul * dir * (offset + halfthick)).z0();
-                    let p2 = elbow + (mul * dir * (offset - halfthick)).z0();
+                let p1 = elbow + (mul * dir * (offset + halfthick)).z0();
+                let p2 = elbow + (mul * dir * (offset - halfthick)).z0();
+                pvert(p1);
+                pvert(p2);
+                idx_quad(index);
+
+                index += 1;
+                if index as usize == n_points - 2 {
+                    let nor = -last_dir.perpendicular();
+
+                    let p1 = c + ((offset + halfthick) * nor).z0();
+                    let p2 = c + ((offset - halfthick) * nor).z0();
                     pvert(p1);
                     pvert(p2);
                     idx_quad(index);
-
-                    index += 1;
-                    if index as usize == n_points - 2 {
-                        let nor = -last_dir.perpendicular();
-
-                        let p1 = c + ((offset + halfthick) * nor).z0();
-                        let p2 = c + ((offset - halfthick) * nor).z0();
-                        pvert(p1);
-                        pvert(p2);
-                        idx_quad(index);
-                    }
                 }
-            });
+            }
+        });
         true
     }
 

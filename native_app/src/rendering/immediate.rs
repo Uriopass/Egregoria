@@ -197,7 +197,7 @@ impl ImmediateDraw {
         self.persistent_orders.clear();
     }
 
-    pub fn apply(&mut self, tess: &mut Tesselator<true>, ctx: &mut FrameContext<'_>) {
+    pub fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext<'_>) {
         for ImmediateOrder { kind, color } in
             self.persistent_orders.iter().chain(self.orders.iter())
         {
@@ -244,7 +244,7 @@ impl ImmediateDraw {
                         continue;
                     };
                     ctx.objs.push(Box::new(
-                        SpriteBatchBuilder::<false>::new(tex, ctx.gfx)
+                        SpriteBatchBuilder::<false>::new(&tex, ctx.gfx)
                             .push(obb.center().z(z), obb.axis()[0].z0(), *color, (1.0, 1.0))
                             .build(ctx.gfx)
                             .unwrap(),

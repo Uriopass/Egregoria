@@ -204,7 +204,7 @@ fn load_materials(
             );
         }
         let transparent = albedo.transparent;
-        let mut gfxmat = Material::new(gfx, albedo, metallic_roughness, normal);
+        let mut gfxmat = Material::new(gfx, &albedo, metallic_roughness, normal.as_deref());
         gfxmat.transparent = transparent;
         let matid = gfx.register_material(gfxmat);
         v.push(matid)

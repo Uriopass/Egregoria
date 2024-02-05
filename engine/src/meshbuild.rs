@@ -1,5 +1,5 @@
 use crate::pbuffer::PBuffer;
-use crate::{GfxContext, IndexType, MaterialID, Mesh, MeshVertex, MikktGeometry};
+use crate::{GfxContext, IndexType, MaterialID, Mesh, MeshVertex, MikktGeometry, Tesselator};
 use geom::{Sphere, Vec3, AABB3};
 use std::ops::Range;
 use wgpu::BufferUsages;
@@ -73,6 +73,10 @@ impl<const PERSISTENT: bool> MeshBuilder<PERSISTENT> {
         }
     }
 
+    pub fn mk_tess(&mut self) -> Tesselator {
+        Tesselator::new(&mut self.vertices, &mut self.indices, None, 1.0)
+    }
+
     pub fn lods(&self) -> &[MeshLod] {
         &self.lods
     }
@@ -121,6 +125,10 @@ impl<const PERSISTENT: bool> MeshBuilder<PERSISTENT> {
         let primitives = &mut self.lods[self.current_lod].primitives;
         if let Some(previous) = primitives.last_mut() {
             previous.1.end = n;
+        } else if let Some(default_mat) = self.default_mat {
+            if n > 0 {
+                primitives.push((default_mat, 0..n));
+            }
         }
     }
 

@@ -2,8 +2,8 @@ use crate::passes::{BackgroundPipeline, Pbr};
 use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
-    MaterialID, MaterialMap, MipmapGenerator, PipelineBuilder, Pipelines, Texture,
-    TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
+    MaterialID, MaterialMap, MetallicRoughness, MipmapGenerator, PipelineBuilder, Pipelines,
+    Texture, TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
 };
 use common::FastMap;
 use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
@@ -16,12 +16,12 @@ use std::time::{Duration, Instant};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
-    CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Face, FilterMode,
-    FragmentState, FrontFace, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor,
-    PrimitiveState, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, SamplerDescriptor, Surface, SurfaceConfiguration, SurfaceTexture,
-    TextureAspect, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
-    TextureViewDimension, VertexBufferLayout, VertexState,
+    CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Extent3d, Face,
+    FilterMode, FragmentState, FrontFace, ImageCopyTexture, ImageDataLayout, InstanceDescriptor,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, SamplerDescriptor, Surface,
+    SurfaceConfiguration, SurfaceTexture, TextureAspect, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 use winit::window::{Fullscreen, Window};
 
@@ -49,6 +49,7 @@ pub struct GfxContext {
 
     pub(crate) materials: MaterialMap,
     pub(crate) default_material: Material,
+    pub tess_material: MaterialID,
     pub tick: u64,
     pub(crate) pipelines: RefCell<Pipelines>,
     pub frustrum: InfiniteFrustrum,
@@ -56,7 +57,7 @@ pub struct GfxContext {
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
-    pub(crate) null_texture: Texture,
+    pub null_texture: Texture,
     pub(crate) linear_sampler: wgpu::Sampler,
 
     pub(crate) samples: u32,
@@ -338,7 +339,27 @@ impl GfxContext {
         let null_texture = TextureBuilder::empty(1, 1, 1, TextureFormat::Rgba8Unorm)
             .with_srgb(false)
             .with_label("null texture")
-            .build(&device, &queue);
+            .build_no_queue(&device);
+
+        queue.write_texture(
+            ImageCopyTexture {
+                texture: &null_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: Default::default(),
+            },
+            &[255, 255, 255, 255],
+            ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4),
+                rows_per_image: None,
+            },
+            Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
+        );
 
         let linear_sampler = device.create_sampler(&SamplerDescriptor {
             label: Some("basic linear sampler"),
@@ -347,6 +368,21 @@ impl GfxContext {
             mipmap_filter: FilterMode::Linear,
             ..Default::default()
         });
+
+        let mut materials = MaterialMap::default();
+
+        let tess_material = Material::new_raw(
+            &device,
+            &null_texture,
+            MetallicRoughness {
+                metallic: 0.0,
+                roughness: 1.0,
+                tex: None,
+            },
+            None,
+            &null_texture,
+        );
+        let tess_material_id = materials.insert(tess_material);
 
         let mut me = Self {
             window,
@@ -357,7 +393,8 @@ impl GfxContext {
             fbos,
             surface,
             pipelines: RefCell::new(Pipelines::new()),
-            materials: Default::default(),
+            materials,
+            tess_material: tess_material_id,
             default_material: Material::new_default(&device, &queue, &null_texture),
             tick: 0,
             frustrum: InfiniteFrustrum::new([Plane::X; 5]),
