@@ -78,6 +78,10 @@ impl OldGUIWindows {
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
         }
         for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
+            if w.name == "Debug" {
+                continue;
+            }
+
             *opened ^= button_primary(w.name).show().clicked;
         }
     }
@@ -87,14 +91,15 @@ impl OldGUIWindows {
         if uiworld
             .write::<InputMap>()
             .just_act
-            .contains(&InputAction::OpenEconomyMenu)
+            .contains(&InputAction::OpenDebugMenu)
         {
             for (i, w) in self.windows.iter().enumerate() {
-                if w.name == "Economy" {
+                if w.name == "Debug" {
                     self.opened[i] ^= true;
                 }
             }
         }
+
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
                 ws.w.render_window(egui::Window::new(ws.name).open(opened), ui, uiworld, sim);

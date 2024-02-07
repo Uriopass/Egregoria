@@ -39,6 +39,7 @@ pub enum InputAction {
     UpElevation,
     DownElevation,
     OpenEconomyMenu,
+    OpenDebugMenu,
     PausePlay,
     OpenChat,
 }
@@ -102,6 +103,7 @@ const DEFAULT_BINDINGS: &[(InputAction, &[&[UnitInput]])] = &[
     (UpElevation,     &[&[Key(K::Control), WheelUp]]),
     (DownElevation,   &[&[Key(K::Control), WheelDown]]),
     (OpenEconomyMenu, &[&[Key(K::c("E"))]]),
+    (OpenDebugMenu,   &[&[Key(K::F3)]]),
     (PausePlay,       &[&[Key(K::Space)]]),
     (OpenChat,        &[&[Key(K::c("T"))]]),
 ];
@@ -339,6 +341,7 @@ impl Display for InputAction {
                 OpenChat => "Interact with Chat",
                 SizeUp => "Size Up",
                 SizeDown => "Size Down",
+                OpenDebugMenu => "Debug Menu",
             }
         )
     }
