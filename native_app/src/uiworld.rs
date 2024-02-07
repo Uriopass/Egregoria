@@ -1,7 +1,5 @@
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::newgui::window_display::WindowDisplay;
 use crate::newgui::TimeAlways;
-use goryak::Window;
 use simulation::utils::resources::{RefMutSingle, RefSingle, ResourcesSingleThread};
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::{Simulation, SimulationReplayLoader};
@@ -70,16 +68,6 @@ impl UiWorld {
 
     pub fn camera_mut(&self) -> RefMutSingle<crate::rendering::OrbitCamera> {
         self.write::<crate::rendering::OrbitCamera>()
-    }
-
-    pub fn window(
-        &self,
-        window: Window,
-        on_close: impl FnOnce(&UiWorld) + 'static,
-        children: impl FnOnce(&UiWorld, &Simulation) + 'static,
-    ) {
-        let mut window_state = self.write::<WindowDisplay>();
-        window_state.show(window, children, on_close);
     }
 
     pub fn check_present<T: Any>(&mut self, res: fn() -> T) {

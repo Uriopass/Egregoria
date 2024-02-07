@@ -60,46 +60,43 @@ fn save_window(gui: &mut GuiState, uiw: &UiWorld) {
     match *estate {
         ExitState::NoExit => {}
         ExitState::ExitAsk | ExitState::Saving => {
-            uiw.window(
-                Window {
-                    title: "Exit Menu",
-                    pad: Pad::all(15.0),
-                    radius: 10.0,
-                },
-                |uiw| {
-                    let mut estate = uiw.write::<ExitState>();
-                    *estate = ExitState::NoExit;
-                },
-                |uiw, _sim| {
-                    let mut slstate = uiw.write::<SaveLoadState>();
-                    let mut estate = uiw.write::<ExitState>();
-                    let mut l = List::column();
-                    l.item_spacing = 5.0;
-                    l.main_axis_size = MainAxisSize::Min;
-                    l.show(|| {
-                        if let ExitState::Saving = *estate {
-                            textc(on_secondary_container(), "Saving...");
-                            if !slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst)
-                            {
-                                std::process::exit(0);
-                            }
-                            return;
-                        }
-                        if button_secondary("Save and exit").show().clicked {
-                            if let ExitState::ExitAsk = *estate {
-                                slstate.please_save = true;
-                                *estate = ExitState::Saving;
-                            }
-                        }
-                        if button_secondary("Exit without saving").show().clicked {
+            let mut opened = true;
+            Window {
+                title: "Exit Menu",
+                pad: Pad::all(15.0),
+                radius: 10.0,
+                opened: &mut opened,
+            }
+            .show(|| {
+                let mut l = List::column();
+                l.item_spacing = 5.0;
+                l.main_axis_size = MainAxisSize::Min;
+                l.show(|| {
+                    if let ExitState::Saving = *estate {
+                        textc(on_secondary_container(), "Saving...");
+                        if !slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
                             std::process::exit(0);
                         }
-                        if button_secondary("Cancel").show().clicked {
-                            *estate = ExitState::NoExit;
+                        return;
+                    }
+                    if button_secondary("Save and exit").show().clicked {
+                        if let ExitState::ExitAsk = *estate {
+                            slstate.please_save = true;
+                            *estate = ExitState::Saving;
                         }
-                    });
-                },
-            );
+                    }
+                    if button_secondary("Exit without saving").show().clicked {
+                        std::process::exit(0);
+                    }
+                    if button_secondary("Cancel").show().clicked {
+                        *estate = ExitState::NoExit;
+                    }
+                });
+            });
+
+            if !opened {
+                *estate = ExitState::NoExit;
+            }
 
             if uiw
                 .read::<InputMap>()

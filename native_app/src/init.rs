@@ -10,7 +10,6 @@ use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;
 use crate::newgui::specialbuilding::SpecialBuildingResource;
 use crate::newgui::terraforming::TerraformingResource;
-use crate::newgui::window_display::WindowDisplay;
 use crate::newgui::windows::economy::EconomyState;
 use crate::newgui::windows::settings::{Settings, SettingsState};
 use crate::newgui::zoneedit::ZoneEditState;
@@ -62,7 +61,6 @@ pub fn init() {
     register_resource_noserialize::<WorldCommands>();
     register_resource_noserialize::<crate::gui::windows::load::LoadState>();
     register_resource_noserialize::<crate::uiworld::SaveLoadState>();
-    register_resource_noserialize::<WindowDisplay>();
     register_resource_noserialize::<EconomyState>();
     register_resource_noserialize::<SettingsState>();
 }

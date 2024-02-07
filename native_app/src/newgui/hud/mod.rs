@@ -1,4 +1,3 @@
-use goryak::debug_layout;
 use ordered_float::OrderedFloat;
 use std::time::Instant;
 use yakui::{reflow, Alignment, Color, Dim2, Vec2};
@@ -10,14 +9,12 @@ use crate::gui::{GuiState, UiTextures};
 use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
-use crate::newgui::window_display::WindowDisplay;
 use crate::newgui::windows::settings::Settings;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 mod menu;
 mod time_controls;
 mod toolbox;
-pub mod window_display;
 pub mod windows;
 
 /// Root GUI entrypoint
@@ -35,11 +32,8 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
         menu_bar(uiworld, sim);
         uiworld.write::<GuiState>().windows.render(uiworld, sim);
         time_controls(uiworld, sim);
-        WindowDisplay::finish(uiworld, sim);
     });
-    if tweak!(false) {
-        debug_layout();
-    }
+    //goryak::debug_layout();
 }
 
 fn auto_save(uiworld: &UiWorld) {

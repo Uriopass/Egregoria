@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::rc::Rc;
 
 use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
@@ -12,57 +12,54 @@ use crate::{
     blur_bg, icon_button, mincolumn, on_primary_container, outline, primary_container, textc,
 };
 
-thread_local! {
-    /// Remember which windows were drawn. That what we can put them at the bottom of the widget tree to be drawn on top of the rest.
-    /// We can also have a way to remember which windows are active, so they can be on top too.
-    static WINDOWS: RefCell<Vec<Window>> = Default::default();
-}
-
-pub struct Window {
+pub struct Window<'a> {
     pub title: &'static str,
     pub pad: Pad,
     pub radius: f32,
+    pub opened: &'a mut bool,
 }
 
-impl Window {
-    pub fn show(self, children: impl FnOnce(), on_close: impl FnOnce()) {
+impl<'a> Window<'a> {
+    pub fn show(self, children: impl FnOnce()) {
         let dom = context::dom();
         let response = dom.begin_widget::<WindowBase>(());
 
         let off = draggable(|| {
-            blur_bg(primary_container().with_alpha(0.5), self.radius, || {
-                self.pad.show(|| {
-                    mincolumn(|| {
-                        reflow(Alignment::TOP_RIGHT, Dim2::ZERO, || {
-                            offset(Vec2::new(-25.0, -15.0), || {
-                                constrained(Constraints::tight(Vec2::splat(40.0)), || {
-                                    center(|| {
-                                        let mut b = Button::unstyled("close");
-                                        b.padding = Pad::balanced(4.0, 2.0);
-                                        b.border_radius = 10.0;
-                                        b.style.fill = Color::CLEAR;
-                                        b.style.text.font_size = 20.0;
-                                        b.style.text.color = on_primary_container().adjust(0.5);
-                                        b.down_style.fill = Color::CLEAR;
-                                        b.down_style.text = b.style.text.clone();
-                                        b.hover_style.fill = Color::CLEAR;
-                                        b.hover_style.text = b.style.text.clone();
-                                        b.hover_style.text.font_size = 25.0;
-                                        b.hover_style.text.color = on_primary_container();
+            if *self.opened {
+                blur_bg(primary_container().with_alpha(0.5), self.radius, || {
+                    self.pad.show(|| {
+                        mincolumn(|| {
+                            reflow(Alignment::TOP_RIGHT, Dim2::ZERO, || {
+                                offset(Vec2::new(-25.0, -15.0), || {
+                                    constrained(Constraints::tight(Vec2::splat(40.0)), || {
+                                        center(|| {
+                                            let mut b = Button::unstyled("close");
+                                            b.padding = Pad::balanced(4.0, 2.0);
+                                            b.border_radius = 10.0;
+                                            b.style.fill = Color::CLEAR;
+                                            b.style.text.font_size = 20.0;
+                                            b.style.text.color = on_primary_container().adjust(0.5);
+                                            b.down_style.fill = Color::CLEAR;
+                                            b.down_style.text = b.style.text.clone();
+                                            b.hover_style.fill = Color::CLEAR;
+                                            b.hover_style.text = b.style.text.clone();
+                                            b.hover_style.text.font_size = 25.0;
+                                            b.hover_style.text.color = on_primary_container();
 
-                                        if icon_button(b).show().clicked {
-                                            on_close();
-                                        }
+                                            if icon_button(b).show().clicked {
+                                                *self.opened = false;
+                                            }
+                                        });
                                     });
                                 });
                             });
+                            textc(on_primary_container(), Cow::Borrowed(self.title));
+                            divider(outline(), 10.0, 1.0);
+                            children();
                         });
-                        textc(on_primary_container(), Cow::Borrowed(self.title));
-                        divider(outline(), 10.0, 1.0);
-                        children();
                     });
                 });
-            });
+            }
         });
 
         response.confirm.set(off.dragging.is_none());
@@ -78,18 +75,18 @@ impl Window {
 struct WindowBase {
     props: (),
     off: Vec2,
-    resp: Rc<WindowResp>,
+    resp: Rc<WindowBaseResponse>,
 }
 
 #[derive(Default, Debug)]
-struct WindowResp {
+struct WindowBaseResponse {
     off: Cell<Vec2>,
     confirm: Cell<bool>,
 }
 
 impl Widget for WindowBase {
     type Props<'a> = ();
-    type Response = Rc<WindowResp>;
+    type Response = Rc<WindowBaseResponse>;
 
     fn new() -> Self {
         Self::default()
@@ -112,6 +109,7 @@ impl Widget for WindowBase {
     }
 
     fn layout(&self, mut ctx: LayoutContext<'_>, _: Constraints) -> Vec2 {
+        ctx.layout.new_layer(ctx.dom);
         let node = ctx.dom.get_current();
         if node.children.len() > 1 {
             panic!("Window can only have one child");

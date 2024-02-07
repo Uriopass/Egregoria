@@ -33,12 +33,7 @@ impl GUIWindows {
             self.economy_open ^= true;
         }
 
-        if self.economy_open {
-            economy::economy(uiworld, sim);
-        }
-
-        if self.settings_open {
-            settings::settings(uiworld, sim);
-        }
+        economy::economy(uiworld, sim, &mut self.economy_open);
+        settings::settings(uiworld, sim, &mut self.settings_open);
     }
 }
