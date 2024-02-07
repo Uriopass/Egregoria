@@ -9,7 +9,6 @@ pub mod debug;
 pub mod load;
 #[cfg(feature = "multiplayer")]
 pub mod network;
-pub mod settings;
 
 pub trait GUIWindow: Send + Sync {
     fn render_window(
@@ -53,7 +52,6 @@ impl Default for OldGUIWindows {
             opened: vec![],
         };
         s.insert("Debug", debug::debug, false);
-        s.insert("Settings", settings::settings, false);
         #[cfg(feature = "multiplayer")]
         s.insert("Network", network::network, false);
         s.insert("Load", load::load, false);

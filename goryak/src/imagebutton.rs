@@ -1,12 +1,11 @@
 use std::time::Instant;
 
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
-use yakui_core::geometry::{Color, Constraints, Dim2, Rect, Vec2};
+use yakui_core::geometry::{Color, Constraints, Rect, Vec2};
 use yakui_core::input::MouseButton;
 use yakui_core::paint::PaintRect;
 use yakui_core::widget::{EventContext, LayoutContext, PaintContext, Widget};
-use yakui_core::{Alignment, Response, TextureId};
-use yakui_widgets::{offset, reflow};
+use yakui_core::{Response, TextureId};
 
 use crate::{on_primary, padxy, primary, round_rect, textc};
 
@@ -134,13 +133,9 @@ impl Widget for ImageButtonWidget {
                     self.show_tooltip = true;
                 }
                 if self.show_tooltip {
-                    reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 0.0), || {
-                        offset(Vec2::new(-10.0, -50.0), || {
-                            round_rect(5.0, primary(), || {
-                                padxy(5.0, 4.0, || {
-                                    textc(on_primary(), self.props.tooltip);
-                                });
-                            });
+                    round_rect(5.0, primary(), || {
+                        padxy(5.0, 4.0, || {
+                            textc(on_primary(), self.props.tooltip);
                         });
                     });
                 }
@@ -178,8 +173,14 @@ impl Widget for ImageButtonWidget {
         EventInterest::MOUSE_ALL
     }
 
-    fn layout(&self, _ctx: LayoutContext<'_>, input: Constraints) -> Vec2 {
-        let _ = self.default_layout(_ctx, input); // tooltip is reflowed
+    fn layout(&self, mut ctx: LayoutContext<'_>, input: Constraints) -> Vec2 {
+        if let Some(tooltip) = ctx.dom.get_current().children.first() {
+            let size = ctx.calculate_layout(*tooltip, Constraints::none());
+            ctx.layout.set_pos(
+                *tooltip,
+                Vec2::new((self.props.size.x - size.x) / 2.0, -size.y - 10.0),
+            );
+        }
 
         input.constrain_min(self.props.size)
     }

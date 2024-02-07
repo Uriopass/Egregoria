@@ -1,7 +1,7 @@
 use yakui::widgets::{CountGrid, List, Pad, StateResponse};
 use yakui::{
-    colored_box_container, column, constrained, row, use_state, Constraints, CrossAxisAlignment,
-    MainAxisAlignment, MainAxisSize, Response, Vec2,
+    colored_box_container, column, constrained, divider, row, use_state, Constraints,
+    CrossAxisAlignment, MainAxisAlignment, MainAxisSize, Response, Vec2,
 };
 
 use engine::meshload::CPUMesh;
@@ -9,9 +9,10 @@ use engine::wgpu::RenderPass;
 use engine::{set_cursor_icon, CursorIcon, Drawable, GfxContext, InstancedMesh, Mesh, SpriteBatch};
 use geom::Matrix4;
 use goryak::{
-    background, button_primary, checkbox_value, divider, dragvalue, icon, interact_box_radius,
-    is_hovered, on_secondary_container, on_surface, outline_variant, round_rect, scroll_vertical,
-    secondary_container, set_theme, surface, surface_variant, textc, use_changed, RoundRect, Theme,
+    background, button_primary, checkbox_value, constrained_viewport, dragvalue, icon,
+    interact_box_radius, is_hovered, on_secondary_container, on_surface, outline_variant,
+    round_rect, secondary_container, set_theme, surface, surface_variant, textc, use_changed,
+    RoundRect, Theme, VertScroll,
 };
 use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype};
 
@@ -48,10 +49,12 @@ impl Gui {
 
 impl State {
     pub fn gui_yakui(&mut self) {
-        row(|| {
-            self.explorer();
-            self.model_properties();
-            //self.properties();
+        constrained_viewport(|| {
+            row(|| {
+                self.explorer();
+                self.model_properties();
+                //self.properties();
+            });
         });
     }
 
@@ -77,9 +80,10 @@ impl State {
                                 }
                             });
                         });
-                        scroll_vertical(1000.0, || {
+                        VertScroll::Percent(1.0).show(|| {
                             let mut l = List::column();
                             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
+                            l.main_axis_size = MainAxisSize::Min;
                             l.show(|| {
                                 let companies_open = use_state(|| false);
                                 Self::explore_item(
@@ -190,8 +194,7 @@ impl State {
                                         textc(tc, "quality");
                                         dragvalue().min(0.0).max(1.0).show(&mut params.quality);
 
-                                        textc(tc, "sloppy");
-                                        checkbox_value(&mut params.sloppy);
+                                        checkbox_value(&mut params.sloppy, tc, "sloppy");
 
                                         params
                                     });

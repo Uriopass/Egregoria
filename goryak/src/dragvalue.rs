@@ -84,6 +84,7 @@ impl DragValue {
     /// Returns true if the value was changed.
     pub fn show<T: Draggable>(self, value: &mut T) -> bool {
         let mut changed = false;
+        let step = self.step.unwrap_or(T::default_step());
 
         let mut l = List::column();
         l.cross_axis_alignment = CrossAxisAlignment::Center;
@@ -95,18 +96,31 @@ impl DragValue {
                     .color(secondary())
                     .show_children(|| {
                         pad(Pad::horizontal(10.0), || {
-                            textc(on_primary(), format!("{:.3}", T::to_f64(*value)));
+                            let v = T::to_f64(*value);
+                            let text = if step < 0.01 {
+                                format!("{:.3}", v)
+                            } else if step < 0.1 {
+                                format!("{:.2}", v)
+                            } else if step < 1.0 {
+                                format!("{:.1}", v)
+                            } else {
+                                format!("{:.0}", v)
+                            };
+                            textc(on_primary(), text);
                         });
                     });
             });
             if let Some(dragged) = dragged {
                 let oldv = T::to_f64(*value);
-                let newv = oldv + dragged.x as f64 * self.step.unwrap_or(T::default_step());
+                let mut newv = oldv + dragged.x as f64 * step;
+
+                newv = (newv / step).round() * step;
 
                 *value = T::from_f64(newv.clamp(
                     self.min.unwrap_or(T::DEFAULT_MIN),
                     self.max.unwrap_or(T::DEFAULT_MAX),
                 ));
+
                 changed = true;
             }
         });

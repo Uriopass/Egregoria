@@ -6,12 +6,12 @@ use yakui::{reflow, Alignment, Color, Dim2, Vec2};
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
 
-use crate::gui::windows::settings::Settings;
 use crate::gui::{GuiState, UiTextures};
 use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
 use crate::newgui::window_display::WindowDisplay;
+use crate::newgui::windows::settings::Settings;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 mod menu;

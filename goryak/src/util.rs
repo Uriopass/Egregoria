@@ -5,24 +5,17 @@ use yakui_core::dom::Dom;
 use yakui_core::geometry::{Color, Constraints, FlexFit, Vec2};
 use yakui_core::layout::LayoutDom;
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
-use yakui_core::{context, MainAxisSize, Response, WidgetId};
-use yakui_widgets::constrained;
+use yakui_core::{context, CrossAxisAlignment, MainAxisSize, Response, WidgetId};
 use yakui_widgets::util::widget;
 use yakui_widgets::widgets::{Button, List, ListResponse, Pad, PadResponse, Text};
 
-use crate::{on_primary, on_secondary, primary, secondary, Scrollable};
+use crate::{on_primary, on_secondary, primary, secondary};
 
-pub fn scroll_vertical(maxsize: f32, children: impl FnOnce()) -> Response<()> {
-    constrained(
-        Constraints::loose(Vec2::new(f32::INFINITY, maxsize)),
-        || {
-            Scrollable::vertical().show(children);
-        },
-    )
-}
-
-pub fn checkbox_value(v: &mut bool) {
-    *v = yakui_widgets::checkbox(*v).checked;
+pub fn checkbox_value(v: &mut bool, color: Color, label: &'static str) {
+    minrow(5.0, || {
+        *v = yakui_widgets::checkbox(*v).checked;
+        textc(color, label);
+    });
 }
 
 pub fn use_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
@@ -33,9 +26,11 @@ pub fn use_changed<T: Copy + PartialEq + 'static>(v: T, f: impl FnOnce()) {
     }
 }
 
-pub fn minrow<F: FnOnce()>(children: F) -> Response<ListResponse> {
+pub fn minrow<F: FnOnce()>(spacing: f32, children: F) -> Response<ListResponse> {
     let mut l = List::row();
     l.main_axis_size = MainAxisSize::Min;
+    l.cross_axis_alignment = CrossAxisAlignment::Center;
+    l.item_spacing = spacing;
     l.show(children)
 }
 
@@ -233,7 +228,7 @@ impl Widget for DebugSize {
 
 #[track_caller]
 pub fn debug_constraints() {
-    yakui_widgets::util::widget::<DebugConstraints>(Location::caller());
+    widget::<DebugConstraints>(Location::caller());
 }
 
 #[derive(Debug)]

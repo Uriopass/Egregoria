@@ -73,7 +73,10 @@ impl YakuiWrapper {
 
         self.yakui.start();
         ui_render();
-        self.yakui.finish();
+        {
+            profiling::scope!("yakui::finish");
+            self.yakui.finish();
+        }
 
         self.renderer.paint_with_encoder(
             &mut self.yakui,

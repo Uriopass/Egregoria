@@ -1,7 +1,6 @@
 use crate::game_loop::Timings;
 use crate::gui::chat::GUIChatState;
 use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
-use crate::gui::windows::settings::Settings;
 use crate::gui::{ExitState, FollowEntity, GuiState};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
@@ -13,6 +12,7 @@ use crate::newgui::specialbuilding::SpecialBuildingResource;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::window_display::WindowDisplay;
 use crate::newgui::windows::economy::EconomyState;
+use crate::newgui::windows::settings::{Settings, SettingsState};
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
     ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
@@ -64,6 +64,7 @@ pub fn init() {
     register_resource_noserialize::<crate::uiworld::SaveLoadState>();
     register_resource_noserialize::<WindowDisplay>();
     register_resource_noserialize::<EconomyState>();
+    register_resource_noserialize::<SettingsState>();
 }
 
 pub struct InitFunc {

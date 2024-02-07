@@ -10,10 +10,10 @@ use simulation::Simulation;
 
 use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::windows::settings::{manage_settings, Settings};
 use crate::gui::{render_oldgui, ExitState, FollowEntity, GuiState, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::windows::settings::{manage_settings, Settings};
 use crate::newgui::{render_newgui, TimeAlways, Tool};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};

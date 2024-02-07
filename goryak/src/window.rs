@@ -6,11 +6,10 @@ use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
 use yakui_core::widget::{LayoutContext, Widget};
 use yakui_core::{context, Alignment, Flow};
 use yakui_widgets::widgets::{Button, Pad};
-use yakui_widgets::{center, constrained, draggable, offset, reflow};
+use yakui_widgets::{center, constrained, divider, draggable, offset, reflow};
 
 use crate::{
-    blur_bg, divider, icon_button, mincolumn, on_primary_container, outline, primary_container,
-    textc,
+    blur_bg, icon_button, mincolumn, on_primary_container, outline, primary_container, textc,
 };
 
 thread_local! {

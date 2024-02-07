@@ -3,67 +3,43 @@ use std::cell::Cell;
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
 use yakui_core::geometry::{Constraints, FlexFit, Rect, Vec2};
 use yakui_core::widget::{EventContext, LayoutContext, PaintContext, Widget};
-use yakui_core::{MainAxisSize, Response};
+use yakui_core::Response;
 use yakui_widgets::shapes::RoundedRectangle;
 
 #[derive(Debug)]
-#[non_exhaustive]
-pub struct Scrollable {
-    pub direction: Option<ScrollDirection>,
-    pub main_axis_size: MainAxisSize,
+pub enum VertScroll {
+    Percent(f32),
+    Fixed(f32),
+    Max,
 }
 
-impl Scrollable {
-    pub fn none() -> Self {
-        Scrollable {
-            direction: None,
-            main_axis_size: MainAxisSize::Min,
-        }
+impl VertScroll {
+    pub fn show<F: FnOnce()>(self, children: F) -> Response<VertScrollResponse> {
+        yakui_widgets::util::widget_children::<VertScrollWidget, F>(children, self)
     }
-
-    pub fn vertical() -> Self {
-        Scrollable {
-            direction: Some(ScrollDirection::Y),
-            main_axis_size: MainAxisSize::Min,
-        }
-    }
-
-    pub fn main_axis_size(mut self, main_axis_size: MainAxisSize) -> Self {
-        self.main_axis_size = main_axis_size;
-        self
-    }
-
-    pub fn show<F: FnOnce()>(self, children: F) -> Response<ScrollableResponse> {
-        yakui_widgets::util::widget_children::<ScrollableWidget, F>(children, self)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScrollDirection {
-    Y,
 }
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct ScrollableWidget {
-    props: Scrollable,
-    scroll_position: Cell<Vec2>,
-    size: Cell<Vec2>,
-    canvas_size: Cell<Vec2>,
+pub struct VertScrollWidget {
+    props: VertScroll,
+    scroll_position: Cell<f32>,
+    size: Cell<f32>,
+    canvas_size: Cell<f32>,
 }
 
-pub type ScrollableResponse = ();
+pub type VertScrollResponse = ();
 
-impl Widget for ScrollableWidget {
-    type Props<'a> = Scrollable;
-    type Response = ScrollableResponse;
+impl Widget for VertScrollWidget {
+    type Props<'a> = VertScroll;
+    type Response = VertScrollResponse;
 
     fn new() -> Self {
         Self {
-            props: Scrollable::none(),
-            scroll_position: Cell::new(Vec2::ZERO),
-            size: Cell::new(Vec2::ZERO),
-            canvas_size: Cell::new(Vec2::ZERO),
+            props: VertScroll::Max,
+            scroll_position: Cell::new(0.0),
+            size: Cell::new(0.0),
+            canvas_size: Cell::new(0.0),
         }
     }
 
@@ -72,33 +48,36 @@ impl Widget for ScrollableWidget {
     }
 
     fn flex(&self) -> (u32, FlexFit) {
-        match self.props.main_axis_size {
-            MainAxisSize::Max => (1, FlexFit::Tight),
-            MainAxisSize::Min => (0, FlexFit::Loose),
-            _ => unimplemented!(),
+        match self.props {
+            VertScroll::Max => (1, FlexFit::Tight),
+            VertScroll::Percent(_) => (1, FlexFit::Loose),
+            _ => (0, FlexFit::Loose),
         }
     }
 
-    fn layout(&self, mut ctx: LayoutContext<'_>, constraints: Constraints) -> Vec2 {
+    fn layout(&self, mut ctx: LayoutContext<'_>, mut constraints: Constraints) -> Vec2 {
         ctx.layout.enable_clipping(ctx.dom);
 
         let node = ctx.dom.get_current();
         let mut canvas_size = Vec2::ZERO;
 
-        let main_axis_size = match self.props.main_axis_size {
-            MainAxisSize::Max => constraints.max.y,
-            MainAxisSize::Min => constraints.min.y,
-            _ => unimplemented!(),
+        let main_axis_size = match self.props {
+            VertScroll::Max => constraints.max.y,
+            VertScroll::Fixed(h) => {
+                constraints.max.y = constraints.max.y.min(h);
+                constraints.min.y
+            }
+            VertScroll::Percent(percent) => {
+                constraints.max.y = constraints.max.y * percent;
+                constraints.min.y
+            }
         };
 
-        canvas_size.y = canvas_size.y.max(main_axis_size);
+        canvas_size.y = main_axis_size;
 
-        let child_constraints = match self.props.direction {
-            None => constraints,
-            Some(ScrollDirection::Y) => Constraints {
-                min: Vec2::new(constraints.min.x, 0.0),
-                max: Vec2::new(constraints.max.x, f32::INFINITY),
-            },
+        let child_constraints = Constraints {
+            min: Vec2::new(constraints.min.x, 0.0),
+            max: Vec2::new(constraints.max.x, 1000000.0),
         };
 
         for &child in &node.children {
@@ -108,25 +87,16 @@ impl Widget for ScrollableWidget {
 
         let size = constraints.constrain(canvas_size);
 
-        self.canvas_size.set(canvas_size);
-        self.size.set(size);
+        self.canvas_size.set(canvas_size.y);
+        self.size.set(size.y);
 
-        let max_scroll_position = (canvas_size - size).max(Vec2::ZERO);
-        let mut scroll_position = self
-            .scroll_position
-            .get()
-            .min(max_scroll_position)
-            .max(Vec2::ZERO);
-
-        match self.props.direction {
-            None => scroll_position = Vec2::ZERO,
-            Some(ScrollDirection::Y) => scroll_position.x = 0.0,
-        }
+        let max_scroll_position = (canvas_size.y - size.y).max(0.0);
+        let scroll_position = self.scroll_position.get().clamp(0.0, max_scroll_position);
 
         self.scroll_position.set(scroll_position);
 
         for &child in &node.children {
-            ctx.layout.set_pos(child, -scroll_position);
+            ctx.layout.set_pos(child, Vec2::new(0.0, -scroll_position));
         }
 
         size
@@ -144,13 +114,13 @@ impl Widget for ScrollableWidget {
         const SCROLLBAR_PAD_X: f32 = 2.0;
         const SCROLLBAR_PAD_Y: f32 = 2.0;
 
-        if self.canvas_size.get().y <= drawn_rect.size().y {
+        if self.canvas_size.get() <= drawn_rect.size().y {
             return;
         }
         let scrollbar_progress =
-            self.scroll_position.get().y / (self.canvas_size.get().y - self.size.get().y);
+            self.scroll_position.get() / (self.canvas_size.get() - self.size.get());
         let scroll_bar_height =
-            drawn_rect.size().y * (drawn_rect.size().y / self.canvas_size.get().y);
+            drawn_rect.size().y * (drawn_rect.size().y / self.canvas_size.get());
         let remaining_space = drawn_rect.size().y - scroll_bar_height - SCROLLBAR_PAD_Y;
 
         let scroll_bar_pos = drawn_rect.pos()
@@ -174,7 +144,7 @@ impl Widget for ScrollableWidget {
         match *event {
             WidgetEvent::MouseScroll { delta } => {
                 let pos = self.scroll_position.get();
-                self.scroll_position.set(pos + delta);
+                self.scroll_position.set(pos + delta.y);
                 EventResponse::Sink
             }
             _ => EventResponse::Bubble,

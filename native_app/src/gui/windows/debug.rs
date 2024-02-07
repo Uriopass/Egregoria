@@ -8,8 +8,8 @@ use simulation::transportation::TransportGrid;
 use simulation::{Simulation, TrainID};
 use std::time::{Duration, Instant};
 
-use crate::gui::windows::settings::Settings;
 use crate::inputmap::InputMap;
+use crate::newgui::windows::settings::Settings;
 use egui::Widget;
 use engine::{PerfCountersStatic, Tesselator};
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};

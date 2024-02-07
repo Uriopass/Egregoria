@@ -1,6 +1,6 @@
 pub use self::inner::*;
 use crate::game_loop::{State, Timings};
-use crate::gui::windows::settings::Settings;
+use crate::newgui::windows::settings::Settings;
 use crate::uiworld::{ReceivedCommands, SaveLoadState};
 use common::timestep::Timestep;
 use simulation::utils::scheduler::SeqSchedule;

@@ -66,6 +66,13 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
             Event::WindowEvent { event, .. } => {
                 ctx.input.handle(&event);
 
+                if ctx.gfx.update_sc {
+                    ctx.gfx.update_sc = false;
+                    let size = (ctx.gfx.size.0, ctx.gfx.size.1, scale_factor);
+                    ctx.gfx.resize(size);
+                    state.resized(&mut ctx, size);
+                }
+
                 match event {
                     WindowEvent::Resized(physical_size) => {
                         log::info!("resized: {:?}", physical_size);

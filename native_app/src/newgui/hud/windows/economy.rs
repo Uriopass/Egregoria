@@ -10,8 +10,8 @@ use yakui::{
 use engine::Tesselator;
 use geom::AABB;
 use goryak::{
-    constrained_viewport, mincolumn, minrow, on_primary_container, padxy, pady, scroll_vertical,
-    selectable_label_primary, sized_canvas, textc, Window,
+    constrained_viewport, mincolumn, minrow, on_primary_container, padxy, pady,
+    selectable_label_primary, sized_canvas, textc, VertScroll, Window,
 };
 use prototypes::{ItemID, DELTA_F64};
 use simulation::economy::{
@@ -252,7 +252,7 @@ pub fn economy(uiw: &UiWorld, _: &Simulation) {
                             );
                         });
 
-                        scroll_vertical(300.0, || {
+                        VertScroll::Fixed(300.0).show(|| {
                             constrained(Constraints::loose(Vec2::new(300.0, 1000000.0)), || {
                                 let mut overall_total = 0;
                                 let mut g = CountGrid::col(2);
@@ -283,7 +283,7 @@ pub fn economy(uiw: &UiWorld, _: &Simulation) {
                                     for (id, sum) in histories {
                                         let enabled = filterid.borrow().contains(&id);
 
-                                        minrow(|| {
+                                        minrow(0.0, || {
                                             if selectable_label_primary(
                                                 enabled,
                                                 &id.prototype().name,
@@ -355,7 +355,7 @@ pub fn economy(uiw: &UiWorld, _: &Simulation) {
 fn render_market_prices(sim: &Simulation) {
     let market = sim.read::<Market>();
 
-    scroll_vertical(300.0, || {
+    VertScroll::Fixed(300.0).show(|| {
         let mut grid = CountGrid::col(2);
         grid.main_axis_size = MainAxisSize::Min;
         grid.show(|| {

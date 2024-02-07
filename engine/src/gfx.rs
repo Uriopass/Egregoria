@@ -86,7 +86,7 @@ pub enum ShadowQuality {
     Low,
     Medium,
     High,
-    TooHigh,
+    Ultra,
 }
 
 impl AsRef<str> for ShadowQuality {
@@ -96,7 +96,7 @@ impl AsRef<str> for ShadowQuality {
             ShadowQuality::Low => "Low",
             ShadowQuality::Medium => "Medium",
             ShadowQuality::High => "High",
-            ShadowQuality::TooHigh => "Too High",
+            ShadowQuality::Ultra => "Ultra",
         }
     }
 }
@@ -108,7 +108,7 @@ impl From<u8> for ShadowQuality {
             1 => ShadowQuality::Low,
             2 => ShadowQuality::Medium,
             3 => ShadowQuality::High,
-            4 => ShadowQuality::TooHigh,
+            4 => ShadowQuality::Ultra,
             _ => ShadowQuality::High,
         }
     }
@@ -120,7 +120,7 @@ impl ShadowQuality {
             ShadowQuality::Low => Some(512),
             ShadowQuality::Medium => Some(1024),
             ShadowQuality::High => Some(2048),
-            ShadowQuality::TooHigh => Some(4096),
+            ShadowQuality::Ultra => Some(4096),
             ShadowQuality::NoShadows => None,
         }
     }
