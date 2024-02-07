@@ -420,6 +420,7 @@ impl<'a> Tesselator<'a> {
                 let dir = match (ae + ce).try_normalize() {
                     Some(x) => {
                         let d = ae.perp_dot(ce);
+
                         if d.abs() < 0.01 {
                             -ae.perpendicular()
                         } else if d < 0.0 {
@@ -431,7 +432,14 @@ impl<'a> Tesselator<'a> {
                     None => -ae.perpendicular(),
                 };
 
-                let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+                let mut sin_theta = ae.perp_dot(dir);
+
+                if sin_theta < 0.1 {
+                    sin_theta = 0.1;
+                }
+
+                //let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+                let mul = 1.0 / sin_theta;
 
                 let p1 = elbow + (mul * dir * (offset + halfthick)).z0();
                 let p2 = elbow + (mul * dir * (offset - halfthick)).z0();

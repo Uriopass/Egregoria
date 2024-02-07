@@ -6,13 +6,19 @@ use yakui_core::geometry::{Color, Constraints, FlexFit, Vec2};
 use yakui_core::layout::LayoutDom;
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
 use yakui_core::{context, MainAxisSize, Response, WidgetId};
+use yakui_widgets::constrained;
 use yakui_widgets::util::widget;
 use yakui_widgets::widgets::{Button, List, ListResponse, Pad, PadResponse, Text};
 
-use crate::{on_primary, on_secondary, primary, secondary, Scrollable, ScrollableResponse};
+use crate::{on_primary, on_secondary, primary, secondary, Scrollable};
 
-pub fn scroll_vertical(children: impl FnOnce()) -> Response<ScrollableResponse> {
-    Scrollable::vertical().show(children)
+pub fn scroll_vertical(maxsize: f32, children: impl FnOnce()) -> Response<()> {
+    constrained(
+        Constraints::loose(Vec2::new(f32::INFINITY, maxsize)),
+        || {
+            Scrollable::vertical().show(children);
+        },
+    )
 }
 
 pub fn checkbox_value(v: &mut bool) {

@@ -10,7 +10,7 @@ use simulation::{AnyEntity, Simulation};
 pub fn inspected_aura(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::inspected_aura");
     let inspected = uiworld.write::<InspectedEntity>();
-    let inspected_b = uiworld.write::<InspectedBuilding>();
+    let mut inspected_b = uiworld.write::<InspectedBuilding>();
     let map = sim.map();
     let mut draw = uiworld.write::<ImmediateDraw>();
 
@@ -37,7 +37,10 @@ pub fn inspected_aura(sim: &Simulation, uiworld: &UiWorld) {
     }
 
     if let Some(sel) = inspected_b.e {
-        let b = map.buildings().get(sel).unwrap();
+        let Some(b) = map.buildings().get(sel) else {
+            inspected_b.e = None;
+            return;
+        };
 
         // already shown by zonedit
         if b.zone.is_some() {

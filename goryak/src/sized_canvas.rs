@@ -1,10 +1,12 @@
+use std::cell::Cell;
 use std::fmt::Debug;
-use yakui_core::geometry::{Constraints, Vec2};
+use yakui_core::geometry::{Color, Constraints, Vec2};
+use yakui_core::paint::PaintRect;
 use yakui_core::widget::{LayoutContext, PaintContext, Widget};
 use yakui_core::Response;
 use yakui_widgets::util::widget;
 
-type DrawCallback = Box<dyn Fn(&mut PaintContext<'_>) + 'static>;
+type DrawCallback = Box<dyn FnOnce(&mut PaintContext<'_>) + 'static>;
 
 /**
 Allows the user to draw arbitrary graphics in a region.
@@ -12,8 +14,9 @@ Allows the user to draw arbitrary graphics in a region.
 Responds with [SizedCanvasResponse].
  */
 pub struct SizedCanvas {
-    draw: Option<DrawCallback>,
+    draw: Cell<Option<DrawCallback>>,
     pub size: Vec2,
+    pub bg_color: Option<Color>,
 }
 
 impl Debug for SizedCanvas {
@@ -23,10 +26,15 @@ impl Debug for SizedCanvas {
 }
 
 impl SizedCanvas {
-    pub fn new(size: Vec2, draw: impl Fn(&mut PaintContext<'_>) + 'static) -> Self {
+    pub fn new(
+        size: Vec2,
+        bg_color: Option<Color>,
+        draw: impl FnOnce(&mut PaintContext<'_>) + 'static,
+    ) -> Self {
         Self {
-            draw: Some(Box::new(draw)),
+            draw: Cell::new(Some(Box::new(draw))),
             size,
+            bg_color,
         }
     }
 
@@ -37,9 +45,10 @@ impl SizedCanvas {
 
 pub fn sized_canvas(
     size: Vec2,
-    draw: impl Fn(&mut PaintContext<'_>) + 'static,
+    bg_color: Color,
+    draw: impl FnOnce(&mut PaintContext<'_>) + 'static,
 ) -> Response<SizedCanvasResponse> {
-    SizedCanvas::new(size, draw).show()
+    SizedCanvas::new(size, Some(bg_color), draw).show()
 }
 
 #[derive(Debug)]
@@ -56,8 +65,9 @@ impl Widget for SizedCanvasWidget {
     fn new() -> Self {
         Self {
             props: SizedCanvas {
-                draw: None,
+                draw: Cell::new(None),
                 size: Default::default(),
+                bg_color: None,
             },
         }
     }
@@ -72,7 +82,14 @@ impl Widget for SizedCanvasWidget {
     }
 
     fn paint(&self, mut ctx: PaintContext<'_>) {
-        if let Some(draw) = &self.props.draw {
+        if let Some(bg_color) = self.props.bg_color {
+            let this_rect = ctx.layout.get(ctx.dom.current()).unwrap().rect;
+            let mut p = PaintRect::new(this_rect);
+            p.color = bg_color;
+            p.add(ctx.paint);
+        }
+
+        if let Some(draw) = self.props.draw.take() {
             draw(&mut ctx);
         }
 

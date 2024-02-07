@@ -77,7 +77,7 @@ impl State {
                                 }
                             });
                         });
-                        scroll_vertical(|| {
+                        scroll_vertical(1000.0, || {
                             let mut l = List::column();
                             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                             l.show(|| {

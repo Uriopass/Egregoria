@@ -1,6 +1,7 @@
 use super::Vec2;
 use crate::{Circle, Intersect, Polygon, Segment, Shape, OBB};
 use serde::{Deserialize, Serialize};
+use std::panic::Location;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(C)]
@@ -12,17 +13,21 @@ pub struct AABB {
 impl AABB {
     /// Create a new `AABB`.
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    #[rustfmt::skip]
     pub fn new_ll_ur(ll: Vec2, ur: Vec2) -> Self {
-        debug_assert!(ll.x <= ur.x);
-        debug_assert!(ll.y <= ur.y);
+        debug_assert!(ll.x <= ur.x, "ll.x ({}) > ur.x ({}) :( at {}", ll.x, ur.x, Location::caller());
+        debug_assert!(ll.y <= ur.y, "ll.y ({}) > ur.y ({}) :( at {}", ll.y, ur.y, Location::caller());
         AABB { ll, ur }
     }
 
     /// Create a new `AABB`.
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    #[rustfmt::skip]
     pub fn new_ll_size(ll: Vec2, size: Vec2) -> Self {
-        debug_assert!(size.x >= 0.0);
-        debug_assert!(size.y >= 0.0);
+        debug_assert!(size.x >= 0.0, "size.x ({}) < 0 :( {}", size.x, Location::caller());
+        debug_assert!(size.y >= 0.0, "size.y ({}) < 0 :( {}", size.y, Location::caller());
         AABB { ll, ur: ll + size }
     }
 
@@ -114,6 +119,12 @@ impl AABB {
             self.ur,
             Vec2::new(self.ll.x, self.ur.y),
         ]
+    }
+
+    pub fn make_rescaler(&self, target: AABB) -> impl Fn(Vec2) -> Vec2 {
+        let scale = target.size() / self.size();
+        let offset = target.ll - self.ll * scale;
+        move |p| p * scale + offset
     }
 
     #[inline(always)]
