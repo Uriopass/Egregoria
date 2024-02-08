@@ -69,10 +69,17 @@ impl OverrideSetter {
 pub fn find_overrides(map: &mut Map, chunk: SubscriberChunkID) {
     let mut terrain_affected = BTreeSet::new();
 
+    let sub_chunk_bbox = chunk.bbox();
+
     for obj in map.spatial_map.query(
-        chunk.bbox(),
+        sub_chunk_bbox,
         ProjectFilter::ROAD | ProjectFilter::INTER | ProjectFilter::BUILDING,
     ) {
+        // ensure the object is only processed once
+        if !sub_chunk_bbox.contains(obj.canonical_position(map)) {
+            continue;
+        }
+
         let bbox = match obj {
             ProjectKind::Inter(i) => {
                 let i = map.get(i).unwrap();

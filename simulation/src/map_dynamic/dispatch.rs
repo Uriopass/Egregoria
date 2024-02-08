@@ -289,6 +289,8 @@ impl DispatchOne {
 }
 
 pub fn dispatch_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("map_dynamic::dispatch");
+
     let mut dispatcher = resources.write::<Dispatcher>();
     let map = resources.read::<Map>();
     dispatcher.update(&map, world);

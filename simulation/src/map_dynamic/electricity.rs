@@ -41,6 +41,8 @@ pub struct NetworkFlow {
 /// All producing buildings will produce power, and all consuming buildings will consume power
 /// If a network produces less power than it consumes, a blackout will occur
 pub fn electricity_flow_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("map_dynamic::electricity_flow");
+
     let map = resources.read::<Map>();
     let binfos = resources.read::<BuildingInfos>();
     let mut flow = resources.write::<ElectricityFlow>();

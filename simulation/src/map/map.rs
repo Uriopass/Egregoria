@@ -72,6 +72,7 @@ impl Map {
 
     /// Perform cleanups potentially required every frame
     pub fn update(&mut self) {
+        profiling::scope!("map::update");
         for chunk in self.override_suscriber.take_updated_chunks() {
             find_overrides(self, chunk);
         }

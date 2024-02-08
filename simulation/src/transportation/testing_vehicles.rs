@@ -13,6 +13,8 @@ pub struct RandomVehicles {
 }
 
 pub fn random_vehicles_update(world: &mut World, res: &mut Resources) {
+    profiling::scope!("transportation::random_vehicles_update");
+
     let rv = &mut *res.write::<RandomVehicles>();
     let map = res.read::<Map>();
 

@@ -71,6 +71,7 @@ pub fn freight_station_soul(
 }
 
 pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
+    profiling::scope!("souls::freight_station_system");
     let cbuf = resources.read::<ParCommandBuffer<FreightStationEnt>>();
     let mut dispatch = resources.write::<Dispatcher>();
     let map = resources.read::<Map>();
