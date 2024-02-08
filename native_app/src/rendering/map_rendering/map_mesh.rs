@@ -16,7 +16,7 @@ use simulation::map::{
 };
 use simulation::Simulation;
 use std::ops::{Mul, Neg};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// This is the main struct that handles the map rendering.
 /// It is responsible for generating the meshes and sprites for the map
@@ -30,8 +30,8 @@ pub struct MapMeshHandler {
 
 #[derive(Default)]
 struct CachedObj {
-    road: Vec<Rc<Mesh>>,
-    build: Vec<Rc<dyn Drawable>>,
+    road: Vec<Arc<Mesh>>,
+    build: Vec<Arc<dyn Drawable>>,
     lots: Option<Mesh>,
     arrows: Option<SpriteBatch>,
 }
@@ -194,10 +194,10 @@ impl MapMeshHandler {
             cached.road.reserve(2);
 
             if let Some(mesh) = b.mesh_map.build(ctx.gfx) {
-                cached.road.push(Rc::new(mesh));
+                cached.road.push(Arc::new(mesh));
             }
             if let Some(mesh) = b.crosswalk_builder.build(ctx.gfx) {
-                cached.road.push(Rc::new(mesh));
+                cached.road.push(Arc::new(mesh));
             }
 
             cached.lots = b.mesh_lots.build(ctx.gfx);
@@ -226,7 +226,7 @@ impl MapMeshHandler {
                 .collect::<Vec<_>>();
 
             if !sprites.is_empty() {
-                cached.build.push(Rc::new(sprites));
+                cached.build.push(Arc::new(sprites));
             }
 
             let buildmeshes = b
@@ -236,11 +236,11 @@ impl MapMeshHandler {
                 .collect::<Vec<_>>();
 
             if !buildmeshes.is_empty() {
-                cached.build.push(Rc::new(buildmeshes));
+                cached.build.push(Arc::new(buildmeshes));
             }
 
             if let Some(mesh) = b.houses_mesh.build(ctx.gfx) {
-                cached.build.push(Rc::new(mesh));
+                cached.build.push(Arc::new(mesh));
             }
 
             let zonemeshes = b
@@ -249,7 +249,7 @@ impl MapMeshHandler {
                 .flat_map(|(a, b, _)| a.build(ctx.gfx).zip(b.build(ctx.gfx)))
                 .collect::<Vec<_>>();
             if !zonemeshes.is_empty() {
-                cached.build.push(Rc::new(zonemeshes));
+                cached.build.push(Arc::new(zonemeshes));
             }
 
             if cached.is_empty() {

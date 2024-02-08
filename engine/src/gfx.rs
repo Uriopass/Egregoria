@@ -1,18 +1,9 @@
-use crate::passes::{BackgroundPipeline, Pbr};
-use crate::perf_counters::PerfCounters;
-use crate::{
-    bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
-    MaterialID, MaterialMap, MetallicRoughness, MipmapGenerator, PipelineBuilder, Pipelines,
-    Texture, TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
-};
-use common::FastMap;
-use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
-use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex, RwLock};
+use std::time::Instant;
+
+use serde::{Deserialize, Serialize};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
@@ -24,6 +15,18 @@ use wgpu::{
     TextureViewDescriptor, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 use winit::window::{Fullscreen, Window};
+
+use common::FastMap;
+use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
+
+use crate::framework::State;
+use crate::passes::{BackgroundPipeline, Pbr};
+use crate::perf_counters::PerfCounters;
+use crate::{
+    bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
+    MaterialID, MaterialMap, MetallicRoughness, MipmapGenerator, PipelineBuilder, Pipelines,
+    Texture, TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
+};
 
 pub struct FBOs {
     pub(crate) depth: Texture,
@@ -51,7 +54,7 @@ pub struct GfxContext {
     pub(crate) default_material: Material,
     pub tess_material: MaterialID,
     pub tick: u64,
-    pub(crate) pipelines: RefCell<Pipelines>,
+    pub(crate) pipelines: RwLock<Pipelines>,
     pub frustrum: InfiniteFrustrum,
     pub(crate) sun_params: [Uniform<RenderParams>; N_CASCADES],
     pub render_params: Uniform<RenderParams>,
@@ -157,9 +160,12 @@ impl Default for GfxSettings {
 
 pub struct Encoders {
     pub pbr: Option<CommandBuffer>,
-    pub smap: Option<CommandBuffer>,
+    pub smap: Vec<CommandBuffer>,
     pub depth_prepass: Option<CommandBuffer>,
-    pub end: CommandEncoder,
+    pub main: Option<CommandBuffer>,
+    pub before_main: CommandEncoder,
+    pub after_main: CommandEncoder,
+    pub gui: Option<CommandBuffer>,
 }
 
 pub const N_CASCADES: usize = 4;
@@ -225,7 +231,7 @@ impl Default for RenderParams {
 u8slice_impl!(RenderParams);
 
 pub struct GuiRenderContext<'a> {
-    pub gfx: &'a mut GfxContext,
+    pub gfx: &'a GfxContext,
     pub encoder: &'a mut CommandEncoder,
     pub view: &'a TextureView,
     pub size: (u32, u32, f64),
@@ -392,7 +398,7 @@ impl GfxContext {
             adapter,
             fbos,
             surface,
-            pipelines: RefCell::new(Pipelines::new()),
+            pipelines: RwLock::new(Pipelines::new()),
             materials,
             tess_material: tess_material_id,
             default_material: Material::new_default(&device, &queue, &null_texture),
@@ -599,10 +605,15 @@ impl GfxContext {
     }
 
     pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {
-        let mut end = self
+        let mut before_main = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("End encoder"),
+                label: Some("Before main encoder"),
+            });
+        let after_main = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("After main encoder"),
             });
 
         for (uni, mat) in self
@@ -618,21 +629,24 @@ impl GfxContext {
 
         self.render_params.upload_to_gpu(&self.queue);
         self.lamplights
-            .apply_changes(&self.queue, &self.device, &mut end);
+            .apply_changes(&self.queue, &self.device, &mut before_main);
 
         (
             Encoders {
                 pbr: None,
-                smap: None,
+                smap: Default::default(),
                 depth_prepass: None,
-                end,
+                main: None,
+                before_main,
+                after_main,
+                gui: None,
             },
             sco.texture.create_view(&TextureViewDescriptor::default()),
         )
     }
 
     pub fn get_module(&self, name: &str) -> CompiledModule {
-        let p = &mut *self.pipelines.try_borrow_mut().unwrap();
+        let p = &mut *self.pipelines.write().unwrap();
 
         Pipelines::get_module(
             &mut p.shader_cache,
@@ -643,12 +657,13 @@ impl GfxContext {
         )
     }
 
-    pub fn render_objs(
+    pub fn render<S: State>(
         &mut self,
         encs: &mut Encoders,
         frame: &TextureView,
-        mut prepare: impl FnMut(&mut FrameContext<'_>),
-    ) -> Duration {
+        state: &mut S,
+        render_gui: impl FnOnce(&mut S, GuiRenderContext<'_>),
+    ) -> (f32, f32) {
         profiling::scope!("gfx::render_objs");
         self.perf.clear();
 
@@ -658,156 +673,208 @@ impl GfxContext {
             gfx: self,
         };
 
-        prepare(&mut fc);
+        state.render(&mut fc);
 
         let start_time = Instant::now();
 
         let objsref = &*objs;
-        let enc_dep_ext = &mut encs.depth_prepass;
-        let enc_smap_ext = &mut encs.smap;
 
-        if self.defines.contains_key("PBR_ENABLED") {
-            profiling::scope!("pbr prepass");
-            let mut pbr_enc = self
-                .device
-                .create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some("init encoder"),
-                });
-            self.pbr.update(self, &mut pbr_enc);
-            encs.pbr = Some(pbr_enc.finish());
-        }
-        {
-            profiling::scope!("depth prepass");
-            let mut prepass = self
-                .device
-                .create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some("depth prepass encoder"),
-                });
-            let mut depth_prepass = prepass.begin_render_pass(&RenderPassDescriptor {
-                label: Some("depth prepass"),
-                color_attachments: &[],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.fbos.depth.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(0.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
+        let mut gui_elapsed = 0.0;
+        rayon::in_place_scope(|scope| {
+            scope.spawn(|_| {
+                encs.pbr = self.pbr_prepass();
+            });
+            scope.spawn(|_| {
+                encs.depth_prepass = Some(self.depth_prepass(objsref));
+            });
+            scope.spawn(|_| {
+                passes::render_ssao(self, &mut encs.before_main);
+                passes::render_fog(self, &mut encs.before_main);
+
+                passes::render_background(self, &mut encs.after_main, frame);
+                passes::gen_ui_blur(self, &mut encs.after_main, frame);
+            });
+            scope.spawn(|_| {
+                encs.smap = self.shadow_map_pass(objsref);
             });
 
-            depth_prepass.set_bind_group(0, &self.render_params.bindgroup, &[]);
+            scope.spawn(|_| {
+                encs.main = Some(self.main_render_pass(&frame, objsref));
+            });
 
-            for obj in objsref.iter() {
-                obj.draw_depth(self, &mut depth_prepass, None);
-            }
-            drop(depth_prepass);
-            *enc_dep_ext = Some(prepass.finish());
-        }
-        if self.render_params.value().shadow_mapping_resolution != 0 {
-            profiling::scope!("shadow pass");
-            let mut smap_enc = self
-                .device
-                .create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some("shadow map encoder"),
-                });
-            for (i, u) in self.sun_params.iter().enumerate() {
-                let sun_view = self
-                    .sun_shadowmap
-                    .texture
-                    .create_view(&TextureViewDescriptor {
-                        label: Some("sun shadow view"),
-                        format: Some(self.sun_shadowmap.format),
-                        dimension: Some(TextureViewDimension::D2),
-                        aspect: TextureAspect::DepthOnly,
-                        base_mip_level: 0,
-                        mip_level_count: None,
-                        base_array_layer: i as u32,
-                        array_layer_count: Some(1),
+            {
+                profiling::scope!("gfx::render_gui");
+                let gui_start = Instant::now();
+                let mut gui_enc = self
+                    .device
+                    .create_command_encoder(&CommandEncoderDescriptor {
+                        label: Some("GUI encoder"),
                     });
-                let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
-                    label: Some("sun shadow pass"),
-                    color_attachments: &[],
-                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                        view: &sun_view,
-                        depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.0),
-                            store: wgpu::StoreOp::Store,
-                        }),
-                        stencil_ops: None,
-                    }),
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
-
-                sun_shadow_pass.set_bind_group(0, &u.bindgroup, &[]);
-
-                for obj in objsref.iter() {
-                    obj.draw_depth(self, &mut sun_shadow_pass, Some(&u.value().proj));
-                }
-            }
-            *enc_smap_ext = Some(smap_enc.finish());
-        }
-
-        if self.defines.contains_key("SSAO") {
-            passes::render_ssao(self, &mut encs.end);
-        }
-
-        passes::render_fog(self, &mut encs.end);
-
-        {
-            profiling::scope!("main render pass");
-            let mut render_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-                label: Some("main render pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &self.fbos.color_msaa,
-                    resolve_target: Some(frame),
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 0.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
+                render_gui(
+                    state,
+                    GuiRenderContext {
+                        size: self.size,
+                        gfx: self,
+                        encoder: &mut gui_enc,
+                        view: frame,
                     },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.fbos.depth.view,
-                    depth_ops: None,
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            render_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
-
-            for obj in objsref.iter() {
-                obj.draw(self, &mut render_pass);
+                );
+                encs.gui = Some(gui_enc.finish());
+                gui_elapsed = gui_start.elapsed().as_secs_f32();
             }
-        }
+        });
 
-        passes::render_background(self, encs, frame);
-        passes::gen_ui_blur(self, encs, frame);
-
-        start_time.elapsed()
+        (start_time.elapsed().as_secs_f32(), gui_elapsed)
     }
 
-    pub fn render_gui(
-        &mut self,
-        encoders: &mut Encoders,
+    fn main_render_pass(
+        &self,
         frame: &TextureView,
-        mut render_gui: impl FnMut(GuiRenderContext<'_>),
-    ) {
-        profiling::scope!("gfx::render_gui");
-        render_gui(GuiRenderContext {
-            size: self.size,
-            gfx: self,
-            encoder: &mut encoders.end,
-            view: frame,
+        objsref: &[Box<dyn Drawable>],
+    ) -> CommandBuffer {
+        profiling::scope!("main render pass");
+        let mut main_enc = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("shadow map encoder"),
+            });
+
+        let mut render_pass = main_enc.begin_render_pass(&RenderPassDescriptor {
+            label: Some("main render pass"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &self.fbos.color_msaa,
+                resolve_target: Some(frame),
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 0.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &self.fbos.depth.view,
+                depth_ops: None,
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
+        render_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
+
+        for obj in objsref.iter() {
+            obj.draw(self, &mut render_pass);
+        }
+
+        drop(render_pass);
+
+        main_enc.finish()
+    }
+
+    fn pbr_prepass(&self) -> Option<CommandBuffer> {
+        if !self.defines.contains_key("PBR_ENABLED") {
+            return None;
+        }
+        profiling::scope!("pbr prepass");
+        let mut pbr_enc = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("init encoder"),
+            });
+        self.pbr.update(self, &mut pbr_enc);
+        Some(pbr_enc.finish())
+    }
+
+    fn shadow_map_pass(&self, objsref: &[Box<dyn Drawable>]) -> Vec<CommandBuffer> {
+        if self.render_params.value().shadow_mapping_resolution != 0 {
+            use rayon::prelude::*;
+            let results = self
+                .sun_params
+                .iter()
+                .enumerate()
+                .par_bridge()
+                .map(|(i, u)| {
+                    profiling::scope!(&format!("cascade shadow pass {}", i));
+                    let mut smap_enc =
+                        self.device
+                            .create_command_encoder(&CommandEncoderDescriptor {
+                                label: Some("shadow map encoder"),
+                            });
+                    let sun_view = self
+                        .sun_shadowmap
+                        .texture
+                        .create_view(&TextureViewDescriptor {
+                            label: Some("sun shadow view"),
+                            format: Some(self.sun_shadowmap.format),
+                            dimension: Some(TextureViewDimension::D2),
+                            aspect: TextureAspect::DepthOnly,
+                            base_mip_level: 0,
+                            mip_level_count: None,
+                            base_array_layer: i as u32,
+                            array_layer_count: Some(1),
+                        });
+                    let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
+                        label: Some("sun shadow pass"),
+                        color_attachments: &[],
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                            view: &sun_view,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(1.0),
+                                store: wgpu::StoreOp::Store,
+                            }),
+                            stencil_ops: None,
+                        }),
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+
+                    sun_shadow_pass.set_bind_group(0, &u.bindgroup, &[]);
+
+                    for obj in objsref.iter() {
+                        obj.draw_depth(self, &mut sun_shadow_pass, Some(&u.value().proj));
+                    }
+
+                    drop(sun_shadow_pass);
+
+                    smap_enc.finish()
+                })
+                .collect::<Vec<_>>();
+            return results;
+        }
+        return vec![];
+    }
+
+    fn depth_prepass(&self, objsref: &[Box<dyn Drawable>]) -> CommandBuffer {
+        profiling::scope!("depth prepass");
+        let mut prepass = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("depth prepass encoder"),
+            });
+        let mut depth_prepass = prepass.begin_render_pass(&RenderPassDescriptor {
+            label: Some("depth prepass"),
+            color_attachments: &[],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &self.fbos.depth.view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0.0),
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        depth_prepass.set_bind_group(0, &self.render_params.bindgroup, &[]);
+
+        for obj in objsref.iter() {
+            obj.draw_depth(self, &mut depth_prepass, None);
+        }
+        drop(depth_prepass);
+        prepass.finish()
     }
 
     pub fn finish_frame(&mut self, encoder: Encoders) {
@@ -817,19 +884,22 @@ impl GfxContext {
                 .into_iter()
                 .chain(encoder.pbr)
                 .chain(encoder.smap)
-                .chain(Some(encoder.end.finish())),
+                .chain(Some(encoder.before_main.finish()))
+                .chain(encoder.main)
+                .chain(Some(encoder.after_main.finish()))
+                .chain(encoder.gui),
         );
         if self.defines_changed {
             self.defines_changed = false;
             self.pipelines
-                .try_borrow_mut()
+                .write()
                 .unwrap()
                 .invalidate_all(&self.defines, &self.device);
         }
         if self.tick % 30 == 0 {
             #[cfg(debug_assertions)]
             self.pipelines
-                .try_borrow_mut()
+                .write()
                 .unwrap()
                 .check_shader_updates(&self.defines, &self.device);
         }
@@ -1062,7 +1132,7 @@ impl GfxContext {
     }
 
     pub fn get_pipeline(&self, obj: impl PipelineBuilder) -> &'static RenderPipeline {
-        let pipelines = &mut *self.pipelines.try_borrow_mut().unwrap();
+        let pipelines = &mut *self.pipelines.write().unwrap();
         pipelines.get_pipeline(self, obj, &self.device)
     }
 }

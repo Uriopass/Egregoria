@@ -1,10 +1,10 @@
 use wgpu::{
-    Device, FragmentState, PipelineLayoutDescriptor, PrimitiveState, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, SurfaceConfiguration,
-    TextureUsages, TextureView, VertexState,
+    CommandEncoder, Device, FragmentState, PipelineLayoutDescriptor, PrimitiveState,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    SurfaceConfiguration, TextureUsages, TextureView, VertexState,
 };
 
-use crate::{CompiledModule, Encoders, GfxContext, PipelineBuilder, Texture, TextureBuilder, TL};
+use crate::{CompiledModule, GfxContext, PipelineBuilder, Texture, TextureBuilder, TL};
 
 const DOWNSCALE_PASSES: u32 = 2;
 
@@ -16,12 +16,12 @@ const DOWNSCALE_PASSES: u32 = 2;
 /// 1. Downsample the image to half resolution using bi-linear filtering
 /// 2. Downsample then upsample using the equations from the paper
 /// 3. Sample from the UI directly (bi-linearly filtered)
-pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
+pub fn gen_ui_blur(gfx: &GfxContext, enc: &mut CommandEncoder, frame: &TextureView) {
     profiling::scope!("ui blur pass");
 
     let tex = &gfx.fbos.ui_blur;
 
-    initial_downscale(gfx, encs, frame);
+    initial_downscale(gfx, enc, frame);
 
     //do_pass(
     //    gfx,
@@ -34,7 +34,7 @@ pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
     for mip_level in 0..DOWNSCALE_PASSES {
         do_pass(
             gfx,
-            encs,
+            enc,
             UIBlurPipeline::Downscale,
             &tex.mip_view(mip_level),
             &tex.mip_view(mip_level + 1),
@@ -44,7 +44,7 @@ pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
     for mip_level in (0..DOWNSCALE_PASSES).rev() {
         do_pass(
             gfx,
-            encs,
+            enc,
             if mip_level == 0 {
                 UIBlurPipeline::UpscaleDeband
             } else {
@@ -57,22 +57,23 @@ pub fn gen_ui_blur(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
 }
 
 // Simple downscale we can use mipmap gen (less expensive: 1 sample vs 5)
-fn initial_downscale(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
-    let pipe = gfx.mipmap_gen.get_pipeline(&gfx.device, gfx.fbos.format);
-
-    gfx.mipmap_gen.mipmap_one(
-        &mut encs.end,
-        &gfx.device,
-        &pipe,
-        frame,
-        &gfx.fbos.ui_blur.mip_view(0),
-        "ui blur",
-    );
+fn initial_downscale(gfx: &GfxContext, enc: &mut CommandEncoder, frame: &TextureView) {
+    gfx.mipmap_gen
+        .with_pipeline(&gfx.device, gfx.fbos.format, |pipe| {
+            gfx.mipmap_gen.mipmap_one(
+                enc,
+                &gfx.device,
+                pipe,
+                frame,
+                &gfx.fbos.ui_blur.mip_view(0),
+                "ui blur",
+            );
+        });
 }
 
 fn do_pass(
     gfx: &GfxContext,
-    encs: &mut Encoders,
+    enc: &mut CommandEncoder,
     pipeline: UIBlurPipeline,
     src_view: &TextureView,
     dst_view: &TextureView,
@@ -94,7 +95,7 @@ fn do_pass(
         ],
     });
 
-    let mut blur_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
+    let mut blur_pass = enc.begin_render_pass(&RenderPassDescriptor {
         label: Some(&*format!("ui blur pass {:?}", pipeline)),
         color_attachments: &[Some(RenderPassColorAttachment {
             view: dst_view,

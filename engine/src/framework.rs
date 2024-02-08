@@ -1,3 +1,4 @@
+use rayon::ThreadPoolBuilder;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -123,23 +124,18 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                         state.update(&mut ctx);
 
                         let (mut enc, view) = ctx.gfx.start_frame(&sco);
-                        ctx.engine_time = ctx
+                        (ctx.engine_time, ctx.gui_time) = ctx
                             .gfx
-                            .render_objs(&mut enc, &view, |fc| state.render(fc))
-                            .as_secs_f32();
+                            .render(&mut enc, &view, &mut state, |state, mut gctx| {
+                                #[cfg(feature = "yakui")]
+                                ctx.yakui.render(&mut gctx, || {
+                                    state.render_yakui();
+                                });
+                                ctx.egui.render(gctx, |ui| {
+                                    state.render_gui(ui);
+                                });
+                            });
 
-                        let gui_start = Instant::now();
-                        #[allow(unused_mut)]
-                        ctx.gfx.render_gui(&mut enc, &view, |mut gctx| {
-                            #[cfg(feature = "yakui")]
-                            ctx.yakui.render(&mut gctx, || {
-                                state.render_yakui();
-                            });
-                            ctx.egui.render(gctx, |ui| {
-                                state.render_gui(ui);
-                            });
-                        });
-                        ctx.gui_time = gui_start.elapsed().as_secs_f32();
                         ctx.gfx.finish_frame(enc);
                         ctx.gfx.window.set_cursor_icon(get_cursor_icon());
                         ctx.input.end_frame();
@@ -170,6 +166,7 @@ pub fn init() {
 }
 
 pub fn start<S: State>() {
+    let _ = ThreadPoolBuilder::new().num_threads(8).build_global();
     let el = EventLoop::new().expect("Failed to create event loop");
 
     #[cfg(target_arch = "wasm32")]

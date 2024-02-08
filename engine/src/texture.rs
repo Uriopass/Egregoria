@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use std::cell::{Ref, RefCell};
 use std::fs::File;
 use std::io;
 use std::io::Read;
 use std::path::Path;
+use std::sync::RwLock;
 
 use derive_more::{Display, From};
 use image::{DynamicImage, GenericImageView};
@@ -620,7 +620,7 @@ impl<'a> TextureBuilder<'a> {
 }
 
 pub struct MipmapGenerator {
-    pipelines: RefCell<FastMap<TextureFormat, RenderPipeline>>,
+    pipelines: RwLock<FastMap<TextureFormat, RenderPipeline>>,
     sampler: wgpu::Sampler,
     module: CompiledModule,
 }
@@ -658,41 +658,48 @@ impl MipmapGenerator {
         mip_count: u32,
         label: &str,
     ) {
-        let pipeline = self.get_pipeline(device, format);
-
-        let views = (0..mip_count)
-            .map(|mip| {
-                texture.create_view(&TextureViewDescriptor {
-                    label: Some("mip"),
-                    format: None,
-                    dimension: None,
-                    aspect: wgpu::TextureAspect::All,
-                    base_mip_level: mip,
-                    mip_level_count: Some(1),
-                    base_array_layer: 0,
-                    array_layer_count: None,
+        self.with_pipeline(device, format, |pipe| {
+            let views = (0..mip_count)
+                .map(|mip| {
+                    texture.create_view(&TextureViewDescriptor {
+                        label: Some("mip"),
+                        format: None,
+                        dimension: None,
+                        aspect: wgpu::TextureAspect::All,
+                        base_mip_level: mip,
+                        mip_level_count: Some(1),
+                        base_array_layer: 0,
+                        array_layer_count: None,
+                    })
                 })
-            })
-            .collect::<Vec<_>>();
+                .collect::<Vec<_>>();
 
-        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
-        for target_mip in 1..mip_count as usize {
-            self.mipmap_one(
-                &mut encoder,
-                device,
-                &pipeline,
-                &views[target_mip - 1],
-                &views[target_mip],
-                label,
-            );
-        }
-        queue.submit(Some(encoder.finish()));
+            let mut encoder =
+                device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+            for target_mip in 1..mip_count as usize {
+                self.mipmap_one(
+                    &mut encoder,
+                    device,
+                    pipe,
+                    &views[target_mip - 1],
+                    &views[target_mip],
+                    label,
+                );
+            }
+            queue.submit(Some(encoder.finish()));
+        });
     }
 
-    pub fn get_pipeline(&self, device: &Device, format: TextureFormat) -> Ref<'_, RenderPipeline> {
-        let b = self.pipelines.borrow();
+    pub fn with_pipeline(
+        &self,
+        device: &Device,
+        format: TextureFormat,
+        f: impl FnOnce(&RenderPipeline),
+    ) {
+        let b = self.pipelines.read().unwrap();
         if b.contains_key(&format) {
-            return Ref::map(b, |b| &b[&format]);
+            f(&b[&format]);
+            return;
         }
         drop(b);
 
@@ -723,9 +730,9 @@ impl MipmapGenerator {
             multiview: None,
         });
 
-        self.pipelines.borrow_mut().insert(format, pipeline);
+        self.pipelines.write().unwrap().insert(format, pipeline);
 
-        Ref::map(self.pipelines.borrow(), |b| &b[&format])
+        f(&self.pipelines.read().unwrap()[&format]);
     }
 
     pub fn mipmap_one(

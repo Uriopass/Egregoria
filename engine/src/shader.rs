@@ -5,12 +5,12 @@ use common::FastMap;
 use std::borrow::Cow;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Instant;
 use wgpu::{Device, ShaderModule};
 
 #[derive(Clone)]
-pub struct CompiledModule(Rc<(ShaderModule, Vec<String>)>);
+pub struct CompiledModule(Arc<(ShaderModule, Vec<String>)>);
 
 impl Deref for CompiledModule {
     type Target = ShaderModule;
@@ -67,7 +67,7 @@ pub fn compile_shader(
 
     let wgsl = mk_module(source, device);
 
-    CompiledModule(Rc::new((wgsl, deps)))
+    CompiledModule(Arc::new((wgsl, deps)))
 }
 
 /// apply_ifdefs updates the source taking into account #ifdef and #ifndef

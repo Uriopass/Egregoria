@@ -10,13 +10,12 @@ use wgpu::{
 #[derive(Copy, Clone, Hash)]
 pub struct FogPipeline;
 
-pub fn render_fog(gfx: &mut GfxContext, enc: &mut CommandEncoder) {
+pub fn render_fog(gfx: &GfxContext, enc: &mut CommandEncoder) {
+    //if !gfx.defines.contains_key("FOG") {
+    //    return;
+    //}
     profiling::scope!("fog");
     let pipeline = gfx.get_pipeline(FogPipeline);
-    let bg = gfx
-        .fbos
-        .depth
-        .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(1));
 
     let mut fog_pass = enc.begin_render_pass(&RenderPassDescriptor {
         label: Some("fog pass"),
@@ -40,7 +39,7 @@ pub fn render_fog(gfx: &mut GfxContext, enc: &mut CommandEncoder) {
 
     fog_pass.set_pipeline(pipeline);
     fog_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
-    fog_pass.set_bind_group(1, &bg, &[]);
+    fog_pass.set_bind_group(1, &gfx.fbos.depth_bg, &[]);
     fog_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
     fog_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
     fog_pass.draw_indexed(0..6, 0, 0..1);

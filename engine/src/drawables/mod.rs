@@ -1,5 +1,4 @@
 use crate::GfxContext;
-use std::rc::Rc;
 use wgpu::RenderPass;
 
 mod instanced_mesh;
@@ -20,7 +19,7 @@ use std::sync::Arc;
 
 pub type IndexType = u32;
 
-pub trait Drawable {
+pub trait Drawable: Send + Sync {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>);
 
     #[allow(unused)]
@@ -34,23 +33,6 @@ pub trait Drawable {
 }
 
 impl<T: ?Sized + Drawable> Drawable for Arc<T> {
-    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let s: &T = self;
-        s.draw(gfx, rp);
-    }
-
-    fn draw_depth<'a>(
-        &'a self,
-        gfx: &'a GfxContext,
-        rp: &mut RenderPass<'a>,
-        shadow_cascade: Option<&Matrix4>,
-    ) {
-        let s: &T = self;
-        s.draw_depth(gfx, rp, shadow_cascade);
-    }
-}
-
-impl<T: ?Sized + Drawable> Drawable for Rc<T> {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let s: &T = self;
         s.draw(gfx, rp);

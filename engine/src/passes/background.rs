@@ -1,16 +1,16 @@
 use crate::{
-    CompiledModule, Encoders, GfxContext, PipelineBuilder, RenderParams, Texture, Uniform,
-    UvVertex, TL,
+    CompiledModule, GfxContext, PipelineBuilder, RenderParams, Texture, Uniform, UvVertex, TL,
 };
 use wgpu::{
-    BindGroupLayout, BlendState, DepthBiasState, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, TextureFormat, TextureView, VertexState,
+    BindGroupLayout, BlendState, CommandEncoder, DepthBiasState, FragmentState, IndexFormat,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, TextureFormat, TextureView,
+    VertexState,
 };
 
-pub fn render_background(gfx: &GfxContext, encs: &mut Encoders, frame: &TextureView) {
+pub fn render_background(gfx: &GfxContext, enc: &mut CommandEncoder, frame: &TextureView) {
     profiling::scope!("bg pass");
-    let mut bg_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
+    let mut bg_pass = enc.begin_render_pass(&RenderPassDescriptor {
         label: Some("bg pass"),
         color_attachments: &[Some(RenderPassColorAttachment {
             view: &gfx.fbos.color_msaa,

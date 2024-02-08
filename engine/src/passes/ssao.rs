@@ -9,13 +9,11 @@ use wgpu::{
 pub struct SSAOPipeline;
 
 pub fn render_ssao(gfx: &GfxContext, enc: &mut CommandEncoder) {
+    if !gfx.defines.contains_key("SSAO") {
+        return;
+    }
     profiling::scope!("ssao");
     let pipeline = gfx.get_pipeline(SSAOPipeline);
-    let bg = gfx
-        .fbos
-        .depth
-        .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(1));
-
     let mut ssao_pass = enc.begin_render_pass(&RenderPassDescriptor {
         label: Some("ssao pass"),
         color_attachments: &[Some(RenderPassColorAttachment {
@@ -33,7 +31,7 @@ pub fn render_ssao(gfx: &GfxContext, enc: &mut CommandEncoder) {
 
     ssao_pass.set_pipeline(pipeline);
     ssao_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
-    ssao_pass.set_bind_group(1, &bg, &[]);
+    ssao_pass.set_bind_group(1, &gfx.fbos.depth_bg, &[]);
     ssao_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
     ssao_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
     ssao_pass.draw_indexed(0..6, 0, 0..1);
