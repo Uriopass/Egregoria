@@ -599,7 +599,7 @@ impl GfxContext {
     }
 
     pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {
-        let end = self
+        let mut end = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("End encoder"),
@@ -617,7 +617,8 @@ impl GfxContext {
         }
 
         self.render_params.upload_to_gpu(&self.queue);
-        self.lamplights.apply_changes(&self.queue);
+        self.lamplights
+            .apply_changes(&self.queue, &self.device, &mut end);
 
         (
             Encoders {

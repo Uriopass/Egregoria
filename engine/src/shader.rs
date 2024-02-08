@@ -36,6 +36,7 @@ fn mk_module(data: String, device: &Device) -> ShaderModule {
 }
 
 /// if type isn't provided it will be detected by looking at extension
+/// name shouldn't include "assets/shaders" or ".wgsl" extension. It will be added automatically
 pub fn compile_shader(
     device: &Device,
     name: &str,

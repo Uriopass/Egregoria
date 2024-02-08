@@ -1,10 +1,11 @@
-use crate::GfxContext;
 use std::sync::Arc;
+
 use wgpu::{
-    BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferDescriptor,
-    BufferSize, BufferSlice, BufferUsages, Device, Queue,
+    BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, BufferBinding,
+    BufferDescriptor, BufferSize, BufferSlice, BufferUsages, Device, Queue,
 };
+
+use crate::GfxContext;
 
 /// Short for Persistent Buffer, keeps memory around to reuse it
 #[derive(Clone)]
@@ -46,12 +47,12 @@ impl PBuffer {
         );
     }
 
-    pub fn bindgroup(&self, gfx: &GfxContext, layout: &BindGroupLayout) -> Option<wgpu::BindGroup> {
+    pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> Option<wgpu::BindGroup> {
         if self.len == 0 {
             return None;
         }
         let buffer = self.inner.as_ref()?;
-        Some(gfx.device.create_bind_group(&BindGroupDescriptor {
+        Some(device.create_bind_group(&BindGroupDescriptor {
             label: Some("pbuffer bg"),
             layout,
             entries: &[BindGroupEntry {
@@ -63,27 +64,6 @@ impl PBuffer {
                 }),
             }],
         }))
-    }
-
-    pub fn bindgroup_layout(
-        gfx: &GfxContext,
-        visibility: wgpu::ShaderStages,
-        ty: wgpu::BufferBindingType,
-    ) -> BindGroupLayout {
-        gfx.device
-            .create_bind_group_layout(&BindGroupLayoutDescriptor {
-                label: Some("pbuffer bglayout"),
-                entries: &[BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility,
-                    ty: BindingType::Buffer {
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                        ty,
-                    },
-                    count: None,
-                }],
-            })
     }
 
     pub fn slice(&self) -> Option<BufferSlice> {

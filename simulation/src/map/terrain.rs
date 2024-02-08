@@ -12,7 +12,7 @@ pub type TerrainChunkID = common::ChunkID<5>;
 
 pub const TERRAIN_CHUNK_RESOLUTION: usize = 32;
 
-pub(super) const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32;
+pub(super) const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32; // size is 512m
 
 const TREE_GRID_SIZE: usize = 256;
 
