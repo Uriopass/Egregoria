@@ -1,7 +1,8 @@
 use std::cell::Cell;
 
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
-use yakui_core::geometry::{Constraints, FlexFit, Rect, Vec2};
+use yakui_core::geometry::{Color, Constraints, FlexFit, Rect, Vec2};
+use yakui_core::input::MouseButton;
 use yakui_core::widget::{EventContext, LayoutContext, PaintContext, Widget};
 use yakui_core::Response;
 use yakui_widgets::shapes::RoundedRectangle;
@@ -26,6 +27,9 @@ pub struct VertScrollWidget {
     scroll_position: Cell<f32>,
     size: Cell<f32>,
     canvas_size: Cell<f32>,
+    scrollbar_rect: Cell<Rect>,
+    scrollbar_dragging: Cell<Option<f32>>,
+    scrollbar_hovered: bool,
 }
 
 pub type VertScrollResponse = ();
@@ -40,6 +44,9 @@ impl Widget for VertScrollWidget {
             scroll_position: Cell::new(0.0),
             size: Cell::new(0.0),
             canvas_size: Cell::new(0.0),
+            scrollbar_rect: Cell::new(Rect::ZERO),
+            scrollbar_dragging: Default::default(),
+            scrollbar_hovered: false,
         }
     }
 
@@ -110,11 +117,15 @@ impl Widget for VertScrollWidget {
             ctx.paint(child);
         }
 
-        const SCROLLBAR_WIDTH: f32 = 4.0;
-        const SCROLLBAR_PAD_X: f32 = 2.0;
+        let mut scrollbar_width: f32 = 4.0;
+        if self.scrollbar_hovered {
+            scrollbar_width = 5.0;
+        }
+        const SCROLLBAR_PAD_X: f32 = 4.0;
         const SCROLLBAR_PAD_Y: f32 = 2.0;
 
         if self.canvas_size.get() <= drawn_rect.size().y {
+            self.scrollbar_rect.set(Rect::ZERO);
             return;
         }
         let scrollbar_progress =
@@ -125,27 +136,66 @@ impl Widget for VertScrollWidget {
 
         let scroll_bar_pos = drawn_rect.pos()
             + Vec2::new(
-                drawn_rect.size().x - SCROLLBAR_WIDTH - SCROLLBAR_PAD_X,
+                drawn_rect.size().x - scrollbar_width * 0.5 - SCROLLBAR_PAD_X,
                 remaining_space * scrollbar_progress + SCROLLBAR_PAD_Y * 0.5,
             );
         let scroll_bar_rect = Rect::from_pos_size(
             scroll_bar_pos,
-            Vec2::new(SCROLLBAR_WIDTH, scroll_bar_height),
+            Vec2::new(scrollbar_width, scroll_bar_height),
         );
 
-        RoundedRectangle::new(scroll_bar_rect, 5.0).add(ctx.paint);
+        self.scrollbar_rect.set(scroll_bar_rect);
+
+        let mut paint_rect = RoundedRectangle::new(scroll_bar_rect, 5.0);
+
+        let mut alpha = 0.5;
+        if self.scrollbar_hovered {
+            alpha = 0.7;
+        }
+        if self.scrollbar_dragging.get().is_some() {
+            alpha = 1.0;
+        }
+
+        paint_rect.color = Color::WHITE.with_alpha(alpha);
+        paint_rect.add(ctx.paint);
     }
 
     fn event_interest(&self) -> EventInterest {
-        EventInterest::MOUSE_INSIDE
+        EventInterest::MOUSE_ALL
     }
 
     fn event(&mut self, _ctx: EventContext<'_>, event: &WidgetEvent) -> EventResponse {
         match *event {
             WidgetEvent::MouseScroll { delta } => {
-                let pos = self.scroll_position.get();
-                self.scroll_position.set(pos + delta.y);
+                *self.scroll_position.get_mut() += delta.y;
                 EventResponse::Sink
+            }
+            WidgetEvent::MouseMoved(Some(pos)) => {
+                if let Some(last_pos) = self.scrollbar_dragging.get_mut() {
+                    *self.scroll_position.get_mut() +=
+                        (pos.y - *last_pos) * (*self.canvas_size.get_mut() / *self.size.get_mut());
+                    *last_pos = pos.y;
+                    return EventResponse::Sink;
+                } else {
+                    self.scrollbar_hovered = self.scrollbar_rect.get_mut().contains_point(pos);
+                }
+                EventResponse::Bubble
+            }
+            WidgetEvent::MouseButtonChanged {
+                position,
+                button: MouseButton::One,
+                down,
+                ..
+            } => {
+                if !down {
+                    *self.scrollbar_dragging.get_mut() = None;
+                    return EventResponse::Bubble;
+                }
+                if self.scrollbar_rect.get_mut().contains_point(position) {
+                    *self.scrollbar_dragging.get_mut() = Some(position.y);
+                    return EventResponse::Sink;
+                }
+                EventResponse::Bubble
             }
             _ => EventResponse::Bubble,
         }
