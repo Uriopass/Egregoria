@@ -10,6 +10,19 @@ pub struct ChunkID<const LEVEL: u16>(pub i16, pub i16);
 
 /// Minimum chunk size, in meters
 const CHUNK_ID_BASE_SIZE: u32 = 16;
+#[allow(non_camel_case_types)]
+mod chunk_types {
+    use super::ChunkID;
+    pub type ChunkID_16 = ChunkID<0>;
+    pub type ChunkID_32 = ChunkID<1>;
+    pub type ChunkID_64 = ChunkID<2>;
+    pub type ChunkID_128 = ChunkID<3>;
+    pub type ChunkID_256 = ChunkID<4>;
+    pub type ChunkID_512 = ChunkID<5>;
+    pub type ChunkID_1024 = ChunkID<6>;
+    pub type ChunkID_2048 = ChunkID<7>;
+}
+pub use chunk_types::*;
 
 impl<const LEVEL: u16> ChunkID<LEVEL> {
     /// The size of a chunk in meters. Smallest at Level=0

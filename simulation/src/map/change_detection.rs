@@ -3,7 +3,7 @@
 //! It is mostly for rendering purposes by decoupling it from the simulation.
 
 use crate::map::{Building, Intersection, Lot, Road};
-use common::ChunkID;
+use common::{ChunkID, ChunkID_1024};
 use geom::Vec2;
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
@@ -14,7 +14,7 @@ pub trait CanonicalPosition {
     fn canonical_position(&self) -> Vec2;
 }
 
-pub type SubscriberChunkID = ChunkID<5>;
+pub type SubscriberChunkID = ChunkID_1024;
 
 bitflags::bitflags! {
     #[derive(Debug, Copy, Clone)]

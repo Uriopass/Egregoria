@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::ops::Mul;
 
-pub type TerrainChunkID = common::ChunkID<5>;
+pub type TerrainChunkID = common::ChunkID_512;
 
 pub const TERRAIN_CHUNK_RESOLUTION: usize = 32;
 
-pub(super) const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32; // size is 512m
+pub(super) const CELL_SIZE: f32 = TerrainChunkID::SIZE_F32 / TERRAIN_CHUNK_RESOLUTION as f32; // 512 / 32 = 16
 
 const TREE_GRID_SIZE: usize = 256;
 
