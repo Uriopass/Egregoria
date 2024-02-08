@@ -183,6 +183,7 @@ impl engine::framework::State for State {
                 ui.checkbox(&mut self.gfx_settings.fog, "Fog");
                 ui.checkbox(&mut self.gfx_settings.ssao, "SSAO");
                 ui.checkbox(&mut self.gfx_settings.terrain_grid, "Terrain grid");
+                ui.checkbox(&mut self.gfx_settings.parallel_render, "Threaded rendering");
 
                 let mut shadows = self.gfx_settings.shadows.size().is_some();
                 ui.checkbox(&mut shadows, "Shadows");

@@ -225,6 +225,11 @@ pub fn settings(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
                     "Ambient Occlusion (SSAO)",
                 );
                 checkbox_value(&mut settings.gfx.vsync, on_secondary_container(), "VSync");
+                checkbox_value(
+                    &mut settings.gfx.parallel_render,
+                    on_secondary_container(),
+                    "Threaded rendering",
+                );
 
                 minrow(5.0, || {
                     let mut id = settings.gfx.shadows as u8 as usize;

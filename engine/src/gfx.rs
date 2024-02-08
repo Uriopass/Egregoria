@@ -140,6 +140,7 @@ pub struct GfxSettings {
     pub shader_debug: bool,
     pub pbr_enabled: bool,
     pub fog_shader_debug: bool,
+    pub parallel_render: bool,
 }
 
 impl Default for GfxSettings {
@@ -154,6 +155,7 @@ impl Default for GfxSettings {
             shader_debug: false,
             pbr_enabled: true,
             fog_shader_debug: false,
+            parallel_render: false,
         }
     }
 }
@@ -680,51 +682,70 @@ impl GfxContext {
         let objsref = &*objs;
 
         let mut gui_elapsed = 0.0;
-        rayon::in_place_scope(|scope| {
-            scope.spawn(|_| {
-                encs.pbr = self.pbr_prepass();
-            });
-            scope.spawn(|_| {
-                encs.depth_prepass = Some(self.depth_prepass(objsref));
-            });
-            scope.spawn(|_| {
-                passes::render_ssao(self, &mut encs.before_main);
-                passes::render_fog(self, &mut encs.before_main);
 
-                passes::render_background(self, &mut encs.after_main, frame);
-                passes::gen_ui_blur(self, &mut encs.after_main, frame);
-            });
-            scope.spawn(|_| {
-                encs.smap = self.shadow_map_pass(objsref);
-            });
+        if self.settings.map(|v| v.parallel_render).unwrap_or(false) {
+            rayon::in_place_scope(|scope| {
+                scope.spawn(|_| {
+                    encs.pbr = self.pbr_prepass();
+                });
+                scope.spawn(|_| {
+                    encs.depth_prepass = Some(self.depth_prepass(objsref));
+                });
+                scope.spawn(|_| {
+                    encs.smap = self.shadow_map_pass(objsref);
+                });
+                scope.spawn(|_| {
+                    passes::render_ssao(self, &mut encs.before_main);
+                    passes::render_fog(self, &mut encs.before_main);
 
-            scope.spawn(|_| {
-                encs.main = Some(self.main_render_pass(&frame, objsref));
-            });
+                    passes::render_background(self, &mut encs.after_main, frame);
+                    passes::gen_ui_blur(self, &mut encs.after_main, frame);
+                });
 
-            {
-                profiling::scope!("gfx::render_gui");
-                let gui_start = Instant::now();
-                let mut gui_enc = self
-                    .device
-                    .create_command_encoder(&CommandEncoderDescriptor {
-                        label: Some("GUI encoder"),
-                    });
-                render_gui(
-                    state,
-                    GuiRenderContext {
-                        size: self.size,
-                        gfx: self,
-                        encoder: &mut gui_enc,
-                        view: frame,
-                    },
-                );
-                encs.gui = Some(gui_enc.finish());
-                gui_elapsed = gui_start.elapsed().as_secs_f32();
-            }
-        });
+                scope.spawn(|_| {
+                    encs.main = Some(self.main_render_pass(&frame, objsref));
+                });
+
+                (gui_elapsed, encs.gui) = self.render_gui(frame, state, render_gui);
+            });
+        } else {
+            encs.pbr = self.pbr_prepass();
+            encs.depth_prepass = Some(self.depth_prepass(objsref));
+            encs.smap = self.shadow_map_pass(objsref);
+            passes::render_ssao(self, &mut encs.before_main);
+            passes::render_fog(self, &mut encs.before_main);
+            encs.main = Some(self.main_render_pass(&frame, objsref));
+            passes::render_background(self, &mut encs.after_main, frame);
+            passes::gen_ui_blur(self, &mut encs.after_main, frame);
+            (gui_elapsed, encs.gui) = self.render_gui(frame, state, render_gui);
+        }
 
         (start_time.elapsed().as_secs_f32(), gui_elapsed)
+    }
+
+    fn render_gui<S>(
+        &self,
+        frame: &TextureView,
+        state: &mut S,
+        render_gui: impl FnOnce(&mut S, GuiRenderContext) + Sized,
+    ) -> (f32, Option<CommandBuffer>) {
+        profiling::scope!("gfx::render_gui");
+        let gui_start = Instant::now();
+        let mut gui_enc = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("GUI encoder"),
+            });
+        render_gui(
+            state,
+            GuiRenderContext {
+                size: self.size,
+                gfx: self,
+                encoder: &mut gui_enc,
+                view: frame,
+            },
+        );
+        (gui_start.elapsed().as_secs_f32(), Some(gui_enc.finish()))
     }
 
     fn main_render_pass(
