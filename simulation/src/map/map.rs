@@ -396,15 +396,6 @@ impl Map {
         }
     }
 
-    pub fn clear(&mut self) {
-        info!("clear");
-        let before = std::mem::replace(self, Self::empty());
-        self.environment = before.environment;
-        self.subscribers.dispatch_clear();
-
-        self.check_invariants();
-    }
-
     // Private mutating
 
     pub(crate) fn add_intersection(&mut self, pos: Vec3) -> IntersectionID {
