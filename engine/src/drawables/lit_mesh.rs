@@ -70,8 +70,8 @@ impl PipelineBuilder for MeshPipeline {
                 "lit_mesh",
                 &[
                     &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                    &Material::bindgroup_layout(&gfx.device),
                     &bg_layout_litmesh(&gfx.device),
+                    &Material::bindgroup_layout(&gfx.device),
                 ],
                 vb,
                 &vert,
@@ -103,7 +103,7 @@ impl Drawable for Mesh {
             return;
         };
 
-        rp.set_bind_group(2, &gfx.simplelit_bg, &[]);
+        rp.set_bind_group(1, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
 
@@ -115,7 +115,7 @@ impl Drawable for Mesh {
                 smap: false,
                 depth: false,
             }));
-            rp.set_bind_group(1, &mat.bg, &[]);
+            rp.set_bind_group(2, &mat.bg, &[]);
             rp.draw_indexed(index_range.clone(), 0, 0..1);
 
             gfx.perf.drawcall((index_range.end - index_range.start) / 3);

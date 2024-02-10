@@ -81,7 +81,7 @@ impl Drawable for InstancedMesh {
             return;
         };
 
-        rp.set_bind_group(2, &gfx.simplelit_bg, &[]);
+        rp.set_bind_group(1, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
@@ -95,7 +95,7 @@ impl Drawable for InstancedMesh {
                 depth: false,
             });
             rp.set_pipeline(pipeline);
-            rp.set_bind_group(1, &mat.bg, &[]);
+            rp.set_bind_group(2, &mat.bg, &[]);
             rp.draw_indexed(indices.clone(), 0, 0..self.n_instances);
             gfx.perf
                 .drawcall((indices.end - indices.start) / 3 * self.n_instances);

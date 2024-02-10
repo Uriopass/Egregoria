@@ -134,8 +134,8 @@ impl PipelineBuilder for SBPipeline {
             "spritebatch",
             &[
                 &gfx.render_params.layout,
-                &Material::bindgroup_layout(&gfx.device),
                 &bg_layout_litmesh(&gfx.device),
+                &Material::bindgroup_layout(&gfx.device),
             ],
             &[UvVertex::desc(), InstanceRaw::desc()],
             vert,
@@ -151,8 +151,8 @@ impl Drawable for SpriteBatch {
         rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
         rp.set_vertex_buffer(1, self.instance_buf.slice(..));
 
-        rp.set_bind_group(1, &gfx.material(self.material).bg, &[]);
-        rp.set_bind_group(2, &gfx.simplelit_bg, &[]);
+        rp.set_bind_group(1, &gfx.simplelit_bg, &[]);
+        rp.set_bind_group(2, &gfx.material(self.material).bg, &[]);
         rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..6, 0, 0..self.n_instances);
 

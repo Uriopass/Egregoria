@@ -16,32 +16,32 @@ struct MaterialParams {
 
 @group(0) @binding(0) var<uniform> params: RenderParams;
 
-@group(1) @binding(0) var t_albedo: texture_2d<f32>;
-@group(1) @binding(1) var s_albedo: sampler;
-@group(1) @binding(2) var<uniform> u_mat: MaterialParams;
-@group(1) @binding(3) var t_metallic_roughness: texture_2d<f32>;
-@group(1) @binding(4) var s_metallic_rougness: sampler;
-@group(1) @binding(5) var t_normal: texture_2d<f32>;
-@group(1) @binding(6) var s_normal: sampler;
+@group(1) @binding(0)  var t_ssao: texture_2d<f32>;
+@group(1) @binding(1)  var s_ssao: sampler;
+@group(1) @binding(2)  var t_fog: texture_2d<f32>;
+@group(1) @binding(3)  var s_fog: sampler;
+@group(1) @binding(4)  var t_bnoise: texture_2d<f32>;
+@group(1) @binding(5)  var s_bnoise: sampler;
+@group(1) @binding(6)  var t_sun_smap: texture_depth_2d_array;
+@group(1) @binding(7)  var s_sun_smap: sampler_comparison;
+@group(1) @binding(8)  var t_diffuse_irradiance: texture_cube<f32>;
+@group(1) @binding(9)  var s_diffuse_irradiance: sampler;
+@group(1) @binding(10)  var t_prefilter_specular: texture_cube<f32>;
+@group(1) @binding(11)  var s_prefilter_specular: sampler;
+@group(1) @binding(12) var t_brdf_lut: texture_2d<f32>;
+@group(1) @binding(13) var s_brdf_lut: sampler;
+@group(1) @binding(14) var t_lightdata: texture_2d<u32>;
+@group(1) @binding(15) var s_lightdata: sampler;
+@group(1) @binding(16) var t_lightdata2: texture_2d<u32>;
+@group(1) @binding(17) var s_lightdata2: sampler;
 
-@group(2) @binding(0)  var t_ssao: texture_2d<f32>;
-@group(2) @binding(1)  var s_ssao: sampler;
-@group(2) @binding(2)  var t_fog: texture_2d<f32>;
-@group(2) @binding(3)  var s_fog: sampler;
-@group(2) @binding(4)  var t_bnoise: texture_2d<f32>;
-@group(2) @binding(5)  var s_bnoise: sampler;
-@group(2) @binding(6)  var t_sun_smap: texture_depth_2d_array;
-@group(2) @binding(7)  var s_sun_smap: sampler_comparison;
-@group(2) @binding(8)  var t_diffuse_irradiance: texture_cube<f32>;
-@group(2) @binding(9)  var s_diffuse_irradiance: sampler;
-@group(2) @binding(10)  var t_prefilter_specular: texture_cube<f32>;
-@group(2) @binding(11)  var s_prefilter_specular: sampler;
-@group(2) @binding(12) var t_brdf_lut: texture_2d<f32>;
-@group(2) @binding(13) var s_brdf_lut: sampler;
-@group(2) @binding(14) var t_lightdata: texture_2d<u32>;
-@group(2) @binding(15) var s_lightdata: sampler;
-@group(2) @binding(16) var t_lightdata2: texture_2d<u32>;
-@group(2) @binding(17) var s_lightdata2: sampler;
+@group(2) @binding(0) var t_albedo: texture_2d<f32>;
+@group(2) @binding(1) var s_albedo: sampler;
+@group(2) @binding(2) var<uniform> u_mat: MaterialParams;
+@group(2) @binding(3) var t_metallic_roughness: texture_2d<f32>;
+@group(2) @binding(4) var s_metallic_rougness: sampler;
+@group(2) @binding(5) var t_normal: texture_2d<f32>;
+@group(2) @binding(6) var s_normal: sampler;
 
 #include "shadow.wgsl"
 #include "pbr/render.wgsl"
