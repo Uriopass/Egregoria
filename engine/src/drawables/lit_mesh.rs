@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
-use wgpu::{BindGroupLayout, Device, IndexFormat, RenderPass, RenderPipeline, VertexBufferLayout};
+use wgpu::{
+    BindGroupLayout, Device, IndexFormat, MapMode, RenderPass, RenderPipeline, TextureFormat,
+    TextureUsages, VertexBufferLayout,
+};
 
-use geom::{Matrix4, Sphere};
+use geom::{Camera, Matrix4, Sphere};
 
 use crate::meshbuild::MeshLod;
 use crate::{
     CompiledModule, Drawable, GfxContext, Material, MeshInstance, MeshVertex, PipelineBuilder,
-    RenderParams, Texture, Uniform, TL,
+    RenderParams, Texture, TextureBuilder, Uniform, TL,
 };
 
 #[derive(Clone)]
@@ -94,6 +97,103 @@ impl PipelineBuilder for MeshPipeline {
                 &Material::bindgroup_layout(&gfx.device),
             ],
         )
+    }
+}
+
+impl Mesh {
+    pub fn render_to_image(
+        &self,
+        mut cam: Camera,
+        gfx: &GfxContext,
+        size: u32,
+        on_complete: impl FnOnce(image::RgbaImage) + Send + 'static,
+    ) {
+        cam.update();
+
+        let target_image = TextureBuilder::empty(size, size, 1, TextureFormat::Rgba8UnormSrgb)
+            .with_usage(TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC)
+            .with_label("mesh_render_to_image")
+            .build_no_queue(&gfx.device);
+
+        let mut encoder = gfx
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("mesh_render_to_image"),
+            });
+
+        let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("mesh_render_to_image"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &target_image.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        let mut params = gfx.render_params.clone(&gfx.device);
+        params.value_mut().proj = cam.proj_cache;
+        params.value_mut().inv_proj = cam.inv_proj_cache;
+        params.value_mut().cam_dir = cam.dir();
+        params.value_mut().cam_pos = cam.eye();
+        params.upload_to_gpu(&gfx.queue);
+
+        self.draw(&gfx, &mut rp);
+
+        drop(rp);
+
+        let image_data_buf = Arc::new(gfx.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("mesh_render_to_image"),
+            size: (4 * size * size) as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        }));
+
+        encoder.copy_texture_to_buffer(
+            wgpu::ImageCopyTexture {
+                texture: &target_image.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::ImageCopyBuffer {
+                buffer: &image_data_buf,
+                layout: wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(4 * size), // 4 bytes per pixel * 4 pixels per row
+                    rows_per_image: None,
+                },
+            },
+            wgpu::Extent3d {
+                width: size,
+                height: size,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        gfx.queue.submit(std::iter::once(encoder.finish()));
+
+        let image_data_buf_cpy = image_data_buf.clone();
+        image_data_buf.slice(..).map_async(MapMode::Read, move |v| {
+            if v.is_err() {
+                log::error!("Failed to map buffer for reading for render_to_image");
+                return;
+            }
+
+            let v = image_data_buf_cpy.slice(..).get_mapped_range();
+
+            let Some(rgba) = image::RgbaImage::from_raw(size, size, v.to_vec()) else {
+                log::error!("Failed to create image from buffer for render_to_image");
+                return;
+            };
+
+            on_complete(rgba);
+        });
     }
 }
 

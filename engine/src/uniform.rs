@@ -1,7 +1,7 @@
 use crate::ToU8Slice;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{BindGroupEntry, BufferBinding, BufferBindingType, ShaderStages};
+use wgpu::{BindGroupEntry, BufferBinding, BufferBindingType, Device, ShaderStages};
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -84,6 +84,45 @@ where
         let data = ToU8Slice::cast_slice(std::slice::from_ref(value));
         queue.write_buffer(&self.buffer, 0, data);
         self.changed.store(false, Ordering::SeqCst);
+    }
+}
+
+impl<T: Clone + ToU8Slice> Uniform<T> {
+    pub fn clone(&self, device: &Device) -> Self {
+        let layout = Self::bindgroup_layout(device);
+
+        let buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: ToU8Slice::cast_slice(std::slice::from_ref(&self.value)),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let bindgroup = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(BufferBinding {
+                    buffer: &buffer,
+                    offset: 0,
+                    size: None,
+                }),
+            }],
+            label: Some(
+                format!(
+                    "{} {}",
+                    "uniform bindgroup for value of type",
+                    std::any::type_name::<T>()
+                )
+                .as_ref(),
+            ),
+        });
+        Self {
+            buffer,
+            bindgroup,
+            value: self.value.clone(),
+            changed: AtomicBool::from(false),
+            layout,
+        }
     }
 }
 
