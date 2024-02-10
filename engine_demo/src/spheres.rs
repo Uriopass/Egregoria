@@ -19,7 +19,7 @@ impl DemoElement for Spheres {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        let mesh = load_mesh(gfx, "sphere.glb").unwrap();
+        let mesh = load_mesh(gfx, "sphere.glb".as_ref()).unwrap();
         let mut meshes = vec![];
 
         const N_MET: i32 = 5;

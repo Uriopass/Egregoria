@@ -20,18 +20,24 @@ impl InstancedRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         defer!(log::info!("finished init of instanced render"));
 
-        let car = load_mesh(gfx, "simple_car.glb").unwrap();
+        let car = load_mesh(gfx, "simple_car.glb".as_ref()).unwrap();
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 &gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
                 gfx,
             ),
             cars: InstancedMeshBuilder::new(car),
-            locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb").unwrap()),
-            wagons_freight: InstancedMeshBuilder::new(load_mesh(gfx, "wagon_freight.glb").unwrap()),
-            wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
-            trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb").unwrap()),
-            pedestrians: InstancedMeshBuilder::new(load_mesh(gfx, "pedestrian.glb").unwrap()),
+            locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb".as_ref()).unwrap()),
+            wagons_freight: InstancedMeshBuilder::new(
+                load_mesh(gfx, "wagon_freight.glb".as_ref()).unwrap(),
+            ),
+            wagons_passenger: InstancedMeshBuilder::new(
+                load_mesh(gfx, "wagon.glb".as_ref()).unwrap(),
+            ),
+            trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb".as_ref()).unwrap()),
+            pedestrians: InstancedMeshBuilder::new(
+                load_mesh(gfx, "pedestrian.glb".as_ref()).unwrap(),
+            ),
         }
     }
 

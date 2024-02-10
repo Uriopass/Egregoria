@@ -28,7 +28,7 @@ impl DemoElement for Terrain {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        let hitmesh = load_mesh(gfx, "sphere.glb").unwrap();
+        let hitmesh = load_mesh(gfx, "sphere.glb".as_ref()).unwrap();
 
         let mut h = Heightmap::new(MAP_SIZE as u16, MAP_SIZE as u16);
 

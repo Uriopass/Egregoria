@@ -17,7 +17,7 @@ pub struct TreesRender {
 
 impl TreesRender {
     pub fn new(gfx: &mut GfxContext, map: &Map) -> Self {
-        let mesh = load_mesh(gfx, "pine.glb").expect("could not load pine");
+        let mesh = load_mesh(gfx, "pine.glb".as_ref()).expect("could not load pine");
 
         let tree_sub = map.subscribe(UpdateType::Terrain);
         Self {

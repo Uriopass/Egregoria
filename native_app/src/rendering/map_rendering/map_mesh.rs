@@ -8,7 +8,7 @@ use engine::{
     MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
-use prototypes::{FreightStationPrototype, GoodsCompanyPrototype};
+use prototypes::{FreightStationPrototype, GoodsCompanyPrototype, RenderAsset};
 use simulation::map::{
     Building, BuildingKind, CanonicalPosition, Environment, Intersection, LaneKind, Lanes, LotKind,
     Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads, SubscriberChunkID,
@@ -65,33 +65,36 @@ impl MapMeshHandler {
         let mut zonemeshes = FastMap::default();
 
         for descr in GoodsCompanyPrototype::iter() {
-            let asset = &descr.asset_location;
-            if !asset.ends_with(".png") && !asset.ends_with(".jpg") {
-                continue;
-            }
             if descr.zone.is_some() {
                 continue;
             }
+            let RenderAsset::Sprite { path } = &descr.asset else {
+                continue;
+            };
+
             buildsprites.insert(
                 BuildingKind::GoodsCompany(descr.id),
-                SpriteBatchBuilder::new(&gfx.texture(asset, "goods_company_tex"), gfx),
+                SpriteBatchBuilder::new(&gfx.texture(path, "goods_company_tex"), gfx),
             );
         }
 
         for (asset, bkind) in GoodsCompanyPrototype::iter()
-            .map(|descr| (&*descr.asset_location, BuildingKind::GoodsCompany(descr.id)))
-            .chain(FreightStationPrototype::iter().map(|descr| {
-                (
-                    &*descr.asset_location,
-                    BuildingKind::RailFreightStation(descr.id),
-                )
-            }))
-            .chain([("external_trading.glb", BuildingKind::ExternalTrading)])
+            .map(|descr| (&descr.asset, BuildingKind::GoodsCompany(descr.id)))
+            .chain(
+                FreightStationPrototype::iter()
+                    .map(|descr| (&descr.asset, BuildingKind::RailFreightStation(descr.id))),
+            )
+            .chain([(
+                &RenderAsset::Mesh {
+                    path: "external_trading.glb".into(),
+                },
+                BuildingKind::ExternalTrading,
+            )])
         {
-            if !asset.ends_with(".glb") {
+            let RenderAsset::Mesh { path } = asset else {
                 continue;
-            }
-            let m = match load_mesh(gfx, asset) {
+            };
+            let m = match load_mesh(gfx, path) {
                 Ok(m) => m,
                 Err(e) => {
                     log::error!("Failed to load mesh {}: {:?}", asset, e);
@@ -120,7 +123,7 @@ impl MapMeshHandler {
             ));
             let floor_mesh = MeshBuilder::new(floor_mat);
 
-            let m = match load_mesh(gfx, filler) {
+            let m = match load_mesh(gfx, filler.as_ref()) {
                 Ok(m) => m,
                 Err(e) => {
                     log::error!("Failed to load mesh for zone {}: {:?}", filler, e);

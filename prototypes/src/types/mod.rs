@@ -1,3 +1,4 @@
+mod asset;
 mod geom;
 mod money;
 mod power;
@@ -6,6 +7,7 @@ mod size;
 mod time;
 mod zone;
 
+pub use asset::*;
 pub use geom::*;
 pub use money::*;
 pub use power::*;

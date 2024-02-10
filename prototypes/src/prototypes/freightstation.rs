@@ -1,4 +1,4 @@
-use crate::{get_lua, Money, NoParent, Prototype, PrototypeBase, Size2D};
+use crate::{get_lua, Money, NoParent, Prototype, PrototypeBase, RenderAsset, Size2D};
 use mlua::Table;
 use std::ops::Deref;
 
@@ -9,7 +9,7 @@ use super::*;
 pub struct FreightStationPrototype {
     pub base: PrototypeBase,
     pub id: FreightStationPrototypeID,
-    pub asset_location: String,
+    pub asset: RenderAsset,
     pub price: Money,
     pub size: Size2D,
 }
@@ -24,7 +24,7 @@ impl Prototype for FreightStationPrototype {
         Ok(Self {
             id: Self::ID::new(&base.name),
             base,
-            asset_location: get_lua(table, "asset_location")?,
+            asset: get_lua(table, "asset")?,
             price: get_lua(table, "price")?,
             size: get_lua(table, "size")?,
         })

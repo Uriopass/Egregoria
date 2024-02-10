@@ -5,7 +5,7 @@ use crate::uiworld::UiWorld;
 use engine::AudioKind;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
-use prototypes::Size2D;
+use prototypes::{RenderAsset, Size2D};
 use simulation::map::{ProjectFilter, ProjectKind, RoadID};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
@@ -20,7 +20,7 @@ pub struct SpecialBuildArgs {
 pub struct SpecialBuildKind {
     pub make: Box<dyn Fn(&SpecialBuildArgs) -> Vec<WorldCommand> + Send + Sync + 'static>,
     pub size: Size2D,
-    pub asset: String,
+    pub asset: RenderAsset,
     pub road_snap: bool,
 }
 

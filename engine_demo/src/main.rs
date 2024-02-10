@@ -47,7 +47,7 @@ impl engine::framework::State for State {
 
         let mut meshes = vec![];
 
-        if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb") {
+        if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb".as_ref()) {
             let mut i = InstancedMeshBuilder::<true>::new(m);
             i.instances.push(MeshInstance {
                 pos: vec3(50.0, 00.0, 0.0),

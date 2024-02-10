@@ -242,7 +242,7 @@ pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
                                 commands
                             }),
                             size: proto.size,
-                            asset: proto.asset_location.clone(),
+                            asset: proto.asset.clone(),
                             road_snap: false,
                         });
                     }
@@ -268,10 +268,10 @@ pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
                 ui.style_mut().spacing.interact_size = [building_select_w - 5.0, 35.0].into();
 
                 for descr in prototypes_iter::<GoodsCompanyPrototype>() {
-                    let cur_kind = cur_build.opt.as_ref().map(|x| &*x.asset).unwrap_or("");
+                    let cur_kind = cur_build.opt.as_ref().map(|x| &x.asset);
 
                     let mut name = RichText::new(&descr.name);
-                    if descr.asset_location == cur_kind {
+                    if Some(&descr.asset) == cur_kind {
                         picked_descr = Some(descr);
                         name = name.strong();
                     };
@@ -296,7 +296,7 @@ pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
                                 }]
                             }),
                             size: descr.size,
-                            asset: descr.asset_location.to_string(),
+                            asset: descr.asset.clone(),
                         });
                     }
                 }

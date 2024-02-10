@@ -9,7 +9,7 @@ data:extend {
             vertical_factor = 1.0,
         },
         size = 40.0,
-        asset_location = "cinema.glb",
+        asset = "cinema.glb",
         price = "10000$",
         power_consumption = "200W",
         opening_hours = "18h -> 1h",

@@ -1,4 +1,6 @@
-use crate::{get_lua, get_v2, Money, NoParent, Power, Prototype, PrototypeBase, Size2D};
+use crate::{
+    get_lua, get_v2, Money, NoParent, Power, Prototype, PrototypeBase, RenderAsset, Size2D,
+};
 use egui_inspect::debug_inspect_impl;
 use geom::Vec2;
 use mlua::{FromLua, Lua, Table, Value};
@@ -27,7 +29,7 @@ pub struct BuildingPrototype {
     pub id: BuildingPrototypeID,
     pub size: Size2D,
     pub bgen: BuildingGen,
-    pub asset_location: String,
+    pub asset: RenderAsset,
     pub price: Money,
     pub power_consumption: Option<Power>,
     pub power_production: Option<Power>,
@@ -45,7 +47,7 @@ impl Prototype for BuildingPrototype {
             base,
             bgen: get_lua(table, "bgen")?,
             size: get_lua(table, "size")?,
-            asset_location: get_lua(table, "asset_location")?,
+            asset: get_lua(table, "asset")?,
             price: get_lua(table, "price")?,
             power_consumption: get_lua(table, "power_consumption")?,
             power_production: get_lua(table, "power_production")?,

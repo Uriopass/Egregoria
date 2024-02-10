@@ -6,8 +6,8 @@ use engine::{
     SpriteBatchBuilder,
 };
 use geom::{vec3, InfiniteFrustrum, LinearColor, Plane, Vec2, Vec3};
-use prototypes::try_prototype;
-use std::path::{Path, PathBuf};
+use prototypes::{try_prototype, RenderAsset};
+use std::path::PathBuf;
 
 use crate::orbit_camera::OrbitCamera;
 use crate::yakui_gui::{Gui, Inspected, Shown};
@@ -108,12 +108,8 @@ impl State {
         log::info!("{:?}", action);
         let gfx = &mut ctx.gfx;
         match action {
-            GUIAction::GenerateLOD(path, params) => {
-                let Ok((_, mut cpumesh)) = load_mesh_with_properties(
-                    gfx,
-                    path.file_name().unwrap().to_str().unwrap(),
-                    true,
-                ) else {
+            GUIAction::GenerateLOD(ref path, params) => {
+                let Ok((_, mut cpumesh)) = load_mesh_with_properties(gfx, path, true) else {
                     return;
                 };
 
@@ -133,15 +129,14 @@ fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> S
         Inspected::None => Shown::None,
         Inspected::Company(i) => {
             let comp = try_prototype(i).unwrap();
-            let p = Path::new(&comp.asset_location);
-            match p.extension() {
-                Some(x) if (x == "png" || x == "jpg") => {
-                    let tex = match gfx.try_texture(p, "sprite texture") {
+            match comp.asset {
+                RenderAsset::Sprite { ref path } => {
+                    let tex = match gfx.try_texture(path, "sprite texture") {
                         Ok(x) => x,
                         Err(e) => {
                             return Shown::Error(format!(
                                 "could not load texture {}: {}",
-                                comp.asset_location, e
+                                comp.asset, e
                             ))
                         }
                     };
@@ -149,17 +144,16 @@ fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> S
                     sb.push(Vec3::ZERO, Vec3::X, LinearColor::WHITE, (100.0, 100.0));
                     Shown::Sprite(sb.build(gfx).unwrap())
                 }
-                Some(x) if x == "glb" => {
-                    let (mesh, cpu) =
-                        match load_mesh_with_properties(gfx, &comp.asset_location, false) {
-                            Ok(x) => x,
-                            Err(e) => {
-                                return Shown::Error(format!(
-                                    "could not load model {}:\n{:?}",
-                                    comp.asset_location, e
-                                ))
-                            }
-                        };
+                RenderAsset::Mesh { ref path } => {
+                    let (mesh, cpu) = match load_mesh_with_properties(gfx, &path, false) {
+                        Ok(x) => x,
+                        Err(e) => {
+                            return Shown::Error(format!(
+                                "could not load model {}:\n{:?}",
+                                comp.asset, e
+                            ))
+                        }
+                    };
                     let size = mesh.lods[0].bounding_sphere.radius;
                     let mut meshes = vec![];
                     for (i, mut lod) in mesh.lods.iter().cloned().enumerate() {
@@ -179,11 +173,6 @@ fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> S
 
                     Shown::Model((mesh, meshes, cpu))
                 }
-                Some(_) => Shown::Error(format!(
-                    "unknown asset type for path: {}",
-                    comp.asset_location
-                )),
-                None => Shown::Error(format!("no extension for path: {}", comp.asset_location)),
             }
         }
     }

@@ -11,7 +11,7 @@ use gltf::texture::WrappingMode;
 use gltf::{Document, Node, Scene};
 use image::{DynamicImage, ImageBuffer};
 use std::collections::hash_map::Entry;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 use wgpu::{AddressMode, FilterMode};
@@ -309,13 +309,13 @@ pub fn find_nodes<'a>(
     result
 }
 
-pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshError> {
+pub fn load_mesh(gfx: &mut GfxContext, asset_name: &Path) -> Result<Mesh, LoadMeshError> {
     load_mesh_with_properties(gfx, asset_name, false).map(|x| x.0)
 }
 
 pub fn load_mesh_with_properties(
     gfx: &mut GfxContext,
-    asset_name: &str,
+    asset_name: &Path,
     force_base_model: bool,
 ) -> Result<(Mesh, CPUMesh), LoadMeshError> {
     let mut path = PathBuf::new();

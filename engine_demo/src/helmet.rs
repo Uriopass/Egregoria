@@ -16,7 +16,7 @@ impl DemoElement for Helmet {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        let Ok(mesh) = load_mesh(gfx, "DamagedHelmet.glb") else {
+        let Ok(mesh) = load_mesh(gfx, "DamagedHelmet.glb".as_ref()) else {
             return Self { mesh: None };
         };
         let mut i = InstancedMeshBuilder::<true>::new(mesh);

@@ -7,6 +7,7 @@ use engine::{
 };
 use geom::{LinearColor, Polygon, Vec2, Vec3, AABB, OBB};
 use std::borrow::Cow;
+use std::path::{Path, PathBuf};
 
 #[derive(Default)]
 pub struct ImmediateSound {
@@ -55,7 +56,7 @@ pub enum OrderKind {
         z: f32,
     },
     Mesh {
-        path: Cow<'static, str>,
+        path: Cow<'static, Path>,
         pos: Vec3,
         dir: Vec3,
     },
@@ -71,7 +72,7 @@ pub struct ImmediateOrder {
 pub struct ImmediateDraw {
     pub orders: Vec<ImmediateOrder>,
     pub persistent_orders: Vec<ImmediateOrder>,
-    pub mesh_cache: FastMap<String, InstancedMeshBuilder<true>>,
+    pub mesh_cache: FastMap<PathBuf, InstancedMeshBuilder<true>>,
 }
 
 pub struct ImmediateBuilder<'a> {
@@ -186,11 +187,13 @@ impl ImmediateDraw {
         pos: Vec3,
         dir: Vec3,
     ) -> ImmediateBuilder<'_> {
-        self.builder(OrderKind::Mesh {
-            path: path.into(),
-            pos,
-            dir,
-        })
+        let path = path.into();
+        let path = match path {
+            Cow::Borrowed(x) => Cow::Borrowed(x.as_ref()),
+            Cow::Owned(x) => Cow::Owned(x.into()),
+        };
+
+        self.builder(OrderKind::Mesh { path, pos, dir })
     }
 
     pub fn clear_persistent(&mut self) {
@@ -256,7 +259,7 @@ impl ImmediateDraw {
                         x
                     } else {
                         self.mesh_cache.insert(
-                            path.to_string(),
+                            path.to_path_buf(),
                             InstancedMeshBuilder::new(load_mesh(ctx.gfx, path).unwrap()),
                         );
                         self.mesh_cache.get_mut(path.as_ref()).unwrap()
