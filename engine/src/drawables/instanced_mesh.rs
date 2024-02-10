@@ -44,6 +44,14 @@ impl<const PERSISTENT: bool> InstancedMeshBuilder<PERSISTENT> {
         }
     }
 
+    pub fn new_ref(mesh: &Mesh) -> Self {
+        InstancedMeshBuilder {
+            mesh: mesh.clone(),
+            instances: Vec::with_capacity(4),
+            ibuffer: PBuffer::new(BufferUsages::VERTEX),
+        }
+    }
+
     pub fn build(&mut self, gfx: &GfxContext) -> Option<InstancedMesh> {
         if self.instances.is_empty() {
             return None;

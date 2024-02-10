@@ -1,4 +1,3 @@
-use engine::meshload::load_mesh;
 use engine::terrain::TerrainRender as EngineTerrainRender;
 use engine::{Context, FrameContext, InstancedMeshBuilder, MeshInstance};
 use geom::{pack_height, vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
@@ -28,7 +27,7 @@ impl DemoElement for Terrain {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        let hitmesh = load_mesh(gfx, "sphere.glb".as_ref()).unwrap();
+        let hitmesh = gfx.mesh("sphere.glb".as_ref()).unwrap();
 
         let mut h = Heightmap::new(MAP_SIZE as u16, MAP_SIZE as u16);
 
@@ -73,7 +72,7 @@ impl DemoElement for Terrain {
             reload: false,
             last_hitpos: None,
             plane_hitpos: None,
-            hitmesh: InstancedMeshBuilder::new(hitmesh),
+            hitmesh: InstancedMeshBuilder::new_ref(&hitmesh),
         }
     }
 

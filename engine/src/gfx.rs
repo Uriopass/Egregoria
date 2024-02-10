@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
@@ -20,11 +20,12 @@ use common::FastMap;
 use geom::{vec2, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Vec2, Vec3};
 
 use crate::framework::State;
+use crate::meshload::{load_mesh, LoadMeshError};
 use crate::passes::{BackgroundPipeline, Pbr};
 use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
-    MaterialID, MaterialMap, MetallicRoughness, MipmapGenerator, PipelineBuilder, Pipelines,
+    MaterialID, MaterialMap, Mesh, MetallicRoughness, MipmapGenerator, PipelineBuilder, Pipelines,
     Texture, TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
 };
 
@@ -62,6 +63,9 @@ pub struct GfxContext {
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
     pub null_texture: Texture,
     pub(crate) linear_sampler: wgpu::Sampler,
+
+    pub(crate) mesh_cache: FastMap<PathBuf, Arc<Mesh>>,
+    pub(crate) mesh_errors: FastMap<PathBuf, LoadMeshError>,
 
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
@@ -412,6 +416,8 @@ impl GfxContext {
             texture_cache_bytes: Default::default(),
             null_texture,
             linear_sampler,
+            mesh_cache: Default::default(),
+            mesh_errors: Default::default(),
             samples,
             screen_uv_vertices,
             rect_indices,
@@ -537,6 +543,26 @@ impl GfxContext {
 
     pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Arc<Texture>> {
         self.texture_cache_paths.get(&path.into())
+    }
+
+    pub fn mesh(&mut self, path: &Path) -> Result<Arc<Mesh>, LoadMeshError> {
+        if let Some(m) = self.mesh_cache.get(path) {
+            return Ok(m.clone());
+        }
+        if let Some(e) = self.mesh_errors.get(path) {
+            return Err(e.clone());
+        }
+        match load_mesh(self, path) {
+            Ok(m) => {
+                let m = Arc::new(m);
+                self.mesh_cache.insert(path.to_path_buf(), m.clone());
+                Ok(m)
+            }
+            Err(e) => {
+                self.mesh_errors.insert(path.to_path_buf(), e.clone());
+                Err(e)
+            }
+        }
     }
 
     pub fn palette(&self) -> Arc<Texture> {

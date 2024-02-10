@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use common::FastMap;
-use engine::meshload::load_mesh;
 use engine::{
     AudioKind, FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder, Tesselator,
 };
@@ -260,7 +259,7 @@ impl ImmediateDraw {
                     } else {
                         self.mesh_cache.insert(
                             path.to_path_buf(),
-                            InstancedMeshBuilder::new(load_mesh(ctx.gfx, path).unwrap()),
+                            InstancedMeshBuilder::new_ref(&ctx.gfx.mesh(path).unwrap()),
                         );
                         self.mesh_cache.get_mut(path.as_ref()).unwrap()
                     };

@@ -1,5 +1,4 @@
 use common::history::History;
-use engine::meshload::load_mesh;
 use engine::{
     AudioKind, Context, FrameContext, GfxSettings, InstancedMeshBuilder, Key, MeshInstance,
     MouseButton, ShadowQuality,
@@ -47,8 +46,8 @@ impl engine::framework::State for State {
 
         let mut meshes = vec![];
 
-        if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb".as_ref()) {
-            let mut i = InstancedMeshBuilder::<true>::new(m);
+        if let Ok(m) = gfx.mesh("DamagedHelmet.glb".as_ref()) {
+            let mut i = InstancedMeshBuilder::<true>::new_ref(&m);
             i.instances.push(MeshInstance {
                 pos: vec3(50.0, 00.0, 0.0),
                 dir: Vec3::X,

@@ -1,4 +1,3 @@
-use engine::meshload::load_mesh;
 use engine::{FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder};
 use geom::{LinearColor, Vec3, V3};
 use simulation::transportation::train::RailWagonKind;
@@ -20,23 +19,23 @@ impl InstancedRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         defer!(log::info!("finished init of instanced render"));
 
-        let car = load_mesh(gfx, "simple_car.glb".as_ref()).unwrap();
+        let car = gfx.mesh("simple_car.glb".as_ref()).unwrap();
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 &gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
                 gfx,
             ),
-            cars: InstancedMeshBuilder::new(car),
-            locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb".as_ref()).unwrap()),
-            wagons_freight: InstancedMeshBuilder::new(
-                load_mesh(gfx, "wagon_freight.glb".as_ref()).unwrap(),
+            cars: InstancedMeshBuilder::new_ref(&car),
+            locomotives: InstancedMeshBuilder::new_ref(&gfx.mesh("train.glb".as_ref()).unwrap()),
+            wagons_freight: InstancedMeshBuilder::new_ref(
+                &gfx.mesh("wagon_freight.glb".as_ref()).unwrap(),
             ),
-            wagons_passenger: InstancedMeshBuilder::new(
-                load_mesh(gfx, "wagon.glb".as_ref()).unwrap(),
+            wagons_passenger: InstancedMeshBuilder::new_ref(
+                &gfx.mesh("wagon.glb".as_ref()).unwrap(),
             ),
-            trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb".as_ref()).unwrap()),
-            pedestrians: InstancedMeshBuilder::new(
-                load_mesh(gfx, "pedestrian.glb".as_ref()).unwrap(),
+            trucks: InstancedMeshBuilder::new_ref(&gfx.mesh("truck.glb".as_ref()).unwrap()),
+            pedestrians: InstancedMeshBuilder::new_ref(
+                &gfx.mesh("pedestrian.glb".as_ref()).unwrap(),
             ),
         }
     }

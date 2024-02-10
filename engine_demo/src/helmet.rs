@@ -1,4 +1,3 @@
-use engine::meshload::load_mesh;
 use engine::{Context, FrameContext, InstancedMesh, InstancedMeshBuilder, MeshInstance};
 use geom::{vec3, Camera, LinearColor, Vec3};
 
@@ -16,10 +15,10 @@ impl DemoElement for Helmet {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        let Ok(mesh) = load_mesh(gfx, "DamagedHelmet.glb".as_ref()) else {
+        let Ok(mesh) = gfx.mesh("DamagedHelmet.glb".as_ref()) else {
             return Self { mesh: None };
         };
-        let mut i = InstancedMeshBuilder::<true>::new(mesh);
+        let mut i = InstancedMeshBuilder::<true>::new_ref(&mesh);
         i.instances.push(MeshInstance {
             pos: vec3(0.0, 10.0, 0.0),
             dir: Vec3::X * 3.0,

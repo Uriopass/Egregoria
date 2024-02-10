@@ -1,4 +1,3 @@
-use engine::meshload::load_mesh;
 use engine::{
     Context, FrameContext, InstancedMesh, InstancedMeshBuilder, Material, MeshInstance,
     MetallicRoughness,
@@ -19,7 +18,7 @@ impl DemoElement for Spheres {
     fn init(ctx: &mut Context) -> Self {
         let gfx = &mut ctx.gfx;
 
-        let mesh = load_mesh(gfx, "sphere.glb".as_ref()).unwrap();
+        let mesh = gfx.mesh("sphere.glb".as_ref()).unwrap();
         let mut meshes = vec![];
 
         const N_MET: i32 = 5;
@@ -27,7 +26,7 @@ impl DemoElement for Spheres {
 
         for x in 0..N_ROUGH {
             for z in 0..N_MET {
-                let mut c = mesh.clone();
+                let mut c = (*mesh).clone();
 
                 let mat = Material::new_raw(
                     &gfx.device,

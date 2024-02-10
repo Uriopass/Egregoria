@@ -1,7 +1,6 @@
 use crate::rendering::MapRenderOptions;
 use common::FastMap;
 use engine::earcut::earcut;
-use engine::meshload::load_mesh;
 use engine::MeshBuilder;
 use engine::{
     Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, Mesh, MeshInstance,
@@ -94,7 +93,7 @@ impl MapMeshHandler {
             let RenderAsset::Mesh { path } = asset else {
                 continue;
             };
-            let m = match load_mesh(gfx, path) {
+            let m = match gfx.mesh(path) {
                 Ok(m) => m,
                 Err(e) => {
                     log::error!("Failed to load mesh {}: {:?}", asset, e);
@@ -102,7 +101,7 @@ impl MapMeshHandler {
                 }
             };
 
-            buildmeshes.insert(bkind, InstancedMeshBuilder::new(m));
+            buildmeshes.insert(bkind, InstancedMeshBuilder::new_ref(&m));
         }
 
         for descr in GoodsCompanyPrototype::iter() {
@@ -123,7 +122,7 @@ impl MapMeshHandler {
             ));
             let floor_mesh = MeshBuilder::new(floor_mat);
 
-            let m = match load_mesh(gfx, filler.as_ref()) {
+            let m = match gfx.mesh(filler.as_ref()) {
                 Ok(m) => m,
                 Err(e) => {
                     log::error!("Failed to load mesh for zone {}: {:?}", filler, e);
@@ -131,7 +130,7 @@ impl MapMeshHandler {
                 }
             };
 
-            let filler_mesh = InstancedMeshBuilder::new(m);
+            let filler_mesh = InstancedMeshBuilder::new_ref(&m);
 
             zonemeshes.insert(
                 BuildingKind::GoodsCompany(descr.id),

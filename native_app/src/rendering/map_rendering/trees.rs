@@ -1,7 +1,6 @@
 use std::ops::Mul;
 
 use common::FastMap;
-use engine::meshload::load_mesh;
 use engine::wgpu::RenderPass;
 use engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance,
@@ -17,11 +16,11 @@ pub struct TreesRender {
 
 impl TreesRender {
     pub fn new(gfx: &mut GfxContext, map: &Map) -> Self {
-        let mesh = load_mesh(gfx, "pine.glb".as_ref()).expect("could not load pine");
+        let mesh = gfx.mesh("pine.glb".as_ref()).expect("could not load pine");
 
         let tree_sub = map.subscribe(UpdateType::Terrain);
         Self {
-            tree_builder: InstancedMeshBuilder::new(mesh),
+            tree_builder: InstancedMeshBuilder::new_ref(&mesh),
             trees_cache: FastMap::default(),
             tree_sub,
         }

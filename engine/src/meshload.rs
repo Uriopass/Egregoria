@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use wgpu::{AddressMode, FilterMode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum ImageLoadError {
     InvalidFormat(Format),
     InvalidData,
@@ -213,9 +213,9 @@ fn load_materials(
     Ok((v, needs_tangents))
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum LoadMeshError {
-    GltfLoadError(gltf::Error),
+    GltfLoadError(Arc<gltf::Error>),
     /// Mesh doesn't have a material
     NoMaterial,
     NoIndices,
@@ -330,7 +330,8 @@ pub fn load_mesh_with_properties(
 
     let t = Instant::now();
 
-    let (doc, data, images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
+    let (doc, data, images) =
+        gltf::import(&path).map_err(|e| LoadMeshError::GltfLoadError(Arc::new(e)))?;
 
     let exts = doc
         .extensions_used()
