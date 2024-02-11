@@ -11,7 +11,7 @@ use geom::{vec2, vec3, Camera, HeightmapChunk, Intersect3, Matrix4, Vec2, AABB3}
 
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
-    IndexType, PipelineBuilder, Texture, TextureBuilder, Uniform, TL,
+    IndexType, PipelineBuilder, PipelineKey, Texture, TextureBuilder, Uniform, TL,
 };
 
 const LOD: usize = 5;
@@ -465,7 +465,7 @@ fn normal_update(
     });
     rp.set_pipeline(normal_pipeline);
     rp.set_bind_group(0, &bg, &[]);
-    rp.set_bind_group(1, &uni.bindgroup, &[]);
+    rp.set_bind_group(1, &uni.bg, &[]);
     rp.draw(0..4, 0..1);
     drop(rp);
 }
@@ -616,7 +616,7 @@ impl TerrainInstance {
     }
 }
 
-impl PipelineBuilder for TerrainPipeline {
+impl PipelineKey for TerrainPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
@@ -640,7 +640,7 @@ impl PipelineBuilder for TerrainPipeline {
         if !self.depth {
             let frag = &mk_module("terrain/terrain.frag");
 
-            return gfx.color_pipeline(
+            return PipelineBuilder::color(
                 "terrain",
                 &[
                     &gfx.render_params.layout,
@@ -650,7 +650,10 @@ impl PipelineBuilder for TerrainPipeline {
                 &[TerrainInstance::desc()],
                 vert,
                 frag,
-            );
+                gfx.sc_desc.format,
+            )
+            .with_samples(gfx.samples)
+            .build(&gfx.device);
         }
 
         gfx.depth_pipeline_bglayout(

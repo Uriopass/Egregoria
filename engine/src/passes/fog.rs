@@ -1,5 +1,5 @@
 use crate::{
-    CompiledModule, GfxContext, PipelineBuilder, RenderParams, Texture, Uniform, UvVertex, TL,
+    CompiledModule, GfxContext, PipelineKey, RenderParams, Texture, Uniform, UvVertex, TL,
 };
 use wgpu::{
     BlendComponent, BlendState, CommandEncoder, FragmentState, IndexFormat,
@@ -38,14 +38,14 @@ pub fn render_fog(gfx: &GfxContext, enc: &mut CommandEncoder) {
     });
 
     fog_pass.set_pipeline(pipeline);
-    fog_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
+    fog_pass.set_bind_group(0, &gfx.render_params.bg, &[]);
     fog_pass.set_bind_group(1, &gfx.fbos.depth_bg, &[]);
     fog_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
     fog_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
     fog_pass.draw_indexed(0..6, 0, 0..1);
 }
 
-impl PipelineBuilder for FogPipeline {
+impl PipelineKey for FogPipeline {
     fn build(
         &self,
         gfx: &GfxContext,

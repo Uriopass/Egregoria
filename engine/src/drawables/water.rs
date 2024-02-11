@@ -1,6 +1,6 @@
 use crate::meshbuild::MeshBuilder;
 use crate::{
-    CompiledModule, Drawable, GfxContext, Mesh, MeshVertex, PipelineBuilder, Texture,
+    CompiledModule, Drawable, GfxContext, Mesh, MeshVertex, PipelineBuilder, PipelineKey, Texture,
     TextureBuilder, TL,
 };
 use geom::AABB;
@@ -67,7 +67,7 @@ impl Water {
     }
 }
 
-impl PipelineBuilder for WaterPipeline {
+impl PipelineKey for WaterPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
@@ -90,7 +90,16 @@ impl PipelineBuilder for WaterPipeline {
             &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
         ];
 
-        gfx.color_pipeline("water pipeline", layouts, &[MeshVertex::desc()], vert, frag)
+        PipelineBuilder::color(
+            "water",
+            layouts,
+            &[MeshVertex::desc()],
+            vert,
+            frag,
+            gfx.sc_desc.format,
+        )
+        .with_samples(gfx.samples)
+        .build(&gfx.device)
     }
 }
 

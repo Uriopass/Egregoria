@@ -7,7 +7,7 @@ use std::path::Path;
 use std::time::SystemTime;
 use wgpu::{Device, ErrorFilter, RenderPipeline};
 
-pub trait PipelineBuilder: Hash + 'static {
+pub trait PipelineKey: Hash + 'static {
     fn build(
         &self,
         gfx: &GfxContext,
@@ -68,7 +68,7 @@ impl Pipelines {
     pub fn get_pipeline(
         &mut self,
         gfx: &GfxContext,
-        obj: impl PipelineBuilder,
+        obj: impl PipelineKey,
         device: &Device,
     ) -> &'static RenderPipeline {
         let hash = common::hash_type_u64(&obj);

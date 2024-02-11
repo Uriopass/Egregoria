@@ -1,6 +1,5 @@
 use crate::{
-    compile_shader, CompiledModule, GfxContext, PipelineBuilder, Texture, TextureBuilder, Uniform,
-    TL,
+    compile_shader, CompiledModule, GfxContext, PipelineKey, Texture, TextureBuilder, Uniform, TL,
 };
 use common::FastMap;
 use geom::{Vec3, Vec4};
@@ -170,7 +169,7 @@ impl Pbr {
                 occlusion_query_set: None,
             });
             pass.set_pipeline(pipe);
-            pass.set_bind_group(0, &self.environment_uniform.bindgroup, &[]);
+            pass.set_bind_group(0, &self.environment_uniform.bg, &[]);
             pass.draw(face * 6..face * 6 + 6, 0..1);
         }
     }
@@ -202,7 +201,7 @@ impl Pbr {
             });
             pass.set_pipeline(pipe);
             pass.set_bind_group(0, &self.environment_bg, &[]);
-            pass.set_bind_group(1, &self.diffuse_uniform.bindgroup, &[]);
+            pass.set_bind_group(1, &self.diffuse_uniform.bg, &[]);
             pass.draw(face * 6..face * 6 + 6, 0..1);
         }
     }
@@ -238,7 +237,7 @@ impl Pbr {
                 });
                 pass.set_pipeline(pipe);
                 pass.set_bind_group(0, &self.environment_bg, &[]);
-                pass.set_bind_group(1, &uni.bindgroup, &[]);
+                pass.set_bind_group(1, &uni.bg, &[]);
                 pass.draw(face * 6..face * 6 + 6, 0..1);
             }
         }
@@ -316,7 +315,7 @@ impl Pbr {
     }
 }
 
-impl PipelineBuilder for PbrPipeline {
+impl PipelineKey for PbrPipeline {
     fn build(
         &self,
         gfx: &GfxContext,

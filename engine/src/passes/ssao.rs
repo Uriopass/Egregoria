@@ -1,4 +1,4 @@
-use crate::{CompiledModule, GfxContext, PipelineBuilder, Texture, UvVertex, TL};
+use crate::{CompiledModule, GfxContext, PipelineKey, Texture, UvVertex, TL};
 use wgpu::{
     BlendComponent, BlendState, CommandEncoder, FragmentState, IndexFormat,
     PipelineLayoutDescriptor, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
@@ -30,14 +30,14 @@ pub fn render_ssao(gfx: &GfxContext, enc: &mut CommandEncoder) {
     });
 
     ssao_pass.set_pipeline(pipeline);
-    ssao_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
+    ssao_pass.set_bind_group(0, &gfx.render_params.bg, &[]);
     ssao_pass.set_bind_group(1, &gfx.fbos.depth_bg, &[]);
     ssao_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
     ssao_pass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
     ssao_pass.draw_indexed(0..6, 0, 0..1);
 }
 
-impl PipelineBuilder for SSAOPipeline {
+impl PipelineKey for SSAOPipeline {
     fn build(
         &self,
         gfx: &GfxContext,

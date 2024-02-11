@@ -4,7 +4,7 @@ use wgpu::{
     SurfaceConfiguration, TextureUsages, TextureView, VertexState,
 };
 
-use crate::{CompiledModule, GfxContext, PipelineBuilder, Texture, TextureBuilder, TL};
+use crate::{CompiledModule, GfxContext, PipelineKey, Texture, TextureBuilder, TL};
 
 const DOWNSCALE_PASSES: u32 = 2;
 
@@ -135,7 +135,7 @@ pub enum UIBlurPipeline {
     UpscaleDeband,
 }
 
-impl PipelineBuilder for UIBlurPipeline {
+impl PipelineKey for UIBlurPipeline {
     fn build(
         &self,
         gfx: &GfxContext,

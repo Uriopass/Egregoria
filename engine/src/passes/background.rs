@@ -1,5 +1,5 @@
 use crate::{
-    CompiledModule, GfxContext, PipelineBuilder, RenderParams, Texture, Uniform, UvVertex, TL,
+    CompiledModule, GfxContext, PipelineKey, RenderParams, Texture, Uniform, UvVertex, TL,
 };
 use wgpu::{
     BindGroupLayout, BlendState, CommandEncoder, DepthBiasState, FragmentState, IndexFormat,
@@ -33,7 +33,7 @@ pub fn render_background(gfx: &GfxContext, enc: &mut CommandEncoder, frame: &Tex
     });
 
     bg_pass.set_pipeline(gfx.get_pipeline(BackgroundPipeline));
-    bg_pass.set_bind_group(0, &gfx.render_params.bindgroup, &[]);
+    bg_pass.set_bind_group(0, &gfx.render_params.bg, &[]);
     bg_pass.set_bind_group(1, &gfx.bnoise_bg, &[]);
     bg_pass.set_bind_group(2, &gfx.sky_bg, &[]);
     bg_pass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
@@ -50,7 +50,7 @@ impl BackgroundPipeline {
     }
 }
 
-impl PipelineBuilder for BackgroundPipeline {
+impl PipelineKey for BackgroundPipeline {
     fn build(
         &self,
         gfx: &GfxContext,

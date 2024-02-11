@@ -1,7 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
     bg_layout_litmesh, CompiledModule, Drawable, GfxContext, Material, MaterialID,
-    MetallicRoughness, PipelineBuilder, Texture, UvVertex,
+    MetallicRoughness, PipelineBuilder, PipelineKey, Texture, UvVertex,
 };
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
@@ -121,7 +121,7 @@ impl<const PERSISTENT: bool> SpriteBatchBuilder<PERSISTENT> {
     }
 }
 
-impl PipelineBuilder for SBPipeline {
+impl PipelineKey for SBPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
@@ -130,7 +130,7 @@ impl PipelineBuilder for SBPipeline {
         let vert = &mk_module("spritebatch.vert");
         let frag = &mk_module("pixel.frag");
 
-        gfx.color_pipeline(
+        PipelineBuilder::color(
             "spritebatch",
             &[
                 &gfx.render_params.layout,
@@ -140,7 +140,10 @@ impl PipelineBuilder for SBPipeline {
             &[UvVertex::desc(), InstanceRaw::desc()],
             vert,
             frag,
+            gfx.sc_desc.format,
         )
+        .with_samples(gfx.samples)
+        .build(&gfx.device)
     }
 }
 

@@ -6,7 +6,7 @@ use wgpu::{BindGroupEntry, BufferBinding, BufferBindingType, Device, ShaderStage
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
     pub layout: wgpu::BindGroupLayout,
-    pub bindgroup: wgpu::BindGroup,
+    pub bg: wgpu::BindGroup,
     value: T,
     pub changed: AtomicBool,
 }
@@ -45,7 +45,7 @@ where
         });
         Self {
             buffer,
-            bindgroup,
+            bg: bindgroup,
             value,
             changed: AtomicBool::from(true),
             layout,
@@ -118,7 +118,7 @@ impl<T: Clone + ToU8Slice> Uniform<T> {
         });
         Self {
             buffer,
-            bindgroup,
+            bg: bindgroup,
             value: self.value.clone(),
             changed: AtomicBool::from(false),
             layout,

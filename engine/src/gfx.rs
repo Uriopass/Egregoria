@@ -6,10 +6,10 @@ use std::time::Instant;
 use serde::{Deserialize, Serialize};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, Backends, BindGroupLayout, BlendState, CommandBuffer, CommandEncoder,
-    CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, Extent3d, Face,
-    FilterMode, FragmentState, FrontFace, ImageCopyTexture, ImageDataLayout, InstanceDescriptor,
-    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPassColorAttachment,
+    Adapter, Backends, BindGroupLayout, CommandBuffer, CommandEncoder, CommandEncoderDescriptor,
+    CompositeAlphaMode, DepthBiasState, Device, Extent3d, Face, FilterMode, FragmentState,
+    FrontFace, ImageCopyTexture, ImageDataLayout, InstanceDescriptor, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPassColorAttachment,
     RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, SamplerDescriptor, Surface,
     SurfaceConfiguration, SurfaceTexture, TextureAspect, TextureFormat, TextureUsages, TextureView,
     TextureViewDescriptor, TextureViewDimension, VertexBufferLayout, VertexState,
@@ -25,7 +25,7 @@ use crate::passes::{BackgroundPipeline, Pbr};
 use crate::perf_counters::PerfCounters;
 use crate::{
     bg_layout_litmesh, passes, CompiledModule, Drawable, IndexType, LampLights, Material,
-    MaterialID, MaterialMap, Mesh, MetallicRoughness, MipmapGenerator, PipelineBuilder, Pipelines,
+    MaterialID, MaterialMap, Mesh, MetallicRoughness, MipmapGenerator, PipelineKey, Pipelines,
     Texture, TextureBuildError, TextureBuilder, Uniform, UvVertex, WaterPipeline, TL,
 };
 
@@ -421,9 +421,9 @@ impl GfxContext {
             samples,
             screen_uv_vertices,
             rect_indices,
-            simplelit_bg: Uniform::new([0.0f32; 4], &device).bindgroup, // bogus
-            sky_bg: Uniform::new([0.0f32; 4], &device).bindgroup,       // bogus
-            water_bg: Uniform::new([0.0f32; 4], &device).bindgroup,     // bogus
+            simplelit_bg: Uniform::new([0.0f32; 4], &device).bg, // bogus
+            sky_bg: Uniform::new([0.0f32; 4], &device).bg,       // bogus
+            water_bg: Uniform::new([0.0f32; 4], &device).bg,     // bogus
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             lamplights: LampLights::new(&device, &queue),
@@ -809,7 +809,7 @@ impl GfxContext {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        render_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
+        render_pass.set_bind_group(0, &self.render_params.bg, &[]);
 
         for obj in objsref.iter() {
             obj.draw(self, &mut render_pass);
@@ -877,7 +877,7 @@ impl GfxContext {
                         occlusion_query_set: None,
                     });
 
-                    sun_shadow_pass.set_bind_group(0, &u.bindgroup, &[]);
+                    sun_shadow_pass.set_bind_group(0, &u.bg, &[]);
 
                     for obj in objsref.iter() {
                         obj.draw_depth(self, &mut sun_shadow_pass, Some(&u.value().proj));
@@ -915,7 +915,7 @@ impl GfxContext {
             occlusion_query_set: None,
         });
 
-        depth_prepass.set_bind_group(0, &self.render_params.bindgroup, &[]);
+        depth_prepass.set_bind_group(0, &self.render_params.bg, &[]);
 
         for obj in objsref.iter() {
             obj.draw_depth(self, &mut depth_prepass, None);
@@ -1039,66 +1039,6 @@ impl GfxContext {
         );
     }
 
-    pub fn color_pipeline(
-        &self,
-        label: &'static str,
-        layouts: &[&BindGroupLayout],
-        vertex_buffers: &[VertexBufferLayout<'_>],
-        vert_shader: &CompiledModule,
-        frag_shader: &CompiledModule,
-    ) -> RenderPipeline {
-        let render_pipeline_layout =
-            self.device
-                .create_pipeline_layout(&PipelineLayoutDescriptor {
-                    label: Some(label),
-                    bind_group_layouts: layouts,
-                    push_constant_ranges: &[],
-                });
-
-        let color_states = [Some(wgpu::ColorTargetState {
-            format: self.sc_desc.format,
-            blend: Some(BlendState::ALPHA_BLENDING),
-            write_mask: wgpu::ColorWrites::ALL,
-        })];
-
-        let render_pipeline_desc = RenderPipelineDescriptor {
-            label: Some(label),
-            layout: Some(&render_pipeline_layout),
-            vertex: VertexState {
-                module: vert_shader,
-                entry_point: "vert",
-                buffers: vertex_buffers,
-            },
-            fragment: Some(FragmentState {
-                module: frag_shader,
-                entry_point: "frag",
-                targets: &color_states,
-            }),
-            primitive: PrimitiveState {
-                cull_mode: Some(Face::Back),
-                front_face: FrontFace::Ccw,
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: TextureFormat::Depth32Float,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil: Default::default(),
-                bias: DepthBiasState {
-                    constant: 0,
-                    slope_scale: 0.0,
-                    clamp: 0.0,
-                },
-            }),
-            multisample: MultisampleState {
-                count: self.samples,
-                ..Default::default()
-            },
-            multiview: None,
-        };
-        self.device.create_render_pipeline(&render_pipeline_desc)
-    }
-
     pub fn depth_pipeline(
         &self,
         vertex_buffers: &[VertexBufferLayout<'_>],
@@ -1178,7 +1118,7 @@ impl GfxContext {
         self.device.create_render_pipeline(&render_pipeline_desc)
     }
 
-    pub fn get_pipeline(&self, obj: impl PipelineBuilder) -> &'static RenderPipeline {
+    pub fn get_pipeline(&self, obj: impl PipelineKey) -> &'static RenderPipeline {
         let pipelines = &mut *self.pipelines.write().unwrap();
         pipelines.get_pipeline(self, obj, &self.device)
     }

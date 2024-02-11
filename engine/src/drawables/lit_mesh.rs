@@ -5,12 +5,12 @@ use wgpu::{
     TextureUsages, VertexBufferLayout,
 };
 
-use geom::{Camera, Matrix4, Sphere};
+use geom::{Camera, LinearColor, Matrix4, Sphere, Vec2, Vec3};
 
 use crate::meshbuild::MeshLod;
 use crate::{
     CompiledModule, Drawable, GfxContext, Material, MeshInstance, MeshVertex, PipelineBuilder,
-    RenderParams, Texture, TextureBuilder, Uniform, TL,
+    PipelineKey, RenderParams, Texture, TextureBuilder, Uniform, TL,
 };
 
 #[derive(Clone)]
@@ -44,6 +44,7 @@ pub fn screen_coverage(gfx: &GfxContext, s: Sphere) -> f32 {
 
 #[derive(Clone, Copy, Hash)]
 pub(crate) struct MeshPipeline {
+    pub(crate) format: Option<TextureFormat>,
     pub(crate) instanced: bool,
     pub(crate) alpha: bool,
     pub(crate) smap: bool,
@@ -53,7 +54,7 @@ pub(crate) struct MeshPipeline {
 const VB_INSTANCED: &[VertexBufferLayout] = &[MeshVertex::desc(), MeshInstance::desc()];
 const VB: &[VertexBufferLayout] = &[MeshVertex::desc()];
 
-impl PipelineBuilder for MeshPipeline {
+impl PipelineKey for MeshPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
@@ -69,7 +70,8 @@ impl PipelineBuilder for MeshPipeline {
 
         if !self.depth {
             let frag = mk_module("pixel.frag");
-            return gfx.color_pipeline(
+
+            return PipelineBuilder::color(
                 "lit_mesh",
                 &[
                     &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
@@ -79,7 +81,10 @@ impl PipelineBuilder for MeshPipeline {
                 vb,
                 &vert,
                 &frag,
-            );
+                self.format.unwrap_or(gfx.sc_desc.format),
+            )
+            .with_samples(gfx.samples)
+            .build(&gfx.device);
         }
 
         if !self.alpha {
@@ -101,16 +106,16 @@ impl PipelineBuilder for MeshPipeline {
 }
 
 impl Mesh {
+    pub fn render_to_texture(&self, cam: &Camera, gfx: &GfxContext, dest: &Texture) {}
+
     pub fn render_to_image(
         &self,
-        mut cam: Camera,
+        cam: &Camera,
         gfx: &GfxContext,
         size: u32,
         on_complete: impl FnOnce(image::RgbaImage) + Send + 'static,
     ) {
-        cam.update();
-
-        let target_image = TextureBuilder::empty(size, size, 1, TextureFormat::Rgba8UnormSrgb)
+        let target_image = TextureBuilder::empty(size, size, 1, TextureFormat::Bgra8UnormSrgb)
             .with_usage(TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC)
             .with_label("mesh_render_to_image")
             .build_no_queue(&gfx.device);
@@ -121,31 +126,54 @@ impl Mesh {
                 label: Some("mesh_render_to_image"),
             });
 
-        let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("mesh_render_to_image"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &target_image.view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
         let mut params = gfx.render_params.clone(&gfx.device);
-        params.value_mut().proj = cam.proj_cache;
-        params.value_mut().inv_proj = cam.inv_proj_cache;
-        params.value_mut().cam_dir = cam.dir();
-        params.value_mut().cam_pos = cam.eye();
+        let value = params.value_mut();
+        value.proj = cam.proj_cache;
+        value.inv_proj = cam.inv_proj_cache;
+        value.cam_dir = cam.dir();
+        value.cam_pos = cam.eye();
+        value.viewport = Vec2::splat(size as f32);
+        value.sun = Vec3::new(1.0, 1.0, 1.0).normalize();
+        value.sun_col = LinearColor::WHITE;
+        value.time = 0.0;
+        value.time_always = 0.0;
+        value.shadow_mapping_resolution = 0;
+
         params.upload_to_gpu(&gfx.queue);
 
-        self.draw(&gfx, &mut rp);
+        let mut cpy = self.clone();
+        let mut lod_cpy = cpy.lods[0].clone();
+        lod_cpy.screen_coverage = f32::NEG_INFINITY;
+        lod_cpy.bounding_sphere = Sphere::new(Vec3::ZERO, 10000.0);
+        cpy.lods = vec![lod_cpy].into_boxed_slice();
 
-        drop(rp);
+        {
+            let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("mesh_render_to_image"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &target_image.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &gfx.fbos.depth.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            rp.set_bind_group(0, &params.bg, &[]);
+
+            cpy.draw(&gfx, &mut rp);
+        }
 
         let image_data_buf = Arc::new(gfx.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("mesh_render_to_image"),
@@ -210,6 +238,7 @@ impl Drawable for Mesh {
         for (mat, index_range) in &lod.primitives {
             let mat = gfx.material(*mat);
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
+                format: None,
                 instanced: false,
                 alpha: false,
                 smap: false,
@@ -240,6 +269,7 @@ impl Drawable for Mesh {
         for (mat, index_range) in &lod.primitives {
             let mat = gfx.material(*mat);
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
+                format: None,
                 instanced: false,
                 alpha: mat.transparent,
                 smap: shadow_cascade.is_some(),
