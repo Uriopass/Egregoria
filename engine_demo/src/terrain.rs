@@ -1,4 +1,4 @@
-use engine::terrain::TerrainRender as EngineTerrainRender;
+use engine::heightmap::HeightmapRender;
 use engine::{Context, FrameContext, InstancedMeshBuilder, MeshInstance};
 use geom::{pack_height, vec2, Camera, Heightmap, HeightmapChunk, LinearColor, Vec3};
 
@@ -9,7 +9,7 @@ const CRESO: usize = 16;
 const MAP_SIZE: usize = 50;
 
 pub struct Terrain {
-    terrain: EngineTerrainRender<CSIZE, CRESO>,
+    heightmap: HeightmapRender<CSIZE, CRESO>,
     heights: Heightmap<CRESO, { CSIZE }>,
     reload: bool,
 
@@ -52,11 +52,11 @@ impl DemoElement for Terrain {
             }
         }
 
-        let mut terrain = EngineTerrainRender::new(gfx, MAP_SIZE as u32, MAP_SIZE as u32);
+        let mut heightmap = HeightmapRender::new(gfx, MAP_SIZE as u32, MAP_SIZE as u32);
 
         for x in 0..MAP_SIZE {
             for y in 0..MAP_SIZE {
-                terrain.update_chunk(
+                heightmap.update_chunk(
                     gfx,
                     (x as u32, y as u32),
                     h.get_chunk((x as u16, y as u16)).unwrap(),
@@ -64,10 +64,10 @@ impl DemoElement for Terrain {
             }
         }
 
-        terrain.invalidate_height_normals(&ctx.gfx);
+        heightmap.invalidate_height_normals(&ctx.gfx);
 
         Self {
-            terrain,
+            heightmap,
             heights: h,
             reload: false,
             last_hitpos: None,
@@ -79,7 +79,7 @@ impl DemoElement for Terrain {
     fn update(&mut self, ctx: &mut Context, cam: &Camera) {
         if self.reload {
             self.reload = false;
-            self.terrain.invalidate_height_normals(&ctx.gfx);
+            self.heightmap.invalidate_height_normals(&ctx.gfx);
         }
 
         self.last_hitpos = None;
@@ -98,7 +98,7 @@ impl DemoElement for Terrain {
     }
 
     fn render(&mut self, fc: &mut FrameContext, cam: &Camera) {
-        self.terrain.draw_terrain(cam, fc);
+        self.heightmap.draw_heightmap(cam, fc);
 
         self.hitmesh.instances.clear();
         if let Some(pos) = self.last_hitpos {
@@ -120,8 +120,8 @@ impl DemoElement for Terrain {
     }
 
     fn render_gui(&mut self, ui: &mut egui::Ui) {
-        ui.indent("terrain", |ui| {
-            if cfg!(debug_assertions) && ui.button("reload terrain").clicked() {
+        ui.indent("heightmap", |ui| {
+            if cfg!(debug_assertions) && ui.button("reload heightmap").clicked() {
                 self.reload = true;
             }
         });

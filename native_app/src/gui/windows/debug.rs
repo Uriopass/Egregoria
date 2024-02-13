@@ -183,16 +183,16 @@ pub fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, si
         ));
         ui.add_space(5.0);
         ui.label(format!(
-            "{}k terrain triangles",
-            counters.terrain_triangles / 1000
+            "{}k heightmap triangles",
+            counters.heightmap_triangles / 1000
         ));
         ui.label(format!(
-            "{}k terrain depth triangles",
-            counters.terrain_depth_triangles / 1000
+            "{}k heightmap depth triangles",
+            counters.heightmap_depth_triangles / 1000
         ));
         ui.label(format!(
-            "{}k terrain shadow triangles",
-            counters.terrain_shadows_triangles / 1000
+            "{}k heightmap shadow triangles",
+            counters.heightmap_shadows_triangles / 1000
         ));
         drop(counters);
 

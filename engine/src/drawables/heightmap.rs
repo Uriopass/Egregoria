@@ -18,16 +18,12 @@ const LOD: usize = 5;
 const LOD_MIN_DIST_LOG2: f32 = 9.0; // 2^9 = 512, meaning until 1048m away, we use the highest lod
 const MAX_HEIGHT: f32 = 2008.0;
 const MIN_HEIGHT: f32 = -40.0;
-const UPSCALE_LOD: usize = 2; // amount of LOD that are superior to base terrain data
-
-pub struct TerrainChunk {
-    pub dirt_id: u32,
-}
+const UPSCALE_LOD: usize = 2; // amount of LOD that are superior to base heightmap data
 
 /// CSIZE is the size of a chunk in meters
 /// CRESOLUTION is the resolution of a chunk, in vertices, at the chunk data level (not LOD0 since we upsample)
-pub struct TerrainRender<const CSIZE: u32, const CRESOLUTION: usize> {
-    terrain_tex: Arc<Texture>,
+pub struct HeightmapRender<const CSIZE: u32, const CRESOLUTION: usize> {
+    heightmap_tex: Arc<Texture>,
     normal_tex: Arc<Texture>,
 
     indices: [(PBuffer, u32); LOD],
@@ -42,19 +38,19 @@ pub struct TerrainRender<const CSIZE: u32, const CRESOLUTION: usize> {
     upsample_pipeline: RenderPipeline,
 }
 
-pub struct TerrainPrepared {
-    terrainbgs: Arc<[wgpu::BindGroup; LOD]>,
+pub struct HeightmapPrepared {
+    heightmapbgs: Arc<[wgpu::BindGroup; LOD]>,
     indices: [(PBuffer, u32); LOD],
     instances: [(PBuffer, u32); LOD],
 }
 
-impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
+impl<const CSIZE: u32, const CRESOLUTION: usize> HeightmapRender<CSIZE, CRESOLUTION> {
     const LOD0_RESOLUTION: usize = CRESOLUTION * (1 << UPSCALE_LOD);
 
     pub fn new(gfx: &mut GfxContext, w: u32, h: u32) -> Self {
         debug_assert!(
             Self::LOD0_RESOLUTION >= 1 << LOD,
-            "LOD0 TERRAIN RESOLUTION must be >= {}",
+            "LOD0 HEIGHTMAP RESOLUTION must be >= {}",
             1 << LOD
         );
 
@@ -63,7 +59,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
 
         let indices = Self::generate_indices_mesh(gfx);
 
-        let terrain_tex = TextureBuilder::empty(
+        let heightmap_tex = TextureBuilder::empty(
             w * Self::LOD0_RESOLUTION as u32,
             h * Self::LOD0_RESOLUTION as u32,
             1,
@@ -71,7 +67,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
         )
         .with_fixed_mipmaps(LOD as u32)
         .with_sampler(wgpu::SamplerDescriptor {
-            label: Some("terrain sampler"),
+            label: Some("heightmap sampler"),
             mag_filter: FilterMode::Linear,
             min_filter: FilterMode::Linear,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -90,7 +86,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
         )
         .with_fixed_mipmaps(LOD as u32)
         .with_sampler(wgpu::SamplerDescriptor {
-            label: Some("terrain normals sampler"),
+            label: Some("heightmap normals sampler"),
             mag_filter: FilterMode::Linear,
             min_filter: FilterMode::Linear,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -105,7 +101,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
         for lod in 0..LOD {
             let scale = 1 << lod as u32;
             let uni = Uniform::new(
-                TerrainChunkData {
+                HeightmapChunkData {
                     lod: lod as u32,
                     lod_pow2: scale,
                     resolution: 1 + Self::LOD0_RESOLUTION as u32 / scale,
@@ -117,25 +113,25 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                 &gfx.device,
             );
 
-            let texs = &[&terrain_tex, &normals_tex, &grass, &cliff];
+            let texs = &[&heightmap_tex, &normals_tex, &grass, &cliff];
             let mut bg_entries = Vec::with_capacity(12);
             bg_entries.extend(Texture::multi_bindgroup_entries(0, texs));
             bg_entries.push(uni.bindgroup_entry(8));
             bgs.push(
                 gfx.device.create_bind_group(&BindGroupDescriptor {
                     layout: &gfx
-                        .get_pipeline(TerrainPipeline {
+                        .get_pipeline(HeightmapPipeline {
                             depth: false,
                             smap: false,
                         })
                         .get_bind_group_layout(1),
                     entries: &bg_entries,
-                    label: Some("terrain bindgroup"),
+                    label: Some("heightmap bindgroup"),
                 }),
             );
         }
 
-        defer!(log::info!("finished init of terrain render"));
+        defer!(log::info!("finished init of heightmap render"));
         Self {
             normal_pipeline: normal_pipeline(gfx, &normals_tex),
             normal_unis: collect_arrlod((0..LOD).map(|lod| {
@@ -144,11 +140,11 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                     &gfx.device,
                 )
             })),
-            downsample_pipeline: resample_pipeline(gfx, &terrain_tex, "downsample"),
-            upsample_pipeline: resample_pipeline(gfx, &terrain_tex, "upsample"),
+            downsample_pipeline: resample_pipeline(gfx, &heightmap_tex, "downsample"),
+            upsample_pipeline: resample_pipeline(gfx, &heightmap_tex, "upsample"),
 
             bgs: Arc::new(collect_arrlod(bgs)),
-            terrain_tex: Arc::new(terrain_tex),
+            heightmap_tex: Arc::new(heightmap_tex),
             normal_tex: Arc::new(normals_tex),
             indices,
             w,
@@ -183,7 +179,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
 
         gfx.queue.write_texture(
             ImageCopyTexture {
-                texture: &self.terrain_tex.texture,
+                texture: &self.heightmap_tex.texture,
                 mip_level: UPSCALE_LOD as u32,
                 origin: Origin3d {
                     x: cell.0 * CRESOLUTION as u32,
@@ -206,11 +202,11 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
         );
     }
 
-    pub fn draw_terrain(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
-        profiling::scope!("terrain::draw_terrain");
+    pub fn draw_heightmap(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
+        profiling::scope!("heightmap::draw_heightmap");
         let eye = cam.eye();
 
-        let mut instances = vec![Vec::<TerrainInstance>::new(); LOD];
+        let mut instances = vec![Vec::<HeightmapInstance>::new(); LOD];
 
         // We calculate lod in 2 passes to be able to generate the stitches
         // special: lod 0 = dont render, stored as 1 + lod
@@ -255,7 +251,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                 let stitch_up = (y + 1 != h) && (assigned_lod[idx + w] > lod);
                 let stitch_down = (y != 0) && (assigned_lod[idx - w] > lod);
 
-                instances[lod as usize - 1].push(TerrainInstance {
+                instances[lod as usize - 1].push(HeightmapInstance {
                     offset: vec2(x as f32, y as f32) * CSIZE as f32,
                     stitch_dir_flags: (stitch_right as u32)
                         | (stitch_up as u32) << 1
@@ -272,8 +268,8 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                 .write(fctx.gfx, bytemuck::cast_slice(&instance));
         }
 
-        fctx.objs.push(Box::new(TerrainPrepared {
-            terrainbgs: self.bgs.clone(),
+        fctx.objs.push(Box::new(HeightmapPrepared {
+            heightmapbgs: self.bgs.clone(),
             indices: self.indices.clone(),
             instances: self.instances.clone(),
         }));
@@ -328,18 +324,18 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
         collect_arrlod(indlod)
     }
 
-    /// Updates the normals of the terrain and the height mipmaps
+    /// Updates the normals of the heightmap and gen mipmaps
     pub fn invalidate_height_normals(&mut self, gfx: &GfxContext) {
         if cfg!(debug_assertions) {
-            self.downsample_pipeline = resample_pipeline(gfx, &self.terrain_tex, "downsample");
-            self.upsample_pipeline = resample_pipeline(gfx, &self.terrain_tex, "upsample");
+            self.downsample_pipeline = resample_pipeline(gfx, &self.heightmap_tex, "downsample");
+            self.upsample_pipeline = resample_pipeline(gfx, &self.heightmap_tex, "upsample");
             self.normal_pipeline = normal_pipeline(gfx, &self.normal_tex);
         }
 
         let mut encoder = gfx
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("terrain invalidate encoder"),
+                label: Some("heightmap invalidate encoder"),
             });
 
         // downsample, starting from the base resolution
@@ -348,7 +344,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                 gfx,
                 &self.downsample_pipeline,
                 &mut encoder,
-                &self.terrain_tex,
+                &self.heightmap_tex,
                 mip,
             );
         }
@@ -359,7 +355,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                 gfx,
                 &self.upsample_pipeline,
                 &mut encoder,
-                &self.terrain_tex,
+                &self.heightmap_tex,
                 mip,
             );
         }
@@ -370,7 +366,7 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
                 gfx,
                 &self.normal_pipeline,
                 &mut encoder,
-                &self.terrain_tex.mip_view(mip),
+                &self.heightmap_tex.mip_view(mip),
                 &self.normal_tex.mip_view(mip),
                 &self.normal_unis[mip as usize],
             );
@@ -381,15 +377,15 @@ impl<const CSIZE: u32, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTIO
 }
 
 fn normal_pipeline(gfx: &GfxContext, normals_tex: &Texture) -> RenderPipeline {
-    let normal_module = gfx.get_module("terrain/calc_normals");
+    let normal_module = gfx.get_module("heightmap/calc_normals");
 
     gfx.device
         .create_render_pipeline(&RenderPipelineDescriptor {
-            label: Some("terrain normals pipeline"),
+            label: Some("heightmap normals pipeline"),
             layout: Some(
                 &gfx.device
                     .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                        label: Some("terrain normals pipeline layout"),
+                        label: Some("heightmap normals pipeline layout"),
                         bind_group_layouts: &[
                             &gfx.device
                                 .create_bind_group_layout(&BindGroupLayoutDescriptor {
@@ -450,7 +446,7 @@ fn normal_update(
     });
 
     let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("terrain normals render pass"),
+        label: Some("heightmap normals render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: normal_view,
             resolve_target: None,
@@ -471,11 +467,11 @@ fn normal_update(
 }
 
 fn resample_pipeline(gfx: &GfxContext, height_tex: &Texture, entry_point: &str) -> RenderPipeline {
-    let resample_module = gfx.get_module("terrain/resample");
+    let resample_module = gfx.get_module("heightmap/resample");
 
     gfx.device
         .create_render_pipeline(&RenderPipelineDescriptor {
-            label: Some("terrain downsample pipeline"),
+            label: Some("heightmap downsample pipeline"),
             layout: None,
             vertex: wgpu::VertexState {
                 module: &resample_module,
@@ -502,7 +498,7 @@ fn resample_pipeline(gfx: &GfxContext, height_tex: &Texture, entry_point: &str) 
         })
 }
 
-/// Downsamples the terrain 1 mip up, the mip argument should be the base level
+/// Downsamples the heightmap 1 mip up, the mip argument should be the base level
 fn downsample_update(
     gfx: &GfxContext,
     downsample_pipeline: &RenderPipeline,
@@ -521,7 +517,7 @@ fn downsample_update(
 
     let render_view = height_tex.mip_view(mip + 1);
     let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("terrain downsample render pass"),
+        label: Some("heightmap downsample render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: &render_view,
             resolve_target: None,
@@ -540,7 +536,7 @@ fn downsample_update(
     drop(rp);
 }
 
-/// Downsamples the terrain 1 mip down, the mip argument should be the base level
+/// Downsamples the heightmap 1 mip down, the mip argument should be the base level
 fn upsample_update(
     gfx: &GfxContext,
     upsample_pipeline: &RenderPipeline,
@@ -559,7 +555,7 @@ fn upsample_update(
 
     let render_view = height_tex.mip_view(mip - 1);
     let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("terrain upsample render pass"),
+        label: Some("heightmap upsample render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: &render_view,
             resolve_target: None,
@@ -579,22 +575,22 @@ fn upsample_update(
 }
 
 #[derive(Hash)]
-struct TerrainPipeline {
+struct HeightmapPipeline {
     depth: bool,
     smap: bool,
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub(crate) struct TerrainInstance {
+pub(crate) struct HeightmapInstance {
     pub offset: Vec2,
     pub stitch_dir_flags: u32, // 4 lowest bits are 1 if we need to stitch in that direction. 0 = x+, 1 = y+, 2 = x-, 3 = y-
 }
-u8slice_impl!(TerrainInstance);
+u8slice_impl!(HeightmapInstance);
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct TerrainChunkData {
+pub struct HeightmapChunkData {
     lod: u32,                 // 0 = highest resolution, 1 = half resolution, etc.*
     lod_pow2: u32,            // 2^lod
     resolution: u32,          // width of the vertex grid
@@ -602,11 +598,11 @@ pub struct TerrainChunkData {
     cell_size: f32,
     inv_cell_size: f32,
 }
-u8slice_impl!(TerrainChunkData);
+u8slice_impl!(HeightmapChunkData);
 
 const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![0 => Float32x2, 1 => Uint32];
 
-impl TerrainInstance {
+impl HeightmapInstance {
     fn desc() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
@@ -616,13 +612,13 @@ impl TerrainInstance {
     }
 }
 
-impl PipelineKey for TerrainPipeline {
+impl PipelineKey for HeightmapPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
         mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
-        let terrainlayout = gfx
+        let heightmaplayout = gfx
             .device
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
                 entries: &Texture::bindgroup_layout_entries(
@@ -630,24 +626,24 @@ impl PipelineKey for TerrainPipeline {
                     [TL::UInt, TL::UInt, TL::Float, TL::Float].into_iter(),
                 )
                 .chain(std::iter::once(
-                    Uniform::<TerrainChunkData>::bindgroup_layout_entry(8),
+                    Uniform::<HeightmapChunkData>::bindgroup_layout_entry(8),
                 ))
                 .collect::<Vec<_>>(),
-                label: Some("terrain bindgroup layout"),
+                label: Some("heightmap bindgroup layout"),
             });
-        let vert = &mk_module("terrain/terrain.vert", &[]);
+        let vert = &mk_module("heightmap/heightmap.vert", &[]);
 
         if !self.depth {
-            let frag = &mk_module("terrain/terrain.frag", &[]);
+            let frag = &mk_module("heightmap/heightmap.frag", &[]);
 
             return PipelineBuilder::color(
-                "terrain",
+                "heightmap",
                 &[
                     &gfx.render_params.layout,
-                    &terrainlayout,
+                    &heightmaplayout,
                     &bg_layout_litmesh(&gfx.device),
                 ],
-                &[TerrainInstance::desc()],
+                &[HeightmapInstance::desc()],
                 vert,
                 frag,
                 gfx.sc_desc.format,
@@ -657,18 +653,18 @@ impl PipelineKey for TerrainPipeline {
         }
 
         gfx.depth_pipeline_bglayout(
-            &[TerrainInstance::desc()],
+            &[HeightmapInstance::desc()],
             vert,
             None,
             self.smap,
-            &[&gfx.render_params.layout, &terrainlayout],
+            &[&gfx.render_params.layout, &heightmaplayout],
         )
     }
 }
 
-impl Drawable for TerrainPrepared {
+impl Drawable for HeightmapPrepared {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let pipeline = gfx.get_pipeline(TerrainPipeline {
+        let pipeline = gfx.get_pipeline(HeightmapPipeline {
             depth: false,
             smap: false,
         });
@@ -684,7 +680,7 @@ impl Drawable for TerrainPrepared {
             let (_, n_indices) = &self.indices[lod];
 
             gfx.perf
-                .terrain_drawcall(*n_indices as usize / 3 * *n_instances as usize)
+                .heightmap_drawcall(*n_indices as usize / 3 * *n_instances as usize)
         }
     }
 
@@ -695,11 +691,11 @@ impl Drawable for TerrainPrepared {
         shadow_cascade: Option<&Matrix4>,
     ) {
         if shadow_cascade.is_some() {
-            // Terrain don't cast shadows for now as they are hard to do properly
+            // Heightmap don't cast shadows for now as they are hard to do properly
             // It needs separate frustrum culling + actual good shadow acne fix
             return;
         }
-        rp.set_pipeline(gfx.get_pipeline(TerrainPipeline {
+        rp.set_pipeline(gfx.get_pipeline(HeightmapPipeline {
             depth: true,
             smap: shadow_cascade.is_some(),
         }));
@@ -710,7 +706,7 @@ impl Drawable for TerrainPrepared {
             let (_, n_instances) = &self.instances[lod];
             let (_, n_indices) = &self.indices[lod];
 
-            gfx.perf.terrain_depth_drawcall(
+            gfx.perf.heightmap_depth_drawcall(
                 *n_indices as usize / 3 * *n_instances as usize,
                 shadow_cascade.is_some(),
             );
@@ -718,7 +714,7 @@ impl Drawable for TerrainPrepared {
     }
 }
 
-impl TerrainPrepared {
+impl HeightmapPrepared {
     fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
         for lod in 0..LOD {
             let (instances, n_instances) = &self.instances[lod];
@@ -728,7 +724,7 @@ impl TerrainPrepared {
 
             let (ind, n_indices) = &self.indices[lod];
 
-            rp.set_bind_group(1, &self.terrainbgs[lod], &[]);
+            rp.set_bind_group(1, &self.heightmapbgs[lod], &[]);
             rp.set_vertex_buffer(0, instances.slice().unwrap());
             rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
             rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);

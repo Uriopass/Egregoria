@@ -11,9 +11,9 @@ pub struct PerfCounters {
     shadows_triangles: AtomicUsize,
     shadows_drawcalls: AtomicUsize,
 
-    terrain_triangles: AtomicUsize,
-    terrain_depth_triangles: AtomicUsize,
-    terrain_shadows_triangles: AtomicUsize,
+    heightmap_triangles: AtomicUsize,
+    heightmap_depth_triangles: AtomicUsize,
+    heightmap_shadows_triangles: AtomicUsize,
 }
 
 pub struct PerfCountersStatic {
@@ -26,9 +26,9 @@ pub struct PerfCountersStatic {
     pub shadows_triangles: usize,
     pub shadows_drawcalls: usize,
 
-    pub terrain_triangles: usize,
-    pub terrain_depth_triangles: usize,
-    pub terrain_shadows_triangles: usize,
+    pub heightmap_triangles: usize,
+    pub heightmap_depth_triangles: usize,
+    pub heightmap_shadows_triangles: usize,
 }
 
 impl PerfCounters {
@@ -44,9 +44,9 @@ impl PerfCounters {
             depth_drawcalls: *self.depth_drawcalls.get_mut(),
             shadows_triangles: *self.shadows_triangles.get_mut(),
             shadows_drawcalls: *self.shadows_drawcalls.get_mut(),
-            terrain_triangles: *self.terrain_triangles.get_mut(),
-            terrain_depth_triangles: *self.terrain_depth_triangles.get_mut(),
-            terrain_shadows_triangles: *self.terrain_shadows_triangles.get_mut(),
+            heightmap_triangles: *self.heightmap_triangles.get_mut(),
+            heightmap_depth_triangles: *self.heightmap_depth_triangles.get_mut(),
+            heightmap_shadows_triangles: *self.heightmap_shadows_triangles.get_mut(),
         }
     }
 
@@ -57,9 +57,9 @@ impl PerfCounters {
         *self.depth_drawcalls.get_mut() = 0;
         *self.shadows_triangles.get_mut() = 0;
         *self.shadows_drawcalls.get_mut() = 0;
-        *self.terrain_triangles.get_mut() = 0;
-        *self.terrain_depth_triangles.get_mut() = 0;
-        *self.terrain_shadows_triangles.get_mut() = 0;
+        *self.heightmap_triangles.get_mut() = 0;
+        *self.heightmap_depth_triangles.get_mut() = 0;
+        *self.heightmap_shadows_triangles.get_mut() = 0;
     }
 
     pub fn drawcall(&self, triangles: impl TryInto<usize>) {
@@ -89,22 +89,22 @@ impl PerfCounters {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
 
-    pub fn terrain_drawcall(&self, triangles: impl TryInto<usize>) {
-        self.terrain_triangles.fetch_add(
+    pub fn heightmap_drawcall(&self, triangles: impl TryInto<usize>) {
+        self.heightmap_triangles.fetch_add(
             triangles.try_into().unwrap_or(0),
             std::sync::atomic::Ordering::Relaxed,
         );
     }
 
-    pub fn terrain_depth_drawcall(&self, triangles: impl TryInto<usize>, shadows: bool) {
+    pub fn heightmap_depth_drawcall(&self, triangles: impl TryInto<usize>, shadows: bool) {
         if shadows {
-            self.terrain_shadows_triangles.fetch_add(
+            self.heightmap_shadows_triangles.fetch_add(
                 triangles.try_into().unwrap_or(0),
                 std::sync::atomic::Ordering::Relaxed,
             );
             return;
         }
-        self.terrain_depth_triangles.fetch_add(
+        self.heightmap_depth_triangles.fetch_add(
             triangles.try_into().unwrap_or(0),
             std::sync::atomic::Ordering::Relaxed,
         );

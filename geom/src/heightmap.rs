@@ -675,7 +675,7 @@ mod erosion {
     // 0..1
     const INERTIA: f32 = 0.1; // At zero, water will instantly change direction to flow downhill. At 1, water will never change direction.
     const SEDIMENT_CAPACITY_FACTOR: f32 = 1.0; // Multiplier for how much sediment a droplet can carry
-    const MIN_SEDIMENT_CAPACITY: f32 = 0.003; // Used to prevent carry capacity getting too close to zero on flatter terrain
+    const MIN_SEDIMENT_CAPACITY: f32 = 0.003; // Used to prevent carry capacity getting too close to zero on flatter heightmap
 
     // 0..1
     const ERODE_SPEED: f32 = 0.3;
@@ -796,7 +796,7 @@ mod erosion {
                         }
                     } else {
                         // Erode a fraction of the droplet's current carry capacity.
-                        // Clamp the erosion to the change in height so that it doesn't dig a hole in the terrain behind the droplet
+                        // Clamp the erosion to the change in height so that it doesn't dig a hole in the heightmap behind the droplet
                         let amount_to_erode =
                             f32::min((sediment_capacity - sediment) * ERODE_SPEED, -delta_height);
 

@@ -5,7 +5,7 @@ mod instanced_mesh;
 mod lit_mesh;
 mod multispritebatch;
 mod spritebatch;
-pub mod terrain;
+pub mod heightmap;
 mod water;
 
 pub use instanced_mesh::*;

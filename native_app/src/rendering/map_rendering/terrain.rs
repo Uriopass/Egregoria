@@ -1,4 +1,4 @@
-use engine::terrain::TerrainRender as EngineTerrainRender;
+use engine::heightmap::HeightmapRender;
 use engine::{Context, FrameContext, GfxContext};
 use geom::Camera;
 use simulation::map::{Map, MapSubscriber, UpdateType};
@@ -8,7 +8,7 @@ const CSIZE: u32 = simulation::map::Heightmap::SIZE;
 const CRESO: usize = simulation::map::Heightmap::RESOLUTION;
 
 pub struct TerrainRender {
-    terrain: EngineTerrainRender<CSIZE, CRESO>,
+    heightmap: HeightmapRender<CSIZE, CRESO>,
     terrain_sub: MapSubscriber,
 }
 
@@ -16,16 +16,16 @@ impl TerrainRender {
     pub fn new(gfx: &mut GfxContext, sim: &Simulation) -> Self {
         let (w, h) = sim.map().environment.size();
 
-        let terrain = EngineTerrainRender::new(gfx, w as u32, h as u32);
+        let terrain = HeightmapRender::new(gfx, w as u32, h as u32);
 
         Self {
-            terrain,
+            heightmap: terrain,
             terrain_sub: sim.map().subscribe(UpdateType::Terrain),
         }
     }
 
     pub fn draw(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
-        self.terrain.draw_terrain(cam, fctx);
+        self.heightmap.draw_heightmap(cam, fctx);
     }
 
     pub fn update(&mut self, ctx: &mut Context, map: &Map) {
@@ -33,14 +33,14 @@ impl TerrainRender {
 
         if self.terrain_sub.take_cleared() {
             for (chunk_id, chunk) in ter.chunks() {
-                self.terrain.update_chunk(
+                self.heightmap.update_chunk(
                     &mut ctx.gfx,
                     (chunk_id.0 as u32, chunk_id.1 as u32),
                     chunk,
                 );
             }
 
-            self.terrain.invalidate_height_normals(&ctx.gfx);
+            self.heightmap.invalidate_height_normals(&ctx.gfx);
             return;
         }
 
@@ -50,7 +50,7 @@ impl TerrainRender {
                 let chunk =
                     unwrap_retlog!(ter.get_chunk(chunkid), "trying to update nonexistent chunk");
 
-                self.terrain.update_chunk(
+                self.heightmap.update_chunk(
                     &mut ctx.gfx,
                     (chunkid.0 as u32, chunkid.1 as u32),
                     chunk,
@@ -60,7 +60,7 @@ impl TerrainRender {
         }
 
         if changed {
-            self.terrain.invalidate_height_normals(&ctx.gfx);
+            self.heightmap.invalidate_height_normals(&ctx.gfx);
         }
     }
 }
