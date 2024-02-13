@@ -319,12 +319,12 @@ impl PipelineKey for PbrPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
         match self {
             PbrPipeline::Environment => {
-                let cubemap_vert = &mk_module("to_cubemap.vert");
-                let cubemap_frag = &mk_module("atmosphere_cubemap.frag");
+                let cubemap_vert = &mk_module("to_cubemap.vert", &[]);
+                let cubemap_frag = &mk_module("atmosphere_cubemap.frag", &[]);
                 let cubemappipelayout =
                     gfx.device
                         .create_pipeline_layout(&PipelineLayoutDescriptor {
@@ -358,8 +358,8 @@ impl PipelineKey for PbrPipeline {
                     })
             }
             PbrPipeline::DiffuseIrradiance => {
-                let cubemap_vert = &mk_module("to_cubemap.vert");
-                let cubemap_frag = &mk_module("pbr/convolute_diffuse_irradiance.frag");
+                let cubemap_vert = &mk_module("to_cubemap.vert", &[]);
+                let cubemap_frag = &mk_module("pbr/convolute_diffuse_irradiance.frag", &[]);
                 let bg_layout = Texture::bindgroup_layout(&gfx.device, [TL::Cube]);
                 let params_layout = Uniform::<()>::bindgroup_layout(&gfx.device);
 
@@ -396,8 +396,8 @@ impl PipelineKey for PbrPipeline {
                     })
             }
             PbrPipeline::SpecularPrefilter => {
-                let cubemap_vert = &mk_module("to_cubemap.vert");
-                let cubemap_frag = &mk_module("pbr/specular_prefilter.frag");
+                let cubemap_vert = &mk_module("to_cubemap.vert", &[]);
+                let cubemap_frag = &mk_module("pbr/specular_prefilter.frag", &[]);
                 let bg_layout = Texture::bindgroup_layout(&gfx.device, [TL::Cube]);
                 let params_layout = Uniform::<()>::bindgroup_layout(&gfx.device);
 

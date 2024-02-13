@@ -1,4 +1,4 @@
-use crate::{GfxContext, GuiRenderContext};
+use crate::{GfxContext, GuiRenderContext, Texture};
 use std::path::PathBuf;
 use std::sync::Arc;
 use wgpu::{TextureFormat, TextureViewDescriptor};
@@ -55,8 +55,12 @@ impl YakuiWrapper {
         }
     }
 
-    pub fn add_texture(&mut self, gfx: &mut GfxContext, path: &PathBuf) -> TextureId {
+    pub fn load_texture(&mut self, gfx: &mut GfxContext, path: &PathBuf) -> TextureId {
         let tex = gfx.texture(path, "yakui texture");
+        self.add_texture(&tex)
+    }
+
+    pub fn add_texture(&mut self, tex: &Texture) -> TextureId {
         self.renderer.add_texture(
             Arc::new(tex.texture.create_view(&TextureViewDescriptor::default())),
             wgpu::FilterMode::Linear,

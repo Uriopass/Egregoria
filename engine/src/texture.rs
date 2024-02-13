@@ -3,14 +3,14 @@
 use std::fs::File;
 use std::io;
 use std::io::Read;
-use std::path::Path;
-use std::sync::RwLock;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock};
 
 use derive_more::{Display, From};
 use image::{DynamicImage, GenericImageView};
 use wgpu::{
     BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutEntry, CommandEncoder,
-    CommandEncoderDescriptor, Device, Extent3d, ImageCopyTexture, ImageDataLayout,
+    CommandEncoderDescriptor, Device, Extent3d, ImageCopyTexture, ImageDataLayout, MapMode,
     PipelineLayoutDescriptor, RenderPipeline, SamplerDescriptor, TextureFormat, TextureSampleType,
     TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
 };
@@ -233,6 +233,73 @@ impl Texture {
         })
     }
 
+    pub fn save_to_file(&self, device: &Device, queue: &wgpu::Queue, path: PathBuf) {
+        match self.format {
+            TextureFormat::Rgba8Unorm | TextureFormat::Rgba8UnormSrgb => {}
+            _ => {
+                log::error!("save_to_file not implemented for format {:?}", self.format);
+                return;
+            }
+        }
+
+        debug_assert!(self.extent.depth_or_array_layers == 1);
+
+        let block_size = self.format.block_copy_size(None).unwrap();
+
+        let image_data_buf = Arc::new(device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("save_to_file"),
+            size: (block_size * self.extent.width * self.extent.height) as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        }));
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("save_to_file"),
+        });
+
+        encoder.copy_texture_to_buffer(
+            ImageCopyTexture {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::ImageCopyBuffer {
+                buffer: &image_data_buf,
+                layout: ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(block_size * self.extent.width),
+                    rows_per_image: None,
+                },
+            },
+            self.extent,
+        );
+
+        queue.submit(std::iter::once(encoder.finish()));
+
+        let image_data_buf_cpy = image_data_buf.clone();
+        let extent_cpy = self.extent;
+        image_data_buf.slice(..).map_async(MapMode::Read, move |v| {
+            if v.is_err() {
+                log::error!("Failed to map buffer for reading for save_to_file");
+                return;
+            }
+
+            let v = image_data_buf_cpy.slice(..).get_mapped_range();
+
+            let Some(rgba) =
+                image::RgbaImage::from_raw(extent_cpy.width, extent_cpy.height, v.to_vec())
+            else {
+                log::error!("Failed to create image from buffer for save_to_file");
+                return;
+            };
+
+            if let Err(e) = rgba.save(path) {
+                log::error!("Failed to save image to file: {}", e);
+            }
+        });
+    }
+
     pub fn depth_compare_sampler() -> SamplerDescriptor<'static> {
         SamplerDescriptor {
             label: None,
@@ -286,6 +353,19 @@ impl Texture {
             array_layer_count: None,
         })
     }
+
+    pub fn layer_view(&self, layer: u32) -> TextureView {
+        self.texture.create_view(&TextureViewDescriptor {
+            label: Some("texture array one layer view"),
+            format: None,
+            dimension: Some(TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: layer,
+            array_layer_count: Some(1),
+        })
+    }
 }
 
 #[derive(Debug, Display, From)]
@@ -307,6 +387,7 @@ pub struct TextureBuilder<'a> {
     fixed_mipmaps: Option<u32>,
     usage: TextureUsages,
     no_anisotropy: bool,
+    sample_count: u32,
 }
 
 impl<'a> TextureBuilder<'a> {
@@ -350,7 +431,7 @@ impl<'a> TextureBuilder<'a> {
         self
     }
 
-    pub(crate) fn from_path(p: impl AsRef<Path>) -> Self {
+    pub fn from_path(p: impl AsRef<Path>) -> Self {
         let r = p.as_ref();
         match Self::try_from_path(r) {
             Ok(x) => x,
@@ -365,7 +446,7 @@ impl<'a> TextureBuilder<'a> {
         }
     }
 
-    pub(crate) fn try_from_path(p: impl AsRef<Path>) -> Result<Self, TextureBuildError> {
+    pub fn try_from_path(p: impl AsRef<Path>) -> Result<Self, TextureBuildError> {
         let p = p.as_ref();
         let mut buf = vec![];
         let mut f = File::open(p)?;
@@ -373,7 +454,7 @@ impl<'a> TextureBuilder<'a> {
         Self::from_bytes(&buf)
     }
 
-    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, TextureBuildError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TextureBuildError> {
         /*
         if bytes.starts_with(b"#?RADIANCE") {
             let irradiance = radiant::load(bytes).ok()?;
@@ -396,7 +477,7 @@ impl<'a> TextureBuilder<'a> {
         Ok(Self::from_img(img))
     }
 
-    pub(crate) fn from_img(img: DynamicImage) -> Self {
+    pub fn from_img(img: DynamicImage) -> Self {
         Self {
             dimensions: (img.dimensions().0, img.dimensions().1, 1),
             img: Some(img),
@@ -411,10 +492,11 @@ impl<'a> TextureBuilder<'a> {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
             no_anisotropy: false,
+            sample_count: 1,
         }
     }
 
-    pub(crate) fn empty(w: u32, h: u32, d: u32, format: TextureFormat) -> Self {
+    pub fn empty(w: u32, h: u32, d: u32, format: TextureFormat) -> Self {
         Self {
             img: None,
             sampler: Texture::linear_sampler(),
@@ -429,7 +511,13 @@ impl<'a> TextureBuilder<'a> {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
             no_anisotropy: false,
+            sample_count: 1,
         }
+    }
+
+    pub fn with_sample_count(mut self, samples: u32) -> Self {
+        self.sample_count = samples;
+        self
     }
 
     fn mip_level_count(&self) -> u32 {
@@ -460,7 +548,7 @@ impl<'a> TextureBuilder<'a> {
             label: Some(self.label),
             size: extent,
             mip_level_count,
-            sample_count: 1,
+            sample_count: self.sample_count,
             dimension: wgpu::TextureDimension::D2,
             format,
             usage: self.usage,
@@ -550,7 +638,7 @@ impl<'a> TextureBuilder<'a> {
             label: Some(self.label),
             size: extent,
             mip_level_count,
-            sample_count: 1,
+            sample_count: self.sample_count,
             dimension: wgpu::TextureDimension::D2,
             format,
             usage: self.usage,

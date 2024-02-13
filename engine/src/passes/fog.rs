@@ -49,7 +49,7 @@ impl PipelineKey for FogPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
         let render_pipeline_layout = gfx
             .device
@@ -78,7 +78,7 @@ impl PipelineKey for FogPipeline {
             }),
         })];
 
-        let fog = mk_module("fog");
+        let fog = mk_module("fog", &[]);
 
         let render_pipeline_desc = RenderPipelineDescriptor {
             label: None,

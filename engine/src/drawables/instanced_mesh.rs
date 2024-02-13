@@ -97,7 +97,7 @@ impl Drawable for InstancedMesh {
         for (mat, indices) in &lod_select.primitives {
             let mat = gfx.material(*mat);
             let pipeline = gfx.get_pipeline(MeshPipeline {
-                format: None,
+                offscreen_render: false,
                 instanced: true,
                 alpha: false,
                 smap: false,
@@ -128,7 +128,7 @@ impl Drawable for InstancedMesh {
         for (mat, indices) in &lod_select.primitives {
             let mat = gfx.material(*mat);
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
-                format: None,
+                offscreen_render: false,
                 instanced: true,
                 alpha: mat.transparent,
                 smap: shadow_cascade.is_some(),

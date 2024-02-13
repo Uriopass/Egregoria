@@ -8,6 +8,16 @@ pub struct InfiniteFrustrum {
 }
 
 impl InfiniteFrustrum {
+    pub const EMPTY: Self = Self {
+        planes: [
+            Plane::X,
+            Plane::new(Vec3::new(-1.0, 0.0, 0.0), 1.0),
+            Plane::X,
+            Plane::X,
+            Plane::X,
+        ],
+    };
+
     /// Create a new frustrum from the given planes.
     /// The planes must be in the following order:
     /// [near, left, right, bottom, top, far]

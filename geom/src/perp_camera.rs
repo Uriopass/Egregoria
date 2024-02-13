@@ -56,7 +56,7 @@ impl Camera {
         let v = self.yaw.vec2();
         let horiz = self.pitch.cos();
         let vert = self.pitch.sin();
-        (v * horiz).z(vert)
+        (v * horiz).z(vert).normalize()
     }
 
     pub fn offset(&self) -> Vec3 {

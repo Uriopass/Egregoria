@@ -11,8 +11,8 @@ use wgpu::{
     FrontFace, ImageCopyTexture, ImageDataLayout, InstanceDescriptor, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPassColorAttachment,
     RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, SamplerDescriptor, Surface,
-    SurfaceConfiguration, SurfaceTexture, TextureAspect, TextureFormat, TextureUsages, TextureView,
-    TextureViewDescriptor, TextureViewDimension, VertexBufferLayout, VertexState,
+    SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor, VertexBufferLayout, VertexState,
 };
 use winit::window::{Fullscreen, Window};
 
@@ -682,6 +682,7 @@ impl GfxContext {
             &self.device,
             name,
             &self.defines,
+            vec![],
         )
     }
 
@@ -718,7 +719,10 @@ impl GfxContext {
                     encs.depth_prepass = Some(self.depth_prepass(objsref));
                 });
                 scope.spawn(|_| {
-                    encs.smap = self.shadow_map_pass(objsref);
+                    use rayon::prelude::*;
+                    if self.render_params.value().shadow_mapping_resolution != 0 {
+                        encs.smap = self.shadow_map_pass(objsref).par_bridge().collect();
+                    }
                 });
                 scope.spawn(|_| {
                     passes::render_ssao(self, &mut encs.before_main);
@@ -737,7 +741,9 @@ impl GfxContext {
         } else {
             encs.pbr = self.pbr_prepass();
             encs.depth_prepass = Some(self.depth_prepass(objsref));
-            encs.smap = self.shadow_map_pass(objsref);
+            if self.render_params.value().shadow_mapping_resolution != 0 {
+                encs.smap = self.shadow_map_pass(objsref).collect();
+            }
             passes::render_ssao(self, &mut encs.before_main);
             passes::render_fog(self, &mut encs.before_main);
             encs.main = Some(self.main_render_pass(&frame, objsref));
@@ -792,12 +798,7 @@ impl GfxContext {
                 view: &self.fbos.color_msaa,
                 resolve_target: Some(frame),
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 0.0,
-                    }),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: wgpu::StoreOp::Store,
                 },
             })],
@@ -834,63 +835,51 @@ impl GfxContext {
         Some(pbr_enc.finish())
     }
 
-    fn shadow_map_pass(&self, objsref: &[Box<dyn Drawable>]) -> Vec<CommandBuffer> {
-        if self.render_params.value().shadow_mapping_resolution != 0 {
-            use rayon::prelude::*;
-            let results = self
-                .sun_params
-                .iter()
-                .enumerate()
-                .par_bridge()
-                .map(|(i, u)| {
-                    profiling::scope!(&format!("cascade shadow pass {}", i));
-                    let mut smap_enc =
-                        self.device
-                            .create_command_encoder(&CommandEncoderDescriptor {
-                                label: Some("shadow map encoder"),
-                            });
-                    let sun_view = self
-                        .sun_shadowmap
-                        .texture
-                        .create_view(&TextureViewDescriptor {
-                            label: Some("sun shadow view"),
-                            format: Some(self.sun_shadowmap.format),
-                            dimension: Some(TextureViewDimension::D2),
-                            aspect: TextureAspect::DepthOnly,
-                            base_mip_level: 0,
-                            mip_level_count: None,
-                            base_array_layer: i as u32,
-                            array_layer_count: Some(1),
-                        });
-                    let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
-                        label: Some("sun shadow pass"),
-                        color_attachments: &[],
-                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                            view: &sun_view,
-                            depth_ops: Some(wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(1.0),
-                                store: wgpu::StoreOp::Store,
-                            }),
-                            stencil_ops: None,
-                        }),
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
+    fn shadow_map_pass<'a>(
+        &'a self,
+        objsref: &'a [Box<dyn Drawable>],
+    ) -> impl Iterator<Item = CommandBuffer> + 'a {
+        self.sun_params.iter().enumerate().map(move |(i, u)| {
+            profiling::scope!(&format!("cascade shadow pass {}", i));
+            let mut smap_enc = self
+                .device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("shadow map encoder"),
+                });
+            let sun_view = self.sun_shadowmap.layer_view(i as u32);
+            self.shadow_map_one_pass(u, objsref, &sun_view, &mut smap_enc);
+            smap_enc.finish()
+        })
+    }
 
-                    sun_shadow_pass.set_bind_group(0, &u.bg, &[]);
+    fn shadow_map_one_pass<'a>(
+        &'a self,
+        u: &Uniform<RenderParams>,
+        objsref: &[Box<dyn Drawable>],
+        shadowmap_view: &'a TextureView,
+        enc: &'a mut CommandEncoder,
+    ) {
+        profiling::scope!("cascade shadow pass");
+        let mut sun_shadow_pass = enc.begin_render_pass(&RenderPassDescriptor {
+            label: Some("sun shadow pass"),
+            color_attachments: &[],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &shadowmap_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
 
-                    for obj in objsref.iter() {
-                        obj.draw_depth(self, &mut sun_shadow_pass, Some(&u.value().proj));
-                    }
+        sun_shadow_pass.set_bind_group(0, &u.bg, &[]);
 
-                    drop(sun_shadow_pass);
-
-                    smap_enc.finish()
-                })
-                .collect::<Vec<_>>();
-            return results;
+        for obj in objsref.iter() {
+            obj.draw_depth(self, &mut sun_shadow_pass, Some(&u.value().proj));
         }
-        return vec![];
     }
 
     fn depth_prepass(&self, objsref: &[Box<dyn Drawable>]) -> CommandBuffer {
@@ -1009,14 +998,15 @@ impl GfxContext {
     pub fn update_simplelit_bg(&mut self) {
         self.simplelit_bg = Texture::multi_bindgroup(
             &[
-                &self.fbos.ssao,
-                &self.fbos.fog,
-                self.read_texture("assets/sprites/blue_noise_512.png")
+                &self
+                    .read_texture("assets/sprites/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
                 &self.pbr.diffuse_irradiance_cube,
                 &self.pbr.specular_prefilter_cube,
                 &self.pbr.split_sum_brdf_lut,
+                &self.fbos.ssao,
+                &self.fbos.fog,
                 &self.lamplights.lightdata,
                 &self.lamplights.lightdata2,
             ],

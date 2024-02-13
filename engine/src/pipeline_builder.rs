@@ -44,7 +44,7 @@ impl<'a> PipelineBuilder<'a> {
                 },
                 depth_stencil: Some(wgpu::DepthStencilState {
                     format: TextureFormat::Depth32Float,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::GreaterEqual,
                     stencil: Default::default(),
                     bias: DepthBiasState {
@@ -78,12 +78,12 @@ impl<'a> PipelineBuilder<'a> {
         self
     }
 
-    pub fn without_depth_write(mut self) -> Self {
+    pub fn with_depth_write(mut self) -> Self {
         self.descr
             .depth_stencil
             .as_mut()
             .unwrap()
-            .depth_write_enabled = false;
+            .depth_write_enabled = true;
         self
     }
 

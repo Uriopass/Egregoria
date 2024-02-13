@@ -1,14 +1,77 @@
 use crate::uiworld::UiWorld;
+use common::FastMap;
+use engine::wgpu::TextureFormat;
+use engine::yakui::YakuiWrapper;
+use engine::{GfxContext, TextureBuilder};
+use geom::{Camera, Degrees, Vec3};
+use prototypes::{BuildingPrototypeID, RenderAsset};
 use simulation::map::BuildingID;
 use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};
 use std::borrow::Cow;
+use yakui::TextureId;
 
 mod hud;
 mod tools;
 
 pub use hud::*;
 pub use tools::*;
+
+#[derive(Default)]
+pub struct IconTextures {
+    texs: FastMap<BuildingPrototypeID, engine::Texture>,
+    ids: Vec<TextureId>,
+}
+
+pub fn do_icons(gfx: &mut GfxContext, uiw: &mut UiWorld, yakui: &mut YakuiWrapper) {
+    let mut state = uiw.write::<IconTextures>();
+
+    let mut cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), 256.0, 256.0);
+
+    cam.fovy = tweak!(30.0);
+    cam.pitch = Degrees(35.0).into();
+    cam.yaw = Degrees(tweak!(-130.0)).into();
+
+    state.ids.clear();
+
+    for building in prototypes::BuildingPrototype::iter() {
+        let RenderAsset::Mesh { ref path } = building.asset else {
+            continue;
+        };
+        //if state.texs.contains_key(&building.id) {
+        //    continue;
+        //}
+        let Ok(mesh) = gfx.mesh(path.as_ref()) else {
+            continue;
+        };
+
+        let t = TextureBuilder::empty(128, 128, 1, TextureFormat::Rgba8UnormSrgb)
+            .with_label("building icon")
+            .with_usage(
+                engine::wgpu::TextureUsages::COPY_DST
+                    | engine::wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | engine::wgpu::TextureUsages::TEXTURE_BINDING,
+            )
+            .build_no_queue(&gfx.device);
+
+        let t_msaa = TextureBuilder::empty(128, 128, 1, TextureFormat::Rgba8UnormSrgb)
+            .with_label("building icon msaa")
+            .with_usage(engine::wgpu::TextureUsages::RENDER_ATTACHMENT)
+            .with_sample_count(4)
+            .build_no_queue(&gfx.device);
+
+        let aabb3 = mesh.lods[0].aabb3;
+        cam.pos = aabb3.center();
+        cam.dist = aabb3.ll.distance(aabb3.ur);
+        cam.update();
+
+        mesh.render_to_texture(&cam, gfx, &t, &t_msaa);
+        let tex_id = yakui.add_texture(&t);
+
+        state.texs.insert(building.id, t);
+        state.ids.push(tex_id);
+    }
+}
 
 pub fn run_ui_systems(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::run_ui_systems");

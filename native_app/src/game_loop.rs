@@ -12,6 +12,7 @@ use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::{render_oldgui, ExitState, FollowEntity, GuiState, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
+use crate::newgui;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::windows::settings::{manage_settings, Settings};
 use crate::newgui::{render_newgui, TimeAlways, Tool};
@@ -37,6 +38,7 @@ pub struct State {
 
 impl engine::framework::State for State {
     fn new(ctx: &mut Context) -> Self {
+        profiling::scope!("game_loop::init");
         goryak::set_blur_texture(ctx.yakui.blur_bg_texture);
 
         let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
@@ -95,6 +97,7 @@ impl engine::framework::State for State {
         profiling::scope!("game_loop::update");
         self.uiw.write::<TimeAlways>().0 += ctx.delta;
 
+        newgui::do_icons(&mut ctx.gfx, &mut self.uiw, &mut ctx.yakui);
         {
             let mut timings = self.uiw.write::<Timings>();
             timings.engine_time.add_value(ctx.engine_time);
@@ -150,7 +153,7 @@ impl engine::framework::State for State {
             !ctx.egui.last_kb_captured,
             !ctx.egui.last_mouse_captured,
         );
-        crate::newgui::run_ui_systems(&self.sim.read().unwrap(), &mut self.uiw);
+        newgui::run_ui_systems(&self.sim.read().unwrap(), &mut self.uiw);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();

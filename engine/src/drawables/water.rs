@@ -71,10 +71,10 @@ impl PipelineKey for WaterPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
-        let vert = &mk_module("lit_mesh.vert");
-        let frag = &mk_module("water.frag");
+        let vert = &mk_module("lit_mesh.vert", &[]);
+        let frag = &mk_module("water.frag", &[]);
 
         let layouts = &[
             &gfx.render_params.layout,

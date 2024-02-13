@@ -125,10 +125,10 @@ impl PipelineKey for SBPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
-        let vert = &mk_module("spritebatch.vert");
-        let frag = &mk_module("pixel.frag");
+        let vert = &mk_module("spritebatch.vert", &[]);
+        let frag = &mk_module("pixel.frag", &[]);
 
         PipelineBuilder::color(
             "spritebatch",

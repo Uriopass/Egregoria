@@ -2,6 +2,18 @@ use rustc_hash::FxHasher;
 use std::any::TypeId;
 use std::hash::{BuildHasher, Hash, Hasher};
 
+pub fn hash_iter<I>(iter: I) -> u64
+where
+    I: IntoIterator,
+    I::Item: Hash,
+{
+    let mut hasher = FxHasher::default();
+    for item in iter {
+        item.hash(&mut hasher);
+    }
+    hasher.finish()
+}
+
 #[inline]
 pub fn hash_u64<T>(obj: T) -> u64
 where

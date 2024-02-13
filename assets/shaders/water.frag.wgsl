@@ -17,10 +17,6 @@ struct FragmentOutput {
 @group(3) @binding(0) var t_fog: texture_2d<f32>;
 @group(3) @binding(1) var s_fog: sampler;
 
-fn sample_depth(coords: vec2<i32>) -> f32 {
-    return textureLoad(t_depth, coords, 0).r;
-}
-
 // wave is (length, amplitude, dir)
 fn gerstnerWaveNormal(p: vec2<f32>, t: f32) -> vec3<f32> {
     let N_WAVES: i32 = 5;

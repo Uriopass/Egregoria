@@ -1,6 +1,8 @@
+use goryak::minrow;
 use ordered_float::OrderedFloat;
 use std::time::Instant;
-use yakui::{reflow, Alignment, Color, Dim2, Vec2};
+use yakui::widgets::Pad;
+use yakui::{image, reflow, Alignment, Color, Dim2, Vec2};
 
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
@@ -10,6 +12,7 @@ use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
 use crate::newgui::windows::settings::Settings;
+use crate::newgui::IconTextures;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 mod menu;
@@ -32,6 +35,21 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
         menu_bar(uiworld, sim);
         uiworld.write::<GuiState>().windows.render(uiworld, sim);
         time_controls(uiworld, sim);
+        goryak::Window {
+            title: "Building icons",
+            pad: Pad::all(5.0),
+            radius: 5.0,
+            opened: &mut true,
+        }
+        .show(|| {
+            minrow(5.0, || {
+                let ids = &uiworld.read::<IconTextures>().ids;
+
+                for id in ids {
+                    image(*id, Vec2::splat(128.0));
+                }
+            });
+        });
     });
     //goryak::debug_layout();
 }

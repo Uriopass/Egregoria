@@ -1,7 +1,7 @@
 use crate::{compile_shader, CompiledModule, GfxContext};
 use common::FastMap;
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
 use std::path::Path;
 use std::time::SystemTime;
@@ -11,16 +11,17 @@ pub trait PipelineKey: Hash + 'static {
     fn build(
         &self,
         gfx: &GfxContext,
-        mk_module: impl FnMut(&str) -> CompiledModule,
+        mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline;
 }
 
 type ShaderPath = String;
+type ShaderKey = (ShaderPath, Vec<String>);
 type PipelineHash = u64;
 
 #[derive(Default)]
 pub struct Pipelines {
-    pub(crate) shader_cache: FastMap<ShaderPath, CompiledModule>,
+    pub(crate) shader_cache: BTreeMap<ShaderKey, CompiledModule>,
     pub(crate) shader_watcher: FastMap<ShaderPath, (Vec<ShaderPath>, Option<SystemTime>)>,
     pub(crate) pipelines:
         HashMap<PipelineHash, &'static RenderPipeline, common::TransparentHasherU64>,
@@ -33,32 +34,47 @@ impl Pipelines {
     }
 
     pub fn get_module(
-        shader_cache: &mut FastMap<ShaderPath, CompiledModule>,
+        shader_cache: &mut BTreeMap<ShaderKey, CompiledModule>,
         shader_watcher: &mut FastMap<ShaderPath, (Vec<ShaderPath>, Option<SystemTime>)>,
         device: &Device,
         name: &str,
         defines: &FastMap<String, String>,
+        extra_defines: Vec<String>,
     ) -> CompiledModule {
-        if let Some(v) = shader_cache.get(name) {
+        let key = (name.to_string(), extra_defines);
+        if let Some(v) = shader_cache.get(&key) {
             return v.clone();
         }
         shader_cache
-            .entry(name.to_string())
+            .entry(key)
             .or_insert_with_key(move |key| {
-                let module = compile_shader(device, key, defines);
+                let mut define_holder;
+                let total_defines = {
+                    if key.1.is_empty() {
+                        defines
+                    } else {
+                        define_holder = defines.clone();
+                        for k in &key.1 {
+                            define_holder.insert(k.to_string(), "1".to_string());
+                        }
+                        &define_holder
+                    }
+                };
+
+                let module = compile_shader(device, name, total_defines);
 
                 for dep in module.get_deps() {
                     shader_watcher
                         .entry(dep.trim_end_matches(".wgsl").to_string())
                         .or_insert((vec![], None))
                         .0
-                        .push(key.to_string());
+                        .push(key.0.to_string());
                 }
                 shader_watcher
-                    .entry(key.to_string())
+                    .entry(key.0.to_string())
                     .or_insert((vec![], None))
                     .0
-                    .push(key.to_string());
+                    .push(key.0.to_string());
 
                 module
             })
@@ -76,14 +92,16 @@ impl Pipelines {
             Entry::Occupied(o) => o.get(),
             Entry::Vacant(v) => {
                 let mut deps = Vec::new();
-                let pipeline = obj.build(gfx, |name| {
+                let pipeline = obj.build(gfx, |name, extra_defines| {
                     deps.push(name.to_string());
+
                     Pipelines::get_module(
                         &mut self.shader_cache,
                         &mut self.shader_watcher,
                         device,
                         name,
                         &gfx.defines,
+                        extra_defines.iter().map(|x| x.to_string()).collect(),
                     )
                 });
                 for dep in deps {
@@ -108,18 +126,36 @@ impl Pipelines {
         device: &Device,
         shader_name: &str,
     ) {
-        if let Some(x) = self.shader_cache.get_mut(shader_name) {
+        for ((name, extra_defines), x) in self
+            .shader_cache
+            .range_mut((shader_name.to_string(), vec![])..)
+        {
+            if name != shader_name {
+                break;
+            }
             device.push_error_scope(ErrorFilter::Validation);
-            let new_shader = compile_shader(device, shader_name, defines);
+            let mut define_holder;
+            let total_defines = {
+                if extra_defines.is_empty() {
+                    defines
+                } else {
+                    define_holder = defines.clone();
+                    for k in extra_defines {
+                        define_holder.insert(k.to_string(), "1".to_string());
+                    }
+                    &define_holder
+                }
+            };
+
+            let new_shader = compile_shader(device, shader_name, total_defines);
             let scope = beul::execute(device.pop_error_scope());
             if scope.is_some() {
                 log::error!("failed to compile shader for invalidation {}", shader_name);
                 return;
             }
             *x = new_shader;
-        } else {
-            return;
         }
+
         for hash in self
             .pipelines_deps
             .get_mut(shader_name)

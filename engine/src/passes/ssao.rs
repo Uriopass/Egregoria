@@ -41,7 +41,7 @@ impl PipelineKey for SSAOPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
         let render_pipeline_layout = gfx
             .device
@@ -70,7 +70,7 @@ impl PipelineKey for SSAOPipeline {
             }),
         })];
 
-        let ssao = mk_module("ssao");
+        let ssao = mk_module("ssao", &[]);
 
         let render_pipeline_desc = RenderPipelineDescriptor {
             label: None,

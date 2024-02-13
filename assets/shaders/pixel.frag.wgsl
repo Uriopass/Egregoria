@@ -16,24 +16,27 @@ struct MaterialParams {
 
 @group(0) @binding(0) var<uniform> params: RenderParams;
 
-@group(1) @binding(0)  var t_ssao: texture_2d<f32>;
-@group(1) @binding(1)  var s_ssao: sampler;
-@group(1) @binding(2)  var t_fog: texture_2d<f32>;
-@group(1) @binding(3)  var s_fog: sampler;
-@group(1) @binding(4)  var t_bnoise: texture_2d<f32>;
-@group(1) @binding(5)  var s_bnoise: sampler;
-@group(1) @binding(6)  var t_sun_smap: texture_depth_2d_array;
-@group(1) @binding(7)  var s_sun_smap: sampler_comparison;
-@group(1) @binding(8)  var t_diffuse_irradiance: texture_cube<f32>;
-@group(1) @binding(9)  var s_diffuse_irradiance: sampler;
-@group(1) @binding(10)  var t_prefilter_specular: texture_cube<f32>;
-@group(1) @binding(11)  var s_prefilter_specular: sampler;
-@group(1) @binding(12) var t_brdf_lut: texture_2d<f32>;
-@group(1) @binding(13) var s_brdf_lut: sampler;
+@group(1) @binding(0) var t_bnoise: texture_2d<f32>;
+@group(1) @binding(1) var s_bnoise: sampler;
+@group(1) @binding(2) var t_sun_smap: texture_depth_2d_array;
+@group(1) @binding(3) var s_sun_smap: sampler_comparison;
+@group(1) @binding(4) var t_diffuse_irradiance: texture_cube<f32>;
+@group(1) @binding(5) var s_diffuse_irradiance: sampler;
+@group(1) @binding(6) var t_prefilter_specular: texture_cube<f32>;
+@group(1) @binding(7) var s_prefilter_specular: sampler;
+@group(1) @binding(8) var t_brdf_lut: texture_2d<f32>;
+@group(1) @binding(9) var s_brdf_lut: sampler;
+
+#ifndef OFFSCREEN_RENDER
+@group(1) @binding(10) var t_ssao: texture_2d<f32>;
+@group(1) @binding(11) var s_ssao: sampler;
+@group(1) @binding(12) var t_fog: texture_2d<f32>;
+@group(1) @binding(13) var s_fog: sampler;
 @group(1) @binding(14) var t_lightdata: texture_2d<u32>;
 @group(1) @binding(15) var s_lightdata: sampler;
 @group(1) @binding(16) var t_lightdata2: texture_2d<u32>;
 @group(1) @binding(17) var s_lightdata2: sampler;
+#endif
 
 @group(2) @binding(0) var t_albedo: texture_2d<f32>;
 @group(2) @binding(1) var s_albedo: sampler;
@@ -60,12 +63,18 @@ fn frag(@location(0) in_tint: vec4<f32>,
     let albedo: vec4<f32> = textureSample(t_albedo, s_albedo, in_uv);
     var ssao = 1.0;
     #ifdef SSAO
+    #ifndef OFFSCREEN_RENDER
     ssao = textureSample(t_ssao, s_ssao, position.xy / params.viewport).r;
+    #endif
     #endif
 
     var shadow_v: f32 = 1.0;
     if (params.shadow_mapping_resolution != 0) {
+        #ifdef OFFSCREEN_RENDER
+        shadow_v = sampleFirstShadow(in_wpos);
+        #else
         shadow_v = sampleShadow(in_wpos);
+        #endif
     }
 
     var normal = in_normal;
@@ -106,6 +115,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
 
     var fog = vec3(0.0);
     #ifdef FOG
+    #ifndef OFFSCREEN_RENDER
     var fogdist: vec4<f32> = textureSampleLevel(t_fog, s_fog, position.xy / params.viewport, 0.0);
 
     if (abs(fogdist.a - dist) > 100.0) {
@@ -118,6 +128,13 @@ fn frag(@location(0) in_tint: vec4<f32>,
         fog = fogdist.rgb;
     }
 
+    #endif
+    #endif
+
+    #ifdef OFFSCREEN_RENDER
+    let lightdata = LightData(vec4(0), vec4(0), vec2(0));
+    #else
+    let lightdata = get_lightdata(t_lightdata, t_lightdata2, in_wpos);
     #endif
 
     let final_rgb: vec3<f32> = render(params.sun,
@@ -134,8 +151,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
                                       roughness,
                                       shadow_v,
                                       ssao,
-                                      t_lightdata,
-                                      t_lightdata2,
+                                      lightdata,
                                       in_wpos,
                                       fog
                                       );

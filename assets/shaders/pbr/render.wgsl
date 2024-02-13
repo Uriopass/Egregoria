@@ -91,6 +91,56 @@ fn calc_light(Lo: vec3<f32>,
     return Lo + (kD * albedo * (0.7 + ssao * 0.3) / PI + specular_light) * shadow_v * col * NdotL;
 }
 
+struct LightData {
+    data: vec4<u32>,
+    data2: vec4<u32>,
+    chunk_id: vec2<u32>,
+};
+
+fn get_lightdata(t_lightdata: texture_2d<u32>, t_lightdata2: texture_2d<u32>, wpos: vec3<f32>) -> LightData {
+    let chunk_id: vec2<u32> = vec2<u32>(u32(wpos.x / LIGHTCHUNK_SIZE), u32(wpos.y / LIGHTCHUNK_SIZE));
+    let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
+    var lightdata2: vec4<u32>;
+    if(lightdata.w != 0u) {
+        lightdata2 = textureLoad(t_lightdata2, chunk_id, 0);
+    } else {
+        lightdata2 = vec4<u32>(0u);
+    }
+    return LightData(lightdata, lightdata2, chunk_id);
+}
+
+fn calc_packed_light(Lo_: vec3<f32>,
+              chunk_id: vec2<u32>,
+              data: vec4<u32>,
+              V: vec3<f32>,
+              normal: vec3<f32>,
+              albedo: vec3<f32>,
+              metallic: f32,
+              roughness: f32,
+              F0: vec3<f32>,
+              wpos: vec3<f32>,
+              ssao: f32,
+              ) -> vec3<f32> {
+    var Lo = Lo_;
+    if(data.x != 0u) {
+        let light = decodeLight(chunk_id, data.x);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, vec3(lightPower(wpos, light)), 1.0, ssao);
+    }
+    if(data.y != 0u) {
+        let light = decodeLight(chunk_id, data.y);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, vec3(lightPower(wpos, light)), 1.0, ssao);
+    }
+    if(data.z != 0u) {
+        let light = decodeLight(chunk_id, data.z);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, vec3(lightPower(wpos, light)), 1.0, ssao);
+    }
+    if(data.w != 0u) {
+        let light = decodeLight(chunk_id, data.w);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, vec3(lightPower(wpos, light)), 1.0, ssao);
+    }
+    return Lo;
+}
+
 fn render(sun: vec3<f32>,
           V: vec3<f32>,
           position: vec2<f32>,
@@ -105,14 +155,10 @@ fn render(sun: vec3<f32>,
           roughness: f32,
           shadow_v: f32,
           ssao: f32,
-          t_lightdata: texture_2d<u32>,
-          t_lightdata2: texture_2d<u32>,
+          lightdata: LightData,
           wpos: vec3<f32>,
           fog: vec3<f32>,
           ) -> vec3<f32>  {
-    let chunk_id: vec2<u32> = vec2<u32>(u32(wpos.x / LIGHTCHUNK_SIZE), u32(wpos.y / LIGHTCHUNK_SIZE));
-    let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
-
 
     var Lo: vec3<f32> = vec3(0.0);
 
@@ -120,44 +166,13 @@ fn render(sun: vec3<f32>,
        Lo = calc_light(vec3(0.0), sun, V, normal, albedo, metallic, roughness,  F0, sun_col, shadow_v, ssao);
     }
     if(sun.z < 0.1) {
-    if(lightdata.x != 0u) {
-        let light = decodeLight(chunk_id, lightdata.x);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-    }
-    if(lightdata.y != 0u) {
-        let light = decodeLight(chunk_id, lightdata.y);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-    }
-    if(lightdata.z != 0u) {
-        let light = decodeLight(chunk_id, lightdata.z);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-    }
-    if(lightdata.w != 0u) {
-        let light = decodeLight(chunk_id, lightdata.w);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-        let lightdata2: vec4<u32> = textureLoad(t_lightdata2, chunk_id, 0);
-        if(lightdata2.x != 0u) {
-            let light = decodeLight(chunk_id, lightdata2.x);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
+        Lo = calc_packed_light(Lo, lightdata.chunk_id, lightdata.data, V, normal, albedo, metallic, roughness, F0, wpos, ssao);
+        if (lightdata.data.w != 0) {
+            Lo = calc_packed_light(Lo, lightdata.chunk_id, lightdata.data2, V, normal, albedo, metallic, roughness, F0, wpos, ssao);
         }
-        if(lightdata2.y != 0u) {
-            let light = decodeLight(chunk_id, lightdata2.y);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-        }
-        if(lightdata2.z != 0u) {
-            let light = decodeLight(chunk_id, lightdata2.z);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-        }
-        if(lightdata2.w != 0u) {
-            let light = decodeLight(chunk_id, lightdata2.w);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
-        }
-    }
     }
 
-    let dkS: vec3<f32> = F_spec;
-    var dkD: vec3<f32> = 1.0 - dkS;
-    dkD *= 1.0 - vec3(metallic);
+    let dkD: vec3<f32> = (1.0 - F_spec) * (1.0 - vec3(metallic));
 
     let ambient: vec3<f32> = (0.2 * dkD * (0.04 + irradiance_diffuse) * albedo + specular) * ssao;
     var color: vec3<f32>   = ambient + Lo + fog;

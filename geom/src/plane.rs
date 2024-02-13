@@ -14,7 +14,7 @@ pub struct Plane {
 impl Plane {
     pub const X: Self = Self { n: Vec3::X, o: 0.0 };
 
-    pub fn new(n: Vec3, o: f32) -> Self {
+    pub const fn new(n: Vec3, o: f32) -> Self {
         Self { n, o }
     }
 

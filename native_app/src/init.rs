@@ -14,7 +14,8 @@ use crate::newgui::windows::economy::EconomyState;
 use crate::newgui::windows::settings::{Settings, SettingsState};
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
-    ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
+    ErrorTooltip, IconTextures, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways,
+    Tool,
 };
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};
@@ -63,6 +64,7 @@ pub fn init() {
     register_resource_noserialize::<crate::uiworld::SaveLoadState>();
     register_resource_noserialize::<EconomyState>();
     register_resource_noserialize::<SettingsState>();
+    register_resource_noserialize::<IconTextures>();
 }
 
 pub struct InitFunc {

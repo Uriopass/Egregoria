@@ -46,7 +46,7 @@ impl UiTextures {
             );
 
             textures.insert(name.clone(), h);
-            yakui_textures.insert(name, yakui.add_texture(gfx, &path));
+            yakui_textures.insert(name, yakui.load_texture(gfx, &path));
         }
         Self {
             textures,

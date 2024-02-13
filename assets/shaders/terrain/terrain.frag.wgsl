@@ -20,20 +20,20 @@ struct ChunkData {
 @group(1) @binding(7) var s_cliff: sampler;
 @group(1) @binding(8) var<uniform> cdata: ChunkData;
 
-@group(2) @binding(0)  var t_ssao: texture_2d<f32>;
-@group(2) @binding(1)  var s_ssao: sampler;
-@group(2) @binding(2)  var t_fog: texture_2d<f32>;
-@group(2) @binding(3)  var s_fog: sampler;
-@group(2) @binding(4)  var t_bnoise: texture_2d<f32>;
-@group(2) @binding(5)  var s_bnoise: sampler;
-@group(2) @binding(6)  var t_sun_smap: texture_depth_2d_array;
-@group(2) @binding(7)  var s_sun_smap: sampler_comparison;
-@group(2) @binding(8)  var t_diffuse_irradiance: texture_cube<f32>;
-@group(2) @binding(9)  var s_diffuse_irradiance: sampler;
-@group(2) @binding(10)  var t_prefilter_specular: texture_cube<f32>;
-@group(2) @binding(11)  var s_prefilter_specular: sampler;
-@group(2) @binding(12) var t_brdf_lut: texture_2d<f32>;
-@group(2) @binding(13) var s_brdf_lut: sampler;
+@group(2) @binding(0) var t_bnoise: texture_2d<f32>;
+@group(2) @binding(1) var s_bnoise: sampler;
+@group(2) @binding(2) var t_sun_smap: texture_depth_2d_array;
+@group(2) @binding(3) var s_sun_smap: sampler_comparison;
+@group(2) @binding(4) var t_diffuse_irradiance: texture_cube<f32>;
+@group(2) @binding(5) var s_diffuse_irradiance: sampler;
+@group(2) @binding(6) var t_prefilter_specular: texture_cube<f32>;
+@group(2) @binding(7) var s_prefilter_specular: sampler;
+@group(2) @binding(8) var t_brdf_lut: texture_2d<f32>;
+@group(2) @binding(9) var s_brdf_lut: sampler;
+@group(2) @binding(10) var t_ssao: texture_2d<f32>;
+@group(2) @binding(11) var s_ssao: sampler;
+@group(2) @binding(12) var t_fog: texture_2d<f32>;
+@group(2) @binding(13) var s_fog: sampler;
 @group(2) @binding(14) var t_lightdata: texture_2d<u32>;
 @group(2) @binding(15) var s_lightdata: sampler;
 @group(2) @binding(16) var t_lightdata2: texture_2d<u32>;
@@ -195,8 +195,9 @@ fn frag(@builtin(position) position: vec4<f32>,
     } else {
         fog = fogdist.rgb;
     }
-
     #endif
+
+    let lightdata = get_lightdata(t_lightdata, t_lightdata2, in_wpos);
 
     let final_rgb: vec3<f32> = render(params.sun,
                                       V,
@@ -212,8 +213,7 @@ fn frag(@builtin(position) position: vec4<f32>,
                                       roughness,
                                       shadow_v,
                                       ssao,
-                                      t_lightdata,
-                                      t_lightdata2,
+                                      lightdata,
                                       in_wpos,
                                       fog
                                       );

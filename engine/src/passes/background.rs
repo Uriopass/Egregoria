@@ -54,9 +54,9 @@ impl PipelineKey for BackgroundPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
-        let bg = &mk_module("background");
+        let bg = &mk_module("background", &[]);
 
         let render_pipeline_layout = gfx
             .device

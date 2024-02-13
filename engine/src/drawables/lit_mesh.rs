@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use wgpu::{
-    BindGroupLayout, Device, IndexFormat, MapMode, RenderPass, RenderPipeline, TextureFormat,
-    TextureUsages, VertexBufferLayout,
+    BindGroupLayout, Device, IndexFormat, RenderPass, RenderPipeline, TextureFormat,
+    TextureViewDescriptor, TextureViewDimension, VertexBufferLayout,
 };
 
-use geom::{Camera, LinearColor, Matrix4, Sphere, Vec2, Vec3};
+use geom::{Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Sphere, Vec2, Vec3};
 
 use crate::meshbuild::MeshLod;
 use crate::{
@@ -44,7 +44,7 @@ pub fn screen_coverage(gfx: &GfxContext, s: Sphere) -> f32 {
 
 #[derive(Clone, Copy, Hash)]
 pub(crate) struct MeshPipeline {
-    pub(crate) format: Option<TextureFormat>,
+    pub(crate) offscreen_render: bool,
     pub(crate) instanced: bool,
     pub(crate) alpha: bool,
     pub(crate) smap: bool,
@@ -58,40 +58,61 @@ impl PipelineKey for MeshPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
         let vert = if self.instanced {
-            mk_module("instanced_mesh.vert")
+            mk_module("instanced_mesh.vert", &[])
         } else {
-            mk_module("lit_mesh.vert")
+            mk_module("lit_mesh.vert", &[])
         };
 
         let vb: &[VertexBufferLayout] = if self.instanced { VB_INSTANCED } else { VB };
 
         if !self.depth {
-            let frag = mk_module("pixel.frag");
+            let extra_defines = if self.offscreen_render {
+                &["OFFSCREEN_RENDER"] as &[&str]
+            } else {
+                &[]
+            };
 
-            return PipelineBuilder::color(
+            let frag = mk_module("pixel.frag", extra_defines);
+
+            let bglayout = match self.offscreen_render {
+                true => bg_layout_offscreen_render(&gfx.device),
+                false => bg_layout_litmesh(&gfx.device),
+            };
+
+            let layouts = [
+                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                &bglayout,
+                &Material::bindgroup_layout(&gfx.device),
+            ];
+
+            let mut builder = PipelineBuilder::color(
                 "lit_mesh",
-                &[
-                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                    &bg_layout_litmesh(&gfx.device),
-                    &Material::bindgroup_layout(&gfx.device),
-                ],
+                &layouts,
                 vb,
                 &vert,
                 &frag,
-                self.format.unwrap_or(gfx.sc_desc.format),
+                match self.offscreen_render {
+                    true => TextureFormat::Rgba8UnormSrgb,
+                    false => gfx.sc_desc.format,
+                },
             )
-            .with_samples(gfx.samples)
-            .build(&gfx.device);
+            .with_samples(gfx.samples);
+
+            if self.offscreen_render {
+                builder = builder.with_depth_write();
+            }
+
+            return builder.build(&gfx.device);
         }
 
         if !self.alpha {
             return gfx.depth_pipeline(vb, &vert, None, self.smap);
         }
 
-        let frag = mk_module("alpha_discard.frag");
+        let frag = mk_module("alpha_discard.frag", &[]);
         gfx.depth_pipeline_bglayout(
             vb,
             &vert,
@@ -106,25 +127,22 @@ impl PipelineKey for MeshPipeline {
 }
 
 impl Mesh {
-    pub fn render_to_texture(&self, cam: &Camera, gfx: &GfxContext, dest: &Texture) {}
-
-    pub fn render_to_image(
+    pub fn render_to_texture(
         &self,
         cam: &Camera,
         gfx: &GfxContext,
-        size: u32,
-        on_complete: impl FnOnce(image::RgbaImage) + Send + 'static,
+        dest: &Texture,
+        dest_msaa: &Texture,
     ) {
-        let target_image = TextureBuilder::empty(size, size, 1, TextureFormat::Bgra8UnormSrgb)
-            .with_usage(TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC)
-            .with_label("mesh_render_to_image")
-            .build_no_queue(&gfx.device);
-
         let mut encoder = gfx
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("mesh_render_to_image"),
             });
+
+        let sun = Vec3::new(0.5, -1.3, 0.9).normalize();
+
+        let smap_mat = cam.build_sun_shadowmap_matrix(sun, 1024.0, &InfiniteFrustrum::EMPTY);
 
         let mut params = gfx.render_params.clone(&gfx.device);
         let value = params.value_mut();
@@ -132,34 +150,46 @@ impl Mesh {
         value.inv_proj = cam.inv_proj_cache;
         value.cam_dir = cam.dir();
         value.cam_pos = cam.eye();
-        value.viewport = Vec2::splat(size as f32);
-        value.sun = Vec3::new(1.0, 1.0, 1.0).normalize();
-        value.sun_col = LinearColor::WHITE;
+        value.viewport = Vec2::new(dest.extent.width as f32, dest.extent.height as f32);
+        value.sun = sun;
+        value.sun_col = 3.5 * LinearColor::new(1.0, 0.95, 1.0, 1.0);
+        value.sun_shadow_proj = [
+            smap_mat[0],
+            Matrix4::zero(),
+            Matrix4::zero(),
+            Matrix4::zero(),
+        ];
         value.time = 0.0;
         value.time_always = 0.0;
-        value.shadow_mapping_resolution = 0;
+        value.shadow_mapping_resolution = 1024;
 
         params.upload_to_gpu(&gfx.queue);
 
-        let mut cpy = self.clone();
-        let mut lod_cpy = cpy.lods[0].clone();
-        lod_cpy.screen_coverage = f32::NEG_INFINITY;
-        lod_cpy.bounding_sphere = Sphere::new(Vec3::ZERO, 10000.0);
-        cpy.lods = vec![lod_cpy].into_boxed_slice();
+        let depth = TextureBuilder::empty(
+            dest.extent.width,
+            dest.extent.height,
+            1,
+            TextureFormat::Depth32Float,
+        )
+        .with_sample_count(4)
+        .build_no_queue(&gfx.device);
+
+        let mut smap = TextureBuilder::empty(1024, 1024, 1, TextureFormat::Depth32Float)
+            .build_no_queue(&gfx.device);
+
+        let mut params_smap = params.clone(&gfx.device);
+        let value_smap = params_smap.value_mut();
+        value_smap.proj = smap_mat[0];
+        params_smap.upload_to_gpu(&gfx.queue);
+
+        let smap_view = smap.mip_view(0);
 
         {
             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("mesh_render_to_image"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &target_image.view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
+                label: Some("mesh_render_to_image_shadow_map"),
+                color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &gfx.fbos.depth.view,
+                    view: &smap_view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,
@@ -170,58 +200,90 @@ impl Mesh {
                 occlusion_query_set: None,
             });
 
-            rp.set_bind_group(0, &params.bg, &[]);
+            rp.set_bind_group(0, &params_smap.bg, &[]);
 
-            cpy.draw(&gfx, &mut rp);
+            rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+
+            for (mat, index_range) in &self.lods[0].primitives {
+                let mat = gfx.material(*mat);
+                rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
+                    offscreen_render: true,
+                    instanced: false,
+                    alpha: mat.transparent,
+                    smap: true,
+                    depth: true,
+                }));
+
+                if mat.transparent {
+                    rp.set_bind_group(1, &mat.bg, &[]);
+                }
+                rp.draw_indexed(index_range.clone(), 0, 0..1);
+            }
         }
 
-        let image_data_buf = Arc::new(gfx.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("mesh_render_to_image"),
-            size: (4 * size * size) as u64,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        }));
+        smap.view = smap.texture.create_view(&TextureViewDescriptor {
+            dimension: Some(TextureViewDimension::D2Array),
+            ..Default::default()
+        });
+        smap.sampler = gfx.device.create_sampler(&Texture::depth_compare_sampler());
 
-        encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
-                texture: &target_image.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::ImageCopyBuffer {
-                buffer: &image_data_buf,
-                layout: wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(4 * size), // 4 bytes per pixel * 4 pixels per row
-                    rows_per_image: None,
-                },
-            },
-            wgpu::Extent3d {
-                width: size,
-                height: size,
-                depth_or_array_layers: 1,
-            },
+        let simplelit_bg = Texture::multi_bindgroup(
+            &[
+                &gfx.read_texture("assets/sprites/blue_noise_512.png")
+                    .expect("blue noise not initialized"),
+                &smap,
+                &gfx.pbr.diffuse_irradiance_cube,
+                &gfx.pbr.specular_prefilter_cube,
+                &gfx.pbr.split_sum_brdf_lut,
+            ],
+            &gfx.device,
+            &bg_layout_offscreen_render(&gfx.device),
         );
 
-        gfx.queue.submit(std::iter::once(encoder.finish()));
+        {
+            let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("mesh_render_to_image"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &dest_msaa.view,
+                    resolve_target: Some(&dest.view),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &depth.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
 
-        let image_data_buf_cpy = image_data_buf.clone();
-        image_data_buf.slice(..).map_async(MapMode::Read, move |v| {
-            if v.is_err() {
-                log::error!("Failed to map buffer for reading for render_to_image");
-                return;
+            rp.set_bind_group(0, &params.bg, &[]);
+            rp.set_bind_group(1, &simplelit_bg, &[]);
+            rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+
+            for (mat, index_range) in &self.lods[0].primitives {
+                let mat = gfx.material(*mat);
+                rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
+                    offscreen_render: true,
+                    instanced: false,
+                    alpha: false,
+                    smap: false,
+                    depth: false,
+                }));
+                rp.set_bind_group(2, &mat.bg, &[]);
+                rp.draw_indexed(index_range.clone(), 0, 0..1);
             }
+        }
 
-            let v = image_data_buf_cpy.slice(..).get_mapped_range();
-
-            let Some(rgba) = image::RgbaImage::from_raw(size, size, v.to_vec()) else {
-                log::error!("Failed to create image from buffer for render_to_image");
-                return;
-            };
-
-            on_complete(rgba);
-        });
+        gfx.queue.submit(std::iter::once(encoder.finish()));
     }
 }
 
@@ -238,7 +300,7 @@ impl Drawable for Mesh {
         for (mat, index_range) in &lod.primitives {
             let mat = gfx.material(*mat);
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
-                format: None,
+                offscreen_render: false,
                 instanced: false,
                 alpha: false,
                 smap: false,
@@ -269,7 +331,7 @@ impl Drawable for Mesh {
         for (mat, index_range) in &lod.primitives {
             let mat = gfx.material(*mat);
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
-                format: None,
+                offscreen_render: false,
                 instanced: false,
                 alpha: mat.transparent,
                 smap: shadow_cascade.is_some(),
@@ -289,22 +351,26 @@ impl Drawable for Mesh {
     }
 }
 
-pub struct LitMeshDepth;
-pub struct LitMeshDepthSMap;
-
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
     Texture::bindgroup_layout(
         device,
         [
             TL::Float,
-            TL::Float,
-            TL::Float,
             TL::DepthArray,
             TL::Cube,
             TL::Cube,
             TL::Float,
+            TL::Float,
+            TL::Float,
             TL::UInt,
             TL::UInt,
         ],
+    )
+}
+
+pub fn bg_layout_offscreen_render(device: &Device) -> BindGroupLayout {
+    Texture::bindgroup_layout(
+        device,
+        [TL::Float, TL::DepthArray, TL::Cube, TL::Cube, TL::Float],
     )
 }

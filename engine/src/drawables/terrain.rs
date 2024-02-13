@@ -620,7 +620,7 @@ impl PipelineKey for TerrainPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
         let terrainlayout = gfx
             .device
@@ -635,10 +635,10 @@ impl PipelineKey for TerrainPipeline {
                 .collect::<Vec<_>>(),
                 label: Some("terrain bindgroup layout"),
             });
-        let vert = &mk_module("terrain/terrain.vert");
+        let vert = &mk_module("terrain/terrain.vert", &[]);
 
         if !self.depth {
-            let frag = &mk_module("terrain/terrain.frag");
+            let frag = &mk_module("terrain/terrain.frag", &[]);
 
             return PipelineBuilder::color(
                 "terrain",

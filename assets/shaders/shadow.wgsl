@@ -29,6 +29,10 @@ fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
     return mix(s1, s2, blend);
 }
 
+fn sampleFirstShadow(in_wpos: vec3<f32>) -> f32 {
+    return sampleOneShadow(in_wpos, 0);
+}
+
 fn sampleOneShadow(in_wpos: vec3<f32>, index: i32) -> f32 {
     let light_local: vec4<f32> = params.sunproj[index] * vec4(in_wpos, 1.0);
 
@@ -42,7 +46,7 @@ fn sampleOneShadow(in_wpos: vec3<f32>, index: i32) -> f32 {
     for (var y = -1 ; y <= 1 ; y++) {
         x = -1;
         for (; x <= 1; x++) {
-            let shadow_coord: vec3<f32> = corrected + vec3(f32(x), f32(y), -1.0) * offset;
+            let shadow_coord: vec3<f32> = corrected + vec3(f32(x), f32(y), 0.0) * offset;
             total += textureSampleCompare(t_sun_smap, s_sun_smap, shadow_coord.xy, index, shadow_coord.z);
         }
     }

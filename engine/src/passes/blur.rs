@@ -139,9 +139,9 @@ impl PipelineKey for UIBlurPipeline {
     fn build(
         &self,
         gfx: &GfxContext,
-        mut mk_module: impl FnMut(&str) -> CompiledModule,
+        mut mk_module: impl FnMut(&str, &[&str]) -> CompiledModule,
     ) -> RenderPipeline {
-        let bg = &mk_module("ui_blur");
+        let bg = &mk_module("ui_blur", &[]);
 
         let l = Texture::bindgroup_layout(&gfx.device, [TL::Float]);
 

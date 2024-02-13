@@ -251,22 +251,22 @@ impl ElectricityCache {
         match obj {
             NetworkObjectID::Building(b) => {
                 let Some(b) = buildings.get(b) else {
-                    return Left(Left(None.into_iter()));
+                    return Left(Left(std::iter::empty()));
                 };
                 let Some(r) = b.connected_road else {
-                    return Left(Left(None.into_iter()));
+                    return Left(Left(std::iter::empty()));
                 };
                 Left(Right(Some(NetworkObjectID::Road(r)).into_iter()))
             }
             NetworkObjectID::Intersection(i) => {
                 let Some(i) = intersections.get(i) else {
-                    return Left(Left(None.into_iter()));
+                    return Left(Left(std::iter::empty()));
                 };
                 Right(Left(i.roads.iter().map(|v| NetworkObjectID::Road(*v))))
             }
             NetworkObjectID::Road(r) => {
                 let Some(r) = roads.get(r) else {
-                    return Left(Left(None.into_iter()));
+                    return Left(Left(std::iter::empty()));
                 };
                 Right(Right(common::iter::chain((
                     Some(NetworkObjectID::Intersection(r.src)).into_iter(),
