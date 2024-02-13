@@ -36,13 +36,15 @@ enum PbrPipeline {
 #[derive(Default, Copy, Clone, Debug)]
 struct SpecularParams {
     roughness: f32,
-    time100: u32,
+    time97: u32,
+    sample_count: u32,
 }
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug)]
 struct DiffuseParams {
-    time100: u32,
+    time97: u32,
+    sample_count: u32,
 }
 
 u8slice_impl!(SpecularParams);
@@ -180,7 +182,8 @@ impl Pbr {
         self.diffuse_uniform.write_direct(
             &gfx.queue,
             &DiffuseParams {
-                time100: ((gfx.tick * 7) % 97) as u32,
+                time97: ((gfx.tick * 7) % 97) as u32,
+                sample_count: if gfx.tick == 0 { 1024 } else { 32 },
             },
         );
         for face in 0..6u32 {
@@ -216,11 +219,11 @@ impl Pbr {
                 &gfx.queue,
                 &SpecularParams {
                     roughness,
-                    time100: ((gfx.tick * 7) % 97) as u32,
+                    time97: ((gfx.tick * 7) % 97) as u32,
+                    sample_count: if gfx.tick == 0 { 1024 } else { 60 },
                 },
             );
-            for face in 0..3 {
-                let face = face as u32 + ((gfx.tick % 2) * 3) as u32;
+            for face in 0..6 {
                 let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                     label: Some(format!("specular prefilter face {face} mip {mip}").as_str()),
                     color_attachments: &[Some(RenderPassColorAttachment {

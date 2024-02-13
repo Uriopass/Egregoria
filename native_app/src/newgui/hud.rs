@@ -45,8 +45,8 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
             minrow(5.0, || {
                 let ids = &uiworld.read::<IconTextures>().ids;
 
-                for id in ids {
-                    image(*id, Vec2::splat(128.0));
+                for id in ids.values() {
+                    image(*id, Vec2::splat(96.0));
                 }
             });
         });

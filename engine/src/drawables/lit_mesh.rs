@@ -5,7 +5,7 @@ use wgpu::{
     TextureViewDescriptor, TextureViewDimension, VertexBufferLayout,
 };
 
-use geom::{Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Sphere, Vec2, Vec3};
+use geom::{Camera, InfiniteFrustrum, LinearColor, Matrix4, Sphere, Vec2, Vec3};
 
 use crate::meshbuild::MeshLod;
 use crate::{
@@ -134,6 +134,8 @@ impl Mesh {
         dest: &Texture,
         dest_msaa: &Texture,
     ) {
+        const SHADOWMAP_RES: i32 = 1024;
+
         let mut encoder = gfx
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -142,7 +144,8 @@ impl Mesh {
 
         let sun = Vec3::new(0.5, -1.3, 0.9).normalize();
 
-        let smap_mat = cam.build_sun_shadowmap_matrix(sun, 1024.0, &InfiniteFrustrum::EMPTY);
+        let smap_mat =
+            cam.build_sun_shadowmap_matrix(sun, SHADOWMAP_RES as f32, &InfiniteFrustrum::EMPTY);
 
         let mut params = gfx.render_params.clone(&gfx.device);
         let value = params.value_mut();
@@ -161,7 +164,7 @@ impl Mesh {
         ];
         value.time = 0.0;
         value.time_always = 0.0;
-        value.shadow_mapping_resolution = 1024;
+        value.shadow_mapping_resolution = SHADOWMAP_RES;
 
         params.upload_to_gpu(&gfx.queue);
 

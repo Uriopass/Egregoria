@@ -88,9 +88,7 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &UiWorld) {
         let col = if red {
             simulation::colors().gui_danger.adjust_luminosity(1.3)
         } else {
-            simulation::colors()
-                .gui_primary
-                .adjust_luminosity(tweak!(1.5))
+            simulation::colors().gui_primary.adjust_luminosity(1.5)
         };
 
         if p.ends_with(".png") || p.ends_with(".jpg") {

@@ -4,15 +4,14 @@ struct FragmentOutput {
 
 struct Params {
     roughness: f32,
-    time100: u32, // tick modulo 100
+    time97: u32, // tick modulo 97
+    sample_count: u32,
 }
 
 @group(0) @binding(0) var t_environment: texture_cube<f32>;
 @group(0) @binding(1) var s_environment: sampler;
 
 @group(1) @binding(0) var<uniform> params: Params;
-
-const SAMPLE_COUNT: u32 = 30u;
 
 #include "sample.wgsl"
 
@@ -41,8 +40,8 @@ fn frag(@location(0) wpos: vec3<f32>) -> FragmentOutput {
     var totalWeight: f32 = 0.0;
     var color: vec3<f32> = vec3(0.0);
 
-    for(var i: u32 = params.time100; i < SAMPLE_COUNT*97u; i += 97u) {
-        let Xi: vec2<f32> = Hammersley(i, SAMPLE_COUNT*97u);
+    for(var i: u32 = params.time97; i < params.sample_count*97u; i += 97u) {
+        let Xi: vec2<f32> = Hammersley(i, params.sample_count*97u);
 
         let H: vec3<f32>  = ImportanceSampleGGX(Xi, normal, params.roughness);
         let L: vec3<f32>  = normalize(2.0 * dot(V, H) * H - V);

@@ -57,7 +57,7 @@ pub fn chat(ui: &egui::Context, uiw: &UiWorld, sim: &Simulation) {
                 ui.allocate_space(egui::Vec2::new(250.0, 0.0));
 
                 if msgs.len() < 12 {
-                    ui.add_space((12 - msgs.len()) as f32 * tweak!(24.0));
+                    ui.add_space((12 - msgs.len()) as f32 * 24.0);
                 }
 
                 for message in msgs.iter().rev() {

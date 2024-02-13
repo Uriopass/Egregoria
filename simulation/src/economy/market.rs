@@ -496,7 +496,7 @@ mod tests {
             n_trucks = 1,
             n_workers = 2,
             size = 0.0,
-            asset_location = "",
+            asset = "no.jpg",
             price = 0,
         },
         {
@@ -518,7 +518,7 @@ mod tests {
             n_trucks = 1,
             n_workers = 5,
             size = 0.0,
-            asset_location = "",
+            asset = "no.jpg",
             price = 0,
         }}
         "#,

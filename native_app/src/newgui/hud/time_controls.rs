@@ -99,7 +99,7 @@ pub fn time_controls(uiworld: &UiWorld, sim: &Simulation) {
                             let mut l = List::column();
                             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                             l.main_axis_size = MainAxisSize::Min;
-                            l.item_spacing = tweak!(5.0);
+                            l.item_spacing = 5.0;
                             l.show(time_text);
                         });
                     });

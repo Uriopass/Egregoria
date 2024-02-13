@@ -9,6 +9,7 @@ use simulation::map::BuildingID;
 use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};
 use std::borrow::Cow;
+use std::path::PathBuf;
 use yakui::TextureId;
 
 mod hud;
@@ -19,8 +20,7 @@ pub use tools::*;
 
 #[derive(Default)]
 pub struct IconTextures {
-    texs: FastMap<BuildingPrototypeID, engine::Texture>,
-    ids: Vec<TextureId>,
+    ids: FastMap<BuildingPrototypeID, TextureId>,
 }
 
 pub fn do_icons(gfx: &mut GfxContext, uiw: &mut UiWorld, yakui: &mut YakuiWrapper) {
@@ -28,9 +28,9 @@ pub fn do_icons(gfx: &mut GfxContext, uiw: &mut UiWorld, yakui: &mut YakuiWrappe
 
     let mut cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), 256.0, 256.0);
 
-    cam.fovy = tweak!(30.0);
+    cam.fovy = 30.0;
     cam.pitch = Degrees(35.0).into();
-    cam.yaw = Degrees(tweak!(-130.0)).into();
+    cam.yaw = Degrees(-130.0).into();
 
     state.ids.clear();
 
@@ -38,9 +38,20 @@ pub fn do_icons(gfx: &mut GfxContext, uiw: &mut UiWorld, yakui: &mut YakuiWrappe
         let RenderAsset::Mesh { ref path } = building.asset else {
             continue;
         };
-        //if state.texs.contains_key(&building.id) {
+        if state.ids.contains_key(&building.id) {
+            continue;
+        }
+        let cache_path = PathBuf::from(format!(
+            "assets/generated/building_icons/{}.png",
+            building.id.hash()
+        ));
+        //if std::fs::metadata(&cache_path).is_ok() {
+        //    let t = TextureBuilder::from_path(&cache_path).build(&gfx.device, &gfx.queue);
+        //    let tex_id = yakui.add_texture(&t);
+        //    state.ids.insert(building.id, tex_id);
         //    continue;
         //}
+
         let Ok(mesh) = gfx.mesh(path.as_ref()) else {
             continue;
         };
@@ -49,6 +60,7 @@ pub fn do_icons(gfx: &mut GfxContext, uiw: &mut UiWorld, yakui: &mut YakuiWrappe
             .with_label("building icon")
             .with_usage(
                 engine::wgpu::TextureUsages::COPY_DST
+                    | engine::wgpu::TextureUsages::COPY_SRC
                     | engine::wgpu::TextureUsages::RENDER_ATTACHMENT
                     | engine::wgpu::TextureUsages::TEXTURE_BINDING,
             )
@@ -66,10 +78,12 @@ pub fn do_icons(gfx: &mut GfxContext, uiw: &mut UiWorld, yakui: &mut YakuiWrappe
         cam.update();
 
         mesh.render_to_texture(&cam, gfx, &t, &t_msaa);
+
+        t.save_to_file(&gfx.device, &gfx.queue, cache_path, 0);
+
         let tex_id = yakui.add_texture(&t);
 
-        state.texs.insert(building.id, t);
-        state.ids.push(tex_id);
+        state.ids.insert(building.id, tex_id);
     }
 }
 

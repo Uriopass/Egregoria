@@ -233,7 +233,13 @@ impl Texture {
         })
     }
 
-    pub fn save_to_file(&self, device: &Device, queue: &wgpu::Queue, path: PathBuf) {
+    pub fn save_to_file(
+        &self,
+        device: &Device,
+        queue: &wgpu::Queue,
+        path: PathBuf,
+        mip_level: u32,
+    ) {
         match self.format {
             TextureFormat::Rgba8Unorm | TextureFormat::Rgba8UnormSrgb => {}
             _ => {
@@ -242,13 +248,17 @@ impl Texture {
             }
         }
 
+        let w = self.extent.width >> mip_level;
+        let h = self.extent.height >> mip_level;
+        let size = w * h;
+
         debug_assert!(self.extent.depth_or_array_layers == 1);
 
         let block_size = self.format.block_copy_size(None).unwrap();
 
         let image_data_buf = Arc::new(device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("save_to_file"),
-            size: (block_size * self.extent.width * self.extent.height) as u64,
+            size: (block_size * size) as u64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         }));
@@ -260,7 +270,7 @@ impl Texture {
         encoder.copy_texture_to_buffer(
             ImageCopyTexture {
                 texture: &self.texture,
-                mip_level: 0,
+                mip_level,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
@@ -268,7 +278,7 @@ impl Texture {
                 buffer: &image_data_buf,
                 layout: ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: Some(block_size * self.extent.width),
+                    bytes_per_row: Some(block_size * w),
                     rows_per_image: None,
                 },
             },
@@ -278,7 +288,6 @@ impl Texture {
         queue.submit(std::iter::once(encoder.finish()));
 
         let image_data_buf_cpy = image_data_buf.clone();
-        let extent_cpy = self.extent;
         image_data_buf.slice(..).map_async(MapMode::Read, move |v| {
             if v.is_err() {
                 log::error!("Failed to map buffer for reading for save_to_file");
@@ -287,9 +296,7 @@ impl Texture {
 
             let v = image_data_buf_cpy.slice(..).get_mapped_range();
 
-            let Some(rgba) =
-                image::RgbaImage::from_raw(extent_cpy.width, extent_cpy.height, v.to_vec())
-            else {
+            let Some(rgba) = image::RgbaImage::from_raw(w, h, v.to_vec()) else {
                 log::error!("Failed to create image from buffer for save_to_file");
                 return;
             };
