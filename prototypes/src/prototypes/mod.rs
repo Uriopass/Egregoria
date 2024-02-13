@@ -95,7 +95,7 @@ impl crate::Prototype for PrototypeBase {
 
     fn id(&self) -> Self::ID {}
 
-    fn parent(&self) -> Option<&Self::Parent> {
-        None
+    fn parent(&self) -> &Self::Parent {
+        &crate::NoParent
     }
 }

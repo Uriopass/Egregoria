@@ -29,8 +29,8 @@ impl Prototype for ItemPrototype {
         self.id
     }
 
-    fn parent(&self) -> Option<&Self::Parent> {
-        None
+    fn parent(&self) -> &Self::Parent {
+        &NoParent
     }
 }
 

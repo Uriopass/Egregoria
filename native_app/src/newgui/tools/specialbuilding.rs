@@ -83,19 +83,26 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &UiWorld) {
     let half_diag = 0.5 * size.diag();
     let hover_obb = OBB::new(mpos.xy(), state.rotation.vec2(), size.w, size.h);
 
-    let mut draw = |obb, red| {
-        let p = asset.to_string();
+    let mut draw = |obb: OBB, red| {
         let col = if red {
             simulation::colors().gui_danger.adjust_luminosity(1.3)
         } else {
             simulation::colors().gui_primary.adjust_luminosity(1.5)
         };
 
-        if p.ends_with(".png") || p.ends_with(".jpg") {
-            draw.textured_obb(obb, p, mpos.z + 0.1).color(col);
-        } else if p.ends_with(".glb") {
-            draw.mesh(p, obb.center().z(mpos.z), obb.axis()[0].normalize().z0())
+        match asset {
+            RenderAsset::Mesh { path } => {
+                draw.mesh(
+                    path.to_string_lossy().to_string(),
+                    obb.center().z(mpos.z),
+                    obb.axis()[0].normalize().z0(),
+                )
                 .color(col);
+            }
+            RenderAsset::Sprite { path } => {
+                draw.textured_obb(obb, path.to_string_lossy().to_string(), mpos.z + 0.1)
+                    .color(col);
+            }
         }
     };
 

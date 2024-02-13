@@ -14,6 +14,7 @@ use crate::gui::{render_oldgui, ExitState, FollowEntity, GuiState, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui;
 use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::toolbox::building;
 use crate::newgui::windows::settings::{manage_settings, Settings};
 use crate::newgui::{render_newgui, TimeAlways, Tool};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
@@ -79,6 +80,7 @@ impl engine::framework::State for State {
         }
 
         defer!(log::info!("finished init of game loop"));
+        building::do_icons(ctx, &mut uiworld);
 
         let me = Self {
             uiw: uiworld,
@@ -97,7 +99,6 @@ impl engine::framework::State for State {
         profiling::scope!("game_loop::update");
         self.uiw.write::<TimeAlways>().0 += ctx.delta;
 
-        newgui::do_icons(&mut ctx.gfx, &mut self.uiw, &mut ctx.yakui);
         {
             let mut timings = self.uiw.write::<Timings>();
             timings.engine_time.add_value(ctx.engine_time);

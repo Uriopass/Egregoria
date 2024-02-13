@@ -100,7 +100,7 @@ macro_rules! gen_prototypes {
                                   $crate::PrototypeLoadError::PrototypeLuaError(_type_str.to_string(), table.get::<_, String>("name").unwrap(), e)
                             })?;
 
-                            <$t as $crate::Prototype>::insert_parents(&proto, self);
+                            <$t as $crate::ConcretePrototype>::insert_parents(&proto, self);
 
                             if let Some(v) = self.$name.insert((&proto.name).into(), proto) {
                                 log::warn!("duplicate {} with name: {}", <$t as $crate::Prototype>::NAME, v.name);

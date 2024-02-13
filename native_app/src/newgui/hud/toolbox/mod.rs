@@ -16,9 +16,10 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::newgui::Tool;
 use crate::uiworld::UiWorld;
 
-mod roadbuild;
-mod roadedit;
-mod terraforming;
+pub mod building;
+pub mod roadbuild;
+pub mod roadedit;
+pub mod terraforming;
 
 pub fn new_toolbox(uiworld: &UiWorld, sim: &Simulation) {
     if uiworld
@@ -78,7 +79,9 @@ fn tool_properties(uiw: &UiWorld, _sim: &Simulation) -> bool {
         Tool::RoadEditor => {
             roadedit::roadedit_properties(uiw);
         }
-        Tool::SpecialBuilding => {}
+        Tool::SpecialBuilding => {
+            building::special_building_properties(uiw);
+        }
         Tool::Train => {}
         Tool::Terraforming => {
             terraforming::terraform_properties(uiw);

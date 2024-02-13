@@ -429,9 +429,10 @@ pub fn resizebar_vert(off: &mut Response<StateResponse<f32>>, scrollbar_on_left_
         let last_val = use_state(|| None);
         let mut hovered = false;
         let d = yakui::draggable(|| {
-            constrained(Constraints::tight(Vec2::new(5.0, f32::INFINITY)), || {
-                hovered = *is_hovered();
-            });
+            hovered = is_hovered(|| {
+                constrained(Constraints::tight(Vec2::new(5.0, f32::INFINITY)), || {});
+            })
+            .hovered;
         })
         .dragging;
         let delta = d

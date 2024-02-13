@@ -9,7 +9,7 @@ use yakui_core::{context, CrossAxisAlignment, MainAxisSize, Response, WidgetId};
 use yakui_widgets::util::widget;
 use yakui_widgets::widgets::{Button, List, ListResponse, Pad, PadResponse, Text};
 
-use crate::{on_primary, on_secondary, primary, secondary};
+use crate::{on_primary, on_secondary, primary, secondary, DEFAULT_FONT_SIZE};
 
 pub fn checkbox_value(v: &mut bool, color: Color, label: &'static str) {
     minrow(5.0, || {
@@ -52,9 +52,18 @@ pub fn padx(x: f32, children: impl FnOnce()) -> Response<PadResponse> {
     Pad::horizontal(x).show(children)
 }
 
+pub fn titlec(c: Color, text: impl Into<Cow<'static, str>>) {
+    let mut t = Text::label(text.into());
+    t.style.color = c;
+    t.style.font_size = DEFAULT_FONT_SIZE + 6.0;
+    t.padding = Pad::vertical(3.0);
+    t.show();
+}
+
 pub fn textc(c: Color, text: impl Into<Cow<'static, str>>) {
     let mut t = Text::label(text.into());
     t.style.color = c;
+    t.style.font_size = DEFAULT_FONT_SIZE;
     t.padding = Pad::all(0.0);
     t.show();
 }

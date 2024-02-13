@@ -58,8 +58,8 @@ impl Prototype for BuildingPrototype {
         self.id
     }
 
-    fn parent(&self) -> Option<&Self::Parent> {
-        None
+    fn parent(&self) -> &Self::Parent {
+        &NoParent
     }
 }
 

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::time::Instant;
 
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
@@ -21,7 +22,7 @@ pub struct ImageButton {
     pub color: Color,
     pub hover_color: Color,
     pub active_color: Color,
-    pub tooltip: &'static str,
+    pub tooltip: Cow<'static, str>,
 }
 
 impl ImageButton {
@@ -32,7 +33,7 @@ impl ImageButton {
             color: Color::WHITE,
             hover_color: Color::WHITE,
             active_color: Color::WHITE,
-            tooltip: "",
+            tooltip: Cow::Borrowed(""),
         }
     }
 
@@ -49,7 +50,7 @@ impl ImageButton {
             color,
             hover_color,
             active_color,
-            tooltip: "",
+            tooltip: Cow::Borrowed(""),
         }
     }
 
@@ -62,7 +63,7 @@ pub fn primary_image_button(
     texture: TextureId,
     size: Vec2,
     enabled: bool,
-    tooltip: &'static str,
+    tooltip: impl Into<Cow<'static, str>>,
 ) -> Response<ImageButtonResponse> {
     let (default_col, hover_col) = if enabled {
         let c = primary().lerp(&Color::WHITE, 0.3);
@@ -79,7 +80,7 @@ pub fn image_button(
     color: Color,
     hover_color: Color,
     active_color: Color,
-    tooltip: &'static str,
+    tooltip: impl Into<Cow<'static, str>>,
 ) -> Response<ImageButtonResponse> {
     ImageButton {
         texture: Some(texture),
@@ -87,7 +88,7 @@ pub fn image_button(
         color,
         hover_color,
         active_color,
-        tooltip,
+        tooltip: tooltip.into(),
     }
     .show()
 }
@@ -135,7 +136,7 @@ impl Widget for ImageButtonWidget {
                 if self.show_tooltip {
                     round_rect(5.0, primary(), || {
                         padxy(5.0, 4.0, || {
-                            textc(on_primary(), self.props.tooltip);
+                            textc(on_primary(), self.props.tooltip.clone());
                         });
                     });
                 }

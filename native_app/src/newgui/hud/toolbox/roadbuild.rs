@@ -130,7 +130,7 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
                         default_col,
                         hover_col,
                         primary(),
-                        label,
+                        *label,
                     )
                     .clicked
                     {

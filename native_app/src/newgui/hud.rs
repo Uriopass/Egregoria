@@ -1,8 +1,9 @@
-use goryak::minrow;
-use ordered_float::OrderedFloat;
 use std::time::Instant;
-use yakui::widgets::Pad;
-use yakui::{image, reflow, Alignment, Color, Dim2, Vec2};
+
+use goryak::{image_button, minrow, on_secondary_container, textc};
+use ordered_float::OrderedFloat;
+use prototypes::ItemID;
+use yakui::{reflow, Alignment, Color, Dim2, Vec2};
 
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
@@ -12,12 +13,11 @@ use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
 use crate::newgui::windows::settings::Settings;
-use crate::newgui::IconTextures;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 mod menu;
 mod time_controls;
-mod toolbox;
+pub mod toolbox;
 pub mod windows;
 
 /// Root GUI entrypoint
@@ -35,21 +35,6 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
         menu_bar(uiworld, sim);
         uiworld.write::<GuiState>().windows.render(uiworld, sim);
         time_controls(uiworld, sim);
-        goryak::Window {
-            title: "Building icons",
-            pad: Pad::all(5.0),
-            radius: 5.0,
-            opened: &mut true,
-        }
-        .show(|| {
-            minrow(5.0, || {
-                let ids = &uiworld.read::<IconTextures>().ids;
-
-                for id in ids.values() {
-                    image(*id, Vec2::splat(96.0));
-                }
-            });
-        });
     });
     //goryak::debug_layout();
 }
@@ -110,4 +95,35 @@ fn power_errors(uiworld: &UiWorld, sim: &Simulation) {
             );
         }
     }
+}
+
+pub fn item_icon_yakui(uiworld: &UiWorld, id: ItemID, multiplier: i32) {
+    let item = id.prototype();
+    minrow(5.0, || {
+        if let Some(id) = uiworld
+            .read::<UiTextures>()
+            .try_get_yakui(&format!("icon/{}", item.name))
+        {
+            if image_button(
+                id,
+                Vec2::new(32.0, 32.0),
+                Color::WHITE,
+                Color::WHITE,
+                Color::WHITE,
+                "",
+            )
+            .hovering
+            {
+                reflow(Alignment::CENTER, Dim2::ZERO, || {
+                    textc(
+                        on_secondary_container(),
+                        format!("{} x{}", item.name, multiplier),
+                    );
+                });
+            }
+        } else {
+            textc(on_secondary_container(), format!("- {} ", &item.label));
+        }
+        textc(on_secondary_container(), format!("x{multiplier}"))
+    });
 }

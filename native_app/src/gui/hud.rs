@@ -3,12 +3,10 @@ use std::time::Instant;
 use egui::load::SizedTexture;
 use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
 
-use geom::{Polygon, Vec2};
-use prototypes::{
-    prototypes_iter, BuildingGen, FreightStationPrototype, GoodsCompanyPrototype, ItemID, Money,
-};
+use geom::Vec2;
+use prototypes::{prototypes_iter, BuildingGen, FreightStationPrototype, ItemID, Money};
 use simulation::economy::Government;
-use simulation::map::{BuildingKind, LanePatternBuilder, MapProject, Zone};
+use simulation::map::{BuildingKind, LanePatternBuilder, MapProject};
 use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
@@ -129,10 +127,7 @@ pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
 
     let toolbox_w = 85.0;
 
-    let tools = [
-        ("buildings", Tool::SpecialBuilding),
-        ("traintool", Tool::Train),
-    ];
+    let tools = [("traintool", Tool::Train)];
 
     Window::new("Toolbox")
         .min_width(toolbox_w)
@@ -181,28 +176,6 @@ pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
                     *uiworld.write::<Tool>() = Tool::Train;
                 }
 
-                /*
-                if ui.button_with_size("Trainstation", [rbw, 30.0]) {
-                    *uiworld.write::<Tool>() = Tool::SpecialBuilding;
-
-                    let h = LanePatternBuilder::new().rail(true).n_lanes(1).width();
-
-                    uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
-                        make: Box::new(move |args, commands| {
-                            let d = args.obb.axis()[0].z(0.0) * 0.5;
-                            let off = args.obb.axis()[1].z(0.0).normalize_to(h * 0.5 + 10.0);
-                            commands.map_build_trainstation(
-                                args.mpos - d - off,
-                                args.mpos + d - off,
-                            );
-                        }),
-                        w: h + 15.0,
-                        h: 230.0,
-                        asset: "trainstation.glb".to_string(),
-                        road_snap: false,
-                    });
-                }*/
-
                 for proto in prototypes_iter::<FreightStationPrototype>() {
                     let mut freightstation = RichText::new(&proto.label);
                     if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
@@ -246,110 +219,6 @@ pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
                             road_snap: false,
                         });
                     }
-                }
-            });
-    }
-
-    let building_select_w = 200.0;
-
-    if matches!(*uiworld.read::<Tool>(), Tool::SpecialBuilding) {
-        Window::new("Buildings")
-            .min_width(building_select_w)
-            .default_height(500.0f32.min(h * 0.5))
-            .vscroll(true)
-            .fixed_pos([w - toolbox_w - building_select_w, h * 0.5 - 100.0])
-            .title_bar(true)
-            .collapsible(false)
-            .resizable(false)
-            .show(ui, |ui| {
-                let mut cur_build = uiworld.write::<SpecialBuildingResource>();
-
-                let mut picked_descr = None;
-                ui.style_mut().spacing.interact_size = [building_select_w - 5.0, 35.0].into();
-
-                for descr in prototypes_iter::<GoodsCompanyPrototype>() {
-                    let cur_kind = cur_build.opt.as_ref().map(|x| &x.asset);
-
-                    let mut name = RichText::new(&descr.name);
-                    if Some(&descr.asset) == cur_kind {
-                        picked_descr = Some(descr);
-                        name = name.strong();
-                    };
-                    if ui.button(name).clicked() || cur_build.opt.is_none() {
-                        let bkind = BuildingKind::GoodsCompany(descr.id);
-                        let bgen = descr.bgen;
-                        let has_zone = descr.zone.is_some();
-                        cur_build.opt = Some(SpecialBuildKind {
-                            road_snap: true,
-                            make: Box::new(move |args| {
-                                vec![WorldCommand::MapBuildSpecialBuilding {
-                                    pos: args.obb,
-                                    kind: bkind,
-                                    gen: bgen,
-                                    zone: has_zone.then(|| {
-                                        Zone::new(
-                                            Polygon::from(args.obb.corners.as_slice()),
-                                            Vec2::X,
-                                        )
-                                    }),
-                                    connected_road: args.connected_road,
-                                }]
-                            }),
-                            size: descr.size,
-                            asset: descr.asset.clone(),
-                        });
-                    }
-                }
-
-                let bdescrpt_w = 180.0;
-
-                if let Some(descr) = picked_descr {
-                    Window::new("Building description")
-                        .default_width(bdescrpt_w)
-                        .auto_sized()
-                        .fixed_pos([
-                            w - toolbox_w - building_select_w - bdescrpt_w,
-                            h * 0.5 - 30.0,
-                        ])
-                        .hscroll(false)
-                        .title_bar(true)
-                        .collapsible(false)
-                        .resizable(false)
-                        .show(ui.ctx(), |ui| {
-                            ui.label(format!("workers: {}", descr.n_workers));
-
-                            if let Some(ref recipe) = descr.recipe {
-                                ui.add_space(10.0);
-                                if !recipe.consumption.is_empty() {
-                                    ui.label("consumption:");
-                                    for item in &recipe.consumption {
-                                        item_icon(ui, uiworld, item.id, item.amount);
-                                    }
-                                    ui.add_space(10.0);
-                                }
-                                if !recipe.production.is_empty() {
-                                    ui.label("production:");
-                                    for item in &recipe.production {
-                                        item_icon(ui, uiworld, item.id, item.amount);
-                                    }
-                                    ui.add_space(10.0);
-                                }
-                                ui.label(format!("time: {}", recipe.duration));
-                                ui.label(format!(
-                                    "storage multiplier: {}",
-                                    recipe.storage_multiplier
-                                ));
-                            }
-
-                            if let Some(p) = descr.power_consumption {
-                                ui.add_space(10.0);
-                                ui.label(format!("Power: {}", p));
-                            }
-                            if let Some(p) = descr.power_production {
-                                ui.add_space(10.0);
-                                ui.label(format!("Power production: {}", p));
-                            }
-                        });
                 }
             });
     }

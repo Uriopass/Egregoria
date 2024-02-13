@@ -48,8 +48,8 @@ impl Prototype for GoodsCompanyPrototype {
         self.id
     }
 
-    fn parent(&self) -> Option<&Self::Parent> {
-        Some(&self.base)
+    fn parent(&self) -> &Self::Parent {
+        &self.base
     }
 }
 

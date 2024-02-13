@@ -71,4 +71,8 @@ impl UiTextures {
     pub fn try_get(&self, name: &str) -> Option<TextureId> {
         self.textures.get(name).map(TextureHandle::id)
     }
+
+    pub fn try_get_yakui(&self, name: &str) -> Option<yakui::TextureId> {
+        self.yakui_textures.get(name).copied()
+    }
 }

@@ -34,22 +34,26 @@ pub trait Prototype: 'static + Sized {
     fn id(&self) -> Self::ID;
 
     /// The parent of the prototype
-    fn parent(&self) -> Option<&Self::Parent>;
-
-    /// util function to recursively insert the parents of this prototype into the prototypes lists
-    fn insert_parents(&self, prototypes: &mut Prototypes) {
-        if let Some(p) = self.parent() {
-            Self::Parent::storage_mut(prototypes).insert(p.id(), p.clone());
-            p.insert_parents(prototypes);
-        }
-    }
+    fn parent(&self) -> &Self::Parent;
 }
 
 /// A concrete prototype is a prototype that has a static storage and ordering (it is not virtual)
 pub trait ConcretePrototype: Prototype + Clone {
+    const HAS_PARENT: bool = true;
+
     fn ordering(prototypes: &Prototypes) -> &[Self::ID];
     fn storage(prototypes: &Prototypes) -> &TransparentMap<Self::ID, Self>;
     fn storage_mut(prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self>;
+
+    /// util function to recursively insert the parents of this prototype into the prototypes lists
+    fn insert_parents(&self, prototypes: &mut Prototypes) {
+        let p = self.parent();
+        if !<Self::Parent as ConcretePrototype>::HAS_PARENT {
+            return;
+        }
+        Self::Parent::storage_mut(prototypes).insert(p.id(), p.clone());
+        p.insert_parents(prototypes);
+    }
 }
 
 /// The unique ID of a prototype
@@ -73,12 +77,14 @@ impl Prototype for NoParent {
         unreachable!()
     }
 
-    fn parent(&self) -> Option<&Self::Parent> {
-        None
+    fn parent(&self) -> &Self::Parent {
+        self
     }
 }
 
 impl ConcretePrototype for NoParent {
+    const HAS_PARENT: bool = false;
+
     fn ordering(_prototypes: &Prototypes) -> &[Self::ID] {
         &[]
     }
@@ -90,6 +96,8 @@ impl ConcretePrototype for NoParent {
     fn storage_mut(_prototypes: &mut Prototypes) -> &mut TransparentMap<Self::ID, Self> {
         unreachable!()
     }
+
+    fn insert_parents(&self, _prototypes: &mut Prototypes) {}
 }
 
 static mut PROTOTYPES: Option<&'static Prototypes> = None;

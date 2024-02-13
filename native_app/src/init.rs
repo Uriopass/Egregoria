@@ -10,12 +10,12 @@ use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;
 use crate::newgui::specialbuilding::SpecialBuildingResource;
 use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::toolbox::building::BuildingIcons;
 use crate::newgui::windows::economy::EconomyState;
 use crate::newgui::windows::settings::{Settings, SettingsState};
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
-    ErrorTooltip, IconTextures, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways,
-    Tool,
+    ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
 };
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};
@@ -64,7 +64,7 @@ pub fn init() {
     register_resource_noserialize::<crate::uiworld::SaveLoadState>();
     register_resource_noserialize::<EconomyState>();
     register_resource_noserialize::<SettingsState>();
-    register_resource_noserialize::<IconTextures>();
+    register_resource_noserialize::<BuildingIcons>();
 }
 
 pub struct InitFunc {

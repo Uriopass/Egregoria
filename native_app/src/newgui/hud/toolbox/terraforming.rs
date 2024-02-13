@@ -39,7 +39,7 @@ pub fn terraform_properties(uiw: &UiWorld) {
                         texs.get_yakui(icon),
                         Vec2::new(64.0, 64.0),
                         enabled,
-                        label,
+                        *label,
                     )
                     .clicked
                     {
@@ -67,7 +67,7 @@ pub fn terraform_properties(uiw: &UiWorld) {
                         texs.get_yakui(icon),
                         Vec2::new(64.0, 64.0),
                         enabled,
-                        label,
+                        *label,
                     )
                     .clicked
                     {
@@ -105,7 +105,7 @@ pub fn terraform_properties(uiw: &UiWorld) {
                         texs.get_yakui(icon),
                         Vec2::new(64.0, 64.0),
                         enabled,
-                        label,
+                        *label,
                     )
                     .clicked
                     {
