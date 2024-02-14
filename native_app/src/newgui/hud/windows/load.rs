@@ -71,7 +71,7 @@ pub fn load(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
 
         if let Some(ref mut loading) = uiw.write::<SaveLoadState>().please_load {
             let ticks_done = loading.pastt.0;
-            let ticks_total = loading.replay.commands.last().map(|c| c.0 .0).unwrap_or(0);
+            let ticks_total = loading.replay.last_tick_recorded.0;
             ProgressBar {
                 value: ticks_done as f32 / ticks_total as f32,
                 size: Vec2::new(400.0, 25.0),

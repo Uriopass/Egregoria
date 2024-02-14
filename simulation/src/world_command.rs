@@ -221,7 +221,7 @@ impl WorldCommand {
         let mut rep = sim.resources.write::<Replay>();
         if rep.enabled {
             let tick = sim.read::<GameTime>().tick;
-            rep.commands.push((tick, self.clone()));
+            rep.push(tick, self.clone());
         }
         drop(rep);
 
@@ -309,7 +309,7 @@ impl WorldCommand {
                     let mut rep = sim.resources.write::<Replay>();
                     rep.enabled = true;
                     let tick = sim.read::<GameTime>().tick;
-                    rep.commands.push((tick, Init(opts.clone())));
+                    rep.push(tick, Init(opts.clone()));
                 }
 
                 if opts.terrain_size > 0 {

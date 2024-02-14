@@ -7,7 +7,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Replay {
     pub enabled: bool,
-    pub commands: Vec<(Tick, WorldCommand)>,
+    commands: Vec<(Tick, WorldCommand)>,
+    pub last_tick_recorded: Tick,
+}
+
+impl Replay {
+    pub fn push(&mut self, tick: Tick, command: WorldCommand) {
+        self.commands.push((tick, command));
+    }
 }
 
 pub struct SimulationReplayLoader {
@@ -55,7 +62,21 @@ impl SimulationReplayLoader {
             sim.tick(schedule, command_slice.iter().map(|(_, c)| c));
             self.pastt.0 += 1;
             ticks_left -= 1;
+            if ticks_left == 0 {
+                return false;
+            }
         }
-        self.idx >= self.replay.commands.len()
+        if self.idx < self.replay.commands.len() {
+            return false;
+        }
+        while ticks_left > 0 && self.pastt < self.replay.last_tick_recorded {
+            sim.tick(schedule, &[]);
+            self.pastt.0 += 1;
+            ticks_left -= 1;
+            if ticks_left == 0 {
+                return false;
+            }
+        }
+        true
     }
 }

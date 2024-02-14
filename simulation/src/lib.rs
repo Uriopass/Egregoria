@@ -254,6 +254,9 @@ impl Simulation {
 
         game_schedule.execute(self);
 
+        self.resources.write::<Replay>().last_tick_recorded =
+            self.resources.read::<GameTime>().tick;
+
         t.elapsed()
     }
 

@@ -267,7 +267,7 @@ fn test_world_survives_serde() {
             "--- tick {} ({}/{})",
             sim.get_tick(),
             loader.pastt.0,
-            loader.replay.commands.last().unwrap().0 .0
+            loader.replay.last_tick_recorded.0
         );
 
         let ser = common::saveload::Bincode::encode(&sim).unwrap();
