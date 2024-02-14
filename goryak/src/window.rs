@@ -5,12 +5,10 @@ use std::rc::Rc;
 use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
 use yakui_core::widget::{LayoutContext, Widget};
 use yakui_core::{context, Alignment, Flow};
-use yakui_widgets::widgets::{Button, Pad};
+use yakui_widgets::widgets::{Button, Pad, Text};
 use yakui_widgets::{center, constrained, divider, draggable, offset, reflow};
 
-use crate::{
-    blur_bg, icon_button, mincolumn, on_primary_container, outline, primary_container, textc,
-};
+use crate::{blur_bg, icon_button, mincolumn, on_primary_container, outline, primary_container};
 
 pub struct Window<'a> {
     pub title: Cow<'static, str>,
@@ -54,7 +52,17 @@ impl<'a> Window<'a> {
                                     });
                                 });
                             });
-                            textc(on_primary_container(), self.title);
+
+                            {
+                                // title
+                                let mut t = Text::label(self.title.into());
+                                t.style.color = on_primary_container();
+                                t.style.font_size = crate::DEFAULT_FONT_SIZE;
+                                t.padding = Pad::ZERO;
+                                t.padding.right = 15.0;
+                                t.show();
+                            }
+
                             divider(outline(), 10.0, 1.0);
                             if self.child_spacing != 0.0 {
                                 mincolumn(self.child_spacing, children);
