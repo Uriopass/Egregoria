@@ -27,6 +27,14 @@ impl<'a> Window<'a> {
             if *self.opened {
                 blur_bg(primary_container().with_alpha(0.5), self.radius, || {
                     self.pad.show(|| {
+                        if self.title.is_empty() {
+                            if self.child_spacing != 0.0 {
+                                mincolumn(self.child_spacing, children);
+                            } else {
+                                children();
+                            }
+                            return;
+                        }
                         mincolumn(0.0, || {
                             reflow(Alignment::TOP_RIGHT, Dim2::ZERO, || {
                                 offset(Vec2::new(-25.0, -15.0), || {
