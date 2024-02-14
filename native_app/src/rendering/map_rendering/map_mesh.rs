@@ -561,7 +561,7 @@ impl MapBuilders {
         }
     }
 
-    fn draw_rail(tess: &mut Tesselator, cut: &PolyLine3, off: f32, limits: bool) {
+    fn draw_rail(tess: &mut Tesselator, cut: &PolyLine3, off: f32, _limits: bool) {
         tess.set_color(Color::gray(0.5));
         tess.draw_polyline_full(
             cut.as_slice().iter().map(|v| vec3(v.x, v.y, v.z + 0.02)),
@@ -577,16 +577,16 @@ impl MapBuilders {
             0.1,
             off - 0.6,
         );
-        for (v, dir) in cut.equipoints_dir(1.0, !limits) {
-            let up = vec3(v.x, v.y, v.z + 0.04);
-            tess.draw_polyline_full(
-                [up, up + dir * 0.1].into_iter(),
-                dir.xy(),
-                dir.xy(),
-                2.0,
-                off,
-            );
-        }
+        //for (v, dir) in cut.equipoints_dir(1.0, !limits) {
+        //    let up = vec3(v.x, v.y, v.z + 0.04);
+        //    tess.draw_polyline_full(
+        //        [up, up + dir * 0.1].into_iter(),
+        //        dir.xy(),
+        //        dir.xy(),
+        //        2.0,
+        //        off,
+        //    );
+        //}
     }
 
     fn map_mesh(&mut self, map: &Map, chunk: SubscriberChunkID) {

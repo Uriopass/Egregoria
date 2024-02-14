@@ -31,11 +31,6 @@ impl<'a> Tesselator<'a> {
         }
     }
 
-    pub fn extend(&mut self, vertices: &[MeshVertex], indices: &[IndexType]) {
-        self.vertices.extend_from_slice(vertices);
-        self.indices.extend_from_slice(indices);
-    }
-
     pub fn extend_with(&mut self, f: impl FnOnce(&mut Vec<MeshVertex>, &mut dyn FnMut(IndexType))) {
         let offset = self.vertices.len() as IndexType;
         let vertices = &mut self.vertices;
@@ -260,7 +255,15 @@ impl<'a> Tesselator<'a> {
                 tangent: [0.0; 4],
             },
         ];
-        self.extend(&verts, &[2, 1, 0, 3, 2, 0]);
+        self.extend_with(|v, add_i| {
+            v.extend_from_slice(&verts);
+            add_i(2);
+            add_i(1);
+            add_i(0);
+            add_i(3);
+            add_i(2);
+            add_i(0);
+        });
         true
     }
 
@@ -319,14 +322,25 @@ impl<'a> Tesselator<'a> {
             },
         ];
 
-        self.extend(
-            &verts,
-            if self.normal.z < 0.0 {
-                &[2, 1, 0, 3, 2, 0]
+        let n_inv = self.normal.z < 0.0;
+        self.extend_with(|v, add_i| {
+            v.extend_from_slice(&verts);
+            if n_inv {
+                add_i(2);
+                add_i(1);
+                add_i(0);
+                add_i(3);
+                add_i(2);
+                add_i(0);
             } else {
-                &[0, 1, 2, 0, 2, 3]
-            },
-        );
+                add_i(0);
+                add_i(1);
+                add_i(2);
+                add_i(0);
+                add_i(2);
+                add_i(3);
+            }
+        });
         true
     }
     pub fn draw_polyline_with_dir(
