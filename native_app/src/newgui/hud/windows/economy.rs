@@ -111,7 +111,7 @@ pub fn economy(uiw: &UiWorld, sim: &Simulation, opened: &mut bool) {
 
         let render_history = |history: &ItemHistories, hist_type: HistoryType| {
             padxy(5.0, 5.0, || {
-                mincolumn(|| {
+                mincolumn(0.0, || {
                     let plot_size_x: f32 = 300.0;
                     let plot_size_y: f32 = 200.0;
 

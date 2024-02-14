@@ -34,9 +34,10 @@ pub fn minrow<F: FnOnce()>(spacing: f32, children: F) -> Response<ListResponse> 
     l.show(children)
 }
 
-pub fn mincolumn<F: FnOnce()>(children: F) -> Response<ListResponse> {
+pub fn mincolumn<F: FnOnce()>(spacing: f32, children: F) -> Response<ListResponse> {
     let mut l = List::column();
     l.main_axis_size = MainAxisSize::Min;
+    l.item_spacing = spacing;
     l.show(children)
 }
 

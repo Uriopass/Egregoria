@@ -1,4 +1,3 @@
-use crate::gui::inspect::inspect_train::inspect_train;
 use crate::gui::windows::debug::DebugState;
 use crate::gui::FollowEntity;
 use crate::newgui::{InspectedBuilding, InspectedEntity};
@@ -15,7 +14,6 @@ use slotmapd::Key;
 mod inspect_building;
 mod inspect_debug;
 mod inspect_human;
-mod inspect_train;
 mod inspect_vehicle;
 
 pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
@@ -37,16 +35,8 @@ pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
         AnyEntity::VehicleID(id) if !force_debug_inspect => {
             is_open = inspect_vehicle(uiworld, sim, ui, id);
         }
-        AnyEntity::WagonID(id) if !force_debug_inspect => {
-            let Some(w) = sim.world().get(id) else {
-                return;
-            };
-            let train_id = w.itfollower.leader;
-            uiworld.write::<InspectedEntity>().e = Some(AnyEntity::TrainID(train_id));
-        }
-        AnyEntity::TrainID(id) if !force_debug_inspect => {
-            is_open = inspect_train(uiworld, sim, ui, id);
-        }
+        AnyEntity::WagonID(_) if !force_debug_inspect => {}
+        AnyEntity::TrainID(_) if !force_debug_inspect => {}
         _ => {
             Window::new("Inspect")
                 .default_size([400.0, 500.0])

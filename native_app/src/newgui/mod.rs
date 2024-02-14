@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use std::time::Instant;
 
 mod hud;
+pub mod inspect;
 mod textures;
 mod tools;
 

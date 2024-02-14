@@ -69,7 +69,7 @@ pub fn special_building_properties(uiw: &UiWorld) {
                                 if is_hovered(|| {
                                     blur_bg(secondary_container().with_alpha(0.5), 10.0, || {
                                         padxy(10.0, 10.0, || {
-                                            mincolumn(|| {
+                                            mincolumn(3.0, || {
                                                 titlec(on_secondary_container(), &descr.label);
                                                 textc(
                                                     on_secondary_container(),

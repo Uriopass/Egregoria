@@ -11,6 +11,7 @@ use simulation::Simulation;
 use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
+use crate::newgui::inspect::new_inspector;
 use crate::newgui::textures::UiTextures;
 use crate::newgui::windows::settings::Settings;
 use crate::newgui::GuiState;
@@ -34,6 +35,7 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
         power_errors(uiworld, sim);
         new_toolbox(uiworld, sim);
         menu_bar(uiworld, sim);
+        new_inspector(uiworld, sim);
         uiworld.write::<GuiState>().windows.render(uiworld, sim);
         time_controls(uiworld, sim);
     });
