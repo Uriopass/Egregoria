@@ -1,4 +1,3 @@
-pub mod chat;
 pub mod debug_inspect;
 pub mod debug_window;
 pub mod hud;

@@ -11,7 +11,7 @@ use engine::Tesselator;
 use geom::AABB;
 use goryak::{
     constrained_viewport, mincolumn, minrow, on_primary_container, padxy, pady,
-    selectable_label_primary, sized_canvas, textc, VertScroll, Window,
+    selectable_label_primary, sized_canvas, textc, VertScrollSize, Window,
 };
 use prototypes::{ItemID, DELTA_F64};
 use simulation::economy::{
@@ -235,7 +235,7 @@ pub fn economy(uiw: &UiWorld, sim: &Simulation, opened: &mut bool) {
                         });
                     });
 
-                    VertScroll::Fixed(300.0).show(|| {
+                    VertScrollSize::Fixed(300.0).show(|| {
                         constrained(Constraints::loose(Vec2::new(300.0, 1000000.0)), || {
                             let mut overall_total = 0;
                             let mut g = CountGrid::col(2);
@@ -331,7 +331,7 @@ pub fn economy(uiw: &UiWorld, sim: &Simulation, opened: &mut bool) {
 fn render_market_prices(sim: &Simulation) {
     let market = sim.read::<Market>();
 
-    VertScroll::Fixed(300.0).show(|| {
+    VertScrollSize::Fixed(300.0).show(|| {
         let mut grid = CountGrid::col(2);
         grid.main_axis_size = MainAxisSize::Min;
         grid.show(|| {

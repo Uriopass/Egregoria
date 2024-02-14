@@ -1,9 +1,9 @@
 use crate::game_loop::Timings;
-use crate::gui::chat::GUIChatState;
 use crate::gui::debug_window::{DebugObjs, DebugState, TestFieldProperties};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::newgui::bulldozer::BulldozerState;
+use crate::newgui::chat::GUIChatState;
 use crate::newgui::follow::FollowEntity;
 use crate::newgui::lotbrush::LotBrushResource;
 use crate::newgui::roadbuild::RoadBuildResource;

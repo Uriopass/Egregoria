@@ -2,12 +2,13 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use yakui::widgets::{Pad, TextBox};
-use yakui::{constrained, divider, Color, Constraints, Vec2};
+use yakui::divider;
+use yakui::widgets::Pad;
 
 use common::saveload::Encoder;
 use goryak::{
-    button_primary, checkbox_value, error, on_secondary_container, outline, textc, Window,
+    button_primary, checkbox_value, error, on_secondary_container, outline, text_edit, textc,
+    Window,
 };
 use simulation::Simulation;
 
@@ -32,23 +33,6 @@ fn label(x: impl Into<Cow<'static, str>>) {
     textc(on_secondary_container(), x);
 }
 
-fn text_edit(x: &mut String, placeholder: &str) {
-    constrained(
-        Constraints {
-            min: Vec2::new(100.0, 20.0),
-            max: Vec2::new(f32::INFINITY, f32::INFINITY),
-        },
-        || {
-            let mut text = TextBox::new(x.clone());
-            text.placeholder = placeholder.to_string();
-            text.fill = Some(Color::rgba(0, 0, 0, 50));
-            if let Some(changed) = text.show().into_inner().text {
-                *x = changed;
-            }
-        },
-    );
-}
-
 /// Network window
 /// Allows to connect to a server or start a server
 pub fn network(uiworld: &UiWorld, sim: &Simulation, opened: &mut bool) {
@@ -71,7 +55,7 @@ pub fn network(uiworld: &UiWorld, sim: &Simulation, opened: &mut bool) {
                     divider(outline(), 5.0, 1.0);
                 }
 
-                text_edit(&mut info.name, "Name");
+                text_edit(200.0, &mut info.name, "Name");
 
                 if info.name.is_empty() {
                     label("please enter your name");
@@ -86,7 +70,7 @@ pub fn network(uiworld: &UiWorld, sim: &Simulation, opened: &mut bool) {
 
                 divider(outline(), 5.0, 1.0);
 
-                text_edit(&mut info.ip, "IP");
+                text_edit(200.0, &mut info.ip, "IP");
 
                 if button_primary("Connect").show().clicked {
                     if let Some(c) = crate::network::start_client(&mut info) {

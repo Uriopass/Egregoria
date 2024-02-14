@@ -17,6 +17,7 @@ use crate::newgui::windows::settings::Settings;
 use crate::newgui::GuiState;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
+pub mod chat;
 mod menu;
 mod time_controls;
 pub mod toolbox;
@@ -35,6 +36,7 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
         power_errors(uiworld, sim);
         new_toolbox(uiworld, sim);
         menu_bar(uiworld, sim);
+        chat::chat(uiworld, sim);
         new_inspector(uiworld, sim);
         uiworld.write::<GuiState>().windows.render(uiworld, sim);
         time_controls(uiworld, sim);

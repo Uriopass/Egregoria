@@ -8,10 +8,33 @@ use yakui_core::Response;
 use yakui_widgets::shapes::RoundedRectangle;
 
 #[derive(Debug)]
-pub enum VertScroll {
+pub enum VertScrollSize {
+    /// The scroll size is a percentage of the parent's size.
     Percent(f32),
+    /// The scroll size is exactly what is given (within constraints).
+    Exact(f32),
+    /// The scroll size is at most what is given (within constraints).
     Fixed(f32),
+    /// The scroll size is equal to the parent's size.
     Max,
+}
+
+impl VertScrollSize {
+    pub fn show<F: FnOnce()>(self, children: F) -> Response<VertScrollResponse> {
+        yakui_widgets::util::widget_children::<VertScrollWidget, F>(
+            children,
+            VertScroll {
+                size: self,
+                align_bot: false,
+            },
+        )
+    }
+}
+
+#[derive(Debug)]
+pub struct VertScroll {
+    pub size: VertScrollSize,
+    pub align_bot: bool,
 }
 
 impl VertScroll {
@@ -40,7 +63,10 @@ impl Widget for VertScrollWidget {
 
     fn new() -> Self {
         Self {
-            props: VertScroll::Max,
+            props: VertScroll {
+                size: VertScrollSize::Max,
+                align_bot: false,
+            },
             scroll_position: Cell::new(0.0),
             size: Cell::new(0.0),
             canvas_size: Cell::new(0.0),
@@ -55,9 +81,10 @@ impl Widget for VertScrollWidget {
     }
 
     fn flex(&self) -> (u32, FlexFit) {
-        match self.props {
-            VertScroll::Max => (1, FlexFit::Tight),
-            VertScroll::Percent(_) => (1, FlexFit::Loose),
+        match self.props.size {
+            VertScrollSize::Max => (1, FlexFit::Tight),
+            VertScrollSize::Percent(_) => (1, FlexFit::Loose),
+            VertScrollSize::Exact(_) => (0, FlexFit::Tight),
             _ => (0, FlexFit::Loose),
         }
     }
@@ -68,13 +95,17 @@ impl Widget for VertScrollWidget {
         let node = ctx.dom.get_current();
         let mut canvas_size = Vec2::ZERO;
 
-        let main_axis_size = match self.props {
-            VertScroll::Max => constraints.max.y,
-            VertScroll::Fixed(h) => {
+        let main_axis_size = match self.props.size {
+            VertScrollSize::Max => constraints.max.y,
+            VertScrollSize::Fixed(h) => {
                 constraints.max.y = constraints.max.y.min(h);
                 constraints.min.y
             }
-            VertScroll::Percent(percent) => {
+            VertScrollSize::Exact(h) => {
+                constraints.max.y = constraints.max.y.min(h);
+                constraints.min.y
+            }
+            VertScrollSize::Percent(percent) => {
                 constraints.max.y = constraints.max.y * percent;
                 constraints.min.y
             }
@@ -92,7 +123,10 @@ impl Widget for VertScrollWidget {
             canvas_size = canvas_size.max(child_size);
         }
 
-        let size = constraints.constrain(canvas_size);
+        let mut size = constraints.constrain(canvas_size);
+        if let VertScrollSize::Exact(_) = self.props.size {
+            size.y = size.y.max(constraints.max.y);
+        }
 
         self.canvas_size.set(canvas_size.y);
         self.size.set(size.y);
@@ -103,7 +137,12 @@ impl Widget for VertScrollWidget {
         self.scroll_position.set(scroll_position);
 
         for &child in &node.children {
-            ctx.layout.set_pos(child, Vec2::new(0.0, -scroll_position));
+            let mut off = Vec2::new(0.0, -scroll_position);
+            if self.props.align_bot {
+                off.y = size.y - canvas_size.y + scroll_position;
+            }
+
+            ctx.layout.set_pos(child, off);
         }
 
         size
@@ -134,10 +173,16 @@ impl Widget for VertScrollWidget {
             drawn_rect.size().y * (drawn_rect.size().y / self.canvas_size.get());
         let remaining_space = drawn_rect.size().y - scroll_bar_height - SCROLLBAR_PAD_Y;
 
+        let mut pos_y = remaining_space * scrollbar_progress + SCROLLBAR_PAD_Y * 0.5;
+
+        if self.props.align_bot {
+            pos_y = drawn_rect.size().y - scroll_bar_height - pos_y;
+        }
+
         let scroll_bar_pos = drawn_rect.pos()
             + Vec2::new(
                 drawn_rect.size().x - scrollbar_width * 0.5 - SCROLLBAR_PAD_X,
-                remaining_space * scrollbar_progress + SCROLLBAR_PAD_Y * 0.5,
+                pos_y,
             );
         let scroll_bar_rect = Rect::from_pos_size(
             scroll_bar_pos,
@@ -166,7 +211,10 @@ impl Widget for VertScrollWidget {
 
     fn event(&mut self, _ctx: EventContext<'_>, event: &WidgetEvent) -> EventResponse {
         match *event {
-            WidgetEvent::MouseScroll { delta } => {
+            WidgetEvent::MouseScroll { mut delta } => {
+                if self.props.align_bot {
+                    delta.y = -delta.y;
+                }
                 *self.scroll_position.get_mut() += delta.y;
                 EventResponse::Sink
             }

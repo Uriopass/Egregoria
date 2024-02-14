@@ -4,7 +4,6 @@ use prototypes::Money;
 use simulation::economy::Government;
 use simulation::Simulation;
 
-use crate::gui::chat::chat;
 use crate::gui::debug_inspect::debug_inspector;
 use crate::gui::debug_window::debug_window;
 use crate::newgui::{ErrorTooltip, GuiState, PotentialCommands};
@@ -18,8 +17,6 @@ pub fn render_oldgui(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     }
 
     debug_inspector(ui, uiworld, sim);
-
-    chat(ui, uiworld, sim);
 
     debug_window(ui, uiworld, sim);
 

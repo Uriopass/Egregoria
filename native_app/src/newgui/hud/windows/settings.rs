@@ -10,7 +10,7 @@ use engine::GfxSettings;
 use engine::ShadowQuality;
 use goryak::{
     button_primary, checkbox_value, combo_box, dragvalue, icon_button, minrow,
-    on_secondary_container, outline, padx, padxy, textc, VertScroll, Window,
+    on_secondary_container, outline, padx, padxy, textc, VertScrollSize, Window,
 };
 use simulation::Simulation;
 
@@ -129,7 +129,7 @@ pub fn settings(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
     .show(|| {
         profiling::scope!("gui::window::settings");
 
-        VertScroll::Percent(0.8).show(|| {
+        VertScrollSize::Percent(0.8).show(|| {
             let mut l = List::column();
             l.item_spacing = 5.0;
             l.main_axis_size = MainAxisSize::Min;

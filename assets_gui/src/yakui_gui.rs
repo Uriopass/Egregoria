@@ -12,7 +12,7 @@ use goryak::{
     background, button_primary, checkbox_value, constrained_viewport, dragvalue, icon,
     interact_box_radius, is_hovered, on_secondary_container, on_surface, outline_variant,
     round_rect, secondary_container, set_theme, surface, surface_variant, textc, use_changed,
-    RoundRect, Theme, VertScroll,
+    RoundRect, Theme, VertScrollSize,
 };
 use prototypes::{prototypes_iter, GoodsCompanyID, GoodsCompanyPrototype};
 
@@ -80,7 +80,7 @@ impl State {
                                 }
                             });
                         });
-                        VertScroll::Percent(1.0).show(|| {
+                        VertScrollSize::Percent(1.0).show(|| {
                             let mut l = List::column();
                             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                             l.main_axis_size = MainAxisSize::Min;
