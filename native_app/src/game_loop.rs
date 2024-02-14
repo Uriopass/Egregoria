@@ -9,10 +9,11 @@ use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::Simulation;
 
 use crate::audio::GameAudio;
+use crate::gui::render_oldgui;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{render_oldgui, FollowEntity};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui;
+use crate::newgui::follow::FollowEntity;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::toolbox::building;
 use crate::newgui::windows::settings::{manage_settings, Settings};

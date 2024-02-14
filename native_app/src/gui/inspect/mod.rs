@@ -1,5 +1,5 @@
 use crate::gui::windows::debug::DebugState;
-use crate::gui::FollowEntity;
+use crate::newgui::follow::FollowEntity;
 use crate::newgui::{InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;
 use egui::{Context, Ui, Window};

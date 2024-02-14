@@ -1,10 +1,10 @@
 use crate::game_loop::Timings;
 use crate::gui::chat::GUIChatState;
 use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
-use crate::gui::FollowEntity;
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::newgui::bulldozer::BulldozerState;
+use crate::newgui::follow::FollowEntity;
 use crate::newgui::lotbrush::LotBrushResource;
 use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;

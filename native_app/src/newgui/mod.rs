@@ -7,6 +7,7 @@ use simulation::{AnyEntity, Simulation};
 use std::borrow::Cow;
 use std::time::Instant;
 
+pub mod follow;
 mod hud;
 pub mod inspect;
 mod textures;

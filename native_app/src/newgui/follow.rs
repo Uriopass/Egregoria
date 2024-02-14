@@ -1,27 +1,12 @@
 use crate::game_loop::State;
 use crate::inputmap::{InputAction, InputMap};
-use egui::Ui;
 use simulation::AnyEntity;
 
 /// FollowEntity is a component that tells the camera to follow an entity
-/// Entity is defined by a function that returns the position of the entity
 #[derive(Default)]
 pub struct FollowEntity(pub Option<AnyEntity>);
 
 impl FollowEntity {
-    pub fn update_ui(&mut self, ui: &mut Ui, entity: AnyEntity) {
-        if self.0.is_none() {
-            if ui.small_button("Follow").clicked() {
-                self.0.replace(entity);
-            }
-            return;
-        }
-
-        if ui.small_button("Unfollow").clicked() {
-            self.0.take();
-        }
-    }
-
     pub fn update_camera(state: &mut State) {
         let just = &state.uiw.read::<InputMap>().just_act;
         if [

@@ -1,4 +1,4 @@
-use crate::gui::follow::FollowEntity;
+use crate::newgui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
 use egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
@@ -92,7 +92,9 @@ impl InspectRenderer {
 
         {
             let mut follow = uiworld.write::<FollowEntity>();
-            follow.update_ui(ui, entity);
+            if ui.small_button("Follow").clicked() {
+                follow.0.replace(entity);
+            }
         }
 
         if let Ok(soul) = SoulID::try_from(entity) {
