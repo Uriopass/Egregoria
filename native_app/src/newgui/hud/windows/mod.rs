@@ -1,4 +1,5 @@
 pub mod economy;
+pub mod load;
 pub mod settings;
 
 use crate::inputmap::{InputAction, InputMap};
@@ -10,6 +11,7 @@ use simulation::Simulation;
 pub struct GUIWindows {
     economy_open: bool,
     settings_open: bool,
+    load_open: bool,
 }
 
 impl GUIWindows {
@@ -20,6 +22,10 @@ impl GUIWindows {
 
         if button_primary("Settings").show().clicked {
             self.settings_open ^= true;
+        }
+
+        if button_primary("Load").show().clicked {
+            self.load_open ^= true;
         }
     }
 
@@ -35,5 +41,6 @@ impl GUIWindows {
 
         economy::economy(uiworld, sim, &mut self.economy_open);
         settings::settings(uiworld, sim, &mut self.settings_open);
+        load::load(uiworld, sim, &mut self.load_open);
     }
 }

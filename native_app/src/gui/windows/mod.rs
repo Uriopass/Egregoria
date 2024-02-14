@@ -6,7 +6,6 @@ use crate::uiworld::UiWorld;
 use simulation::Simulation;
 
 pub mod debug;
-pub mod load;
 #[cfg(feature = "multiplayer")]
 pub mod network;
 
@@ -54,7 +53,6 @@ impl Default for OldGUIWindows {
         s.insert("Debug", debug::debug, false);
         #[cfg(feature = "multiplayer")]
         s.insert("Network", network::network, false);
-        s.insert("Load", load::load, false);
         s
     }
 }

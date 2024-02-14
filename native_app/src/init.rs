@@ -12,6 +12,7 @@ use crate::newgui::specialbuilding::SpecialBuildingResource;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::toolbox::building::BuildingIcons;
 use crate::newgui::windows::economy::EconomyState;
+use crate::newgui::windows::load::LoadState;
 use crate::newgui::windows::settings::{Settings, SettingsState};
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
@@ -19,7 +20,7 @@ use crate::newgui::{
     TimeAlways, Tool,
 };
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
-use crate::uiworld::{ReceivedCommands, UiWorld};
+use crate::uiworld::{ReceivedCommands, SaveLoadState, UiWorld};
 use common::saveload::Encoder;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -61,8 +62,8 @@ pub fn init() {
     register_resource_noserialize::<Timings>();
     register_resource_noserialize::<Tool>();
     register_resource_noserialize::<WorldCommands>();
-    register_resource_noserialize::<crate::gui::windows::load::LoadState>();
-    register_resource_noserialize::<crate::uiworld::SaveLoadState>();
+    register_resource_noserialize::<LoadState>();
+    register_resource_noserialize::<SaveLoadState>();
     register_resource_noserialize::<EconomyState>();
     register_resource_noserialize::<SettingsState>();
     register_resource_noserialize::<BuildingIcons>();
