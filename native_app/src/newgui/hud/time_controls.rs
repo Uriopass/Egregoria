@@ -11,9 +11,9 @@ use goryak::{
 use prototypes::GameTime;
 use simulation::Simulation;
 
-use crate::gui::GuiState;
 use crate::inputmap::{InputAction, InputMap};
 use crate::newgui::windows::settings::Settings;
+use crate::newgui::GuiState;
 use crate::uiworld::UiWorld;
 
 pub fn time_controls(uiworld: &UiWorld, sim: &Simulation) {

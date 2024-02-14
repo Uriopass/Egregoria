@@ -4,9 +4,9 @@ use yakui::{column, CrossAxisAlignment, MainAxisAlignment, Vec2};
 use goryak::{fixed_spacer, padxy, primary_image_button};
 use simulation::map::TerraformKind;
 
-use crate::gui::UiTextures;
 use crate::newgui::hud::toolbox::{select_triangle, updown_value};
 use crate::newgui::terraforming::TerraformingResource;
+use crate::newgui::textures::UiTextures;
 use crate::uiworld::UiWorld;
 
 pub fn terraform_properties(uiw: &UiWorld) {
@@ -35,13 +35,8 @@ pub fn terraform_properties(uiw: &UiWorld) {
             for (kind, label, icon) in terraform_choices {
                 column(|| {
                     let enabled = state.kind == *kind;
-                    if primary_image_button(
-                        texs.get_yakui(icon),
-                        Vec2::new(64.0, 64.0),
-                        enabled,
-                        *label,
-                    )
-                    .clicked
+                    if primary_image_button(texs.get(icon), Vec2::new(64.0, 64.0), enabled, *label)
+                        .clicked
                     {
                         state.kind = *kind;
                     }
@@ -63,13 +58,8 @@ pub fn terraform_properties(uiw: &UiWorld) {
             for (radius, label, icon) in radius_choices {
                 column(|| {
                     let enabled = state.radius == *radius;
-                    if primary_image_button(
-                        texs.get_yakui(icon),
-                        Vec2::new(64.0, 64.0),
-                        enabled,
-                        *label,
-                    )
-                    .clicked
+                    if primary_image_button(texs.get(icon), Vec2::new(64.0, 64.0), enabled, *label)
+                        .clicked
                     {
                         state.radius = *radius;
                     }
@@ -101,13 +91,8 @@ pub fn terraform_properties(uiw: &UiWorld) {
             for (amount, label, icon) in amount_choices {
                 column(|| {
                     let enabled = state.amount == *amount;
-                    if primary_image_button(
-                        texs.get_yakui(icon),
-                        Vec2::new(64.0, 64.0),
-                        enabled,
-                        *label,
-                    )
-                    .clicked
+                    if primary_image_button(texs.get(icon), Vec2::new(64.0, 64.0), enabled, *label)
+                        .clicked
                     {
                         state.amount = *amount;
                     }

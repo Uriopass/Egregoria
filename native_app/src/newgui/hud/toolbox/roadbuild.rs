@@ -7,9 +7,9 @@ use yakui::{
 use goryak::{image_button, padxy, primary};
 use simulation::map::LanePatternBuilder;
 
-use crate::gui::UiTextures;
 use crate::newgui::hud::toolbox::updown_value;
 use crate::newgui::roadbuild::RoadBuildResource;
+use crate::newgui::textures::UiTextures;
 use crate::uiworld::UiWorld;
 
 pub fn roadbuild_properties(uiw: &UiWorld) {
@@ -29,7 +29,7 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
                 (Color::WHITE.with_alpha(0.3), Color::WHITE.with_alpha(0.5))
             };
             if image_button(
-                uiw.read::<UiTextures>().get_yakui("snap_grid"),
+                uiw.read::<UiTextures>().get("snap_grid"),
                 Vec2::new(32.0, 32.0),
                 default_col,
                 hover_col,
@@ -125,7 +125,7 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
                         (Color::WHITE, Color::WHITE.with_alpha(0.7))
                     };
                     if image_button(
-                        uiw.read::<UiTextures>().get_yakui(icon),
+                        uiw.read::<UiTextures>().get(icon),
                         Vec2::new(64.0, 64.0),
                         default_col,
                         hover_col,
@@ -140,7 +140,7 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
                     if is_active {
                         reflow(Alignment::CENTER_LEFT, Dim2::pixels(0.0, 32.0), || {
                             image(
-                                uiw.read::<UiTextures>().get_yakui("select_triangle_under"),
+                                uiw.read::<UiTextures>().get("select_triangle_under"),
                                 Vec2::new(64.0, 10.0),
                             );
                         });

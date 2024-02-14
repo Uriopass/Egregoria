@@ -1,13 +1,18 @@
+use crate::gui::windows::OldGUIWindows;
+use crate::newgui::windows::GUIWindows;
 use crate::uiworld::UiWorld;
 use simulation::map::BuildingID;
 use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};
 use std::borrow::Cow;
+use std::time::Instant;
 
 mod hud;
+mod textures;
 mod tools;
 
 pub use hud::*;
+pub use textures::*;
 pub use tools::*;
 
 pub fn run_ui_systems(sim: &Simulation, uiworld: &UiWorld) {
@@ -124,5 +129,39 @@ impl Tool {
             self,
             Tool::RoadbuildStraight | Tool::RoadbuildCurved | Tool::Bulldozer | Tool::LotBrush
         )
+    }
+}
+
+pub struct GuiState {
+    pub old_windows: OldGUIWindows,
+    pub windows: GUIWindows,
+    pub last_save: Instant,
+    pub last_gui_save: Instant,
+    pub depause_warp: u32,
+    pub hidden: bool,
+}
+
+impl Default for GuiState {
+    fn default() -> Self {
+        Self {
+            old_windows: OldGUIWindows::default(),
+            windows: Default::default(),
+            last_save: Instant::now(),
+            last_gui_save: Instant::now(),
+            depause_warp: 1,
+            hidden: false,
+        }
+    }
+}
+
+pub enum ExitState {
+    NoExit,
+    ExitAsk,
+    Saving,
+}
+
+impl Default for ExitState {
+    fn default() -> Self {
+        Self::NoExit
     }
 }

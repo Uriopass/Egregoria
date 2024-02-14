@@ -10,13 +10,14 @@ use simulation::Simulation;
 
 use crate::audio::GameAudio;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{render_oldgui, ExitState, FollowEntity, GuiState, UiTextures};
+use crate::gui::{render_oldgui, FollowEntity};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::toolbox::building;
 use crate::newgui::windows::settings::{manage_settings, Settings};
-use crate::newgui::{render_newgui, TimeAlways, Tool};
+use crate::newgui::UiTextures;
+use crate::newgui::{render_newgui, ExitState, GuiState, TimeAlways, Tool};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use prototypes::GameTime;
@@ -44,7 +45,6 @@ impl engine::framework::State for State {
 
         let camera = OrbitCamera::load((ctx.gfx.size.0, ctx.gfx.size.1));
 
-        GuiState::set_style(ctx.egui.platform.egui_ctx());
         log::info!("loaded egui_render");
 
         let sim: Simulation =

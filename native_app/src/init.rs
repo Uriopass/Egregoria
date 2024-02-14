@@ -1,7 +1,7 @@
 use crate::game_loop::Timings;
 use crate::gui::chat::GUIChatState;
 use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
-use crate::gui::{ExitState, FollowEntity, GuiState};
+use crate::gui::FollowEntity;
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::newgui::bulldozer::BulldozerState;
@@ -15,7 +15,8 @@ use crate::newgui::windows::economy::EconomyState;
 use crate::newgui::windows::settings::{Settings, SettingsState};
 use crate::newgui::zoneedit::ZoneEditState;
 use crate::newgui::{
-    ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, TimeAlways, Tool,
+    ErrorTooltip, ExitState, GuiState, InspectedBuilding, InspectedEntity, PotentialCommands,
+    TimeAlways, Tool,
 };
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};

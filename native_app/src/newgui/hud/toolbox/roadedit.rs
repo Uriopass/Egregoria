@@ -4,10 +4,10 @@ use yakui::{column, image, reflow, Alignment, CrossAxisAlignment, Dim2, MainAxis
 use goryak::{padxy, primary_image_button};
 use simulation::map::LightPolicy;
 
-use crate::gui::UiTextures;
 use crate::newgui::hud::toolbox;
 use crate::newgui::hud::toolbox::select_triangle;
 use crate::newgui::roadeditor::RoadEditorResource;
+use crate::newgui::textures::UiTextures;
 use crate::uiworld::UiWorld;
 
 pub fn roadedit_properties(uiw: &UiWorld) {
@@ -34,13 +34,8 @@ pub fn roadedit_properties(uiw: &UiWorld) {
             for (policy, label, icon) in light_policy_choices {
                 column(|| {
                     let enabled = v.light_policy == *policy;
-                    if primary_image_button(
-                        texs.get_yakui(icon),
-                        Vec2::new(64.0, 64.0),
-                        enabled,
-                        *label,
-                    )
-                    .clicked
+                    if primary_image_button(texs.get(icon), Vec2::new(64.0, 64.0), enabled, *label)
+                        .clicked
                     {
                         v.light_policy = *policy;
                         state.dirty = true;
@@ -75,13 +70,8 @@ pub fn roadedit_properties(uiw: &UiWorld) {
 
             for (enabled, label, icon) in turn_policies {
                 column(|| {
-                    if primary_image_button(
-                        texs.get_yakui(icon),
-                        Vec2::new(64.0, 64.0),
-                        *enabled,
-                        label,
-                    )
-                    .clicked
+                    if primary_image_button(texs.get(icon), Vec2::new(64.0, 64.0), *enabled, label)
+                        .clicked
                     {
                         *enabled = !*enabled;
                         state.dirty = true;
@@ -89,7 +79,7 @@ pub fn roadedit_properties(uiw: &UiWorld) {
 
                     if !*enabled {
                         reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 0.0), || {
-                            image(texs.get_yakui("roadedit_forbidden"), Vec2::new(64.0, 64.0));
+                            image(texs.get("roadedit_forbidden"), Vec2::new(64.0, 64.0));
                         });
                     }
                 });

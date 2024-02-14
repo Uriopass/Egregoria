@@ -11,8 +11,8 @@ use goryak::{
 };
 use simulation::Simulation;
 
-use crate::gui::UiTextures;
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::textures::UiTextures;
 use crate::newgui::Tool;
 use crate::uiworld::UiWorld;
 
@@ -20,6 +20,7 @@ pub mod building;
 pub mod roadbuild;
 pub mod roadedit;
 pub mod terraforming;
+pub mod train;
 
 pub fn new_toolbox(uiworld: &UiWorld, sim: &Simulation) {
     if uiworld
@@ -82,7 +83,9 @@ fn tool_properties(uiw: &UiWorld, _sim: &Simulation) -> bool {
         Tool::SpecialBuilding => {
             building::special_building_properties(uiw);
         }
-        Tool::Train => {}
+        Tool::Train => {
+            train::train_properties(uiw);
+        }
         Tool::Terraforming => {
             terraforming::terraform_properties(uiw);
         }
@@ -111,7 +114,7 @@ fn tools_list(uiworld: &UiWorld) {
                 (Color::WHITE, Color::WHITE.with_alpha(0.7))
             };
             if image_button(
-                uiworld.read::<UiTextures>().get_yakui(name),
+                uiworld.read::<UiTextures>().get(name),
                 Vec2::new(64.0, 64.0),
                 default_col,
                 hover_col,
@@ -133,9 +136,7 @@ fn tools_list(uiworld: &UiWorld) {
 pub(crate) fn select_triangle(uiworld: &UiWorld) {
     reflow(Alignment::CENTER_LEFT, Dim2::pixels(0.0, 32.0), || {
         image(
-            uiworld
-                .read::<UiTextures>()
-                .get_yakui("select_triangle_under"),
+            uiworld.read::<UiTextures>().get("select_triangle_under"),
             Vec2::new(64.0, 10.0),
         );
     });

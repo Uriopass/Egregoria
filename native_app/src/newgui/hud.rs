@@ -8,11 +8,12 @@ use yakui::{reflow, Alignment, Color, Dim2, Vec2};
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
 
-use crate::gui::{GuiState, UiTextures};
 use crate::newgui::hud::menu::menu_bar;
 use crate::newgui::hud::time_controls::time_controls;
 use crate::newgui::hud::toolbox::new_toolbox;
+use crate::newgui::textures::UiTextures;
 use crate::newgui::windows::settings::Settings;
+use crate::newgui::GuiState;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 mod menu;
@@ -56,7 +57,7 @@ fn power_errors(uiworld: &UiWorld, sim: &Simulation) {
     let map = sim.map();
     let flow = sim.read::<ElectricityFlow>();
 
-    let no_power_img = uiworld.read::<UiTextures>().get_yakui("no_power");
+    let no_power_img = uiworld.read::<UiTextures>().get("no_power");
 
     for network in map.electricity.networks() {
         if !flow.blackout(network.id) {
@@ -102,7 +103,7 @@ pub fn item_icon_yakui(uiworld: &UiWorld, id: ItemID, multiplier: i32) {
     minrow(5.0, || {
         if let Some(id) = uiworld
             .read::<UiTextures>()
-            .try_get_yakui(&format!("icon/{}", item.name))
+            .try_get(&format!("icon/{}", item.name))
         {
             if image_button(
                 id,

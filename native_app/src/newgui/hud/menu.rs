@@ -11,8 +11,8 @@ use goryak::{
 use simulation::economy::Government;
 use simulation::Simulation;
 
-use crate::gui::{ExitState, GuiState};
 use crate::inputmap::{InputAction, InputMap};
+use crate::newgui::{ExitState, GuiState};
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 pub fn menu_bar(uiworld: &UiWorld, sim: &Simulation) {

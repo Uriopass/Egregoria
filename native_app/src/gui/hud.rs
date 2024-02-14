@@ -1,54 +1,14 @@
-use std::time::Instant;
-
 use egui::load::SizedTexture;
-use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
+use egui::{Color32, Context, Id, Response, RichText, Ui};
 
-use geom::Vec2;
-use prototypes::{prototypes_iter, BuildingGen, FreightStationPrototype, ItemID, Money};
+use prototypes::{ItemID, Money};
 use simulation::economy::Government;
-use simulation::map::{BuildingKind, LanePatternBuilder, MapProject};
-use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 
 use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
-use crate::gui::windows::OldGUIWindows;
-use crate::gui::UiTextures;
-use crate::inputmap::{InputAction, InputMap};
-use crate::newgui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
-use crate::newgui::windows::GUIWindows;
-use crate::newgui::{ErrorTooltip, PotentialCommands, Tool};
+use crate::newgui::{ErrorTooltip, GuiState, PotentialCommands, UiTextures};
 use crate::uiworld::UiWorld;
-
-pub struct GuiState {
-    pub old_windows: OldGUIWindows,
-    pub windows: GUIWindows,
-    pub last_save: Instant,
-    pub last_gui_save: Instant,
-    pub depause_warp: u32,
-    pub hidden: bool,
-}
-
-impl Default for GuiState {
-    fn default() -> Self {
-        Self {
-            old_windows: OldGUIWindows::default(),
-            windows: Default::default(),
-            last_save: Instant::now(),
-            last_gui_save: Instant::now(),
-            depause_warp: 1,
-            hidden: false,
-        }
-    }
-}
-
-impl GuiState {
-    pub fn set_style(ui: &Context) {
-        let mut style: Style = (*ui.style()).clone();
-        style.visuals.window_shadow.extrusion = 2.0;
-        ui.set_style(style);
-    }
-}
 
 /// Root GUI entrypoint
 pub fn render_oldgui(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
@@ -65,8 +25,6 @@ pub fn render_oldgui(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
         .write::<GuiState>()
         .old_windows
         .render(ui, uiworld, sim);
-
-    toolbox(ui, uiworld, sim);
 
     tooltip(ui, uiworld, sim);
 }
@@ -108,128 +66,12 @@ pub fn tooltip(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     });
 }
 
-pub fn toolbox(ui: &Context, uiworld: &UiWorld, _sim: &Simulation) {
-    profiling::scope!("hud::toolbox");
-
-    if uiworld
-        .read::<InputMap>()
-        .just_act
-        .contains(&InputAction::Close)
-    {
-        *uiworld.write::<Tool>() = Tool::Hand;
-    }
-
-    let [w, h]: [f32; 2] = ui.available_rect().size().into();
-    //        let _tok1 = ui.push_style_var(StyleVar::WindowPadding([0.0, 0.0]));
-    //        let _tok2 = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
-    //        let _tok3 = ui.push_style_var(StyleVar::WindowRounding(0.0));
-    //        let _tok4 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 0.0]));
-
-    let toolbox_w = 85.0;
-
-    let tools = [("traintool", Tool::Train)];
-
-    Window::new("Toolbox")
-        .min_width(toolbox_w)
-        .fixed_pos([w, h * 0.5])
-        .vscroll(false)
-        .frame(Frame::window(&ui.style()).rounding(0.0))
-        .anchor(Align2::RIGHT_CENTER, [0.0, 0.0])
-        .title_bar(false)
-        .collapsible(false)
-        .resizable(false)
-        .auto_sized()
-        .show(ui, |ui| {
-            let cur_tool = *uiworld.read::<Tool>();
-
-            for (name, tool) in &tools {
-                if egui::ImageButton::new(SizedTexture::new(
-                    uiworld.read::<UiTextures>().get(name),
-                    [toolbox_w, 30.0],
-                ))
-                .selected(tool == &cur_tool)
-                .ui(ui)
-                .clicked()
-                {
-                    *uiworld.write::<Tool>() = *tool;
-                }
-            }
-        });
-
-    if matches!(*uiworld.read::<Tool>(), Tool::Train) {
-        let rbw = 150.0;
-        Window::new("Trains")
-            .fixed_size([rbw, 83.0])
-            .fixed_pos([w - rbw - toolbox_w, h * 0.5 - 30.0])
-            .hscroll(false)
-            .title_bar(true)
-            .collapsible(false)
-            .resizable(false)
-            .show(ui, |ui| {
-                ui.style_mut().spacing.interact_size = [rbw, 30.0].into();
-
-                let mut addtrain = RichText::new("Add Train");
-                if *uiworld.read::<Tool>() == Tool::Train {
-                    addtrain = addtrain.strong();
-                };
-                if ui.button(addtrain).clicked() {
-                    *uiworld.write::<Tool>() = Tool::Train;
-                }
-
-                for proto in prototypes_iter::<FreightStationPrototype>() {
-                    let mut freightstation = RichText::new(&proto.label);
-                    if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
-                        freightstation = freightstation.strong();
-                    };
-                    if ui.button(freightstation).clicked() {
-                        *uiworld.write::<Tool>() = Tool::SpecialBuilding;
-
-                        uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
-                            make: Box::new(move |args| {
-                                let obb = args.obb;
-                                let c = obb.center().z(args.mpos.z + 0.3);
-
-                                let [offx, offy] = obb.axis().map(|x| x.normalize().z(0.0));
-
-                                let pat =
-                                    LanePatternBuilder::new().rail(true).one_way(true).build();
-
-                                let mut commands = Vec::with_capacity(5);
-
-                                commands.push(WorldCommand::MapMakeConnection {
-                                    from: MapProject::ground(c - offx * 45.0 - offy * 100.0),
-                                    to: MapProject::ground(c - offx * 45.0 + offy * 100.0),
-                                    inter: None,
-                                    pat,
-                                });
-
-                                commands.push(WorldCommand::MapBuildSpecialBuilding {
-                                    pos: args.obb,
-                                    kind: BuildingKind::RailFreightStation(proto.id),
-                                    gen: BuildingGen::NoWalkway {
-                                        door_pos: Vec2::ZERO,
-                                    },
-                                    zone: None,
-                                    connected_road: args.connected_road,
-                                });
-                                commands
-                            }),
-                            size: proto.size,
-                            asset: proto.asset.clone(),
-                            road_snap: false,
-                        });
-                    }
-                }
-            });
-    }
-}
-
 pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, id: ItemID, multiplier: i32) -> Response {
     let item = id.prototype();
     ui.horizontal(move |ui| {
         if let Some(id) = uiworld
             .read::<UiTextures>()
-            .try_get(&format!("icon/{}", item.name))
+            .try_get_egui(&format!("icon/{}", item.name))
         {
             if ui.image(SizedTexture::new(id, (32.0, 32.0))).hovered() {
                 egui::show_tooltip(ui.ctx(), ui.make_persistent_id("icon tooltip"), |ui| {
@@ -243,16 +85,4 @@ pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, id: ItemID, multiplier: i32) ->
         ui.label(format!("x{multiplier}"))
     })
     .inner
-}
-
-pub enum ExitState {
-    NoExit,
-    ExitAsk,
-    Saving,
-}
-
-impl Default for ExitState {
-    fn default() -> Self {
-        Self::NoExit
-    }
 }
