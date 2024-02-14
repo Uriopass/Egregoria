@@ -1,4 +1,3 @@
-use crate::gui::windows::OldGUIWindows;
 use crate::newgui::windows::GUIWindows;
 use crate::uiworld::UiWorld;
 use simulation::map::BuildingID;
@@ -135,7 +134,7 @@ impl Tool {
 }
 
 pub struct GuiState {
-    pub old_windows: OldGUIWindows,
+    pub debug_window: bool,
     pub windows: GUIWindows,
     pub last_save: Instant,
     pub last_gui_save: Instant,
@@ -146,7 +145,7 @@ pub struct GuiState {
 impl Default for GuiState {
     fn default() -> Self {
         Self {
-            old_windows: OldGUIWindows::default(),
+            debug_window: false,
             windows: Default::default(),
             last_save: Instant::now(),
             last_gui_save: Instant::now(),

@@ -1,16 +1,16 @@
 #![allow(clippy::type_complexity)]
 
 use crate::game_loop::Timings;
-use crate::newgui::InspectedEntity;
+use crate::newgui::{GuiState, InspectedEntity};
 use crate::uiworld::UiWorld;
 use simulation::map_dynamic::ParkingManagement;
 use simulation::transportation::TransportGrid;
 use simulation::{Simulation, TrainID};
 use std::time::{Duration, Instant};
 
-use crate::inputmap::InputMap;
+use crate::inputmap::{InputAction, InputMap};
 use crate::newgui::windows::settings::Settings;
-use egui::Widget;
+use egui::{Context, Widget};
 use engine::{PerfCountersStatic, Tesselator};
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use prototypes::{GameDuration, GameTime, SECONDS_PER_DAY};
@@ -67,8 +67,27 @@ impl Default for TestFieldProperties {
     }
 }
 
+pub fn debug_window(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
+    if uiworld
+        .write::<InputMap>()
+        .just_act
+        .contains(&InputAction::OpenDebugMenu)
+    {
+        uiworld.write::<GuiState>().debug_window ^= true;
+    }
+
+    let mut opened = uiworld.read::<GuiState>().debug_window;
+    debug(
+        egui::Window::new("Debug").open(&mut opened),
+        ui,
+        uiworld,
+        sim,
+    );
+    uiworld.write::<GuiState>().debug_window = opened;
+}
+
 /// debug window for various debug options
-pub fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, sim: &Simulation) {
+fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, sim: &Simulation) {
     window.show(ui, |ui| {
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {

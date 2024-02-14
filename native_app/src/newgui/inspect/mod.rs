@@ -1,4 +1,4 @@
-use crate::gui::windows::debug::DebugState;
+use crate::gui::debug_window::DebugState;
 use crate::newgui::follow::FollowEntity;
 use crate::newgui::{InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;

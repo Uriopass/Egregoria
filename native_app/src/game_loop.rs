@@ -9,8 +9,8 @@ use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::Simulation;
 
 use crate::audio::GameAudio;
+use crate::gui::debug_window::DebugObjs;
 use crate::gui::render_oldgui;
-use crate::gui::windows::debug::DebugObjs;
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui;
 use crate::newgui::follow::FollowEntity;

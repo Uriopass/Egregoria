@@ -1,6 +1,6 @@
 use crate::game_loop::Timings;
 use crate::gui::chat::GUIChatState;
-use crate::gui::windows::debug::{DebugObjs, DebugState, TestFieldProperties};
+use crate::gui::debug_window::{DebugObjs, DebugState, TestFieldProperties};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::newgui::bulldozer::BulldozerState;

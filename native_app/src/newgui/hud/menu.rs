@@ -30,7 +30,6 @@ pub fn menu_bar(uiworld: &UiWorld, sim: &Simulation) {
                         l.show(|| {
                             let mut gui = uiworld.write::<GuiState>();
                             gui.windows.menu();
-                            gui.old_windows.menu();
                             save_window(&mut *gui, uiworld);
                             textc(
                                 on_primary_container(),

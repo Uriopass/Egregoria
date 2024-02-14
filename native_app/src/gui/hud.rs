@@ -6,6 +6,7 @@ use simulation::Simulation;
 
 use crate::gui::chat::chat;
 use crate::gui::debug_inspect::debug_inspector;
+use crate::gui::debug_window::debug_window;
 use crate::newgui::{ErrorTooltip, GuiState, PotentialCommands};
 use crate::uiworld::UiWorld;
 
@@ -20,10 +21,7 @@ pub fn render_oldgui(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
 
     chat(ui, uiworld, sim);
 
-    uiworld
-        .write::<GuiState>()
-        .old_windows
-        .render(ui, uiworld, sim);
+    debug_window(ui, uiworld, sim);
 
     tooltip(ui, uiworld, sim);
 }

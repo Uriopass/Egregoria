@@ -1,6 +1,7 @@
 use egui::Ui;
 use egui::{Context, Window};
 
+use crate::gui::debug_window::DebugState;
 use egui_inspect::{Inspect, InspectArgs};
 use simulation::economy::Market;
 use simulation::transportation::Location;
@@ -9,7 +10,6 @@ use simulation::{
     WagonEnt,
 };
 
-use crate::gui::windows::debug::DebugState;
 use crate::newgui::follow::FollowEntity;
 use crate::newgui::InspectedEntity;
 use crate::uiworld::UiWorld;
