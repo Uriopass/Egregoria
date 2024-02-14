@@ -7,11 +7,16 @@ use crate::uiworld::UiWorld;
 use goryak::button_primary;
 use simulation::Simulation;
 
+#[cfg(feature = "multiplayer")]
+pub mod network;
+
 #[derive(Default)]
 pub struct GUIWindows {
     economy_open: bool,
     settings_open: bool,
     load_open: bool,
+    #[cfg(feature = "multiplayer")]
+    network_open: bool,
 }
 
 impl GUIWindows {
@@ -26,6 +31,11 @@ impl GUIWindows {
 
         if button_primary("Load").show().clicked {
             self.load_open ^= true;
+        }
+
+        #[cfg(feature = "multiplayer")]
+        if button_primary("Network").show().clicked {
+            self.network_open ^= true;
         }
     }
 
@@ -42,5 +52,8 @@ impl GUIWindows {
         economy::economy(uiworld, sim, &mut self.economy_open);
         settings::settings(uiworld, sim, &mut self.settings_open);
         load::load(uiworld, sim, &mut self.load_open);
+
+        #[cfg(feature = "multiplayer")]
+        network::network(uiworld, sim, &mut self.network_open);
     }
 }

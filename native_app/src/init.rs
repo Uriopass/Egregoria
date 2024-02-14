@@ -32,7 +32,7 @@ pub fn init() {
     simulation::init::init();
     register_resource::<Settings>("settings");
     #[cfg(feature = "multiplayer")]
-    register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");
+    register_resource::<crate::newgui::windows::network::NetworkConnectionInfo>("netinfo");
     register_resource::<LotBrushResource>("lot_brush");
     register_resource::<Bindings>("bindings");
 

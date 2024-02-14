@@ -101,8 +101,8 @@ fn handle_replay(
 #[cfg(feature = "multiplayer")]
 mod inner {
     use crate::game_loop::{State, Timings, VERSION};
-    use crate::gui::windows::network::NetworkConnectionInfo;
     use crate::network::handle_replay;
+    use crate::newgui::windows::network::NetworkConnectionInfo;
     use crate::uiworld::{ReceivedCommands, SaveLoadState};
     use common::timestep::Timestep;
     use networking::{

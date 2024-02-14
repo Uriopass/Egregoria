@@ -6,8 +6,6 @@ use crate::uiworld::UiWorld;
 use simulation::Simulation;
 
 pub mod debug;
-#[cfg(feature = "multiplayer")]
-pub mod network;
 
 pub trait GUIWindow: Send + Sync {
     fn render_window(
@@ -51,8 +49,6 @@ impl Default for OldGUIWindows {
             opened: vec![],
         };
         s.insert("Debug", debug::debug, false);
-        #[cfg(feature = "multiplayer")]
-        s.insert("Network", network::network, false);
         s
     }
 }
