@@ -1,6 +1,6 @@
-use crate::newgui::follow::FollowEntity;
-use crate::uiworld::UiWorld;
 use egui::Ui;
+use egui::{Context, Window};
+
 use egui_inspect::{Inspect, InspectArgs};
 use simulation::economy::Market;
 use simulation::transportation::Location;
@@ -9,8 +9,38 @@ use simulation::{
     WagonEnt,
 };
 
+use crate::gui::windows::debug::DebugState;
+use crate::newgui::follow::FollowEntity;
+use crate::newgui::InspectedEntity;
+use crate::uiworld::UiWorld;
+
+pub fn debug_inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
+    profiling::scope!("hud::inspector");
+    let e = unwrap_or!(uiworld.read::<InspectedEntity>().e, return);
+
+    let force_debug_inspect = uiworld.read::<DebugState>().debug_inspector;
+
+    let mut is_open = true;
+    if force_debug_inspect {
+        Window::new("Inspect")
+            .default_size([400.0, 500.0])
+            .default_pos([30.0, 160.0])
+            .resizable(true)
+            .open(&mut is_open)
+            .show(ui, |ui| {
+                let mut ins = InspectRenderer { entity: e };
+                ins.render(uiworld, sim, ui);
+                uiworld.write::<InspectedEntity>().e = Some(ins.entity);
+            });
+    }
+
+    if !is_open {
+        uiworld.write::<InspectedEntity>().e = None;
+    }
+}
+
 /// Inspect window
-/// Allows to inspect an entity
+/// Allows to debug_inspect an entity
 pub struct InspectRenderer {
     pub entity: AnyEntity,
 }
@@ -55,7 +85,7 @@ impl InspectRenderer {
             for (hid, h) in sim.world().humans.iter() {
                 if h.location == Location::Vehicle(id)
                     && ui
-                        .small_button(&*format!("inspect inside vehicle: {hid:?}"))
+                        .small_button(&*format!("debug_inspect inside vehicle: {hid:?}"))
                         .clicked()
                 {
                     self.entity = hid.into();

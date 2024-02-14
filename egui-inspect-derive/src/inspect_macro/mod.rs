@@ -113,7 +113,7 @@ fn handle_inspect_type<
 ) {
     if parsed_field.is_some() {
         panic!(
-            "Too many inspect attributes on a single member {:?}",
+            "Too many debug_inspect attributes on a single member {:?}",
             f.ident
         );
     }

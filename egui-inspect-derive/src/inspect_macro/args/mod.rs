@@ -21,7 +21,7 @@ pub struct InspectStructArgs {
     pub ident: syn::Ident,
 }
 
-// We support multiple distinct inspect annotations (i.e. inspect_slider, inspect_text)
+// We support multiple distinct debug_inspect annotations (i.e. inspect_slider, inspect_text)
 // Each distinct type will have a struct for capturing the metadata. These metadata structs
 // must implement this trait
 pub trait InspectFieldArgs {

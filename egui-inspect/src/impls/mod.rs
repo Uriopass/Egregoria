@@ -26,7 +26,7 @@ pub use option::OptionDefault;
 /// So, not all elements will necessarily be used/respected. Use the non-default traits for typesafe
 /// changes.
 ///
-/// Marking a struct element with something like `#[inspect(min_value = 5.0, max_value = 53.0)]`
+/// Marking a struct element with something like `#[debug_inspect(min_value = 5.0, max_value = 53.0)]`
 /// will make the widget for that member default to those values.
 #[derive(Clone, Default, Debug)]
 pub struct InspectArgs {
