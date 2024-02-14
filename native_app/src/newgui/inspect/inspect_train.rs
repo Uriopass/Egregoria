@@ -1,6 +1,6 @@
 use crate::newgui::inspect::follow_button;
 use crate::uiworld::UiWorld;
-use goryak::{mincolumn, on_secondary_container, textc, Window};
+use goryak::{on_secondary_container, textc, Window};
 use simulation::{Simulation, TrainID};
 use yakui::widgets::Pad;
 
@@ -12,24 +12,23 @@ pub fn inspect_train(uiworld: &UiWorld, sim: &Simulation, id: TrainID) -> bool {
     let mut is_open = true;
 
     Window {
-        title: "Train",
+        title: "Train".into(),
         pad: Pad::all(10.0),
         radius: 10.0,
         opened: &mut is_open,
+        child_spacing: 5.0,
     }
     .show(|| {
-        mincolumn(5.0, || {
-            if cfg!(debug_assertions) {
-                textc(on_secondary_container(), format!("{:?}", id));
-            }
+        if cfg!(debug_assertions) {
+            textc(on_secondary_container(), format!("{:?}", id));
+        }
 
-            textc(
-                on_secondary_container(),
-                format!("Going at {:.0}km/h", t.speed.0),
-            );
+        textc(
+            on_secondary_container(),
+            format!("Going at {:.0}km/h", t.speed.0),
+        );
 
-            follow_button(uiworld, id);
-        });
+        follow_button(uiworld, id);
     });
 
     is_open

@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use yakui::widgets::{List, Pad};
-use yakui::{column, reflow, spacer, Alignment, CrossAxisAlignment, Dim2, MainAxisSize};
+use yakui::{column, reflow, spacer, Alignment, CrossAxisAlignment, Dim2};
 
 use goryak::{
     blur_bg, button_primary, button_secondary, constrained_viewport, on_primary_container,
@@ -62,36 +62,32 @@ fn save_window(gui: &mut GuiState, uiw: &UiWorld) {
         ExitState::ExitAsk | ExitState::Saving => {
             let mut opened = true;
             Window {
-                title: "Exit Menu",
+                title: "Exit Menu".into(),
                 pad: Pad::all(15.0),
                 radius: 10.0,
                 opened: &mut opened,
+                child_spacing: 5.0,
             }
             .show(|| {
-                let mut l = List::column();
-                l.item_spacing = 5.0;
-                l.main_axis_size = MainAxisSize::Min;
-                l.show(|| {
-                    if let ExitState::Saving = *estate {
-                        textc(on_secondary_container(), "Saving...");
-                        if !slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
-                            std::process::exit(0);
-                        }
-                        return;
-                    }
-                    if button_secondary("Save and exit").show().clicked {
-                        if let ExitState::ExitAsk = *estate {
-                            slstate.please_save = true;
-                            *estate = ExitState::Saving;
-                        }
-                    }
-                    if button_secondary("Exit without saving").show().clicked {
+                if let ExitState::Saving = *estate {
+                    textc(on_secondary_container(), "Saving...");
+                    if !slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
                         std::process::exit(0);
                     }
-                    if button_secondary("Cancel").show().clicked {
-                        *estate = ExitState::NoExit;
+                    return;
+                }
+                if button_secondary("Save and exit").show().clicked {
+                    if let ExitState::ExitAsk = *estate {
+                        slstate.please_save = true;
+                        *estate = ExitState::Saving;
                     }
-                });
+                }
+                if button_secondary("Exit without saving").show().clicked {
+                    std::process::exit(0);
+                }
+                if button_secondary("Cancel").show().clicked {
+                    *estate = ExitState::NoExit;
+                }
             });
 
             if !opened {

@@ -13,10 +13,11 @@ use crate::{
 };
 
 pub struct Window<'a> {
-    pub title: &'static str,
+    pub title: Cow<'static, str>,
     pub pad: Pad,
     pub radius: f32,
     pub opened: &'a mut bool,
+    pub child_spacing: f32,
 }
 
 impl<'a> Window<'a> {
@@ -53,9 +54,13 @@ impl<'a> Window<'a> {
                                     });
                                 });
                             });
-                            textc(on_primary_container(), Cow::Borrowed(self.title));
+                            textc(on_primary_container(), self.title);
                             divider(outline(), 10.0, 1.0);
-                            children();
+                            if self.child_spacing != 0.0 {
+                                mincolumn(self.child_spacing, children);
+                            } else {
+                                children();
+                            }
                         });
                     });
                 });

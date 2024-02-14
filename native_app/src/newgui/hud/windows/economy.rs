@@ -47,31 +47,27 @@ pub struct EconomyState {
 /// Shows the economy stats
 pub fn economy(uiw: &UiWorld, sim: &Simulation, opened: &mut bool) {
     Window {
-        title: "Economy",
+        title: "Economy".into(),
         pad: Pad::all(10.0),
         radius: 10.0,
         opened,
+        child_spacing: 10.0,
     }
     .show(|| {
         let mut state = uiw.write::<EconomyState>();
         let ecostats = sim.read::<EcoStats>();
         pady(10.0, || {
-            let mut l = List::row();
-            l.main_axis_size = MainAxisSize::Min;
-            l.item_spacing = 10.0;
-            l.show(|| {
-                let tabs = &[
-                    ("Import/Exports", EconomyTab::ImportExports),
-                    ("Internal Trade", EconomyTab::InternalTrade),
-                    ("Market Prices", EconomyTab::MarketPrices),
-                ];
+            let tabs = &[
+                ("Import/Exports", EconomyTab::ImportExports),
+                ("Internal Trade", EconomyTab::InternalTrade),
+                ("Market Prices", EconomyTab::MarketPrices),
+            ];
 
-                for (label, tab) in tabs {
-                    if selectable_label_primary(state.tab == *tab, label).clicked {
-                        state.tab = *tab;
-                    }
+            for (label, tab) in tabs {
+                if selectable_label_primary(state.tab == *tab, label).clicked {
+                    state.tab = *tab;
                 }
-            });
+            }
         });
 
         pady(10.0, || {

@@ -5,16 +5,10 @@ use crate::uiworld::UiWorld;
 use egui::{Context, Ui, Window};
 use inspect_building::inspect_building;
 use inspect_debug::InspectRenderer;
-use inspect_human::inspect_human;
-use inspect_vehicle::inspect_vehicle;
-use simulation::map::BuildingID;
 use simulation::{AnyEntity, Simulation};
-use slotmapd::Key;
 
 mod inspect_building;
 mod inspect_debug;
-mod inspect_human;
-mod inspect_vehicle;
 
 pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::inspector");
@@ -28,40 +22,21 @@ pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     let force_debug_inspect = uiworld.read::<DebugState>().debug_inspector;
 
     let mut is_open = true;
-    match e {
-        AnyEntity::HumanID(id) if !force_debug_inspect => {
-            is_open = inspect_human(uiworld, sim, ui, id);
-        }
-        AnyEntity::VehicleID(id) if !force_debug_inspect => {
-            is_open = inspect_vehicle(uiworld, sim, ui, id);
-        }
-        AnyEntity::WagonID(_) if !force_debug_inspect => {}
-        AnyEntity::TrainID(_) if !force_debug_inspect => {}
-        _ => {
-            Window::new("Inspect")
-                .default_size([400.0, 500.0])
-                .default_pos([30.0, 160.0])
-                .resizable(true)
-                .open(&mut is_open)
-                .show(ui, |ui| {
-                    let mut ins = InspectRenderer { entity: e };
-                    ins.render(uiworld, sim, ui);
-                    uiworld.write::<InspectedEntity>().e = Some(ins.entity);
-                });
-        }
+    if force_debug_inspect {
+        Window::new("Inspect")
+            .default_size([400.0, 500.0])
+            .default_pos([30.0, 160.0])
+            .resizable(true)
+            .open(&mut is_open)
+            .show(ui, |ui| {
+                let mut ins = InspectRenderer { entity: e };
+                ins.render(uiworld, sim, ui);
+                uiworld.write::<InspectedEntity>().e = Some(ins.entity);
+            });
     }
 
     if !is_open {
         uiworld.write::<InspectedEntity>().e = None;
-    }
-}
-
-pub fn building_link(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, b: BuildingID) {
-    if ui.link(format!("{:?}", b.data())).clicked() {
-        uiworld.write::<InspectedBuilding>().e = Some(b);
-        if let Some(b) = sim.map().buildings().get(b) {
-            uiworld.camera_mut().targetpos = b.door_pos;
-        }
     }
 }
 
@@ -86,16 +61,5 @@ fn entity_link_inner(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, e: AnyEnt
         if sim.pos_any(e).is_some() {
             uiworld.write::<FollowEntity>().0 = Some(e);
         }
-    }
-}
-
-pub fn follow_button(uiworld: &UiWorld, ui: &mut Ui, id: impl Into<AnyEntity>) {
-    follow_button_inner(uiworld, ui, id.into())
-}
-
-fn follow_button_inner(uiworld: &UiWorld, ui: &mut Ui, id: AnyEntity) {
-    let mut follow = uiworld.write::<FollowEntity>();
-    if follow.0 != Some(id) && ui.small_button("follow").clicked() {
-        follow.0 = Some(id);
     }
 }

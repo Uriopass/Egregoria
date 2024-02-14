@@ -120,10 +120,11 @@ impl Default for SettingsState {
 /// This window is used to change the settings of the game
 pub fn settings(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
     Window {
-        title: "Settings",
+        title: "Settings".into(),
         pad: Pad::all(10.0),
         radius: 10.0,
         opened,
+        child_spacing: 0.0,
     }
     .show(|| {
         profiling::scope!("gui::window::settings");
