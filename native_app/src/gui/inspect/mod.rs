@@ -1,22 +1,16 @@
-use crate::gui::windows::debug::DebugState;
-use crate::newgui::follow::FollowEntity;
-use crate::newgui::{InspectedBuilding, InspectedEntity};
-use crate::uiworld::UiWorld;
-use egui::{Context, Ui, Window};
-use inspect_building::inspect_building;
-use inspect_debug::InspectRenderer;
-use simulation::{AnyEntity, Simulation};
+use egui::{Context, Window};
 
-mod inspect_building;
+use inspect_debug::InspectRenderer;
+use simulation::Simulation;
+
+use crate::gui::windows::debug::DebugState;
+use crate::newgui::InspectedEntity;
+use crate::uiworld::UiWorld;
+
 mod inspect_debug;
 
 pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::inspector");
-    let inspected_building = *uiworld.read::<InspectedBuilding>();
-    if let Some(b) = inspected_building.e {
-        inspect_building(uiworld, sim, ui, b);
-    }
-
     let e = unwrap_or!(uiworld.read::<InspectedEntity>().e, return);
 
     let force_debug_inspect = uiworld.read::<DebugState>().debug_inspector;
@@ -37,29 +31,5 @@ pub fn inspector(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
 
     if !is_open {
         uiworld.write::<InspectedEntity>().e = None;
-    }
-}
-
-pub fn entity_link(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, e: impl Into<AnyEntity>) {
-    entity_link_inner(uiworld, sim, ui, e.into())
-}
-
-fn entity_link_inner(uiworld: &UiWorld, sim: &Simulation, ui: &mut Ui, e: AnyEntity) {
-    let linkname = match e {
-        AnyEntity::HumanID(id) => {
-            if let Some(human) = sim.world().humans.get(id) {
-                human.personal_info.name.to_string()
-            } else {
-                "???".to_string()
-            }
-        }
-        _ => format!("{}", e),
-    };
-
-    if ui.link(linkname).clicked() {
-        uiworld.write::<InspectedEntity>().e = Some(e);
-        if sim.pos_any(e).is_some() {
-            uiworld.write::<FollowEntity>().0 = Some(e);
-        }
     }
 }

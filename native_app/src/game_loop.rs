@@ -64,11 +64,7 @@ impl engine::framework::State for State {
         uiworld.write::<InputMap>().build_input_tree(&mut bindings);
         drop(bindings);
 
-        uiworld.insert(UiTextures::new(
-            &mut ctx.gfx,
-            &mut ctx.yakui,
-            &mut ctx.egui.platform.egui_ctx().clone(),
-        ));
+        uiworld.insert(UiTextures::new(&mut ctx.gfx, &mut ctx.yakui));
 
         uiworld.insert(camera.camera);
         uiworld.insert(camera);

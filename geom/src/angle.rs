@@ -49,6 +49,10 @@ impl Radians {
     pub fn max(self, other: Self) -> Self {
         Self(self.0.max(other.0))
     }
+
+    pub fn to_degrees(self) -> Degrees {
+        Degrees(self.0 * (180.0 / PI))
+    }
 }
 
 impl Degrees {
@@ -66,6 +70,14 @@ impl Degrees {
 
     pub fn max(self, other: Self) -> Self {
         Self(self.0.max(other.0))
+    }
+
+    pub fn to_radians(self) -> Radians {
+        Radians(self.0 * (PI / 180.0))
+    }
+
+    pub fn from_rad(rad: f32) -> Self {
+        Self(rad * (180.0 / PI))
     }
 }
 

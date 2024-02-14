@@ -1,13 +1,12 @@
-use egui::load::SizedTexture;
-use egui::{Color32, Context, Id, Response, RichText, Ui};
+use egui::{Color32, Context, Id, RichText};
 
-use prototypes::{ItemID, Money};
+use prototypes::Money;
 use simulation::economy::Government;
 use simulation::Simulation;
 
 use crate::gui::chat::chat;
 use crate::gui::inspect::inspector;
-use crate::newgui::{ErrorTooltip, GuiState, PotentialCommands, UiTextures};
+use crate::newgui::{ErrorTooltip, GuiState, PotentialCommands};
 use crate::uiworld::UiWorld;
 
 /// Root GUI entrypoint
@@ -64,25 +63,4 @@ pub fn tooltip(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
             ui.label(cost.to_string());
         }
     });
-}
-
-pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, id: ItemID, multiplier: i32) -> Response {
-    let item = id.prototype();
-    ui.horizontal(move |ui| {
-        if let Some(id) = uiworld
-            .read::<UiTextures>()
-            .try_get_egui(&format!("icon/{}", item.name))
-        {
-            if ui.image(SizedTexture::new(id, (32.0, 32.0))).hovered() {
-                egui::show_tooltip(ui.ctx(), ui.make_persistent_id("icon tooltip"), |ui| {
-                    ui.image(SizedTexture::new(id, (64.0, 64.0)));
-                    ui.label(format!("{} x{}", item.name, multiplier));
-                });
-            }
-        } else {
-            ui.label(format!("- {} ", &item.label));
-        }
-        ui.label(format!("x{multiplier}"))
-    })
-    .inner
 }

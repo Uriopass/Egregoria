@@ -3,6 +3,7 @@ use crate::newgui::follow::FollowEntity;
 use crate::newgui::{InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;
 use goryak::{button_primary, primary_link};
+use inspect_building::inspect_building;
 use inspect_human::inspect_human;
 use inspect_train::inspect_train;
 use inspect_vehicle::inspect_vehicle;
@@ -10,16 +11,20 @@ use simulation::map::BuildingID;
 use simulation::{AnyEntity, Simulation};
 use slotmapd::Key;
 
+mod inspect_building;
 mod inspect_human;
 mod inspect_train;
 mod inspect_vehicle;
 
 pub fn new_inspector(uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::inspector");
-    //let inspected_building = *uiworld.read::<InspectedBuilding>();
-    //if let Some(b) = inspected_building.e {
-    //    inspect_building(uiworld, sim, ui, b);
-    //}
+    let inspected_building = *uiworld.read::<InspectedBuilding>();
+    if let Some(b) = inspected_building.e {
+        let is_open = inspect_building(uiworld, sim, b);
+        if !is_open {
+            uiworld.write::<InspectedBuilding>().e = None;
+        }
+    }
 
     let e = unwrap_or!(uiworld.read::<InspectedEntity>().e, return);
 
