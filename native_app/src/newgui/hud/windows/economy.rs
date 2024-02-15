@@ -76,7 +76,7 @@ pub fn economy(uiw: &UiWorld, sim: &Simulation, opened: &mut bool) {
             l.item_spacing = 10.0;
             l.show(|| {
                 for (i, level_name) in LEVEL_NAMES.iter().enumerate() {
-                    if selectable_label_primary(state.curlevel == i, *level_name).clicked {
+                    if selectable_label_primary(state.curlevel == i, level_name).clicked {
                         state.curlevel = i;
                     }
                 }
@@ -111,7 +111,7 @@ pub fn economy(uiw: &UiWorld, sim: &Simulation, opened: &mut bool) {
                     let plot_size_x: f32 = 300.0;
                     let plot_size_y: f32 = 200.0;
 
-                    let filterid = use_state(|| HashSet::<ItemID>::new());
+                    let filterid = use_state(HashSet::<ItemID>::new);
 
                     let mut vertices = Vec::new();
                     let mut indices = Vec::new();

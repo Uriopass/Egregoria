@@ -93,19 +93,17 @@ pub fn chat(uiw: &UiWorld, sim: &Simulation) {
                         );
                     });
                     if state.chat_bar_showed {
-                        if text_edit(250.0, &mut state.cur_msg, "") {
-                            if !state.cur_msg.is_empty() {
-                                uiw.commands().push(WorldCommand::SendMessage {
-                                    message: Message {
-                                        name: "player".to_string(),
-                                        text: state.cur_msg.take(),
-                                        sent_at: sim.read::<GameTime>().instant(),
-                                        color: geom::Color::WHITE,
-                                        kind: MessageKind::PlayerChat,
-                                    },
-                                });
-                                state.chat_bar_showed = false;
-                            }
+                        if text_edit(250.0, &mut state.cur_msg, "") && !state.cur_msg.is_empty() {
+                            uiw.commands().push(WorldCommand::SendMessage {
+                                message: Message {
+                                    name: "player".to_string(),
+                                    text: state.cur_msg.take(),
+                                    sent_at: sim.read::<GameTime>().instant(),
+                                    color: geom::Color::WHITE,
+                                    kind: MessageKind::PlayerChat,
+                                },
+                            });
+                            state.chat_bar_showed = false;
                         }
                     } else {
                         fixed_spacer((0.0, 30.0));

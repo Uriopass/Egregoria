@@ -64,7 +64,7 @@ impl<'a> Window<'a> {
 
                             {
                                 // title
-                                let mut t = Text::label(self.title.into());
+                                let mut t = Text::label(self.title);
                                 t.style.color = on_primary_container();
                                 t.style.font_size = crate::DEFAULT_FONT_SIZE;
                                 t.padding = Pad::ZERO;

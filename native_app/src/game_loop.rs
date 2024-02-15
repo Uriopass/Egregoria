@@ -77,7 +77,7 @@ impl engine::framework::State for State {
         }
 
         defer!(log::info!("finished init of game loop"));
-        building::do_icons(ctx, &mut uiworld);
+        building::do_icons(ctx, &uiworld);
 
         let me = Self {
             uiw: uiworld,
@@ -151,7 +151,7 @@ impl engine::framework::State for State {
             !ctx.egui.last_kb_captured,
             !ctx.egui.last_mouse_captured,
         );
-        newgui::run_ui_systems(&self.sim.read().unwrap(), &mut self.uiw);
+        newgui::run_ui_systems(&self.sim.read().unwrap(), &self.uiw);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
@@ -174,7 +174,7 @@ impl engine::framework::State for State {
             ctx.audio.play(sound, kind);
         }
         self.all_audio
-            .update(&self.sim.read().unwrap(), &mut self.uiw, &mut ctx.audio);
+            .update(&self.sim.read().unwrap(), &self.uiw, &mut ctx.audio);
 
         FollowEntity::update_camera(self);
         self.uiw.camera_mut().update(ctx);

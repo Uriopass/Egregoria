@@ -106,7 +106,7 @@ impl Widget for VertScrollWidget {
                 constraints.min.y
             }
             VertScrollSize::Percent(percent) => {
-                constraints.max.y = constraints.max.y * percent;
+                constraints.max.y *= percent;
                 constraints.min.y
             }
         };

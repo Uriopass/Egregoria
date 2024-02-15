@@ -66,13 +66,11 @@ impl<'lua> FromLua<'lua> for RenderAsset {
                     ))),
                 }
             }
-            _ => {
-                return Err(mlua::Error::FromLuaConversionError {
-                    from: value.type_name(),
-                    to: "AssetDefinition",
-                    message: Some("expected a string or a table".into()),
-                });
-            }
+            _ => Err(mlua::Error::FromLuaConversionError {
+                from: value.type_name(),
+                to: "AssetDefinition",
+                message: Some("expected a string or a table".into()),
+            }),
         }
     }
 }

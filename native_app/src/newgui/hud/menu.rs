@@ -31,7 +31,7 @@ pub fn menu_bar(uiworld: &UiWorld, sim: &Simulation) {
                             l.show(|| {
                                 let mut gui = uiworld.write::<GuiState>();
                                 gui.windows.menu();
-                                save_window(&mut *gui, uiworld);
+                                save_window(&mut gui, uiworld);
                                 textc(
                                     on_primary_container(),
                                     format!("Money: {}", sim.read::<Government>().money),

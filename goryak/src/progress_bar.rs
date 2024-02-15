@@ -19,7 +19,7 @@ impl ProgressBar {
         widget::<ProgressBarWidget>(self)
     }
 
-    pub fn show_children(self, children: impl FnOnce() -> ()) -> Response<ProgressBarResponse> {
+    pub fn show_children(self, children: impl FnOnce()) -> Response<ProgressBarResponse> {
         widget_children::<ProgressBarWidget, _>(children, self)
     }
 }
@@ -65,7 +65,7 @@ impl Widget for ProgressBarWidget {
         let rect = ctx.layout.get(ctx.dom.current()).unwrap().rect;
 
         let progress = rect.size().x * self.props.value;
-        let mut progress_rect = rect.clone();
+        let mut progress_rect = rect;
         progress_rect.set_size(Vec2::new(progress, progress_rect.size().y));
 
         let mut bg = RoundedRectangle::new(rect, 4.0);

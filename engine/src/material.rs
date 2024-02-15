@@ -124,7 +124,7 @@ impl Material {
             });
         }
 
-        if let Some(ref normal_map) = normal_map {
+        if let Some(normal_map) = normal_map {
             entries.push(wgpu::BindGroupEntry {
                 binding: 5,
                 resource: wgpu::BindingResource::TextureView(&normal_map.view),

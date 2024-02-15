@@ -90,7 +90,7 @@ pub fn inspect_building(uiworld: &UiWorld, sim: &Simulation, id: BuildingID) -> 
         }
     });
 
-    return is_open;
+    is_open
 }
 
 fn render_house(uiworld: &UiWorld, sim: &Simulation, b: &Building) {

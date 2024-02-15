@@ -145,7 +145,7 @@ fn create_shown(gfx: &mut GfxContext, _state: &State, inspected: Inspected) -> S
                     Shown::Sprite(sb.build(gfx).unwrap())
                 }
                 RenderAsset::Mesh { ref path } => {
-                    let (mesh, cpu) = match load_mesh_with_properties(gfx, &path, false) {
+                    let (mesh, cpu) = match load_mesh_with_properties(gfx, path, false) {
                         Ok(x) => x,
                         Err(e) => {
                             return Shown::Error(format!(

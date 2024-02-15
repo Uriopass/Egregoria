@@ -733,7 +733,7 @@ impl GfxContext {
                 });
 
                 scope.spawn(|_| {
-                    encs.main = Some(self.main_render_pass(&frame, objsref));
+                    encs.main = Some(self.main_render_pass(frame, objsref));
                 });
 
                 (gui_elapsed, encs.gui) = self.render_gui(frame, state, render_gui);
@@ -746,7 +746,7 @@ impl GfxContext {
             }
             passes::render_ssao(self, &mut encs.before_main);
             passes::render_fog(self, &mut encs.before_main);
-            encs.main = Some(self.main_render_pass(&frame, objsref));
+            encs.main = Some(self.main_render_pass(frame, objsref));
             passes::render_background(self, &mut encs.after_main, frame);
             passes::gen_ui_blur(self, &mut encs.after_main, frame);
             (gui_elapsed, encs.gui) = self.render_gui(frame, state, render_gui);
@@ -864,7 +864,7 @@ impl GfxContext {
             label: Some("sun shadow pass"),
             color_attachments: &[],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &shadowmap_view,
+                view: shadowmap_view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(1.0),
                     store: wgpu::StoreOp::Store,

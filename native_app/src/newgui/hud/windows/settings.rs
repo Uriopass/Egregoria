@@ -314,8 +314,7 @@ pub fn settings(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
                             .cross_axis_aligment(CrossAxisAlignment::Start)
                             .main_axis_align_items(MainAxisAlignItems::Center)
                             .show(|| {
-                                for i in 0..sorted_inps.len() {
-                                    let action = &sorted_inps[i];
+                                for action in &sorted_inps {
                                     let comb = bindings.0.get_mut(action).unwrap();
                                     padx(2.0, || {
                                         textc(on_secondary_container(), action.to_string());

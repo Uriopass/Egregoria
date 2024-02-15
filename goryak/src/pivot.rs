@@ -3,7 +3,7 @@ use yakui_core::widget::{LayoutContext, Widget};
 use yakui_core::{Alignment, Response};
 
 pub fn pivot(align: Alignment, children: impl FnOnce()) -> Response<()> {
-    yakui_widgets::util::widget_children::<PivotWidget, _>(children, align.into())
+    yakui_widgets::util::widget_children::<PivotWidget, _>(children, align)
 }
 
 #[derive(Debug)]

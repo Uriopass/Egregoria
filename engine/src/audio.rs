@@ -65,7 +65,7 @@ impl AudioContext {
 
         let (scene_handle, mut scene) = Mixer::new();
 
-        let stream = match device.build_output_stream(
+        let build_result = device.build_output_stream(
             &config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 let frames = oddio::frame_stereo(data);
@@ -75,7 +75,8 @@ impl AudioContext {
                 eprintln!("{err:?}");
             },
             Some(Duration::from_secs(1)),
-        ) {
+        );
+        let stream = match build_result {
             Ok(x) => x,
             Err(e) => return Self::empty(e),
         };
