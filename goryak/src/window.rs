@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::rc::Rc;
 
+use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
 use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
-use yakui_core::widget::{LayoutContext, Widget};
+use yakui_core::widget::{EventContext, LayoutContext, Widget};
 use yakui_core::{context, Alignment, Flow};
 use yakui_widgets::widgets::{Button, Pad, Text};
 use yakui_widgets::{center, constrained, divider, draggable, offset, reflow};
@@ -149,5 +150,20 @@ impl Widget for WindowBase {
         ctx.layout.set_pos(child, pos);
 
         Vec2::ZERO
+    }
+
+    fn event_interest(&self) -> EventInterest {
+        EventInterest::MOUSE_INSIDE | EventInterest::MOUSE_MOVE
+    }
+
+    fn event(&mut self, _ctx: EventContext<'_>, event: &WidgetEvent) -> EventResponse {
+        // taken from opaque
+        match event {
+            WidgetEvent::MouseEnter
+            | WidgetEvent::MouseLeave
+            | WidgetEvent::MouseButtonChanged { down: true, .. }
+            | WidgetEvent::MouseScroll { .. } => EventResponse::Sink,
+            _ => EventResponse::Bubble,
+        }
     }
 }

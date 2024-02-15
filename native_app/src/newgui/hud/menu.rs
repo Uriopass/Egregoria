@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use yakui::widgets::{List, Pad};
-use yakui::{column, reflow, spacer, Alignment, CrossAxisAlignment, Dim2};
+use yakui::{column, opaque, reflow, spacer, Alignment, CrossAxisAlignment, Dim2};
 
 use goryak::{
     blur_bg, button_primary, button_secondary, constrained_viewport, on_primary_container,
@@ -21,20 +21,22 @@ pub fn menu_bar(uiworld: &UiWorld, sim: &Simulation) {
     reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
         constrained_viewport(|| {
             column(|| {
-                blur_bg(secondary_container().with_alpha(0.5), 0.0, || {
-                    padxy(5.0, 5.0, || {
-                        let mut l = List::row();
-                        l.item_spacing = 10.0;
-                        l.cross_axis_alignment = CrossAxisAlignment::Center;
+                opaque(|| {
+                    blur_bg(secondary_container().with_alpha(0.5), 0.0, || {
+                        padxy(5.0, 5.0, || {
+                            let mut l = List::row();
+                            l.item_spacing = 10.0;
+                            l.cross_axis_alignment = CrossAxisAlignment::Center;
 
-                        l.show(|| {
-                            let mut gui = uiworld.write::<GuiState>();
-                            gui.windows.menu();
-                            save_window(&mut *gui, uiworld);
-                            textc(
-                                on_primary_container(),
-                                format!("Money: {}", sim.read::<Government>().money),
-                            );
+                            l.show(|| {
+                                let mut gui = uiworld.write::<GuiState>();
+                                gui.windows.menu();
+                                save_window(&mut *gui, uiworld);
+                                textc(
+                                    on_primary_container(),
+                                    format!("Money: {}", sim.read::<Government>().money),
+                                );
+                            });
                         });
                     });
                 });

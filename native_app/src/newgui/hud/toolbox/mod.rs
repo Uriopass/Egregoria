@@ -1,7 +1,7 @@
 use yakui::widgets::{Button, List, Pad};
 use yakui::{
-    colored_box_container, column, image, reflow, spacer, Alignment, Color, CrossAxisAlignment,
-    Dim2, MainAxisAlignment, MainAxisSize, Vec2,
+    colored_box_container, column, image, opaque, reflow, spacer, Alignment, Color,
+    CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Vec2,
 };
 
 use goryak::{
@@ -37,7 +37,7 @@ pub fn new_toolbox(uiworld: &UiWorld, sim: &Simulation) {
             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
             l.show(|| {
                 spacer(1);
-                yakui::opaque(|| {
+                opaque(|| {
                     let mut l = List::column();
                     l.cross_axis_alignment = CrossAxisAlignment::Stretch;
                     l.show(|| {
