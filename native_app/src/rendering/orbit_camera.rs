@@ -18,6 +18,7 @@ pub struct OrbitCamera {
     pub targetyaw: Radians,
     pub targetpitch: Radians,
     pub targetdist: f32,
+    pub maxdist: f32,
 }
 
 impl OrbitCamera {
@@ -88,6 +89,7 @@ impl OrbitCamera {
             targetyaw: camera.yaw,
             targetpitch: camera.pitch,
             targetdist: camera.dist,
+            maxdist: 1500.0,
         }
     }
 
@@ -105,7 +107,7 @@ impl OrbitCamera {
             self.camera.pos = Vec3::ZERO;
         }
         if !self.camera.dist.is_finite() {
-            self.camera.dist = 1000.0;
+            self.camera.dist = self.maxdist;
         }
         if !self.camera.yaw.0.is_finite() {
             self.camera.yaw.0 = 0.3;
@@ -181,7 +183,7 @@ impl OrbitCamera {
         }
 
         // make sure things are in reasonable bounds
-        self.targetdist = self.targetdist.clamp(5.0, 100000.0);
+        self.targetdist = self.targetdist.clamp(5.0, self.maxdist);
         self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
         self.targetpos.x = self.targetpos.x.clamp(map_bounds.ll.x, map_bounds.ur.x);
         self.targetpos.y = self.targetpos.y.clamp(map_bounds.ll.y, map_bounds.ur.y);

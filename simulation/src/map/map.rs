@@ -39,7 +39,7 @@ pub struct Map {
     pub environment: Environment,
     pub parking: ParkingSpots,
     pub subscribers: MapSubscribers,
-    pub(crate) override_suscriber: MapSubscriber,
+    pub(crate) override_subscriber: MapSubscriber,
 }
 
 defer_serialize!(Map, SerializedMap);
@@ -65,7 +65,7 @@ impl Map {
             spatial_map: SpatialMap::default(),
             external_train_stations: Default::default(),
             electricity: Default::default(),
-            override_suscriber: subscribers.subscribe(UpdateType::Road | UpdateType::Building),
+            override_subscriber: subscribers.subscribe(UpdateType::Road | UpdateType::Building),
             subscribers,
         }
     }
@@ -73,7 +73,7 @@ impl Map {
     /// Perform cleanups potentially required every frame
     pub fn update(&mut self) {
         profiling::scope!("map::update");
-        for chunk in self.override_suscriber.take_updated_chunks() {
+        for chunk in self.override_subscriber.take_updated_chunks() {
             find_overrides(self, chunk);
         }
     }

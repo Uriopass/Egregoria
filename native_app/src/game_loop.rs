@@ -308,7 +308,7 @@ impl State {
             ctx.delta,
             &self.uiw.read::<InputMap>(),
             &self.uiw.read::<Settings>(),
-            map.environment.bounds(),
+            map.environment.bounds().expand(-3000.0),
             |p| map.environment.height(p),
         );
         *self.uiw.write::<Camera>() = self.uiw.read::<OrbitCamera>().camera;
