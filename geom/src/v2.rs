@@ -403,21 +403,6 @@ impl Vec2 {
     pub fn rotated_by_angle(self, angle: Radians) -> Self {
         self.rotated_by(vec2(angle.cos(), angle.sin()))
     }
-
-    pub fn line_line_intersection(a: Self, b: Self, c: Self, d: Self) -> Self {
-        let denominator = (a.x-b.x)*(c.y-d.y)-(a.y-b.y)*(c.x-d.x);
-        let (axbyaybx, cxdycydx) = (a.x*b.y-a.y*b.x, c.x*d.y-c.y*d.x);
-
-        Self::new(
-            ((c.x-d.x)*axbyaybx - (a.x-b.x)*cxdycydx) / denominator,
-            ((c.y-d.y)*axbyaybx - (a.y-b.y)*cxdycydx) / denominator,
-        )
-    }
-
-    pub fn line_closed_point(p: Self, a: Self, b: Self) -> Self {
-        let ab_min = b - a;
-        a + ab_min * (ab_min.dot(p-a) / ab_min.mag2())
-    }
 }
 
 impl Vec2d {

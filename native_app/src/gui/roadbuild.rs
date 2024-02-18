@@ -1,5 +1,5 @@
 use common::AudioKind;
-use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
+use geom::{BoldLine, BoldSpline, Camera, Line, PolyLine, ShapeEnum, Spline};
 use geom::{PolyLine3, Vec2, Vec3};
 use simulation::map::{
     LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition, RoadSegmentKind,
@@ -498,15 +498,16 @@ impl RoadBuildResource {
                 let Some(inter0) = map.intersections().get(id0) else {return vec![]};
                 let Some(inter1) = map.intersections().get(id1) else {return vec![]};
                 
-                inter0.roads.iter().flat_map(|i| inter1.roads.iter().map(move |j| (i, j)))
-                .map( |road_ids| (&map.roads()[*road_ids.0], &map.roads()[*road_ids.1]))
-                .filter_map(|roads| {
-                    let p = Vec2::line_line_intersection(
-                        inter0.pos.xy(), roads.0.get_straight_connection_point(id0),
-                        inter1.pos.xy(), roads.1.get_straight_connection_point(id1));
-
-                    if let Some(h) = map.environment.height(p)
-                    { Some(p.z(h)) } else { None }
+                inter0.roads.iter()
+                .flat_map(|i| inter1.roads.iter().map(move |j| (i, j)))
+                .map( |(r0, r1)| (&map.roads()[*r0], &map.roads()[*r1]))
+                .filter_map(|(road0, road1)| {
+                    let line0 = Line::new(inter0.pos.xy(), road0.get_straight_connection_point(id0));
+                    let line1 = Line::new(inter1.pos.xy(), road1.get_straight_connection_point(id1));
+                    
+                    let p = line0.intersection_point(&line1)?;
+                    let h = map.environment.height(p)?;
+                    Some(p.z(h))
                 }).collect()
             },
 
@@ -517,12 +518,14 @@ impl RoadBuildResource {
                 inter.roads.iter()
                 .map(|&road_id| &map.roads()[road_id])
                 .filter_map(|road| {
-                    let p = Vec2::line_closed_point(mousepos.xy(),
-                        road.get_straight_connection_point(id), inter.pos.xy());
-                    
-                    if let Some(h) = map.environment.height(p)
-                    { Some(p.z(h)) } else { None }
-                }).collect()
+                    let p = 
+                        Line::new(road.get_straight_connection_point(id), inter.pos.xy())
+                        .project(mousepos.xy());
+
+                    let h = map.environment.height(p)?;
+
+                    Some(p.z(h))
+                }).collect::<Vec<_>>()
             }
 
             (Inter(inter_id), Road(road_id)) |
@@ -537,13 +540,14 @@ impl RoadBuildResource {
                 inter.roads.iter()
                 .map(|&road_id| &map.roads()[road_id])
                 .filter_map(|road| {
-                    let p = Vec2::line_line_intersection(
-                        road.get_straight_connection_point(inter_id), inter.pos.xy(),
-                        pos.xy(), pos.xy()+dir.xy(),
-                    );
-                    if let Some(h) = map.environment.height(p)
-                    { Some(p.z(h)) } else { None }
-                }).collect()
+                    let line0 = Line::new(road.get_straight_connection_point(inter_id), inter.pos.xy());
+                    let line1 = Line::new(pos.xy(), pos.xy()+dir.xy());
+                    
+                    let p = line0.intersection_point(&line1)?;
+                    let h = map.environment.height(p)?;
+
+                    Some(p.z(h))
+                }).collect::<Vec<_>>()
             }
 
             (Road(id), Ground) |
@@ -554,9 +558,11 @@ impl RoadBuildResource {
                 let pos = if start.kind == Road(id) {start.pos} else {end.pos};
                 let (pos, _, dir) = road.points().project_segment_dir(pos);
 
-                let p = Vec2::line_closed_point(mousepos.xy(), pos.xy()+dir.xy(), pos.xy());                
-                if let Some(h) = map.environment.height(p) 
-                { vec![p.z(h)] } else { vec![] }
+                let line = Line::new(pos.xy()+dir.xy(), pos.xy());
+                let p = line.project(mousepos.xy());
+                
+                let Some(h) = map.environment.height(p) else { return vec![] };
+                vec![p.z(h)]
             }
             (Road(id0), Road(id1)) if self.pattern_builder.rail => {
                 let Some(road0) = map.roads().get(id0) else {return vec![]};
@@ -565,13 +571,15 @@ impl RoadBuildResource {
                 let (pos0, _, dir0) = road0.points().project_segment_dir(start.pos);
                 let (pos1, _, dir1) = road1.points().project_segment_dir(end.pos);
 
-                let p = Vec2::line_line_intersection(
-                    pos0.xy(), pos0.xy()+dir0.xy(), 
-                    pos1.xy(), pos1.xy()+dir1.xy());
+                let line0 = Line::new(pos0.xy(), pos0.xy()+dir0.xy());
+                let line1 =  Line::new(pos1.xy(), pos1.xy()+dir1.xy());
 
-                if let Some(h) = map.environment.height(p)
-                { vec![p.z(h)] } else { vec![] }
-            },
+                let Some(p) = line0.intersection_point(&line1) else { return vec![] };
+                let Some(h) = map.environment.height(p) else { return vec![] };
+                
+                vec![p.z(h)] 
+            }
+            
             _ => { vec![] }
         }
     }
