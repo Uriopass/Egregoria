@@ -188,10 +188,10 @@ impl From<winit::keyboard::Key> for Key {
                 NamedKey::End => Key::End,
                 NamedKey::PageDown => Key::PageDown,
                 NamedKey::PageUp => Key::PageUp,
-                NamedKey::ArrowLeft => Key::Left,
-                NamedKey::ArrowUp => Key::Up,
-                NamedKey::ArrowRight => Key::Right,
-                NamedKey::ArrowDown => Key::Down,
+                NamedKey::ArrowLeft => Key::ArrowLeft,
+                NamedKey::ArrowUp => Key::ArrowUp,
+                NamedKey::ArrowRight => Key::ArrowRight,
+                NamedKey::ArrowDown => Key::ArrowDown,
                 NamedKey::Backspace => Key::Backspace,
                 NamedKey::Enter => Key::Return,
                 NamedKey::Space => Key::Space,
@@ -228,8 +228,7 @@ pub enum MouseButton {
 }
 
 impl Key {
-    #[allow(dead_code)]
-    fn is_modifier(&self) -> bool {
+    pub fn is_modifier(&self) -> bool {
         use Key::*;
         matches!(self, Control | Shift | Alt)
     }
@@ -244,6 +243,11 @@ impl Key {
 /// of winit's structs which would eat up compile time.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Key {
+    // Make sure modifiers are put at the beginning when sorting
+    Alt,
+    Control,
+    Shift,
+
     Char(SmolStr),
 
     Escape,
@@ -284,10 +288,10 @@ pub enum Key {
     PageDown,
     PageUp,
 
-    Left,
-    Up,
-    Right,
-    Down,
+    ArrowLeft,
+    ArrowUp,
+    ArrowRight,
+    ArrowDown,
 
     Backspace,
     Return,
@@ -298,9 +302,6 @@ pub enum Key {
     Numlock,
 
     Convert,
-    Alt,
-    Control,
-    Shift,
     MediaSelect,
     MediaStop,
     Mute,

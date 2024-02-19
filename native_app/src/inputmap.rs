@@ -10,7 +10,7 @@ use std::fmt::{Debug, Display, Formatter};
 pub struct InputCombinations(pub Vec<InputCombination>);
 
 #[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
-enum UnitInput {
+pub enum UnitInput {
     Key(Key),
     KeyScan(u32),
     Mouse(MouseButton),
@@ -45,7 +45,7 @@ pub enum InputAction {
 }
 
 // All unit inputs need to match
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 pub struct InputCombination(Vec<UnitInput>);
 
 #[derive(Default)]
@@ -84,10 +84,10 @@ use UnitInput::*;
 // https://stackoverflow.com/a/38068969/5000800 for key scans
 #[rustfmt::skip]
 const DEFAULT_BINDINGS: &[(InputAction, &[&[UnitInput]])] = &[
-    (GoForward,       &[&[KeyScan(17)], &[Key(K::Up)]]),
-    (GoBackward,      &[&[KeyScan(31)], &[Key(K::Down)]]),
-    (GoLeft,          &[&[KeyScan(30)], &[Key(K::Left)]]),
-    (GoRight,         &[&[KeyScan(32)], &[Key(K::Right)]]),
+    (GoForward,       &[&[KeyScan(17)], &[Key(K::ArrowUp)]]),
+    (GoBackward,      &[&[KeyScan(31)], &[Key(K::ArrowDown)]]),
+    (GoLeft,          &[&[KeyScan(30)], &[Key(K::ArrowLeft)]]),
+    (GoRight,         &[&[KeyScan(32)], &[Key(K::ArrowRight)]]),
     (CameraRotate,    &[&[Mouse(Right)]]),
     (CameraMove,      &[&[Key(K::Shift), Mouse(Right)], &[Mouse(Middle)]]),
     (Zoom,            &[&[Key(K::c("+"))], &[WheelUp]]),
@@ -166,6 +166,54 @@ impl InputMap {
     }
 }
 
+impl InputCombination {
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    /// A valid combination is a list of modifiers and a single key/mouse button
+    pub fn is_valid(&self) -> bool {
+        let mut has_primary = false;
+        let mut has_more_than_one_primary = false;
+
+        for x in &self.0 {
+            match x {
+                // ignore modifiers
+                Key(k) if k.is_modifier() => {}
+                Key(_) | Mouse(_) | KeyScan(_) | WheelDown | WheelUp => {
+                    if has_primary {
+                        has_more_than_one_primary = true;
+                    }
+                    has_primary = true;
+                }
+            }
+        }
+
+        has_primary && !has_more_than_one_primary
+    }
+
+    /// Returns true if the combination is only modifiers
+    pub fn is_modifiers_only(&self) -> bool {
+        self.0.iter().all(|x| match x {
+            Key(k) => k.is_modifier(),
+            _ => false,
+        })
+    }
+
+    /// Pushes a unit if not already present
+    pub fn push_unique(&mut self, unit: UnitInput) {
+        if self.0.contains(&unit) {
+            return;
+        }
+        self.0.push(unit);
+    }
+
+    pub fn sort(&mut self) {
+        // put modifiers in front
+        self.0.sort();
+    }
+}
+
 impl Display for InputCombinations {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for (i, x) in self.0.iter().enumerate() {
@@ -193,7 +241,10 @@ impl Display for InputCombination {
 impl Display for UnitInput {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            UnitInput::Key(code) => Debug::fmt(code, f),
+            UnitInput::Key(code) => match code {
+                Key::Char(s) => Display::fmt(s, f),
+                _ => Debug::fmt(code, f),
+            },
             Mouse(mb) => Debug::fmt(mb, f),
             WheelUp => {
                 write!(f, "Scroll Up")

@@ -16,6 +16,28 @@ pub use hud::*;
 pub use textures::*;
 pub use tools::*;
 
+pub struct GuiState {
+    pub debug_window: bool,
+    pub windows: GUIWindows,
+    pub last_save: Instant,
+    pub last_gui_save: Instant,
+    pub depause_warp: u32,
+    pub hidden: bool,
+}
+
+impl Default for GuiState {
+    fn default() -> Self {
+        Self {
+            debug_window: false,
+            windows: Default::default(),
+            last_save: Instant::now(),
+            last_gui_save: Instant::now(),
+            depause_warp: 1,
+            hidden: false,
+        }
+    }
+}
+
 pub fn run_ui_systems(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::run_ui_systems");
     bulldozer::bulldozer(sim, uiworld);
@@ -130,28 +152,6 @@ impl Tool {
             self,
             Tool::RoadbuildStraight | Tool::RoadbuildCurved | Tool::Bulldozer | Tool::LotBrush
         )
-    }
-}
-
-pub struct GuiState {
-    pub debug_window: bool,
-    pub windows: GUIWindows,
-    pub last_save: Instant,
-    pub last_gui_save: Instant,
-    pub depause_warp: u32,
-    pub hidden: bool,
-}
-
-impl Default for GuiState {
-    fn default() -> Self {
-        Self {
-            debug_window: false,
-            windows: Default::default(),
-            last_save: Instant::now(),
-            last_gui_save: Instant::now(),
-            depause_warp: 1,
-            hidden: false,
-        }
     }
 }
 

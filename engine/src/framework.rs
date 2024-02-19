@@ -56,7 +56,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
         }
 
         #[cfg(feature = "yakui")]
-        if ctx.yakui.handle_event(&event) {
+        if ctx.yakui.handle_event(&event) && !ctx.keybind_mode {
             return;
         }
 
@@ -244,6 +244,8 @@ pub struct Context {
     pub input: InputContext,
     pub audio: AudioContext,
     pub delta: f32,
+    /// Makes sure all events go to InputContext even if catched by yakui
+    pub keybind_mode: bool,
     pub times: EngineTimes,
     pub egui: EguiWrapper,
     #[cfg(feature = "yakui")]
@@ -261,6 +263,7 @@ impl Context {
             input,
             audio,
             delta: 0.0,
+            keybind_mode: false,
             times: EngineTimes::default(),
             egui,
             #[cfg(feature = "yakui")]

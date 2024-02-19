@@ -5,6 +5,7 @@ use crate::network::NetworkState;
 use crate::newgui::bulldozer::BulldozerState;
 use crate::newgui::chat::GUIChatState;
 use crate::newgui::follow::FollowEntity;
+use crate::newgui::keybinds::KeybindState;
 use crate::newgui::lotbrush::LotBrushResource;
 use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;
@@ -67,6 +68,7 @@ pub fn init() {
     register_resource_noserialize::<EconomyState>();
     register_resource_noserialize::<SettingsState>();
     register_resource_noserialize::<BuildingIcons>();
+    register_resource_noserialize::<KeybindState>();
 }
 
 pub struct InitFunc {

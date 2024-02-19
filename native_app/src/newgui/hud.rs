@@ -18,6 +18,7 @@ use crate::newgui::GuiState;
 use crate::uiworld::{SaveLoadState, UiWorld};
 
 pub mod chat;
+pub mod keybinds;
 mod menu;
 mod time_controls;
 pub mod toolbox;
@@ -40,6 +41,7 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
         new_inspector(uiworld, sim);
         uiworld.write::<GuiState>().windows.render(uiworld, sim);
         time_controls(uiworld, sim);
+        keybinds::keybind_modal(uiworld, sim)
     });
     //goryak::debug_layout();
 }

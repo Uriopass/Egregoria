@@ -14,6 +14,7 @@ use crate::gui::render_oldgui;
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::newgui;
 use crate::newgui::follow::FollowEntity;
+use crate::newgui::keybinds::KeybindState;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::toolbox::building;
 use crate::newgui::windows::settings::{manage_settings, Settings};
@@ -146,6 +147,13 @@ impl engine::framework::State for State {
             }
         }
 
+        ctx.keybind_mode = self.uiw.read::<KeybindState>().enabled.is_some();
+
+        self.uiw.write::<KeybindState>().update(
+            &mut self.uiw.write::<Bindings>(),
+            &mut self.uiw.write::<InputMap>(),
+            &ctx.input,
+        );
         self.uiw.write::<InputMap>().prepare_frame(
             &ctx.input,
             !ctx.egui.last_kb_captured,

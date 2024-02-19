@@ -16,6 +16,7 @@ use simulation::Simulation;
 
 use crate::game_loop::Timings;
 use crate::inputmap::{Bindings, InputMap};
+use crate::newgui::keybinds::{KeybindState, KeybindStateInner};
 use crate::uiworld::UiWorld;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
@@ -319,24 +320,28 @@ pub fn settings(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
                                     padx(2.0, || {
                                         textc(on_secondary_container(), action.to_string());
                                     });
-                                    padx(2.0, || {
-                                        minrow(0.0, || {
-                                            if !comb.0.is_empty() {
-                                                button_primary(format!("{}", comb.0[0])).show();
-                                            } else {
-                                                button_primary("<empty>").show();
-                                            }
+                                    let print_comb = |index: usize| {
+                                        padx(2.0, || {
+                                            minrow(0.0, || {
+                                                let resp = if comb.0.len() > index {
+                                                    button_primary(format!("{}", comb.0[index]))
+                                                        .show()
+                                                } else {
+                                                    button_primary("<empty>").show()
+                                                };
+                                                if resp.clicked {
+                                                    let mut state = uiw.write::<KeybindState>();
+                                                    state.enabled = Some(KeybindStateInner {
+                                                        to_bind_to: action.clone(),
+                                                        cur: Default::default(),
+                                                        bind_index: index,
+                                                    });
+                                                }
+                                            });
                                         });
-                                    });
-                                    padx(2.0, || {
-                                        minrow(0.0, || {
-                                            if comb.0.len() > 1 {
-                                                button_primary(format!("{}", comb.0[1])).show();
-                                            } else {
-                                                button_primary("<empty>").show();
-                                            }
-                                        });
-                                    });
+                                    };
+                                    print_comb(0);
+                                    print_comb(1);
                                     padxy(8.0, 2.0, || {
                                         minrow(0.0, || {
                                             if icon_button(button_primary("arrows-rotate"))
