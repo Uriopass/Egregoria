@@ -173,8 +173,8 @@ fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, sim: &
             timings.render.avg() * 1000.0
         ));
         ui.label(format!(
-            "Engine time: {:.1}ms",
-            timings.engine_time.avg() * 1000.0
+            "Engine render encode time: {:.1}ms",
+            timings.engine_render_time.avg() * 1000.0
         ));
         ui.label(format!(
             "GUI time: {:.1}ms",

@@ -98,9 +98,9 @@ impl engine::framework::State for State {
 
         {
             let mut timings = self.uiw.write::<Timings>();
-            timings.engine_time.add_value(ctx.engine_time);
-            timings.gui_time.add_value(ctx.gui_time);
-            timings.total_cpu_time.add_value(ctx.total_cpu_time);
+            timings.engine_render_time.add_value(ctx.times.render_time);
+            timings.gui_time.add_value(ctx.times.gui_time);
+            timings.total_cpu_time.add_value(ctx.times.total_cpu_time);
         }
 
         let mut slstate = self.uiw.write::<SaveLoadState>();
@@ -383,7 +383,7 @@ pub struct Timings {
     pub all: History,
     pub world_update: History,
     pub render: History,
-    pub engine_time: History,
+    pub engine_render_time: History,
     pub gui_time: History,
     pub total_cpu_time: History,
     pub per_game_system: Vec<(String, f32)>,

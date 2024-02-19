@@ -124,7 +124,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                         state.update(&mut ctx);
 
                         let (mut enc, view) = ctx.gfx.start_frame(&sco);
-                        (ctx.engine_time, ctx.gui_time) = ctx
+                        (ctx.times.render_time, ctx.times.gui_time) = ctx
                             .gfx
                             .render(&mut enc, &view, &mut state, |state, mut gctx| {
                                 #[cfg(feature = "yakui")]
@@ -139,7 +139,7 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                         ctx.gfx.finish_frame(enc);
                         ctx.gfx.window.set_cursor_icon(get_cursor_icon());
                         ctx.input.end_frame();
-                        ctx.total_cpu_time = last_update.elapsed().as_secs_f32();
+                        ctx.times.total_cpu_time = last_update.elapsed().as_secs_f32();
 
                         sco.present();
                         ctx.gfx.window.request_redraw();
@@ -227,6 +227,16 @@ pub fn start<S: State>() {
     }
 }
 
+#[derive(Default)]
+pub struct EngineTimes {
+    /// Time taken by the engine to process the render commands
+    pub render_time: f32,
+    /// Time taken to update/render the gui
+    pub gui_time: f32,
+    /// Total time taken to do CPU work: update/render prepare/render/gui
+    pub total_cpu_time: f32,
+}
+
 /// Context is the main struct that contains all the context of the game.
 /// It holds the necessary state for graphics, input, audio, and the window.
 pub struct Context {
@@ -234,9 +244,7 @@ pub struct Context {
     pub input: InputContext,
     pub audio: AudioContext,
     pub delta: f32,
-    pub engine_time: f32,
-    pub gui_time: f32,
-    pub total_cpu_time: f32,
+    pub times: EngineTimes,
     pub egui: EguiWrapper,
     #[cfg(feature = "yakui")]
     pub yakui: crate::yakui::YakuiWrapper,
@@ -253,9 +261,7 @@ impl Context {
             input,
             audio,
             delta: 0.0,
-            engine_time: 0.0,
-            gui_time: 0.0,
-            total_cpu_time: 0.0,
+            times: EngineTimes::default(),
             egui,
             #[cfg(feature = "yakui")]
             yakui: crate::yakui::YakuiWrapper::new(&gfx, &gfx.window),
