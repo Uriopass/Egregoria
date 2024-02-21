@@ -17,7 +17,12 @@ struct FragmentOutput {
 
 @group(0) @binding(0) var<uniform> params: RenderParams;
 
+#ifdef MSAA
 @group(1) @binding(0) var t_depth: texture_multisampled_2d<f32>;
+#else
+@group(1) @binding(0) var t_depth: texture_2d<f32>;
+#endif
+
 @group(1) @binding(1) var s_depth: sampler;
 
 

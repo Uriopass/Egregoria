@@ -10,16 +10,28 @@ use wgpu::{
 
 pub fn render_background(gfx: &GfxContext, enc: &mut CommandEncoder, frame: &TextureView) {
     profiling::scope!("bg pass");
-    let mut bg_pass = enc.begin_render_pass(&RenderPassDescriptor {
-        label: Some("bg pass"),
-        color_attachments: &[Some(RenderPassColorAttachment {
+    let ops = wgpu::Operations {
+        load: wgpu::LoadOp::Load, // Don't clear! We're drawing after main pass
+        store: wgpu::StoreOp::Store,
+    };
+
+    let attachment = if gfx.samples > 1 {
+        RenderPassColorAttachment {
             view: &gfx.fbos.color_msaa,
             resolve_target: Some(frame),
-            ops: wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: wgpu::StoreOp::Store,
-            },
-        })],
+            ops,
+        }
+    } else {
+        RenderPassColorAttachment {
+            view: frame,
+            resolve_target: None,
+            ops,
+        }
+    };
+
+    let mut bg_pass = enc.begin_render_pass(&RenderPassDescriptor {
+        label: Some("bg pass"),
+        color_attachments: &[Some(attachment)],
         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
             view: &gfx.fbos.depth.view,
             depth_ops: Some(wgpu::Operations {

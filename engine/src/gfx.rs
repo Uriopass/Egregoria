@@ -145,6 +145,7 @@ pub struct GfxSettings {
     pub pbr_enabled: bool,
     pub fog_shader_debug: bool,
     pub parallel_render: bool,
+    pub msaa: bool,
 }
 
 impl Default for GfxSettings {
@@ -160,6 +161,7 @@ impl Default for GfxSettings {
             pbr_enabled: true,
             fog_shader_debug: false,
             parallel_render: false,
+            msaa: false,
         }
     }
 }
@@ -314,7 +316,8 @@ impl GfxContext {
             alpha_mode: CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
-        let samples = if cfg!(target_arch = "wasm32") { 1 } else { 4 };
+        //        let samples = if cfg!(target_arch = "wasm32") { 1 } else { 4 };
+        let samples = 1;
         let fbos = Self::create_textures(&device, &sc_desc, samples);
         surface.configure(&device, &sc_desc);
 
@@ -611,12 +614,25 @@ impl GfxContext {
             }
         }
 
+        let samples = match settings.msaa {
+            true => 4,
+            false => 1,
+        };
+
+        if self.samples != samples {
+            self.samples = samples;
+            self.pipelines.write().unwrap().invalidate_all();
+            self.fbos = Self::create_textures(&self.device, &self.sc_desc, samples);
+            self.update_simplelit_bg();
+        }
+
         self.set_define_flag("FOG", settings.fog);
         self.set_define_flag("SSAO", settings.ssao);
         self.set_define_flag("TERRAIN_GRID", settings.terrain_grid);
         self.set_define_flag("DEBUG", settings.shader_debug);
         self.set_define_flag("FOG_DEBUG", settings.fog_shader_debug);
         self.set_define_flag("PBR_ENABLED", settings.pbr_enabled);
+        self.set_define_flag("MSAA", settings.msaa);
 
         self.settings = Some(settings);
     }
@@ -789,19 +805,31 @@ impl GfxContext {
         let mut main_enc = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("shadow map encoder"),
+                label: Some("main pass encoder"),
             });
+
+        let ops = wgpu::Operations {
+            load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+            store: wgpu::StoreOp::Store,
+        };
+
+        let attachment = if self.samples > 1 {
+            RenderPassColorAttachment {
+                view: &self.fbos.color_msaa,
+                resolve_target: Some(frame),
+                ops,
+            }
+        } else {
+            RenderPassColorAttachment {
+                view: frame,
+                resolve_target: None,
+                ops,
+            }
+        };
 
         let mut render_pass = main_enc.begin_render_pass(&RenderPassDescriptor {
             label: Some("main render pass"),
-            color_attachments: &[Some(RenderPassColorAttachment {
-                view: &self.fbos.color_msaa,
-                resolve_target: Some(frame),
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
+            color_attachments: &[Some(attachment)],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &self.fbos.depth.view,
                 depth_ops: None,
@@ -927,10 +955,7 @@ impl GfxContext {
         );
         if self.defines_changed {
             self.defines_changed = false;
-            self.pipelines
-                .write()
-                .unwrap()
-                .invalidate_all(&self.defines, &self.device);
+            self.pipelines.write().unwrap().invalidate_all();
         }
         if self.tick % 30 == 0 {
             #[cfg(debug_assertions)]
@@ -977,7 +1002,11 @@ impl GfxContext {
         FBOs {
             depth,
             depth_bg,
-            color_msaa: Texture::create_color_msaa(device, desc, samples),
+            color_msaa: if samples > 1 {
+                Texture::create_color_msaa(device, desc, samples)
+            } else {
+                ssao.mip_view(0) // bogus
+            },
             ssao,
             fog,
             ui_blur,

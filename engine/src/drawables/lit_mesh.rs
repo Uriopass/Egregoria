@@ -99,7 +99,10 @@ impl PipelineKey for MeshPipeline {
                     false => gfx.sc_desc.format,
                 },
             )
-            .with_samples(gfx.samples);
+            .with_samples(match self.offscreen_render {
+                true => 4,
+                false => gfx.samples,
+            });
 
             if self.offscreen_render {
                 builder = builder.with_depth_write();

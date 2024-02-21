@@ -82,17 +82,28 @@ impl YakuiWrapper {
             self.yakui.finish();
         }
 
-        self.renderer.paint_with_encoder(
-            &mut self.yakui,
-            &gfx.gfx.device,
-            &gfx.gfx.queue,
-            gfx.encoder,
+        let surface_info = if gfx.gfx.samples > 1 {
             yakui_wgpu::SurfaceInfo {
                 format: self.format,
                 sample_count: gfx.gfx.samples,
                 color_attachment: &gfx.gfx.fbos.color_msaa,
                 resolve_target: Some(gfx.view),
-            },
+            }
+        } else {
+            yakui_wgpu::SurfaceInfo {
+                format: self.format,
+                sample_count: 1,
+                color_attachment: gfx.view,
+                resolve_target: None,
+            }
+        };
+
+        self.renderer.paint_with_encoder(
+            &mut self.yakui,
+            &gfx.gfx.device,
+            &gfx.gfx.queue,
+            gfx.encoder,
+            surface_info,
         );
     }
 

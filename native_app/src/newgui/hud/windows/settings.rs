@@ -226,6 +226,11 @@ pub fn settings(uiw: &UiWorld, _: &Simulation, opened: &mut bool) {
                     on_secondary_container(),
                     "Ambient Occlusion (SSAO)",
                 );
+                checkbox_value(
+                    &mut settings.gfx.msaa,
+                    on_secondary_container(),
+                    "MSAA 4x Anti-aliasing",
+                );
                 checkbox_value(&mut settings.gfx.vsync, on_secondary_container(), "VSync");
                 checkbox_value(
                     &mut settings.gfx.parallel_render,
