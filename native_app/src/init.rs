@@ -10,6 +10,7 @@ use crate::newgui::lotbrush::LotBrushResource;
 use crate::newgui::roadbuild::RoadBuildResource;
 use crate::newgui::roadeditor::RoadEditorResource;
 use crate::newgui::specialbuilding::SpecialBuildingResource;
+use crate::newgui::addtrain::TrainSpawnResource;
 use crate::newgui::terraforming::TerraformingResource;
 use crate::newgui::toolbox::building::BuildingIcons;
 use crate::newgui::windows::economy::EconomyState;
@@ -60,6 +61,7 @@ pub fn init() {
     register_resource_noserialize::<RoadBuildResource>();
     register_resource_noserialize::<RoadEditorResource>();
     register_resource_noserialize::<SpecialBuildingResource>();
+    register_resource_noserialize::<TrainSpawnResource>();
     register_resource_noserialize::<Timings>();
     register_resource_noserialize::<Tool>();
     register_resource_noserialize::<WorldCommands>();

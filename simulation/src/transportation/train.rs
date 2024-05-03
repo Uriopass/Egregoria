@@ -7,7 +7,7 @@ use slotmapd::HopSlotMap;
 
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
-use prototypes::DELTA;
+use prototypes::{RollingStockID, DELTA};
 
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::ItineraryFollower;
@@ -52,44 +52,69 @@ pub enum RailWagonKind {
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct RailWagon {
     pub kind: RailWagonKind,
+    pub rolling_stock: RollingStockID,
 }
 
-const WAGON_INTERLENGTH: f32 = 16.75;
-
-pub fn wagons_dists_to_loco(n_wagons: u32) -> impl DoubleEndedIterator<Item = f32> {
-    (0..n_wagons + 1).map(|x| x as f32 * 16.75)
-}
-
-pub fn wagons_positions_for_render(
-    points: &PolyLine3,
-    dist: f32,
-    n_wagons: u32,
-) -> impl Iterator<Item = (Vec3, Vec3)> + '_ {
-    let positions = std::iter::once(0.0)
-        .chain(wagons_dists_to_loco(n_wagons).map(|x| x + WAGON_INTERLENGTH * 0.5))
-        .rev()
-        .filter_map(move |wdist| {
-            let pos = dist - wdist;
-            if pos >= 0.0 {
-                Some(pos)
-            } else {
-                None
-            }
+pub fn calculate_locomotive(wagons: &Vec<RollingStockID>) -> Locomotive {
+    let info = wagons.iter()
+        .fold((720.0, 0.0, 0.0, 0.0, 0), 
+        |(speed, acc, dec, length, mass): (f32, f32, f32, f32, u32), &id| {
+            let rs = RollingStockID::prototype(id);
+            ( 
+                speed.min(rs.max_speed),
+                acc + rs.acc_force, dec + rs.dec_force,
+                length + rs.length, mass + rs.mass,
+            )
         });
-
-    points.points_dirs_along(positions)
+    Locomotive {
+        max_speed: info.0,
+        acc_force: info.1 / info.4 as f32,
+        dec_force: info.2 / info.4 as f32,
+        length: info.3 + 10.0,
+    }
 }
 
-pub fn train_length(n_wagons: u32) -> f32 {
-    1.0 + (n_wagons + 1) as f32 * WAGON_INTERLENGTH
+pub fn wagons_loco_dists_lengths(wagons: &Vec<RollingStockID>) -> impl DoubleEndedIterator<Item = (f32, f32)> + '_ {
+    let mut loco_dist = 0.0;
+    wagons.iter()
+    .map(move |&id| {
+        let length = RollingStockID::prototype(id).length;
+        loco_dist += length;
+        (loco_dist - length, length)
+    })
+}
+
+pub fn wagons_positions_for_render<'a>(
+    wagons: &'a Vec<RollingStockID>,
+    points: &'a PolyLine3,    
+    dist: f32,
+) -> impl Iterator<Item = (Vec3, Vec3, f32)> + 'a {
+    wagons_loco_dists_lengths(wagons)
+    .map(|(wagon_dist, length)| (wagon_dist + length * 0.5, length))
+    .rev()
+    .filter_map(move |(wagin_dist, length)| {
+        let pos = dist - wagin_dist;
+        if pos >= 0.0 { Some((pos, length)) }
+        else { None }
+    })
+    .map(move |(d, length)|{
+        let (pos, dir) = points.point_dir_along(d);
+        (pos, dir, length)
+    })
+}
+
+pub fn train_length(wagons: &Vec<RollingStockID>) -> f32 {
+    wagons.iter()
+    .map(|id| RollingStockID::prototype(*id).length)
+    .sum::<f32>()
 }
 
 pub fn spawn_train(
     sim: &mut Simulation,
-    dist: f32,
-    n_wagons: u32,
-    lane: LaneID,
+    wagons: &Vec<RollingStockID>,
     kind: RailWagonKind,
+    lane: LaneID,
+    dist: f32,
 ) -> Option<TrainID> {
     let (world, res) = sim.world_res();
 
@@ -108,18 +133,14 @@ pub fn spawn_train(
         .collect::<Vec<_>>();
     points.reverse();
 
-    let trainlength = train_length(n_wagons);
+    let locomotive = calculate_locomotive(wagons);
+    let train_length = locomotive.length;
 
     let loco = world.insert(TrainEnt {
         trans: Transform::new_dir(locopos, locodir),
         speed: Default::default(),
         it: Itinerary::NONE,
-        locomotive: Locomotive {
-            max_speed: 50.0,
-            acc_force: 1.0,
-            dec_force: 2.5,
-            length: trainlength,
-        },
+        locomotive: locomotive,
         res: LocomotiveReservation {
             cur_travers_dist: dist,
             waited_for: 0.0,
@@ -130,7 +151,7 @@ pub fn spawn_train(
             upcoming_inters: Default::default(),
         },
         leader: ItineraryLeader {
-            past: Polyline3Queue::new(points.into_iter(), locopos, trainlength + 20.0),
+            past: Polyline3Queue::new(points.into_iter(), locopos, train_length + 20.0),
         },
     });
 
@@ -139,9 +160,8 @@ pub fn spawn_train(
     let mut followers: Vec<_> = leader
         .past
         .mk_followers(
-            wagons_dists_to_loco(n_wagons)
-                .flat_map(|x| [x + WAGON_INTERLENGTH * 0.1, x + WAGON_INTERLENGTH * 0.9]),
-        )
+            wagons_loco_dists_lengths(&wagons)
+                        .flat_map(|(dist, length)| [dist + length * 0.1, dist + length * 0.9]))
         .collect();
     for (i, follower) in followers.chunks_exact_mut(2).enumerate() {
         let (pos, dir) = follower[0].update(&leader.past);
@@ -150,11 +170,10 @@ pub fn spawn_train(
             trans: Transform::new_dir(pos * 0.5 + pos2 * 0.5, (0.5 * (dir + dir2)).normalize()),
             speed: Speed::default(),
             wagon: RailWagon {
+                rolling_stock: wagons[i],
                 kind: if i == 0 {
                     RailWagonKind::Locomotive
-                } else {
-                    kind
-                },
+                } else { kind },
             },
             itfollower: ItineraryFollower {
                 leader: loco,
@@ -163,7 +182,8 @@ pub fn spawn_train(
             },
         });
     }
-
+    
+    log::info!("Spawned Train with {} wagons", wagons.len());
     Some(loco)
 }
 

@@ -1,6 +1,59 @@
+use goryak::{mincolumn, minrow, padxy, outline};
+use prototypes::{prototypes_iter, RollingStockID, RollingStockPrototype};
+use yakui::widgets::List;
+use yakui::{button, divider, label, CrossAxisAlignment, MainAxisAlignment};
+
+use crate::newgui::addtrain::TrainSpawnResource;
 use crate::uiworld::UiWorld;
 
-pub fn train_properties(_uiw: &UiWorld) {}
+pub fn train_properties(uiw: &UiWorld) {
+    let mut state = uiw.write::<TrainSpawnResource>();
+
+    padxy(0.0, 0.0, || {
+        let mut l = List::row();
+        l.main_axis_alignment = MainAxisAlignment::Start;
+        l.cross_axis_alignment = CrossAxisAlignment::Center;
+        l.item_spacing = 10.0;
+        l.show(|| {
+            mincolumn(0.1, || {
+                if button("remove trian").clicked {
+                    state.wagons.clear();
+                    state.calculate();
+                }
+                label(format!("Acceleration: {}", state.acceleration));
+                label(format!("Deceleration: {}", state.deceleration));
+                label(format!("Total Lenght: {}", state.total_lenght.ceil()));
+            });
+
+            mincolumn(0.5, || {
+                minrow(0.0, || {
+                    let mut remove: Option<usize>= None;
+                    for (i, rs) in state.wagons.iter()
+                    .map(|id| RollingStockID::prototype(*id))
+                    .enumerate() {
+                        if button(rs.label.clone()).clicked { remove = Some(i); }
+                    }
+                    if let Some(i) = remove {
+                        state.wagons.remove(i); 
+                        state.calculate();
+                    }
+                });
+
+                divider(outline(), 10.0, 1.0);
+                
+                minrow(0.0, || {
+                    for rolling_stock in prototypes_iter::<RollingStockPrototype>() {
+                        let resp = button(rolling_stock.label.clone());
+                        if resp.clicked {
+                            state.wagons.push(rolling_stock.id); 
+                            state.calculate();
+                        }
+                    }
+                });
+            });
+        });
+    });
+}
 
 /*
 if ui.button(freightstation).clicked() {
