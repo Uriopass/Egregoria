@@ -25,9 +25,14 @@ pub struct TrainSpawnResource {
 /// It allows to add a train to any rail lane
 pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::addtrain");
-    let state = uiworld.write::<TrainSpawnResource>();
+    let state =  &mut *uiworld.write::<TrainSpawnResource>();
     let tool = *uiworld.read::<Tool>();
-    if !matches!(tool, Tool::Train) { return; }
+    
+    if !matches!(tool, Tool::Train) {
+        state.wagons.clear();
+        state.set_zero();
+        return;
+    }
     
     let inp = uiworld.read::<InputMap>();
     let mut potential = uiworld.write::<PotentialCommands>();
@@ -48,6 +53,10 @@ pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
             return;
         }
     };
+
+    if state.wagons.is_empty() {
+        return;
+    }
 
     let proj = nearbylane.points.project(mpos);
     let dist = nearbylane.points.length_at_proj(proj);
@@ -86,9 +95,20 @@ pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
 impl TrainSpawnResource {
     pub fn calculate(&mut self) {
         let locomotive = calculate_locomotive(&self.wagons);
+        if locomotive.acc_force.is_nan() || locomotive.dec_force.is_nan() {
+            self.set_zero(); return;
+        }
+
         self.max_speed = locomotive.max_speed;
         self.acceleration = locomotive.acc_force;
         self.deceleration = locomotive.dec_force;
         self.total_lenght = locomotive.length;
+    }
+
+    pub fn set_zero(&mut self) {
+        self.max_speed = 0.0;
+        self.acceleration = 0.0;
+        self.deceleration = 0.0;
+        self.total_lenght = 0.0;
     }
 }

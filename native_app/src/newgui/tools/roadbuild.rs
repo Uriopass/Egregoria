@@ -49,20 +49,24 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
     // Prepare mousepos depending on snap to grid
     let unproj = unwrap_ret!(inp.unprojected);
     let grid_size = 20.0;
-    let mousepos = if state.snap_to_grid {
-        let v = unproj.xy().snap(grid_size, grid_size);
-        v.z(unwrap_ret!(map.environment.height(v)) + state.height_offset)
-    } else if state.snap_to_angle {
-        state.streight_points = state._update_points(map, unproj.up(state.height_offset));
-        state.streight_points.iter()
-        .filter_map(|&point| {
-            let distance = point.distance(unproj);
-            if distance < grid_size {Some((point, distance))} else { None }
-        })
-        .reduce(|acc, e| { if acc.1 < e.1 {acc} else { e } })
-        .unwrap_or((unproj.up(state.height_offset), 0.0)).0
-    } else {
-        unproj.up(state.height_offset)
+    let mousepos = match state.snapping {
+        Snapping::None => {
+            unproj.up(state.height_offset)
+        },
+        Snapping::SnapToGrid => {
+            let v = unproj.xy().snap(grid_size, grid_size);
+            v.z(unwrap_ret!(map.environment.height(v)) + state.height_offset)
+        },
+        Snapping::SnapToAngle => {
+            state.streight_points = state._update_points(map, unproj.up(state.height_offset));
+            state.streight_points.iter()
+                .filter_map(|&point| {
+                    let distance = point.distance(unproj);
+                    if distance < grid_size {Some((point, distance))} else { None }
+                })
+                .reduce(|acc, e| { if acc.1 < e.1 {acc} else { e } })
+                .unwrap_or((unproj.up(state.height_offset), 0.0)).0
+        }
     };
 
     let log_camheight = cam.eye().z.log10();
@@ -329,11 +333,24 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
 pub struct RoadBuildResource {
     pub build_state: BuildState,
     pub pattern_builder: LanePatternBuilder,
-    pub snap_to_grid: bool,
-    pub snap_to_angle: bool,
+    pub snapping: Snapping,
     pub height_offset: f32,
+//    pub height_reference: HeightReference,
     pub streight_points: Vec<Vec3>,
 }
+
+#[derive(Default, Clone, Copy)]
+pub enum Snapping {
+    #[default] None,
+    SnapToGrid, SnapToAngle
+}
+
+// #[derive(Default, Clone, Copy)]
+// pub enum HeightReference {
+//     #[default] Ground,
+//     Start, Absolute,
+//     MaxIncline, MaxDecline
+// }
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
     let max_turn_angle = if is_rail {

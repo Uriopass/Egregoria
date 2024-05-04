@@ -72,7 +72,10 @@ impl Intersection {
             .roads
             .iter()
             .flat_map(|x| roads.get(*x))
-            .map(|x| OrderedFloat(x.interface_from(self.id)))
+            .map(|x| {
+                if self.is_roundabout() { OrderedFloat(x.interface_from(self.id)) }
+                else { OrderedFloat(x.width) }
+            })
             .max()
             .map(|x| x.0)
             .unwrap_or(10.0);

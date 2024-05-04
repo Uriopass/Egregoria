@@ -18,7 +18,7 @@ pub fn train_properties(uiw: &UiWorld) {
             mincolumn(0.1, || {
                 if button("remove trian").clicked {
                     state.wagons.clear();
-                    state.calculate();
+                    state.set_zero();
                 }
                 label(format!("Acceleration: {}", state.acceleration));
                 label(format!("Deceleration: {}", state.deceleration));
