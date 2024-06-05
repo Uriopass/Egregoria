@@ -19,6 +19,7 @@ impl Radians {
     pub const TAU: Self = Radians(TAU);
     pub const ZERO: Self = Radians(0.0);
 
+    #[inline]
     pub fn vec2(self) -> Vec2 {
         Vec2 {
             x: self.0.cos(),
@@ -26,56 +27,69 @@ impl Radians {
         }
     }
 
+    #[inline]
     pub fn from_deg(deg: f32) -> Self {
         Self(deg * (PI / 180.0))
     }
 
+    #[inline]
     pub fn normalize(&mut self) {
         self.0 %= TAU;
     }
 
+    #[inline]
     pub fn cos(self) -> f32 {
         self.0.cos()
     }
 
+    #[inline]
     pub fn sin(self) -> f32 {
         self.0.sin()
     }
 
+    #[inline]
     pub fn min(self, other: Self) -> Self {
         Self(self.0.min(other.0))
     }
 
+    #[inline]
     pub fn max(self, other: Self) -> Self {
         Self(self.0.max(other.0))
     }
 
+    #[inline]
     pub fn to_degrees(self) -> Degrees {
         Degrees(self.0 * (180.0 / PI))
     }
 }
 
 impl Degrees {
+    #[inline]
     pub fn vec2(self) -> Vec2 {
         Radians::from(self).vec2()
     }
 
+    #[inline]
     pub fn normalize(&mut self) {
         self.0 %= 360.0;
     }
 
+    #[inline]
     pub fn min(self, other: Self) -> Self {
         Self(self.0.min(other.0))
     }
 
+    #[inline]
     pub fn max(self, other: Self) -> Self {
         Self(self.0.max(other.0))
     }
 
+    #[inline]
     pub fn to_radians(self) -> Radians {
         Radians(self.0 * (PI / 180.0))
     }
 
+    #[inline]
     pub fn from_rad(rad: f32) -> Self {
         Self(rad * (180.0 / PI))
     }
@@ -146,12 +160,14 @@ impl AddAssign for Radians {
 }
 
 impl From<Radians> for Degrees {
+    #[inline]
     fn from(r: Radians) -> Self {
         Self(r.0 * (180.0 / PI))
     }
 }
 
 impl From<Degrees> for Radians {
+    #[inline]
     fn from(r: Degrees) -> Self {
         Self(r.0 * (PI / 180.0))
     }
@@ -160,6 +176,7 @@ impl From<Degrees> for Radians {
 impl Mul<f32> for Radians {
     type Output = Self;
 
+    #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self(self.0 * rhs)
     }
@@ -168,30 +185,35 @@ impl Mul<f32> for Radians {
 impl Neg for Radians {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         Self(-self.0)
     }
 }
 
 impl From<f32> for Radians {
+    #[inline]
     fn from(v: f32) -> Self {
         Self(v)
     }
 }
 
 impl From<f32> for Degrees {
+    #[inline]
     fn from(v: f32) -> Self {
         Self(v)
     }
 }
 
 impl From<Degrees> for f32 {
+    #[inline]
     fn from(d: Degrees) -> Self {
         d.0
     }
 }
 
 impl From<Radians> for f32 {
+    #[inline]
     fn from(r: Radians) -> Self {
         r.0
     }
