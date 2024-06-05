@@ -21,6 +21,7 @@ impl From<Vec<Vec2>> for PolyLine {
 }
 
 impl PolyLine {
+    #[inline]
     pub fn new(x: Vec<Vec2>) -> Self {
         if x.is_empty() {
             panic!("Vec must have at least one point")
@@ -31,6 +32,7 @@ impl PolyLine {
         }
     }
 
+    #[inline]
     pub fn clear_push(&mut self, x: Vec2) {
         self.points.clear();
         self.points.push(x);
@@ -47,6 +49,7 @@ impl PolyLine {
         self.l += length(&self.points[old_l - 1..]);
     }
 
+    #[inline]
     pub fn pop(&mut self) -> Vec2 {
         let v = match self.points.pop() {
             Some(x) => x,
@@ -57,6 +60,7 @@ impl PolyLine {
         v
     }
 
+    #[inline]
     pub fn push(&mut self, item: Vec2) {
         self.l += (self.last() - item).mag();
         self.points.push(item);
@@ -168,6 +172,7 @@ impl PolyLine {
         self.points_dirs_along(std::iter::once(l)).next().unwrap() // Unwrap ok: std::iter::once
     }
 
+    #[inline]
     pub fn length(&self) -> f32 {
         self.l
     }
@@ -286,6 +291,7 @@ impl PolyLine {
         }
     }
 
+    #[inline]
     pub fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(self.points.iter().copied()) {
             Some(x) => x,
@@ -295,14 +301,17 @@ impl PolyLine {
         AABB::new_ll_ur(min, max)
     }
 
+    #[inline]
     pub fn n_points(&self) -> usize {
         self.points.len()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.points.is_empty()
     }
 
+    #[inline]
     pub fn get<I>(&self, index: I) -> Option<&I::Output>
     where
         I: SliceIndex<[Vec2]>,
@@ -310,10 +319,12 @@ impl PolyLine {
         self.points.get(index)
     }
 
+    #[inline]
     pub fn first(&self) -> Vec2 {
         unsafe { *self.points.get_unchecked(0) }
     }
 
+    #[inline]
     pub fn last(&self) -> Vec2 {
         unsafe { *self.points.get_unchecked(self.points.len() - 1) }
     }
@@ -345,6 +356,7 @@ impl PolyLine {
 impl Index<Range<usize>> for PolyLine {
     type Output = [Vec2];
 
+    #[inline]
     fn index(&self, r: Range<usize>) -> &[Vec2] {
         &self.points[r]
     }
@@ -353,6 +365,7 @@ impl Index<Range<usize>> for PolyLine {
 impl Index<usize> for PolyLine {
     type Output = Vec2;
 
+    #[inline]
     fn index(&self, index: usize) -> &Vec2 {
         &self.points[index]
     }
@@ -367,6 +380,7 @@ pub struct PointsAlongs<'a> {
 }
 
 impl<'a> PointsAlongs<'a> {
+    #[inline]
     pub fn next(&mut self, d: f32) -> Option<(Vec2, Vec2)> {
         while d > self.partial + self.dist {
             let w = self.windows.next()?;

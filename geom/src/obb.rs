@@ -2,6 +2,7 @@ use crate::aabb::AABB;
 use crate::{vec2, Circle, Intersect, Polygon, Segment, Shape, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
+use std::ops::Add;
 
 /// Oriented bounding box
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -15,6 +16,7 @@ impl OBB {
     };
 
     /// cossin of `UNIT_X` makes this an AABB
+    #[inline]
     pub fn new(center: Vec2, cossin: Vec2, w: f32, h: f32) -> Self {
         let up = cossin * w * 0.5;
         let right = cossin.perpendicular() * h * 0.5;
@@ -28,8 +30,21 @@ impl OBB {
         }
     }
 
+    #[inline]
     pub fn new_corners(corners: [Vec2; 4]) -> Self {
         Self { corners }
+    }
+
+    #[inline]
+    pub fn from_rotated_aabb(aabb: AABB, cossin: Vec2) -> Self {
+        Self {
+            corners: [
+                aabb.ll.rotated_by(cossin),
+                vec2(aabb.ur.x, aabb.ll.y).rotated_by(cossin),
+                aabb.ur.rotated_by(cossin),
+                vec2(aabb.ll.x, aabb.ur.y).rotated_by(cossin),
+            ],
+        }
     }
 
     #[inline]
@@ -45,6 +60,7 @@ impl OBB {
         (self.corners[2] + self.corners[0]) * 0.5
     }
 
+    #[inline]
     pub fn expand(&self, w: f32) -> Self {
         let [a, b] = self.axis();
         let a = match a.try_normalize() {
@@ -61,6 +77,17 @@ impl OBB {
                 self.corners[1] + a * w - b * w,
                 self.corners[2] + a * w + b * w,
                 self.corners[3] - a * w + b * w,
+            ],
+        }
+    }
+
+    pub fn map(&self, f: impl Fn(Vec2) -> Vec2) -> Self {
+        Self {
+            corners: [
+                f(self.corners[0]),
+                f(self.corners[1]),
+                f(self.corners[2]),
+                f(self.corners[3]),
             ],
         }
     }
@@ -117,6 +144,7 @@ impl OBB {
         ok0 & ok1 & ok2 & ok3
     }
 
+    #[inline]
     pub fn is_close(&self, p: Vec2, dist: f32) -> bool {
         if self.contains(p) {
             return true;
@@ -151,6 +179,7 @@ impl OBB {
     /// 4 v     ^ 2
     ///   +-->--+
     ///      1
+    #[inline]
     pub fn segments(&self) -> [Segment; 4] {
         [
             Segment::new(self.corners[0], self.corners[1]),
@@ -158,6 +187,31 @@ impl OBB {
             Segment::new(self.corners[2], self.corners[3]),
             Segment::new(self.corners[3], self.corners[0]),
         ]
+    }
+}
+
+impl Add<Vec2> for OBB {
+    type Output = OBB;
+
+    #[inline]
+    fn add(self, rhs: Vec2) -> Self::Output {
+        Self {
+            corners: [
+                self.corners[0] + rhs,
+                self.corners[1] + rhs,
+                self.corners[2] + rhs,
+                self.corners[3] + rhs,
+            ],
+        }
+    }
+}
+
+impl Add<OBB> for Vec2 {
+    type Output = OBB;
+
+    #[inline]
+    fn add(self, rhs: OBB) -> Self::Output {
+        rhs + self
     }
 }
 
@@ -201,6 +255,7 @@ impl Intersect<Circle> for OBB {
 }
 
 impl Intersect<AABB> for OBB {
+    #[inline]
     fn intersects(&self, shape: &AABB) -> bool {
         let Vec2 {
             x: mut min_x,

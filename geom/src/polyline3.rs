@@ -19,6 +19,7 @@ impl From<Vec<Vec3>> for PolyLine3 {
 }
 
 impl PolyLine3 {
+    #[inline]
     pub fn new(x: Vec<Vec3>) -> Self {
         if x.is_empty() {
             panic!("Vec must have at least one point")
@@ -31,6 +32,7 @@ impl PolyLine3 {
 
     /// # Safety
     /// Must not be used with advanced functions if passed vector is empty, as it would lead to UB
+    #[inline]
     pub unsafe fn new_unchecked(x: Vec<Vec3>) -> Self {
         Self {
             l: length(&x),
@@ -42,12 +44,14 @@ impl PolyLine3 {
         PolyLine::new(self.points.iter().copied().map(Vec3::xy).collect())
     }
 
+    #[inline]
     pub fn clear_push(&mut self, x: Vec3) {
         self.points.clear();
         self.points.push(x);
         self.l = 0.0;
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.points.len()
     }
@@ -154,6 +158,7 @@ impl PolyLine3 {
         self.l += length(&self.points[old_l - 1..]);
     }
 
+    #[inline]
     pub fn pop(&mut self) -> Vec3 {
         let v = match self.points.pop() {
             Some(x) => x,
@@ -164,11 +169,13 @@ impl PolyLine3 {
         v
     }
 
+    #[inline]
     pub fn push(&mut self, item: Vec3) {
         self.l += (self.last() - item).mag();
         self.points.push(item);
     }
 
+    #[inline]
     pub fn pop_first(&mut self) -> Vec3 {
         let v = self.points.remove(0);
         self.check_empty();
@@ -274,6 +281,7 @@ impl PolyLine3 {
         Some(self.get(id + 1)? - self.get(id)?)
     }
 
+    #[inline]
     pub fn first_dir(&self) -> Option<Vec3> {
         if self.points.len() >= 2 {
             (self[1] - self[0]).try_normalize()
@@ -282,6 +290,7 @@ impl PolyLine3 {
         }
     }
 
+    #[inline]
     pub fn last_dir(&self) -> Option<Vec3> {
         let l = self.points.len();
         if l >= 2 {
@@ -313,6 +322,7 @@ impl PolyLine3 {
         )
     }
 
+    #[inline]
     pub fn length(&self) -> f32 {
         self.l
     }
@@ -447,6 +457,7 @@ impl PolyLine3 {
         }
     }
 
+    #[inline]
     pub fn bbox(&self) -> AABB3 {
         let (min, max) = match super::minmax3(self.points.iter().copied()) {
             Some(x) => x,
@@ -456,14 +467,17 @@ impl PolyLine3 {
         AABB3::new(min, max)
     }
 
+    #[inline]
     pub fn n_points(&self) -> usize {
         self.points.len()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.points.is_empty()
     }
 
+    #[inline]
     pub fn get<I>(&self, index: I) -> Option<&I::Output>
     where
         I: SliceIndex<[Vec3]>,
@@ -471,10 +485,12 @@ impl PolyLine3 {
         self.points.get(index)
     }
 
+    #[inline]
     pub fn first(&self) -> Vec3 {
         unsafe { *self.points.get_unchecked(0) }
     }
 
+    #[inline]
     pub fn last(&self) -> Vec3 {
         unsafe { *self.points.get_unchecked(self.points.len() - 1) }
     }
