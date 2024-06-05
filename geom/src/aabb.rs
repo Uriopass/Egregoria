@@ -89,6 +89,13 @@ impl AABB {
     }
 
     #[inline]
+    /// Calculates the moment of inertia of the AABB around its center.
+    pub fn moment_of_inertia(&self, mass: f32) -> f32 {
+        let Vec2 { x: w, y: h } = self.size();
+        mass * (w * w + h * h) / 12.0
+    }
+
+    #[inline]
     pub fn size(&self) -> Vec2 {
         self.ur - self.ll
     }

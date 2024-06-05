@@ -8,8 +8,14 @@ pub struct Circle {
 }
 
 impl Circle {
+    #[inline]
     pub fn contains(&self, p: Vec2) -> bool {
         self.center.is_close(p, self.radius)
+    }
+
+    #[inline]
+    pub fn moment_of_inertia(&self, mass: f32) -> f32 {
+        mass * self.radius * self.radius * 0.5
     }
 }
 

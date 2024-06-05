@@ -56,6 +56,15 @@ impl OBB {
     }
 
     #[inline]
+    /// Calculates the moment of inertia of the OBB around its center.
+    pub fn moment_of_inertia(&self, mass: f32) -> f32 {
+        let [a, b] = self.axis();
+        let a = a.mag2();
+        let b = b.mag2();
+        mass * (a + b) / 12.0
+    }
+
+    #[inline]
     pub fn center(&self) -> Vec2 {
         (self.corners[2] + self.corners[0]) * 0.5
     }
