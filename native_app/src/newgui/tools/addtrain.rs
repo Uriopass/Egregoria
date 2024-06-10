@@ -14,11 +14,14 @@ use std::option::Option::None;
 #[derive(Clone, Debug, Default)]
 pub struct TrainSpawnResource {
     pub wagons: Vec<RollingStockID>,
+    /// m/s
     pub max_speed: f32,
+    /// m/s^2
     pub acceleration: f32,
+    /// m/s^2
     pub deceleration: f32,
+    /// meter
     pub total_lenght: f32,
-
 }
 
 /// Addtrain handles the "Adding a train" tool

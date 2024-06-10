@@ -20,9 +20,9 @@ pub fn train_properties(uiw: &UiWorld) {
                     state.wagons.clear();
                     state.set_zero();
                 }
-                label(format!("Acceleration: {}", state.acceleration));
-                label(format!("Deceleration: {}", state.deceleration));
-                label(format!("Total Lenght: {}", state.total_lenght.ceil()));
+                label(format!("Acceleration: {:.1} m/s^2", state.acceleration));
+                label(format!("Deceleration: {:.1} m/s^2", state.deceleration));
+                label(format!("Total Lenght: {} m", state.total_lenght.ceil()));
             });
 
             mincolumn(0.5, || {
