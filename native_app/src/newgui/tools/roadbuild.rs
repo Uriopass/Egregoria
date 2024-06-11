@@ -44,28 +44,37 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         return;
     }
 
+
+    let grid_size = 20.0;
+    let unproj = unwrap_ret!(inp.unprojected);
+    let mut interpoliation_points: Vec<Vec3> = Vec::new();
     let nosnapping = inp.act.contains(&InputAction::NoSnapping);
 
-    // Prepare mousepos depending on snap to grid
-    let unproj = unwrap_ret!(inp.unprojected);
-    let grid_size = 20.0;
+    let mouse_height = match (state.height_reference, state.build_state) {
+        (HeightReference::Start, Start(id)|StartInterp(id)|Connection(id, _))
+            => id.pos.z + state.height_offset,
+        (HeightReference::Ground|HeightReference::Start, _) => unproj.z + state.height_offset,
+        (HeightReference::MaxIncline|HeightReference::MaxDecline, _) => unproj.z, // work in progress
+    };
+
+    // Prepare mousepos depending on snap to grid or snap to angle
     let mousepos = match state.snapping {
         Snapping::None => {
-            unproj.up(state.height_offset)
+            unproj.z0().up(mouse_height)
         },
         Snapping::SnapToGrid => {
-            let v = unproj.xy().snap(grid_size, grid_size);
-            v.z(unwrap_ret!(map.environment.height(v)) + state.height_offset)
+            unproj.xy().snap(grid_size, grid_size).z(mouse_height)
         },
         Snapping::SnapToAngle => {
-            state.streight_points = state._update_points(map, unproj.up(state.height_offset));
-            state.streight_points.iter()
-                .filter_map(|&point| {
-                    let distance = point.distance(unproj);
+            interpoliation_points = state.update_points(map, unproj);
+            interpoliation_points.iter()
+                .map(|point| {point.xy()})
+                .filter_map(|point| {
+                    let distance = point.distance(unproj.xy());
                     if distance < grid_size {Some((point, distance))} else { None }
                 })
                 .reduce(|acc, e| { if acc.1 < e.1 {acc} else { e } })
-                .unwrap_or((unproj.up(state.height_offset), 0.0)).0
+                .unwrap_or((unproj.xy(), 0.0)).0.z0().up(mouse_height)
         }
     };
 
@@ -278,7 +287,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         }
     }
 
-    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points);
+    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points, interpoliation_points);
 
     if is_valid && inp.just_act.contains(&InputAction::Select) {
         log::info!("left clicked with state {:?} and {:?}", state.build_state, cur_proj.kind);
@@ -335,8 +344,7 @@ pub struct RoadBuildResource {
     pub pattern_builder: LanePatternBuilder,
     pub snapping: Snapping,
     pub height_offset: f32,
-//    pub height_reference: HeightReference,
-    pub streight_points: Vec<Vec3>,
+    pub height_reference: HeightReference,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -345,12 +353,13 @@ pub enum Snapping {
     SnapToGrid, SnapToAngle
 }
 
-// #[derive(Default, Clone, Copy)]
-// pub enum HeightReference {
-//     #[default] Ground,
-//     Start, Absolute,
-//     MaxIncline, MaxDecline
-// }
+#[derive(Default, Clone, Copy)]
+pub enum HeightReference {
+    #[default] Ground,
+    Start,
+    MaxIncline,
+    MaxDecline
+}
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
     let max_turn_angle = if is_rail {
@@ -441,6 +450,7 @@ impl RoadBuildResource {
         patwidth: f32,
         is_valid: bool,
         points: Option<PolyLine3>,
+        interpoliation_points: Vec<Vec3>,
     ) {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.4;
@@ -450,7 +460,7 @@ impl RoadBuildResource {
             simulation::colors().gui_danger
         };
 
-        self.streight_points.iter().for_each(|p|{
+        interpoliation_points.iter().for_each(|p|{
             immdraw.circle(*p, 2.0);
         });
 
@@ -503,7 +513,7 @@ impl RoadBuildResource {
         immdraw.polyline(p.into_vec(), patwidth, false).color(col);
     }
 
-    pub fn _update_points(
+    pub fn update_points(
         &self,
         map: &Map,
         mousepos: Vec3,
