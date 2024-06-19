@@ -175,24 +175,21 @@ impl Intersection {
     }
 
     fn interface_calc_numerically(&self, w1: f32, w2: f32, r1: &Road, r2: &Road) -> f32 {
-        let w = (w1+w2)* 0.75;
+        let w: f32 = (w1+w2)* 0.80;
 
-        let mut points1: Vec<(Vec3, Vec3)> = r1.points().equipoints_dir(1.0, true).collect();
-        let mut points2: Vec<(Vec3, Vec3)> = r2.points().equipoints_dir(1.0, true).collect();
+        let mut points1: Vec<(Vec3, Vec3)> = r1.points()
+            .points_dirs_along((1..r1.points().length() as i32).map(|d| d as f32)).collect();
+        let mut points2: Vec<(Vec3, Vec3)> = r2.points()
+            .points_dirs_along((1..r2.points().length() as i32).map(|d| d as f32)).collect();
 
-        if r1.dst == self.id { points1.reverse(); }
-        if r2.dst == self.id { points2.reverse(); }
+        if !(r1.src == self.id) { points1.reverse(); }
+        if !(r2.src == self.id) { points2.reverse(); }
 
-        let points = points1.into_iter().zip(points2)
+        points1.into_iter().zip(points2)
             .map(|((p1,_),(p2,_))| (p1.xy(), p2.xy()) )
-            .find(|p| p.0.distance(p.1) > w );
-
-        if let Some(p) = points {
-            (self.pos.xy().distance(p.0) + self.pos.xy().distance(p.0)) * 0.5
-        } else {
-            50.0
-        }
-
+            .find(|p| p.0.distance(p.1) > w )
+            .and_then(|p| Some((self.pos.xy().distance(p.0)+self.pos.xy().distance(p.0))*0.5))
+            .unwrap_or(50.0)
     }
 
     pub fn empty_interface(width: f32) -> f32 {

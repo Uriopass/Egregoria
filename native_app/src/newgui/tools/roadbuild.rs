@@ -47,7 +47,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
 
     let grid_size = 20.0;
     let unproj = unwrap_ret!(inp.unprojected);
-    let mut interpoliation_points: Vec<Vec3> = Vec::new();
+    let mut interpolation_points: Vec<Vec3> = Vec::new();
     let nosnapping = inp.act.contains(&InputAction::NoSnapping);
 
     let mouse_height = match (state.height_reference, state.build_state) {
@@ -66,8 +66,8 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
             unproj.xy().snap(grid_size, grid_size).z(mouse_height)
         },
         Snapping::SnapToAngle => {
-            interpoliation_points = state.update_points(map, unproj);
-            interpoliation_points.iter()
+            interpolation_points = state.posible_interpolations(map, unproj);
+            interpolation_points.iter()
                 .map(|point| {point.xy()})
                 .filter_map(|point| {
                     let distance = point.distance(unproj.xy());
@@ -287,7 +287,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         }
     }
 
-    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points, interpoliation_points);
+    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points, interpolation_points);
 
     if is_valid && inp.just_act.contains(&InputAction::Select) {
         log::info!("left clicked with state {:?} and {:?}", state.build_state, cur_proj.kind);
@@ -450,7 +450,7 @@ impl RoadBuildResource {
         patwidth: f32,
         is_valid: bool,
         points: Option<PolyLine3>,
-        interpoliation_points: Vec<Vec3>,
+        interpolation_points: Vec<Vec3>,
     ) {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.4;
@@ -460,7 +460,7 @@ impl RoadBuildResource {
             simulation::colors().gui_danger
         };
 
-        interpoliation_points.iter().for_each(|p|{
+        interpolation_points.iter().for_each(|p|{
             immdraw.circle(*p, 2.0);
         });
 
@@ -513,7 +513,7 @@ impl RoadBuildResource {
         immdraw.polyline(p.into_vec(), patwidth, false).color(col);
     }
 
-    pub fn update_points(
+    pub fn posible_interpolations(
         &self,
         map: &Map,
         mousepos: Vec3,
