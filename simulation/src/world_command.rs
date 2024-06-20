@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::time::Instant;
 
+use prototypes::RollingStockID;
 use serde::{Deserialize, Serialize};
 
 use geom::{vec3, Vec2, Vec3, OBB};
@@ -55,6 +56,11 @@ pub enum WorldCommand {
         dist: f32,
         n_wagons: u32,
         lane: LaneID,
+    },
+    SpawnTrain {
+        wagons: Vec<RollingStockID>,
+        lane: LaneID,
+        dist: f32,
     },
     MapMakeConnection {
         from: MapProject,
@@ -293,13 +299,11 @@ impl WorldCommand {
                 }
             }
             SetGameTime(gt) => *sim.write::<GameTime>() = gt,
-            AddTrain {
-                dist,
-                n_wagons,
-                lane,
-            } => {
-                spawn_train(sim, dist, n_wagons, lane, RailWagonKind::Freight);
-            }
+            AddTrain {dist:_, n_wagons:_,lane:_,} => {}
+            SpawnTrain {ref wagons, lane, dist} => {
+                spawn_train(sim, wagons, RailWagonKind::Freight, lane, dist);
+            },
+            
             MapLoadParis => load_parismap(&mut sim.map_mut()),
             MapLoadTestField { pos, size, spacing } => {
                 load_testfield(&mut sim.map_mut(), pos, size, spacing)

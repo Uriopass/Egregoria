@@ -72,7 +72,10 @@ impl Intersection {
             .roads
             .iter()
             .flat_map(|x| roads.get(*x))
-            .map(|x| OrderedFloat(x.interface_from(self.id)))
+            .map(|x| {
+                if self.is_roundabout() { OrderedFloat(x.interface_from(self.id)) }
+                else { OrderedFloat(x.width) }
+            })
             .max()
             .map(|x| x.0)
             .unwrap_or(10.0);
@@ -139,19 +142,19 @@ impl Intersection {
             }
         }
 
-        if self.roads.len() <= 1 {
-            return;
-        }
+        if self.roads.len() <= 1 { return; }
 
         for i in 0..self.roads.len() {
             let r1_id = self.roads[i];
             let r2_id = self.roads[(i + 1) % self.roads.len()];
 
-            let r1 = &roads[r1_id];
-            let r2 = &roads[r2_id];
+            let (r1, r2) = (&roads[r1_id], &roads[r2_id]); 
+            let (dir1, dir2) = (r1.dir_from(id), r2.dir_from(id));
 
-            let min_dist =
-                Self::interface_calc(r1.width, r2.width, r1.dir_from(id), r2.dir_from(id));
+            let min_dist = if dir1.angle(dir2).abs() < 0.174532925 
+            { self.interface_calc_numerically(r1.width, r2.width, r1, r2) } 
+            else { Self::interface_calc_formula(r1.width, r2.width, dir1, dir2) };
+
             roads[r1_id].max_interface(id, min_dist);
             roads[r2_id].max_interface(id, min_dist);
         }
@@ -159,7 +162,7 @@ impl Intersection {
         self.update_radius(roads);
     }
 
-    fn interface_calc(w1: f32, w2: f32, dir1: Vec2, dir2: Vec2) -> f32 {
+    fn interface_calc_formula(w1: f32, w2: f32, dir1: Vec2, dir2: Vec2) -> f32 {
         let hwidth1 = w1 * 0.5;
         let hwidth2 = w2 * 0.5;
 
@@ -168,7 +171,25 @@ impl Intersection {
         let d = dir1.dot(dir2).clamp(0.0, 1.0);
         let sin = (1.0 - d * d).sqrt();
 
-        (w * 1.1 / sin).min(30.0)
+        (w * 1.1 / sin).min(50.0)
+    }
+
+    fn interface_calc_numerically(&self, w1: f32, w2: f32, r1: &Road, r2: &Road) -> f32 {
+        let w: f32 = (w1+w2)* 0.80;
+
+        let mut points1: Vec<(Vec3, Vec3)> = r1.points()
+            .points_dirs_along((1..r1.points().length() as i32).map(|d| d as f32)).collect();
+        let mut points2: Vec<(Vec3, Vec3)> = r2.points()
+            .points_dirs_along((1..r2.points().length() as i32).map(|d| d as f32)).collect();
+
+        if !(r1.src == self.id) { points1.reverse(); }
+        if !(r2.src == self.id) { points2.reverse(); }
+
+        points1.into_iter().zip(points2)
+            .map(|((p1,_),(p2,_))| (p1.xy(), p2.xy()) )
+            .find(|p| p.0.distance(p.1) > w )
+            .and_then(|p| Some((self.pos.xy().distance(p.0)+self.pos.xy().distance(p.0))*0.5))
+            .unwrap_or(50.0)
     }
 
     pub fn empty_interface(width: f32) -> f32 {
@@ -180,7 +201,7 @@ impl Intersection {
         let id = self.id;
         for &r1_id in &self.roads {
             let r1 = unwrap_cont!(roads.get(r1_id));
-            max_inter = max_inter.max(Self::interface_calc(r1.width, width, r1.dir_from(id), dir));
+            max_inter = max_inter.max(Self::interface_calc_formula(r1.width, width, r1.dir_from(id), dir));
         }
         max_inter
     }

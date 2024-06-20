@@ -1,18 +1,13 @@
-mod building;
-mod colors;
-mod freightstation;
-mod goods_company;
-mod item;
-mod leisure;
-mod solar;
-
-pub use building::*;
-pub use colors::*;
-pub use freightstation::*;
-pub use goods_company::*;
-pub use item::*;
-pub use leisure::*;
-pub use solar::*;
+mod building;       pub use building::*;
+mod colors;         pub use colors::*;
+mod freightstation; pub use freightstation::*;
+mod goods_company;  pub use goods_company::*;
+mod item;           pub use item::*;
+mod leisure;        pub use leisure::*;
+mod road_vehicles;  pub use road_vehicles::*;
+mod rolling_stock;  pub use rolling_stock::*;
+mod solar;          pub use solar::*;
+mod vehicles;       pub use vehicles::*;
 
 crate::gen_prototypes!(
     items:     ItemID              = ItemPrototype,
@@ -20,6 +15,10 @@ crate::gen_prototypes!(
     companies: GoodsCompanyID      = GoodsCompanyPrototype => BuildingPrototypeID,
     leisure:   LeisurePrototypeID  = LeisurePrototype => BuildingPrototypeID,
     solar:     SolarPanelID        = SolarPanelPrototype => GoodsCompanyID,
+
+    vehicles:      VehiclePrototypeID = VehiclePrototype,
+    road_vehicles: RoadVehicleID      = RoadVehiclePrototype => VehiclePrototypeID,
+    rolling_stock: RollingStockID     = RollingStockPrototype => VehiclePrototypeID,
 
     colors:    ColorsPrototypeID   = ColorsPrototype,
     stations:  FreightStationPrototypeID = FreightStationPrototype,

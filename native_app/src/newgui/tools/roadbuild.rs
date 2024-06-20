@@ -1,12 +1,12 @@
 use engine::AudioKind;
-use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
+use geom::{BoldLine, BoldSpline, Camera, Line, PolyLine, ShapeEnum, Spline};
 use geom::{PolyLine3, Vec2, Vec3};
 use simulation::map::{
     LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition, RoadSegmentKind,
 };
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::Simulation;
-use BuildState::{Hover, Interpolation, Start, StartInterp};
+use BuildState::{Hover, Interpolation, Start, StartInterp, Connection};
 use ProjectKind::{Building, Ground, Inter, Road};
 
 use crate::inputmap::{InputAction, InputMap};
@@ -20,6 +20,7 @@ pub enum BuildState {
     Hover,
     Start(MapProject),
     StartInterp(MapProject),
+    Connection(MapProject, MapProject),
     Interpolation(Vec2, MapProject),
 }
 
@@ -43,16 +44,38 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         return;
     }
 
+
+    let grid_size = 20.0;
+    let unproj = unwrap_ret!(inp.unprojected);
+    let mut interpolation_points: Vec<Vec3> = Vec::new();
     let nosnapping = inp.act.contains(&InputAction::NoSnapping);
 
-    // Prepare mousepos depending on snap to grid
-    let unproj = unwrap_ret!(inp.unprojected);
-    let grid_size = 20.0;
-    let mousepos = if state.snap_to_grid {
-        let v = unproj.xy().snap(grid_size, grid_size);
-        v.z(unwrap_ret!(map.environment.height(v)) + state.height_offset)
-    } else {
-        unproj.up(state.height_offset)
+    let mouse_height = match (state.height_reference, state.build_state) {
+        (HeightReference::Start, Start(id)|StartInterp(id)|Connection(id, _))
+            => id.pos.z + state.height_offset,
+        (HeightReference::Ground|HeightReference::Start, _) => unproj.z + state.height_offset,
+        (HeightReference::MaxIncline|HeightReference::MaxDecline, _) => unproj.z, // work in progress
+    };
+
+    // Prepare mousepos depending on snap to grid or snap to angle
+    let mousepos = match state.snapping {
+        Snapping::None => {
+            unproj.z0().up(mouse_height)
+        },
+        Snapping::SnapToGrid => {
+            unproj.xy().snap(grid_size, grid_size).z(mouse_height)
+        },
+        Snapping::SnapToAngle => {
+            interpolation_points = state.posible_interpolations(map, unproj);
+            interpolation_points.iter()
+                .map(|point| {point.xy()})
+                .filter_map(|point| {
+                    let distance = point.distance(unproj.xy());
+                    if distance < grid_size {Some((point, distance))} else { None }
+                })
+                .reduce(|acc, e| { if acc.1 < e.1 {acc} else { e } })
+                .unwrap_or((unproj.xy(), 0.0)).0.z0().up(mouse_height)
+        }
     };
 
     let log_camheight = cam.eye().z.log10();
@@ -116,11 +139,14 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         state.height_offset = state.height_offset.max(0.0);
     }
 
-    let mut cur_proj = map.project(
-        mousepos,
-        (log_camheight * 5.0).clamp(1.0, 10.0),
-        ProjectFilter::INTER | ProjectFilter::ROAD,
-    );
+    let mut cur_proj = if !matches!(state.build_state, Connection(..)) {
+        map.project(mousepos,
+            (log_camheight * 5.0).clamp(1.0, 10.0),
+            ProjectFilter::INTER | ProjectFilter::ROAD
+        )
+    } else {
+        MapProject::ground(mousepos)
+    }; 
 
     let patwidth = state.pattern_builder.width();
 
@@ -157,55 +183,80 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
 
     let mut is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
-        (Start(selected_proj) | StartInterp(selected_proj), _) => {
+        (StartInterp(sel_proj), Ground) => {
+            compatible(map, cur_proj, sel_proj)
+            && check_angle(map, sel_proj, cur_proj.pos.xy(), is_rail)
+        }
+        (StartInterp(sel_proj), Inter(_)|Road(_)) => {
+            compatible(map, sel_proj, cur_proj)
+        }
+        (Start(selected_proj), _) => {
             let sp = BoldLine::new(
                 PolyLine::new(vec![selected_proj.pos.xy(), cur_proj.pos.xy()]),
                 patwidth * 0.5,
             );
 
             compatible(map, cur_proj, selected_proj)
-                && check_angle(map, selected_proj, cur_proj.pos.xy(), is_rail)
-                && check_angle(map, cur_proj, selected_proj.pos.xy(), is_rail)
-                && !check_intersect(
-                    map,
-                    &ShapeEnum::BoldLine(sp),
-                    (selected_proj.pos.z + cur_proj.pos.z) / 2.0,
-                    cur_proj.kind,
-                    selected_proj.kind,
-                )
+            && check_angle(map, selected_proj, cur_proj.pos.xy(), is_rail)
+            && check_angle(map, cur_proj, selected_proj.pos.xy(), is_rail)
+            && !check_intersect(
+                map, &ShapeEnum::BoldLine(sp),
+                (selected_proj.pos.z + cur_proj.pos.z) / 2.0,
+                cur_proj.kind, selected_proj.kind,
+            )
+        }
+        (Connection(src, dst), _) => {
+            let sp = Spline {
+                from: src.pos.xy(), to: dst.pos.xy(),
+                from_derivative: (cur_proj.pos.xy() - src.pos.xy()) * std::f32::consts::FRAC_1_SQRT_2,
+                to_derivative: (dst.pos.xy() - cur_proj.pos.xy()) * std::f32::consts::FRAC_1_SQRT_2,
+            };
+
+            compatible(map, dst, src)
+            && check_angle(map, src, cur_proj.pos.xy(), is_rail)
+            && check_angle(map, dst, cur_proj.pos.xy(), is_rail)
+            && !sp.is_steep(state.pattern_builder.width())
+            && !check_intersect(
+                map, &ShapeEnum::BoldSpline(BoldSpline::new(sp, patwidth * 0.5)),
+                (src.pos.z + dst.pos.z) / 2.0,
+                src.kind, dst.kind,
+            )
         }
         (Interpolation(interpoint, selected_proj), _) => {
             let sp = Spline {
                 from: selected_proj.pos.xy(),
                 to: cur_proj.pos.xy(),
-                from_derivative: (interpoint - selected_proj.pos.xy())
-                    * std::f32::consts::FRAC_1_SQRT_2,
+                from_derivative: (interpoint - selected_proj.pos.xy()) * std::f32::consts::FRAC_1_SQRT_2,
                 to_derivative: (cur_proj.pos.xy() - interpoint) * std::f32::consts::FRAC_1_SQRT_2,
             };
 
             compatible(map, cur_proj, selected_proj)
-                && check_angle(map, selected_proj, interpoint, is_rail)
-                && check_angle(map, cur_proj, interpoint, is_rail)
-                && !sp.is_steep(state.pattern_builder.width())
-                && !check_intersect(
-                    map,
-                    &ShapeEnum::BoldSpline(BoldSpline::new(sp, patwidth * 0.5)),
-                    (selected_proj.pos.z + cur_proj.pos.z) / 2.0,
-                    selected_proj.kind,
-                    cur_proj.kind,
-                )
+            && check_angle(map, selected_proj, interpoint, is_rail)
+            && check_angle(map, cur_proj, interpoint, is_rail)
+            && !sp.is_steep(state.pattern_builder.width())
+            && !check_intersect(
+                map, &ShapeEnum::BoldSpline(BoldSpline::new(sp, patwidth * 0.5)),
+                (selected_proj.pos.z + cur_proj.pos.z) / 2.0,
+                selected_proj.kind, cur_proj.kind,
+            )
         }
         _ => true,
     };
 
     let build_args = match state.build_state {
         StartInterp(selected_proj) if !cur_proj.is_ground() => {
-            Some((selected_proj, None, state.pattern_builder.build()))
+            Some((selected_proj, cur_proj, None, state.pattern_builder.build()))
         }
-        Start(selected_proj) => Some((selected_proj, None, state.pattern_builder.build())),
+        Start(selected_proj) => {
+            Some((selected_proj, cur_proj, None, state.pattern_builder.build()))
+        },
+        Connection(src, dst) => {
+            Some((src, dst, Some(cur_proj.pos.xy()), state.pattern_builder.build()))
+        }
+
         Interpolation(interpoint, selected_proj) => {
             let inter = Some(interpoint);
-            Some((selected_proj, inter, state.pattern_builder.build()))
+            Some((selected_proj, cur_proj, inter, state.pattern_builder.build()))
         }
         _ => None,
     };
@@ -213,22 +264,19 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
 
     let mut points = None;
 
-    if let Some((selected_proj, inter, pat)) = build_args {
+    if let Some((src, dst, inter, pat)) = build_args {
         potential_command.set(WorldCommand::MapMakeConnection {
-            from: selected_proj,
-            to: cur_proj,
-            inter,
-            pat,
+            from: src, to: dst, inter, pat,
         });
 
         let connection_segment = match inter {
-            Some(x) => RoadSegmentKind::from_elbow(selected_proj.pos.xy(), cur_proj.pos.xy(), x),
+            Some(x) => RoadSegmentKind::from_elbow(src.pos.xy(), dst.pos.xy(), x),
             None => RoadSegmentKind::Straight,
         };
 
         let (p, err) = simulation::map::Road::generate_points(
-            selected_proj.pos,
-            cur_proj.pos,
+            src.pos,
+            dst.pos,
             connection_segment,
             is_rail,
             &map.environment,
@@ -239,17 +287,13 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         }
     }
 
-    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points);
+    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid, points, interpolation_points);
 
     if is_valid && inp.just_act.contains(&InputAction::Select) {
-        log::info!(
-            "left clicked with state {:?} and {:?}",
-            state.build_state,
-            cur_proj.kind
-        );
+        log::info!("left clicked with state {:?} and {:?}", state.build_state, cur_proj.kind);
 
         match (state.build_state, cur_proj.kind) {
-            (Hover, Ground) | (Hover, Road(_)) | (Hover, Inter(_)) => {
+            (Hover, Ground|Road(_)|Inter(_)) => {
                 // Hover selection
                 if tool == Tool::RoadbuildCurved {
                     state.build_state = StartInterp(cur_proj);
@@ -261,13 +305,24 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
                 // Set interpolation point
                 state.build_state = Interpolation(mousepos.xy(), v);
             }
-            (Start(_) | StartInterp(_), _) => {
+            (StartInterp(p), Road(_)|Inter(_)) => {
+                // Set interpolation point
+                state.build_state = Connection(p, cur_proj);
+            }
+            
+            (Start(_), _) => {
                 // Straight connection to something
                 immsound.play("road_lay", AudioKind::Ui);
                 if let Some(wc) = potential_command.0.drain(..).next() {
                     commands.push(wc);
                 }
-
+                state.build_state = Hover;
+            }
+            (Connection(_, _), _) => {
+                immsound.play("road_lay", AudioKind::Ui);
+                if let Some(wc) = potential_command.0.drain(..).next() {
+                    commands.push(wc);
+                }
                 state.build_state = Hover;
             }
             (Interpolation(_, _), _) => {
@@ -276,7 +331,6 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
                 if let Some(wc) = potential_command.0.drain(..).next() {
                     commands.push(wc);
                 }
-
                 state.build_state = Hover;
             }
             _ => {}
@@ -288,43 +342,49 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
 pub struct RoadBuildResource {
     pub build_state: BuildState,
     pub pattern_builder: LanePatternBuilder,
-    pub snap_to_grid: bool,
+    pub snapping: Snapping,
     pub height_offset: f32,
+    pub height_reference: HeightReference,
+}
+
+#[derive(Default, Clone, Copy)]
+pub enum Snapping {
+    #[default] None,
+    SnapToGrid, SnapToAngle
+}
+
+#[derive(Default, Clone, Copy)]
+pub enum HeightReference {
+    #[default] Ground,
+    Start,
+    MaxIncline,
+    MaxDecline
 }
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
     let max_turn_angle = if is_rail {
-        1.0 * std::f32::consts::PI / 180.0
+        0.0
     } else {
         30.0 * std::f32::consts::PI / 180.0
     };
 
     match from.kind {
         Inter(i) => {
-            let inter = &map.intersections()[i];
+            let Some(inter) = map.intersections().get(i) else {return false;};
             let dir = (to - inter.pos.xy()).normalize();
-            for &road in &inter.roads {
-                let road = &map.roads()[road];
-                let v = road.dir_from(i);
-                if v.angle(dir).abs() < max_turn_angle {
-                    return false;
-                }
-            }
-            true
+
+            inter.roads.iter()
+            .map(|road_id| map.roads()[*road_id].dir_from(i))
+            .any(|v| {v.angle(dir).abs() >= max_turn_angle})
         }
         Road(r) => {
-            let Some(r) = map.roads().get(r) else {
-                return false;
-            };
+            let Some(r) = map.roads().get(r) else { return false; };
             let (proj, _, rdir1) = r.points().project_segment_dir(from.pos);
             let rdir2 = -rdir1;
             let dir = (to - proj.xy()).normalize();
-            if rdir1.xy().angle(dir).abs() < max_turn_angle
-                || rdir2.xy().angle(dir).abs() < max_turn_angle
-            {
-                return false;
-            }
-            true
+
+            rdir1.xy().angle(dir).abs() >= max_turn_angle
+            && rdir2.xy().angle(dir).abs() >= max_turn_angle
         }
         _ => true,
     }
@@ -363,7 +423,7 @@ fn check_intersect(
         .any(move |x| {
             if let Road(rid) = x {
                 let r = &map.roads()[rid];
-                if (r.points.first().z - z).abs() > 0.1 || (r.points.last().z - z).abs() > 0.1 {
+                if (r.points.first().z - z).abs() > 1.0 || (r.points.last().z - z).abs() > 1.0 {
                     return false;
                 }
                 if let Inter(id) = start {
@@ -390,6 +450,7 @@ impl RoadBuildResource {
         patwidth: f32,
         is_valid: bool,
         points: Option<PolyLine3>,
+        interpolation_points: Vec<Vec3>,
     ) {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.4;
@@ -398,6 +459,10 @@ impl RoadBuildResource {
         } else {
             simulation::colors().gui_danger
         };
+
+        interpolation_points.iter().for_each(|p|{
+            immdraw.circle(*p, 2.0);
+        });
 
         let p = match self.build_state {
             Hover => {
@@ -443,17 +508,110 @@ impl RoadBuildResource {
                 .color(col);
         }
 
-        immdraw.circle(p.first().up(0.4), patwidth * 0.5).color(col);
-        immdraw.circle(p.last().up(0.4), patwidth * 0.5).color(col);
-        immdraw
-            .polyline(
-                p.into_vec()
-                    .into_iter()
-                    .map(|v| v.up(0.4))
-                    .collect::<Vec<_>>(),
-                patwidth,
-                false,
-            )
-            .color(col);
+        immdraw.circle(p.first(), patwidth * 0.5).color(col);
+        immdraw.circle(p.last(), patwidth * 0.5).color(col);
+        immdraw.polyline(p.into_vec(), patwidth, false).color(col);
+    }
+
+    pub fn posible_interpolations(
+        &self,
+        map: &Map,
+        mousepos: Vec3,
+    ) -> Vec<Vec3> {
+        let (start, end) = match self.build_state {
+            Hover | Interpolation(_, _) => { return vec![]; },
+            Connection(src, dst) => (src, dst),
+            Start(sel_proj)|StartInterp(sel_proj) => (sel_proj, MapProject::ground(mousepos)),
+        };
+
+        match (start.kind, end.kind) {
+            (Inter(id0), Inter(id1)) => {
+                let Some(inter0) = map.intersections().get(id0) else {return vec![]};
+                let Some(inter1) = map.intersections().get(id1) else {return vec![]};
+                
+                inter0.roads.iter()
+                .flat_map(|i| inter1.roads.iter().map(move |j| (i, j)))
+                .map( |(r0, r1)| (&map.roads()[*r0], &map.roads()[*r1]))
+                .filter_map(|(road0, road1)| {
+                    let line0 = Line::new(inter0.pos.xy(), road0.get_straight_connection_point(id0));
+                    let line1 = Line::new(inter1.pos.xy(), road1.get_straight_connection_point(id1));
+                    
+                    let p = line0.intersection_point(&line1)?;
+                    let h = map.environment.height(p)?;
+                    Some(p.z(h))
+                }).collect()
+            },
+
+            (Inter(id), Ground) |
+            (Ground, Inter(id)) => {
+                let Some(inter) = map.intersections().get(id) else {return vec![]};
+
+                inter.roads.iter()
+                .map(|&road_id| &map.roads()[road_id])
+                .filter_map(|road| {
+                    let p = 
+                        Line::new(road.get_straight_connection_point(id), inter.pos.xy())
+                        .project(mousepos.xy());
+
+                    let h = map.environment.height(p)?;
+
+                    Some(p.z(h))
+                }).collect::<Vec<_>>()
+            }
+
+            (Inter(inter_id), Road(road_id)) |
+            (Road(road_id), Inter(inter_id))
+            if self.pattern_builder.rail => {
+                let Some(inter) = map.intersections().get(inter_id) else {return vec![]};
+                let Some(road) = map.roads().get(road_id) else {return vec![]};
+
+                let pos = if start.kind == Road(road_id) {start.pos} else {end.pos};
+                let (pos, _, dir) = road.points().project_segment_dir(pos);
+
+                inter.roads.iter()
+                .map(|&road_id| &map.roads()[road_id])
+                .filter_map(|road| {
+                    let line0 = Line::new(road.get_straight_connection_point(inter_id), inter.pos.xy());
+                    let line1 = Line::new(pos.xy(), pos.xy()+dir.xy());
+                    
+                    let p = line0.intersection_point(&line1)?;
+                    let h = map.environment.height(p)?;
+
+                    Some(p.z(h))
+                }).collect::<Vec<_>>()
+            }
+
+            (Road(id), Ground) |
+            (Ground, Road(id))
+            if self.pattern_builder.rail => {
+                let Some(road) = map.roads().get(id) else {return vec![]};
+                
+                let pos = if start.kind == Road(id) {start.pos} else {end.pos};
+                let (pos, _, dir) = road.points().project_segment_dir(pos);
+
+                let line = Line::new(pos.xy()+dir.xy(), pos.xy());
+                let p = line.project(mousepos.xy());
+                
+                let Some(h) = map.environment.height(p) else { return vec![] };
+                vec![p.z(h)]
+            }
+            (Road(id0), Road(id1)) if self.pattern_builder.rail => {
+                let Some(road0) = map.roads().get(id0) else {return vec![]};
+                let Some(road1) = map.roads().get(id1) else {return vec![]};
+
+                let (pos0, _, dir0) = road0.points().project_segment_dir(start.pos);
+                let (pos1, _, dir1) = road1.points().project_segment_dir(end.pos);
+
+                let line0 = Line::new(pos0.xy(), pos0.xy()+dir0.xy());
+                let line1 =  Line::new(pos1.xy(), pos1.xy()+dir1.xy());
+
+                let Some(p) = line0.intersection_point(&line1) else { return vec![] };
+                let Some(h) = map.environment.height(p) else { return vec![] };
+                
+                vec![p.z(h)] 
+            }
+            
+            _ => { vec![] }
+        }
     }
 }
