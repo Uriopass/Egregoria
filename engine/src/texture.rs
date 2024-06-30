@@ -812,11 +812,13 @@ impl MipmapGenerator {
             vertex: wgpu::VertexState {
                 module: &self.module,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &self.module,
                 entry_point: "frag",
+                compilation_options: Default::default(),
                 targets: &[Some(format.into())],
             }),
             primitive: wgpu::PrimitiveState::default(),

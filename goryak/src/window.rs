@@ -5,7 +5,7 @@ use std::rc::Rc;
 use yakui_core::event::{EventInterest, EventResponse, WidgetEvent};
 use yakui_core::geometry::{Color, Constraints, Dim2, Vec2};
 use yakui_core::widget::{EventContext, LayoutContext, Widget};
-use yakui_core::{context, Alignment, Flow};
+use yakui_core::{context, Alignment, Flow, Pivot};
 use yakui_widgets::widgets::{Button, Pad, Text};
 use yakui_widgets::{center, constrained, divider, draggable, offset, reflow};
 
@@ -37,7 +37,7 @@ impl<'a> Window<'a> {
                             return;
                         }
                         mincolumn(0.0, || {
-                            reflow(Alignment::TOP_RIGHT, Dim2::ZERO, || {
+                            reflow(Alignment::TOP_RIGHT, Pivot::TOP_LEFT, Dim2::ZERO, || {
                                 offset(Vec2::new(-25.0, -15.0), || {
                                     constrained(Constraints::tight(Vec2::splat(40.0)), || {
                                         center(|| {

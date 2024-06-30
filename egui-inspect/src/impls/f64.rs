@@ -21,9 +21,7 @@ impl Inspect<f64> for f64 {
             ui.label(label);
             ui.add(
                 egui::DragValue::new(data)
-                    .clamp_range(
-                        args.min_value.unwrap_or(f32::MIN)..=args.max_value.unwrap_or(f32::MAX),
-                    )
+                    .range(args.min_value.unwrap_or(f32::MIN)..=args.max_value.unwrap_or(f32::MAX))
                     .speed(args.step.unwrap_or(1.0)),
             );
         });
@@ -54,9 +52,7 @@ impl Inspect<f64> for InspectF64Deg {
             ui.label(label);
             ui.add(
                 egui::DragValue::new(data)
-                    .clamp_range(
-                        args.min_value.unwrap_or(f32::MIN)..=args.max_value.unwrap_or(f32::MAX),
-                    )
+                    .range(args.min_value.unwrap_or(f32::MIN)..=args.max_value.unwrap_or(f32::MAX))
                     .speed(args.step.unwrap_or(0.25))
                     .suffix("°"),
             );

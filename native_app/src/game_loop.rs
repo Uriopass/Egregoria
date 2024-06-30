@@ -1,3 +1,4 @@
+use std::ptr::addr_of;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
@@ -351,15 +352,15 @@ impl State {
             let mut col = LinearColor::WHITE;
             col.a = 0.2;
             unsafe {
-                for v in &geom::DEBUG_POS {
+                for v in &*addr_of!(geom::DEBUG_POS) {
                     immediate.circle(*v, 1.0).color(LinearColor::RED);
                 }
-                for v in &geom::DEBUG_OBBS {
+                for v in &*addr_of!(geom::DEBUG_OBBS) {
                     immediate
                         .obb(*v, map.environment.height(v.center()).unwrap_or(0.0) + 8.0)
                         .color(col);
                 }
-                for v in &geom::DEBUG_SPLINES {
+                for v in &*addr_of!(geom::DEBUG_SPLINES) {
                     immediate
                         .polyline(
                             v.smart_points(1.0, 0.0, 1.0)

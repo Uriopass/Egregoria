@@ -3,7 +3,6 @@
 #[macro_use]
 extern crate common;
 
-#[macro_use]
 extern crate simulation;
 
 #[allow(unused_imports)]

@@ -1,6 +1,7 @@
 use common::{FastMap, FastSet};
 use engine::{InputContext, Key, MouseButton};
 use geom::{Ray3, Vec2, Vec3};
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};

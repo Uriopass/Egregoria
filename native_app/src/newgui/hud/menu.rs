@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use yakui::widgets::{List, Pad};
-use yakui::{column, opaque, reflow, spacer, Alignment, CrossAxisAlignment, Dim2};
+use yakui::{column, opaque, reflow, spacer, Alignment, CrossAxisAlignment, Dim2, Pivot};
 
 use goryak::{
     blur_bg, button_primary, button_secondary, constrained_viewport, on_primary_container,
@@ -18,7 +18,7 @@ use crate::uiworld::{SaveLoadState, UiWorld};
 pub fn menu_bar(uiworld: &UiWorld, sim: &Simulation) {
     profiling::scope!("hud::menu_bar");
 
-    reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
+    reflow(Alignment::TOP_LEFT, Pivot::TOP_LEFT, Dim2::ZERO, || {
         constrained_viewport(|| {
             column(|| {
                 opaque(|| {

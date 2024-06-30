@@ -34,6 +34,7 @@ impl<'a> PipelineBuilder<'a> {
                 vertex: VertexState {
                     module: vert_shader,
                     entry_point: "vert",
+                    compilation_options: Default::default(),
                     buffers: vertex_buffers,
                 },
                 fragment: None,
@@ -103,6 +104,7 @@ impl<'a> PipelineBuilder<'a> {
             fragment: Some(FragmentState {
                 module: self.frag_shader,
                 entry_point: "frag",
+                compilation_options: Default::default(),
                 targets: &color_states,
             }),
             primitive: self.descr.primitive,

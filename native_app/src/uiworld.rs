@@ -4,6 +4,7 @@ use simulation::utils::resources::{RefMutSingle, RefSingle, ResourcesSingleThrea
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::{Simulation, SimulationReplayLoader};
 use std::any::Any;
+use std::ptr::addr_of;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
@@ -26,7 +27,7 @@ impl UiWorld {
     pub fn init() -> UiWorld {
         let mut w = UiWorld::default();
         unsafe {
-            for s in &INIT_FUNCS {
+            for s in &*addr_of!(INIT_FUNCS) {
                 (s.f)(&mut w);
             }
         }
@@ -76,7 +77,7 @@ impl UiWorld {
 
     fn load_from_disk(&mut self) {
         unsafe {
-            for l in &SAVELOAD_FUNCS {
+            for l in &*addr_of!(SAVELOAD_FUNCS) {
                 (l.load)(self);
             }
         }
@@ -84,7 +85,7 @@ impl UiWorld {
 
     pub fn save_to_disk(&self) {
         unsafe {
-            for l in &SAVELOAD_FUNCS {
+            for l in &*addr_of!(SAVELOAD_FUNCS) {
                 (l.save)(self);
             }
         }

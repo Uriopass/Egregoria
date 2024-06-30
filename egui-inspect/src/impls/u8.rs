@@ -19,9 +19,10 @@ impl Inspect<u8> for u8 {
         let before = *data;
         ui.horizontal(|ui| {
             ui.label(label);
-            ui.add(egui::DragValue::new(data).clamp_range(
-                args.min_value.unwrap_or(f32::MIN)..=args.max_value.unwrap_or(f32::MAX),
-            ));
+            ui.add(
+                egui::DragValue::new(data)
+                    .range(args.min_value.unwrap_or(f32::MIN)..=args.max_value.unwrap_or(f32::MAX)),
+            );
         });
         before != *data
     }

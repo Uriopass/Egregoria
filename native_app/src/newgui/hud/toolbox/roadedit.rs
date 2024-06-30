@@ -1,5 +1,7 @@
 use yakui::widgets::List;
-use yakui::{column, image, reflow, Alignment, CrossAxisAlignment, Dim2, MainAxisAlignment, Vec2};
+use yakui::{
+    column, image, reflow, Alignment, CrossAxisAlignment, Dim2, MainAxisAlignment, Pivot, Vec2,
+};
 
 use goryak::{padxy, primary_image_button};
 use simulation::map::LightPolicy;
@@ -78,9 +80,14 @@ pub fn roadedit_properties(uiw: &UiWorld) {
                     }
 
                     if !*enabled {
-                        reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 0.0), || {
-                            image(texs.get("roadedit_forbidden"), Vec2::new(64.0, 64.0));
-                        });
+                        reflow(
+                            Alignment::TOP_LEFT,
+                            Pivot::TOP_LEFT,
+                            Dim2::pixels(0.0, 0.0),
+                            || {
+                                image(texs.get("roadedit_forbidden"), Vec2::new(64.0, 64.0));
+                            },
+                        );
                     }
                 });
             }

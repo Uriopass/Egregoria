@@ -2,8 +2,8 @@ use common::FastMap;
 use engine::{Context, TextureBuilder};
 use yakui::widgets::List;
 use yakui::{
-    reflow, use_state, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, TextureId,
-    Vec2,
+    reflow, use_state, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, Pivot,
+    TextureId, Vec2,
 };
 
 use crate::newgui::item_icon_yakui;
@@ -11,7 +11,7 @@ use engine::wgpu::TextureFormat;
 use geom::{Camera, Degrees, Polygon, Vec3};
 use goryak::{
     blur_bg, fixed_spacer, image_button, is_hovered, mincolumn, minrow, on_secondary_container,
-    padxy, pivot, primary, secondary_container, textc, titlec,
+    padxy, primary, secondary_container, textc, titlec,
 };
 use prototypes::{
     prototypes_iter, BuildingPrototypeID, GoodsCompanyID, GoodsCompanyPrototype, Prototype,
@@ -64,8 +64,11 @@ pub fn special_building_properties(uiw: &UiWorld) {
                         .map(|(id, last)| id == descr.id && last.elapsed().as_secs_f32() < 0.2)
                         .unwrap_or(false)
                     {
-                        reflow(Alignment::TOP_CENTER, Dim2::pixels(0.0, -20.0), || {
-                            pivot(Alignment::BOTTOM_CENTER, || {
+                        reflow(
+                            Alignment::TOP_CENTER,
+                            Pivot::BOTTOM_CENTER,
+                            Dim2::pixels(0.0, -20.0),
+                            || {
                                 let hov_resp = is_hovered(|| {
                                     blur_bg(secondary_container().with_alpha(0.5), 10.0, || {
                                         padxy(10.0, 10.0, || {
@@ -140,8 +143,8 @@ pub fn special_building_properties(uiw: &UiWorld) {
                                 if hov_resp.hovered {
                                     tooltip_active.set(Some((descr.id, Instant::now())));
                                 }
-                            });
-                        });
+                            },
+                        );
                     }
 
                     if resp.clicked || state.opt.is_none() {

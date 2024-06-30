@@ -1,7 +1,7 @@
 use yakui::widgets::{List, Pad};
 use yakui::{
     constrained, opaque, reflow, row, spacer, Alignment, Color, Constraints, CrossAxisAlignment,
-    Dim2, MainAxisAlignment, MainAxisSize, Vec2,
+    Dim2, MainAxisAlignment, MainAxisSize, Pivot, Vec2,
 };
 
 use goryak::{
@@ -88,28 +88,33 @@ pub fn time_controls(uiworld: &UiWorld, sim: &Simulation) {
         });
     };
 
-    reflow(Alignment::TOP_LEFT, Dim2::pixels(-10.0, 10.0), || {
-        constrained_viewport(|| {
-            let mut l = List::row();
-            l.main_axis_alignment = MainAxisAlignment::End;
-            l.show(|| {
-                opaque(|| {
-                    blur_bg(secondary_container().with_alpha(0.5), 10.0, || {
-                        padxy(10.0, 5.0, || {
-                            constrained(
-                                Constraints::loose(Vec2::new(170.0, f32::INFINITY)),
-                                || {
-                                    let mut l = List::column();
-                                    l.cross_axis_alignment = CrossAxisAlignment::Stretch;
-                                    l.main_axis_size = MainAxisSize::Min;
-                                    l.item_spacing = 5.0;
-                                    l.show(time_text);
-                                },
-                            );
+    reflow(
+        Alignment::TOP_LEFT,
+        Pivot::TOP_LEFT,
+        Dim2::pixels(-10.0, 10.0),
+        || {
+            constrained_viewport(|| {
+                let mut l = List::row();
+                l.main_axis_alignment = MainAxisAlignment::End;
+                l.show(|| {
+                    opaque(|| {
+                        blur_bg(secondary_container().with_alpha(0.5), 10.0, || {
+                            padxy(10.0, 5.0, || {
+                                constrained(
+                                    Constraints::loose(Vec2::new(170.0, f32::INFINITY)),
+                                    || {
+                                        let mut l = List::column();
+                                        l.cross_axis_alignment = CrossAxisAlignment::Stretch;
+                                        l.main_axis_size = MainAxisSize::Min;
+                                        l.item_spacing = 5.0;
+                                        l.show(time_text);
+                                    },
+                                );
+                            });
                         });
                     });
                 });
             });
-        });
-    });
+        },
+    );
 }

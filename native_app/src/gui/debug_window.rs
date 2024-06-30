@@ -237,14 +237,14 @@ fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, sim: &
 
         ui.horizontal(|ui| {
             egui::DragValue::new(&mut state.size)
-                .clamp_range(2..=100u32)
+                .range(2..=100u32)
                 .ui(ui);
             ui.label("size");
         });
 
         ui.horizontal(|ui| {
             egui::DragValue::new(&mut state.spacing)
-                .clamp_range(30.0..=1000.0f32)
+                .range(30.0..=1000.0f32)
                 .ui(ui);
             ui.label("spacing");
         });

@@ -94,11 +94,13 @@ impl PipelineKey for BackgroundPipeline {
             vertex: VertexState {
                 module: bg,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[UvVertex::desc()],
             },
             fragment: Some(FragmentState {
                 module: bg,
                 entry_point: "frag",
+                compilation_options: Default::default(),
                 targets: &color_states,
             }),
             primitive: PrimitiveState::default(),

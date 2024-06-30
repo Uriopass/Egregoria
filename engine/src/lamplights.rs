@@ -137,6 +137,7 @@ impl LampLights {
                 layout: Some(&texture_write_layout),
                 module: &texture_write_module,
                 entry_point: "main",
+                compilation_options: Default::default(),
             });
 
         let texture_write_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {

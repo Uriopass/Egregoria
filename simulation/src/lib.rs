@@ -19,6 +19,7 @@ use std::any::Any;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
+use std::ptr::addr_of;
 use std::time::{Duration, Instant};
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
@@ -129,7 +130,7 @@ impl Simulation {
     pub fn schedule() -> SeqSchedule {
         let mut schedule = SeqSchedule::default();
         unsafe {
-            for s in &GSYSTEMS {
+            for s in &*addr_of!(GSYSTEMS) {
                 let s = (s.s)();
                 schedule.add_system(s);
             }
@@ -153,7 +154,7 @@ impl Simulation {
         info!("Seed is {}", RNG_SEED);
 
         unsafe {
-            for s in &INIT_FUNCS {
+            for s in &*addr_of!(INIT_FUNCS) {
                 (s.f)(&mut sim);
             }
         }
@@ -180,7 +181,7 @@ impl Simulation {
         info!("{:?}", opts);
 
         unsafe {
-            for s in &INIT_FUNCS {
+            for s in &*addr_of!(INIT_FUNCS) {
                 (s.f)(&mut sim);
             }
         }
@@ -214,7 +215,7 @@ impl Simulation {
         }
 
         unsafe {
-            for l in &SAVELOAD_FUNCS {
+            for l in &*addr_of!(SAVELOAD_FUNCS) {
                 let a = (l.save)(self);
                 let b = (l.save)(other);
 
@@ -270,7 +271,7 @@ impl Simulation {
         hashes.insert("world".to_string(), common::hash_u64(&*ser));
 
         unsafe {
-            for l in &SAVELOAD_FUNCS {
+            for l in &*addr_of!(SAVELOAD_FUNCS) {
                 let v = (l.save)(self);
                 hashes.insert(l.name.to_string(), common::hash_u64(&*v));
             }
@@ -353,7 +354,7 @@ impl Serialize for Simulation {
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
         unsafe {
-            for l in &SAVELOAD_FUNCS {
+            for l in &*addr_of!(SAVELOAD_FUNCS) {
                 let v: Vec<u8> = (l.save)(self);
                 m.insert(l.name.to_string(), v);
             }
@@ -420,7 +421,7 @@ impl<'de> Deserialize<'de> for Simulation {
         };
 
         unsafe {
-            for s in &INIT_FUNCS {
+            for s in &*addr_of!(INIT_FUNCS) {
                 (s.f)(&mut sim);
             }
         }
@@ -428,7 +429,7 @@ impl<'de> Deserialize<'de> for Simulation {
         sim.world = simdeser.world;
 
         unsafe {
-            for l in &SAVELOAD_FUNCS {
+            for l in &*addr_of!(SAVELOAD_FUNCS) {
                 if let Some(data) = simdeser.res.remove(l.name) {
                     (l.load)(&mut sim, data);
                 }

@@ -11,4 +11,4 @@ simulation = { path = "../simulation" }
 networking = { path = "../networking" }
 common = { path = "../common" }
 structopt = "0.3.21"
-log = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
+log = { version = "0.4.11", features = ["max_level_info", "release_max_level_info"] }

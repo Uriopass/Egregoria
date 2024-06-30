@@ -1,6 +1,6 @@
 use crate::{background, button_secondary};
 use yakui_core::geometry::{Constraints, Dim2, Vec2};
-use yakui_core::{Alignment, CrossAxisAlignment, MainAxisAlignment, MainAxisSize};
+use yakui_core::{Alignment, CrossAxisAlignment, MainAxisAlignment, MainAxisSize, Pivot};
 use yakui_widgets::widgets::{Layer, List, Pad};
 use yakui_widgets::{colored_box_container, constrained, pad, reflow, use_state};
 
@@ -25,7 +25,7 @@ pub fn combo_box(selected: &mut usize, items: &[&str], w: f32) -> bool {
 
                 if open.get() {
                     Layer::new().show(|| {
-                        reflow(Alignment::BOTTOM_LEFT, Dim2::ZERO, || {
+                        reflow(Alignment::BOTTOM_LEFT, Pivot::TOP_LEFT, Dim2::ZERO, || {
                             constrained(Constraints::loose(Vec2::new(w, f32::INFINITY)), || {
                                 colored_box_container(background(), || {
                                     Pad::all(3.0).show(|| {

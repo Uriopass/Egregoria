@@ -78,11 +78,13 @@ impl PipelineKey for SSAOPipeline {
             vertex: VertexState {
                 module: &ssao,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[UvVertex::desc()],
             },
             fragment: Some(FragmentState {
                 module: &ssao,
                 entry_point: "frag",
+                compilation_options: Default::default(),
                 targets: &color_states,
             }),
             primitive: Default::default(),

@@ -1,14 +1,13 @@
 use crate::{GfxContext, GuiRenderContext};
 use egui::TextureId;
-use egui_wgpu::renderer;
-use egui_wgpu::renderer::ScreenDescriptor;
+use egui_wgpu::{Renderer, ScreenDescriptor};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
 
 /// EguiWrapper is a wrapper around egui and egui_wgpu
 /// It handles the rendering of the UI
 pub struct EguiWrapper {
-    pub renderer: renderer::Renderer,
+    pub renderer: Renderer,
     pub platform: egui_winit::State,
     pub last_mouse_captured: bool,
     pub last_kb_captured: bool,
@@ -23,7 +22,7 @@ impl EguiWrapper {
         let viewport_id = egui.viewport_id();
         let platform = egui_winit::State::new(egui, viewport_id, el, Some(gfx.size.2 as f32), None);
 
-        let renderer = renderer::Renderer::new(&gfx.device, gfx.fbos.format, None, 1);
+        let renderer = Renderer::new(&gfx.device, gfx.fbos.format, None, 1);
 
         Self {
             renderer,

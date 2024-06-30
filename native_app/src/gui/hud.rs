@@ -32,7 +32,7 @@ pub fn tooltip(ui: &Context, uiworld: &UiWorld, sim: &Simulation) {
             egui::show_tooltip_at(
                 ui,
                 Id::new("tooltip_error"),
-                Some(egui::Pos2::new(s.x, s.y)),
+                egui::Pos2::new(s.x, s.y),
                 |ui| ui.label(RichText::new(msg).color(Color32::from_rgb(255, 100, 100))),
             );
         }

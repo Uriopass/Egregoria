@@ -1,6 +1,7 @@
 use yakui::widgets::List;
 use yakui::{
-    image, reflow, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Vec2
+    image, reflow, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize,
+    Pivot, Vec2,
 };
 
 use goryak::{image_button, mincolumn, minrow, padxy, primary};
@@ -27,61 +28,104 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
             mincolumn(4.0, || {
                 minrow(2.0, || {
                     let (snapping_none, snapping_grid, snapping_angel) = match state.snapping {
-                        Snapping::None =>           {(active, default, default)},
-                        Snapping::SnapToGrid =>     {(default, active, default)},
-                        Snapping::SnapToAngle =>    {(default, default, active)},
+                        Snapping::None => (active, default, default),
+                        Snapping::SnapToGrid => (default, active, default),
+                        Snapping::SnapToAngle => (default, default, active),
                     };
                     if image_button(
                         uiw.read::<UiTextures>().get("snap_notting"),
                         Vec2::new(30.0, 30.0),
-                        snapping_none.0, snapping_none.1,
-                        primary(), "no snapping",
-                    ).clicked { state.snapping = Snapping::None; }
+                        snapping_none.0,
+                        snapping_none.1,
+                        primary(),
+                        "no snapping",
+                    )
+                    .clicked
+                    {
+                        state.snapping = Snapping::None;
+                    }
                     if image_button(
                         uiw.read::<UiTextures>().get("snap_grid"),
                         Vec2::new(30.0, 30.0),
-                        snapping_grid.0, snapping_grid.1,
-                        primary(), "snap to grid",
-                    ).clicked { state.snapping = Snapping::SnapToGrid; }
+                        snapping_grid.0,
+                        snapping_grid.1,
+                        primary(),
+                        "snap to grid",
+                    )
+                    .clicked
+                    {
+                        state.snapping = Snapping::SnapToGrid;
+                    }
                     if image_button(
                         uiw.read::<UiTextures>().get("snap_angle"),
                         Vec2::new(30.0, 30.0),
-                        snapping_angel.0, snapping_angel.1,
-                        primary(), "snap to angle",
-                    ).clicked { state.snapping = Snapping::SnapToAngle; }
+                        snapping_angel.0,
+                        snapping_angel.1,
+                        primary(),
+                        "snap to angle",
+                    )
+                    .clicked
+                    {
+                        state.snapping = Snapping::SnapToAngle;
+                    }
                 });
 
                 minrow(2.0, || {
-                    let (hos_ground, hos_start, hos_incline, hos_decline) = match state.height_reference {
-                        HeightReference::Ground =>      {(active, default, default, default)},
-                        HeightReference::Start =>       {(default, active, default, default)},
-                        HeightReference::MaxIncline =>  {(default, default, active, default)},
-                        HeightReference::MaxDecline =>  {(default, default, default, active)},
-                    };
+                    let (hos_ground, hos_start, hos_incline, hos_decline) =
+                        match state.height_reference {
+                            HeightReference::Ground => (active, default, default, default),
+                            HeightReference::Start => (default, active, default, default),
+                            HeightReference::MaxIncline => (default, default, active, default),
+                            HeightReference::MaxDecline => (default, default, default, active),
+                        };
                     if image_button(
                         uiw.read::<UiTextures>().get("height_reference_ground"),
                         Vec2::new(30.0, 30.0),
-                        hos_ground.0, hos_ground.1,
-                        primary(), "Relative to ground",
-                    ).clicked { state.height_reference = HeightReference::Ground; }
+                        hos_ground.0,
+                        hos_ground.1,
+                        primary(),
+                        "Relative to ground",
+                    )
+                    .clicked
+                    {
+                        state.height_reference = HeightReference::Ground;
+                    }
                     if image_button(
                         uiw.read::<UiTextures>().get("height_reference_start"),
                         Vec2::new(30.0, 30.0),
-                        hos_start.0, hos_start.1,
-                        primary(), "Relative to start",
-                    ).clicked { state.height_reference = HeightReference::Start; }
+                        hos_start.0,
+                        hos_start.1,
+                        primary(),
+                        "Relative to start",
+                    )
+                    .clicked
+                    {
+                        state.height_reference = HeightReference::Start;
+                    }
                     if image_button(
                         uiw.read::<UiTextures>().get("height_reference_incline"),
                         Vec2::new(30.0, 30.0),
-                        hos_incline.0, hos_incline.1,
-                        primary(), "Maximum incline",
-                    ).clicked { state.height_reference = HeightReference::MaxIncline; }
+                        hos_incline.0,
+                        hos_incline.1,
+                        primary(),
+                        "Maximum incline",
+                    )
+                    .clicked
+                    {
+                        state.height_reference = HeightReference::MaxIncline;
+                    }
                     if image_button(
                         uiw.read::<UiTextures>().get("height_reference_decline"),
                         Vec2::new(30.0, 30.0),
-                        hos_decline.0, hos_decline.1,
-                        primary(), "Maximum decline",
-                    ).clicked { state.height_reference = HeightReference::MaxDecline; }
+                        hos_decline.0,
+                        hos_decline.1,
+                        primary(),
+                        "Maximum decline",
+                    )
+                    .clicked
+                    {
+                        state.height_reference = HeightReference::MaxDecline;
+                    }
                 });
             });
             // Road elevation
@@ -181,12 +225,17 @@ pub fn roadbuild_properties(uiw: &UiWorld) {
                     }
 
                     if is_active {
-                        reflow(Alignment::CENTER_LEFT, Dim2::pixels(0.0, 32.0), || {
-                            image(
-                                uiw.read::<UiTextures>().get("select_triangle_under"),
-                                Vec2::new(64.0, 10.0),
-                            );
-                        });
+                        reflow(
+                            Alignment::CENTER_LEFT,
+                            Pivot::TOP_LEFT,
+                            Dim2::pixels(0.0, 32.0),
+                            || {
+                                image(
+                                    uiw.read::<UiTextures>().get("select_triangle_under"),
+                                    Vec2::new(64.0, 10.0),
+                                );
+                            },
+                        );
                     }
                 });
             }

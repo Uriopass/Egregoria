@@ -3,7 +3,7 @@ use crate::newgui::{ErrorTooltip, InspectedBuilding, PotentialCommands, Tool};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use engine::AudioKind;
-use geom::{Degrees, Intersect, Vec3, OBB};
+use geom::{Degrees, Intersect, OBB};
 use ordered_float::OrderedFloat;
 use prototypes::{RenderAsset, Size2D};
 use simulation::map::{ProjectFilter, ProjectKind, RoadID};
@@ -13,7 +13,6 @@ use std::borrow::Cow;
 
 pub struct SpecialBuildArgs {
     pub obb: OBB,
-    pub mpos: Vec3,
     pub connected_road: Option<RoadID>,
 }
 
@@ -189,7 +188,6 @@ pub fn specialbuilding(sim: &Simulation, uiworld: &UiWorld) {
 
     let cmds: Vec<WorldCommand> = make(&SpecialBuildArgs {
         obb,
-        mpos,
         connected_road: rid,
     });
     if inp.act.contains(&InputAction::Select) {

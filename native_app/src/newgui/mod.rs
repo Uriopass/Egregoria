@@ -1,5 +1,6 @@
 use crate::newgui::windows::GUIWindows;
 use crate::uiworld::UiWorld;
+use serde::{Deserialize, Serialize};
 use simulation::map::BuildingID;
 use simulation::world_command::WorldCommand;
 use simulation::{AnyEntity, Simulation};
@@ -20,7 +21,6 @@ pub struct GuiState {
     pub debug_window: bool,
     pub windows: GUIWindows,
     pub last_save: Instant,
-    pub last_gui_save: Instant,
     pub depause_warp: u32,
     pub hidden: bool,
 }
@@ -31,7 +31,6 @@ impl Default for GuiState {
             debug_window: false,
             windows: Default::default(),
             last_save: Instant::now(),
-            last_gui_save: Instant::now(),
             depause_warp: 1,
             hidden: false,
         }

@@ -1,5 +1,5 @@
 use yakui::widgets::Layer;
-use yakui::{center, reflow, Alignment, Dim2};
+use yakui::{center, reflow, Alignment, Dim2, Pivot};
 
 use engine::InputContext;
 use goryak::{blur_bg, constrained_viewport, mincolumn, on_secondary, primary, textc, titlec};
@@ -28,18 +28,23 @@ pub fn keybind_modal(uiw: &UiWorld, _: &Simulation) {
     };
 
     Layer::new().show(|| {
-        reflow(Alignment::TOP_LEFT, Dim2::pixels(0.0, 0.0), || {
-            blur_bg(primary().with_alpha(0.5), 0.0, || {
-                constrained_viewport(|| {
-                    center(|| {
-                        mincolumn(10.0, || {
-                            titlec(on_secondary(), format!("{}", state.to_bind_to));
-                            textc(on_secondary(), "Press key/mouse to bind to action");
+        reflow(
+            Alignment::TOP_LEFT,
+            Pivot::TOP_LEFT,
+            Dim2::pixels(0.0, 0.0),
+            || {
+                blur_bg(primary().with_alpha(0.5), 0.0, || {
+                    constrained_viewport(|| {
+                        center(|| {
+                            mincolumn(10.0, || {
+                                titlec(on_secondary(), format!("{}", state.to_bind_to));
+                                textc(on_secondary(), "Press key/mouse to bind to action");
+                            });
                         });
                     });
-                });
-            })
-        });
+                })
+            },
+        );
     });
 }
 

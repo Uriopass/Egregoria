@@ -1,7 +1,7 @@
 use yakui::widgets::{Button, List, Pad};
 use yakui::{
     colored_box_container, column, image, opaque, reflow, spacer, Alignment, Color,
-    CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Vec2,
+    CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize, Pivot, Vec2,
 };
 
 use goryak::{
@@ -31,7 +31,7 @@ pub fn new_toolbox(uiworld: &UiWorld, sim: &Simulation) {
         *uiworld.write::<Tool>() = Tool::Hand;
     }
 
-    reflow(Alignment::TOP_LEFT, Dim2::ZERO, || {
+    reflow(Alignment::TOP_LEFT, Pivot::TOP_LEFT, Dim2::ZERO, || {
         constrained_viewport(|| {
             let mut l = List::column();
             l.cross_axis_alignment = CrossAxisAlignment::Stretch;
@@ -134,12 +134,17 @@ fn tools_list(uiworld: &UiWorld) {
 }
 
 pub(crate) fn select_triangle(uiworld: &UiWorld) {
-    reflow(Alignment::CENTER_LEFT, Dim2::pixels(0.0, 32.0), || {
-        image(
-            uiworld.read::<UiTextures>().get("select_triangle_under"),
-            Vec2::new(64.0, 10.0),
-        );
-    });
+    reflow(
+        Alignment::CENTER_LEFT,
+        Pivot::TOP_LEFT,
+        Dim2::pixels(0.0, 32.0),
+        || {
+            image(
+                uiworld.read::<UiTextures>().get("select_triangle_under"),
+                Vec2::new(64.0, 10.0),
+            );
+        },
+    );
 }
 
 pub fn updown_button(text: &str) -> Button {

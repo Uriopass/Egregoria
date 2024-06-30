@@ -170,6 +170,7 @@ impl PipelineKey for UIBlurPipeline {
             vertex: VertexState {
                 module: bg,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[],
             },
             fragment: Some(FragmentState {
@@ -179,6 +180,7 @@ impl PipelineKey for UIBlurPipeline {
                     UIBlurPipeline::Upscale => "upscale",
                     UIBlurPipeline::UpscaleDeband => "upscale_deband",
                 },
+                compilation_options: Default::default(),
                 targets: &color_states,
             }),
             primitive: PrimitiveState::default(),

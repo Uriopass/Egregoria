@@ -406,11 +406,13 @@ fn normal_pipeline(gfx: &GfxContext, normals_tex: &Texture) -> RenderPipeline {
             vertex: wgpu::VertexState {
                 module: &normal_module,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &normal_module,
                 entry_point: "calc_normals",
+                compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: normals_tex.format,
                     blend: None,
@@ -476,11 +478,13 @@ fn resample_pipeline(gfx: &GfxContext, height_tex: &Texture, entry_point: &str) 
             vertex: wgpu::VertexState {
                 module: &resample_module,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &resample_module,
                 entry_point,
+                compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: height_tex.format,
                     blend: None,

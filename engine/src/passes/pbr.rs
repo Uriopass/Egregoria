@@ -273,6 +273,7 @@ impl Pbr {
             vertex: VertexState {
                 module: &brdf_convolution_module,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: &[],
             },
             primitive: PrimitiveState {
@@ -284,6 +285,7 @@ impl Pbr {
             fragment: Some(FragmentState {
                 module: &brdf_convolution_module,
                 entry_point: "frag",
+                compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: TextureFormat::Rg16Float,
                     blend: None,
@@ -343,6 +345,7 @@ impl PipelineKey for PbrPipeline {
                         vertex: VertexState {
                             module: cubemap_vert,
                             entry_point: "vert",
+                            compilation_options: Default::default(),
                             buffers: &[],
                         },
                         primitive: Default::default(),
@@ -351,6 +354,7 @@ impl PipelineKey for PbrPipeline {
                         fragment: Some(FragmentState {
                             module: cubemap_frag,
                             entry_point: "frag",
+                            compilation_options: Default::default(),
                             targets: &[Some(wgpu::ColorTargetState {
                                 format: TextureFormat::Rgba16Float,
                                 blend: None,
@@ -381,6 +385,7 @@ impl PipelineKey for PbrPipeline {
                         vertex: VertexState {
                             module: cubemap_vert,
                             entry_point: "vert",
+                            compilation_options: Default::default(),
                             buffers: &[],
                         },
                         primitive: Default::default(),
@@ -389,6 +394,7 @@ impl PipelineKey for PbrPipeline {
                         fragment: Some(FragmentState {
                             module: cubemap_frag,
                             entry_point: "frag",
+                            compilation_options: Default::default(),
                             targets: &[Some(wgpu::ColorTargetState {
                                 format: TextureFormat::Rgba16Float,
                                 blend: Some(BlendState::ALPHA_BLENDING),
@@ -419,6 +425,7 @@ impl PipelineKey for PbrPipeline {
                         vertex: VertexState {
                             module: cubemap_vert,
                             entry_point: "vert",
+                            compilation_options: Default::default(),
                             buffers: &[],
                         },
                         primitive: Default::default(),
@@ -427,6 +434,7 @@ impl PipelineKey for PbrPipeline {
                         fragment: Some(FragmentState {
                             module: cubemap_frag,
                             entry_point: "frag",
+                            compilation_options: Default::default(),
                             targets: &[Some(wgpu::ColorTargetState {
                                 format: TextureFormat::Rgba16Float,
                                 blend: Some(BlendState::ALPHA_BLENDING),

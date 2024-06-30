@@ -1096,11 +1096,13 @@ impl GfxContext {
             vertex: VertexState {
                 module: vert_shader,
                 entry_point: "vert",
+                compilation_options: Default::default(),
                 buffers: vertex_buffers,
             },
             fragment: frag_shader.map(|frag_shader| FragmentState {
                 module: frag_shader,
                 entry_point: "frag",
+                compilation_options: Default::default(),
                 targets: &[],
             }),
             primitive: PrimitiveState {

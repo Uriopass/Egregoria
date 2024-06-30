@@ -12,6 +12,7 @@ use goryak::{
     button_primary, checkbox_value, combo_box, dragvalue, icon_button, minrow,
     on_secondary_container, outline, padx, padxy, textc, VertScrollSize, Window,
 };
+use serde::{Deserialize, Serialize};
 use simulation::Simulation;
 
 use crate::game_loop::Timings;

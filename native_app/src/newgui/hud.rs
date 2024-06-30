@@ -3,7 +3,7 @@ use std::time::Instant;
 use goryak::{image_button, minrow, on_secondary_container, textc};
 use ordered_float::OrderedFloat;
 use prototypes::ItemID;
-use yakui::{reflow, Alignment, Color, Dim2, Vec2};
+use yakui::{reflow, Alignment, Color, Dim2, Pivot, Vec2};
 
 use simulation::map_dynamic::ElectricityFlow;
 use simulation::Simulation;
@@ -93,6 +93,7 @@ fn power_errors(uiworld: &UiWorld, sim: &Simulation) {
         for (screenpos, size) in buildings_with_issues {
             reflow(
                 Alignment::TOP_LEFT,
+                Pivot::TOP_LEFT,
                 Dim2::pixels(screenpos.x - size * 0.5, screenpos.y - size * 0.5),
                 || {
                     let mut image = yakui::widgets::Image::new(no_power_img, Vec2::new(size, size));
@@ -121,7 +122,7 @@ pub fn item_icon_yakui(uiworld: &UiWorld, id: ItemID, multiplier: i32) {
             )
             .hovering
             {
-                reflow(Alignment::CENTER, Dim2::ZERO, || {
+                reflow(Alignment::CENTER, Pivot::TOP_LEFT, Dim2::ZERO, || {
                     textc(
                         on_secondary_container(),
                         format!("{} x{}", item.name, multiplier),
