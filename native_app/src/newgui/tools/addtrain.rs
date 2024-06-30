@@ -10,7 +10,6 @@ use simulation::world_command::WorldCommand;
 use simulation::Simulation;
 use std::option::Option::None;
 
-
 #[derive(Clone, Debug, Default)]
 pub struct TrainSpawnResource {
     pub wagons: Vec<RollingStockID>,
@@ -28,15 +27,15 @@ pub struct TrainSpawnResource {
 /// It allows to add a train to any rail lane
 pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
     profiling::scope!("gui::addtrain");
-    let state =  &mut *uiworld.write::<TrainSpawnResource>();
+    let state = &mut *uiworld.write::<TrainSpawnResource>();
     let tool = *uiworld.read::<Tool>();
-    
+
     if !matches!(tool, Tool::Train) {
         state.wagons.clear();
         state.set_zero();
         return;
     }
-    
+
     let inp = uiworld.read::<InputMap>();
     let mut potential = uiworld.write::<PotentialCommands>();
 
@@ -67,11 +66,12 @@ pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
     let trainlength = state.total_lenght + 1.0;
 
     let mut drawtrain = |col: Color| {
-        wagons_positions_for_render(&state.wagons, &nearbylane.points, dist)
-        .for_each(|(pos, dir, length)| {
-            draw.obb(OBB::new(pos.xy(), dir.xy(), length, 4.0), pos.z + 0.5)
-            .color(col);
-        });
+        wagons_positions_for_render(&state.wagons, &nearbylane.points, dist).for_each(
+            |(pos, dir, length)| {
+                draw.obb(OBB::new(pos.xy(), dir.xy(), length, 4.0), pos.z + 0.5)
+                    .color(col);
+            },
+        );
     };
 
     if dist <= trainlength {
@@ -84,7 +84,7 @@ pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
     let cmd = WorldCommand::SpawnTrain {
         wagons: state.wagons.clone(),
         lane: nearbylane.id,
-        dist: dist
+        dist,
     };
 
     if inp.just_act.contains(&InputAction::Select) {
@@ -94,12 +94,12 @@ pub fn addtrain(sim: &Simulation, uiworld: &UiWorld) {
     }
 }
 
-
 impl TrainSpawnResource {
     pub fn calculate(&mut self) {
         let locomotive = calculate_locomotive(&self.wagons);
         if locomotive.acc_force.is_nan() || locomotive.dec_force.is_nan() {
-            self.set_zero(); return;
+            self.set_zero();
+            return;
         }
 
         self.max_speed = locomotive.max_speed;

@@ -299,11 +299,19 @@ impl WorldCommand {
                 }
             }
             SetGameTime(gt) => *sim.write::<GameTime>() = gt,
-            AddTrain {dist:_, n_wagons:_,lane:_,} => {}
-            SpawnTrain {ref wagons, lane, dist} => {
+            AddTrain {
+                dist: _,
+                n_wagons: _,
+                lane: _,
+            } => {}
+            SpawnTrain {
+                ref wagons,
+                lane,
+                dist,
+            } => {
                 spawn_train(sim, wagons, RailWagonKind::Freight, lane, dist);
-            },
-            
+            }
+
             MapLoadParis => load_parismap(&mut sim.map_mut()),
             MapLoadTestField { pos, size, spacing } => {
                 load_testfield(&mut sim.map_mut(), pos, size, spacing)

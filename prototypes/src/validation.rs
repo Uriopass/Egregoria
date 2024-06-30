@@ -20,7 +20,7 @@ pub enum ValidationError {
 pub(crate) fn validate(proto: &Prototypes) -> Result<(), MultiError<ValidationError>> {
     let mut errors = vec![];
 
-    for comp in proto.companies.values() {
+    for comp in proto.goods_company.values() {
         if comp.n_trucks > 0 && comp.kind != CompanyKind::Factory {
             errors.push(ValidationError::WrongTrucks(comp.name.clone()));
         }
@@ -38,7 +38,7 @@ pub(crate) fn validate(proto: &Prototypes) -> Result<(), MultiError<ValidationEr
 
         if let Some(ref r) = comp.recipe {
             for item in &r.consumption {
-                if !proto.items.contains_key(&item.id) {
+                if !proto.item.contains_key(&item.id) {
                     errors.push(ValidationError::ReferencedProtoNotFound(
                         comp.name.clone(),
                         "consumption",
@@ -47,7 +47,7 @@ pub(crate) fn validate(proto: &Prototypes) -> Result<(), MultiError<ValidationEr
             }
 
             for item in &r.production {
-                if !proto.items.contains_key(&item.id) {
+                if !proto.item.contains_key(&item.id) {
                     errors.push(ValidationError::ReferencedProtoNotFound(
                         comp.name.clone(),
                         "production",

@@ -603,18 +603,15 @@ impl Road {
         None
     }
 
-
     pub fn get_straight_connection_point(&self, my_end: IntersectionID) -> Vec2 {
         match self.segment {
             RoadSegmentKind::Straight if self.src == my_end => self.points.last().xy(),
             RoadSegmentKind::Straight if self.dst == my_end => self.points.first().xy(),
-            
-            RoadSegmentKind::Curved((fr, _)) if self.src == my_end
-                => self.points.first().xy() + fr,
-            RoadSegmentKind::Curved((_, to)) if self.dst == my_end
-                => self.points.last().xy() + to,
 
-            _ => panic!("Intersection {:?} not connected to the road", my_end)
+            RoadSegmentKind::Curved((fr, _)) if self.src == my_end => self.points.first().xy() + fr,
+            RoadSegmentKind::Curved((_, to)) if self.dst == my_end => self.points.last().xy() + to,
+
+            _ => panic!("Intersection {:?} not connected to the road", my_end),
         }
     }
 }

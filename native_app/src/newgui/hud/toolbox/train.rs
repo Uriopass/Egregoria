@@ -1,4 +1,4 @@
-use goryak::{mincolumn, minrow, padxy, outline};
+use goryak::{mincolumn, minrow, outline, padxy};
 use prototypes::{prototypes_iter, RollingStockID, RollingStockPrototype};
 use yakui::widgets::List;
 use yakui::{button, divider, label, CrossAxisAlignment, MainAxisAlignment};
@@ -27,25 +27,30 @@ pub fn train_properties(uiw: &UiWorld) {
 
             mincolumn(0.5, || {
                 minrow(0.0, || {
-                    let mut remove: Option<usize>= None;
-                    for (i, rs) in state.wagons.iter()
-                    .map(|id| RollingStockID::prototype(*id))
-                    .enumerate() {
-                        if button(rs.label.clone()).clicked { remove = Some(i); }
+                    let mut remove: Option<usize> = None;
+                    for (i, rs) in state
+                        .wagons
+                        .iter()
+                        .map(|id| RollingStockID::prototype(*id))
+                        .enumerate()
+                    {
+                        if button(rs.label.clone()).clicked {
+                            remove = Some(i);
+                        }
                     }
                     if let Some(i) = remove {
-                        state.wagons.remove(i); 
+                        state.wagons.remove(i);
                         state.calculate();
                     }
                 });
 
                 divider(outline(), 10.0, 1.0);
-                
+
                 minrow(0.0, || {
                     for rolling_stock in prototypes_iter::<RollingStockPrototype>() {
                         let resp = button(rolling_stock.label.clone());
                         if resp.clicked {
-                            state.wagons.push(rolling_stock.id); 
+                            state.wagons.push(rolling_stock.id);
                             state.calculate();
                         }
                     }

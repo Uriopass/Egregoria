@@ -18,7 +18,6 @@ pub struct RollingStockPrototype {
     pub acc_force: f32,
     /// kN
     pub dec_force: f32,
-
 }
 
 impl Prototype for RollingStockPrototype {
@@ -28,7 +27,9 @@ impl Prototype for RollingStockPrototype {
 
     fn from_lua(table: &Table) -> mlua::Result<Self> {
         let base = VehiclePrototype::from_lua(table)?;
-        Ok(Self { id: Self::ID::new(&base.name), base,
+        Ok(Self {
+            id: Self::ID::new(&base.name),
+            base,
             length: get_lua::<f32>(table, "length")?,
             mass: get_lua(table, "mass")?,
             max_speed: get_lua::<f32>(table, "max_speed")?,
@@ -36,11 +37,17 @@ impl Prototype for RollingStockPrototype {
             dec_force: get_lua::<f32>(table, "dec_force")?,
         })
     }
-    fn id(&self) -> Self::ID { self.id }
-    fn parent(&self) -> &Self::Parent { &self.base }
+    fn id(&self) -> Self::ID {
+        self.id
+    }
+    fn parent(&self) -> &Self::Parent {
+        &self.base
+    }
 }
 
 impl Deref for RollingStockPrototype {
     type Target = VehiclePrototype;
-    fn deref(&self) -> &Self::Target {&self.base}
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
 }

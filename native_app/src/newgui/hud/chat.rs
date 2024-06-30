@@ -2,8 +2,8 @@ use egui::TextBuffer;
 use yakui::{constrained, reflow, Alignment, Color, Constraints, Dim2, Pivot, Vec2};
 
 use goryak::{
-    blur_bg, fixed_spacer, mincolumn, padxy, pivot, secondary_container, text_edit, textc,
-    VertScroll, VertScrollSize,
+    blur_bg, fixed_spacer, mincolumn, padxy, secondary_container, text_edit, textc, VertScroll,
+    VertScrollSize,
 };
 use prototypes::{GameDuration, GameTime};
 use simulation::multiplayer::chat::{Message, MessageKind};
@@ -57,63 +57,60 @@ pub fn chat(uiw: &UiWorld, sim: &Simulation) {
 
     reflow(
         Alignment::BOTTOM_LEFT,
-        Pivot::TOP_LEFT,
+        Pivot::BOTTOM_LEFT,
         Dim2::pixels(0.0, -192.0),
         || {
-            pivot(Alignment::BOTTOM_LEFT, || {
-                let alpha = if state.chat_bar_showed { 0.7 } else { 0.2 };
-                blur_bg(secondary_container().with_alpha(alpha), 0.0, || {
-                    mincolumn(0.0, || {
-                        VertScroll {
-                            size: VertScrollSize::Exact(300.0),
-                            align_bot: true,
-                        }
-                        .show(|| {
-                            constrained(
-                                Constraints {
-                                    min: Vec2::new(250.0, 0.0),
-                                    max: Vec2::new(250.0, f32::INFINITY),
-                                },
-                                || {
-                                    padxy(8.0, 8.0, || {
-                                        mincolumn(8.0, || {
-                                            for message in msgs.iter().rev() {
-                                                let color = message.color;
+            let alpha = if state.chat_bar_showed { 0.7 } else { 0.2 };
+            blur_bg(secondary_container().with_alpha(alpha), 0.0, || {
+                mincolumn(0.0, || {
+                    VertScroll {
+                        size: VertScrollSize::Exact(300.0),
+                        align_bot: true,
+                    }
+                    .show(|| {
+                        constrained(
+                            Constraints {
+                                min: Vec2::new(250.0, 0.0),
+                                max: Vec2::new(250.0, f32::INFINITY),
+                            },
+                            || {
+                                padxy(8.0, 8.0, || {
+                                    mincolumn(8.0, || {
+                                        for message in msgs.iter().rev() {
+                                            let color = message.color;
 
-                                                let text = message.text.clone();
+                                            let text = message.text.clone();
 
-                                                textc(
-                                                    Color::rgb(
-                                                        (color.r * 255.0) as u8,
-                                                        (color.g * 255.0) as u8,
-                                                        (color.b * 255.0) as u8,
-                                                    ),
-                                                    text,
-                                                );
-                                            }
-                                        });
+                                            textc(
+                                                Color::rgb(
+                                                    (color.r * 255.0) as u8,
+                                                    (color.g * 255.0) as u8,
+                                                    (color.b * 255.0) as u8,
+                                                ),
+                                                text,
+                                            );
+                                        }
                                     });
-                                },
-                            );
-                        });
-                        if state.chat_bar_showed {
-                            if text_edit(250.0, &mut state.cur_msg, "") && !state.cur_msg.is_empty()
-                            {
-                                uiw.commands().push(WorldCommand::SendMessage {
-                                    message: Message {
-                                        name: "player".to_string(),
-                                        text: state.cur_msg.take(),
-                                        sent_at: sim.read::<GameTime>().instant(),
-                                        color: geom::Color::WHITE,
-                                        kind: MessageKind::PlayerChat,
-                                    },
                                 });
-                                state.chat_bar_showed = false;
-                            }
-                        } else {
-                            fixed_spacer((0.0, 30.0));
-                        }
+                            },
+                        );
                     });
+                    if state.chat_bar_showed {
+                        if text_edit(250.0, &mut state.cur_msg, "") && !state.cur_msg.is_empty() {
+                            uiw.commands().push(WorldCommand::SendMessage {
+                                message: Message {
+                                    name: "player".to_string(),
+                                    text: state.cur_msg.take(),
+                                    sent_at: sim.read::<GameTime>().instant(),
+                                    color: geom::Color::WHITE,
+                                    kind: MessageKind::PlayerChat,
+                                },
+                            });
+                            state.chat_bar_showed = false;
+                        }
+                    } else {
+                        fixed_spacer((0.0, 30.0));
+                    }
                 });
             });
         },

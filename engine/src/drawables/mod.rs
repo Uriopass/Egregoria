@@ -1,11 +1,11 @@
 use crate::GfxContext;
 use wgpu::RenderPass;
 
+pub mod heightmap;
 mod instanced_mesh;
 mod lit_mesh;
 mod multispritebatch;
 mod spritebatch;
-pub mod heightmap;
 mod water;
 
 pub use instanced_mesh::*;

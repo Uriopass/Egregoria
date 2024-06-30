@@ -1,27 +1,16 @@
-mod building;       pub use building::*;
-mod colors;         pub use colors::*;
-mod freightstation; pub use freightstation::*;
-mod goods_company;  pub use goods_company::*;
-mod item;           pub use item::*;
-mod leisure;        pub use leisure::*;
-mod road_vehicles;  pub use road_vehicles::*;
-mod rolling_stock;  pub use rolling_stock::*;
-mod solar;          pub use solar::*;
-mod vehicles;       pub use vehicles::*;
-
 crate::gen_prototypes!(
-    items:     ItemID              = ItemPrototype,
-    buildings: BuildingPrototypeID = BuildingPrototype,
-    companies: GoodsCompanyID      = GoodsCompanyPrototype => BuildingPrototypeID,
-    leisure:   LeisurePrototypeID  = LeisurePrototype => BuildingPrototypeID,
-    solar:     SolarPanelID        = SolarPanelPrototype => GoodsCompanyID,
+    mod item:          ItemID              = ItemPrototype,
+    mod building:      BuildingPrototypeID = BuildingPrototype,
+    mod goods_company: GoodsCompanyID      = GoodsCompanyPrototype => BuildingPrototypeID,
+    mod leisure:       LeisurePrototypeID  = LeisurePrototype => BuildingPrototypeID,
+    mod solar:         SolarPanelID        = SolarPanelPrototype => GoodsCompanyID,
 
-    vehicles:      VehiclePrototypeID = VehiclePrototype,
-    road_vehicles: RoadVehicleID      = RoadVehiclePrototype => VehiclePrototypeID,
-    rolling_stock: RollingStockID     = RollingStockPrototype => VehiclePrototypeID,
+    mod vehicle:       VehiclePrototypeID = VehiclePrototype,
+    mod road_vehicle:  RoadVehicleID      = RoadVehiclePrototype => VehiclePrototypeID,
+    mod rolling_stock: RollingStockID     = RollingStockPrototype => VehiclePrototypeID,
 
-    colors:    ColorsPrototypeID   = ColorsPrototype,
-    stations:  FreightStationPrototypeID = FreightStationPrototype,
+    mod colors:         ColorsPrototypeID   = ColorsPrototype,
+    mod freightstation: FreightStationPrototypeID = FreightStationPrototype,
 );
 
 /** Prototype template. remplace $proto with the root name e.g Item

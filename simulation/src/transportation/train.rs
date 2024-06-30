@@ -56,16 +56,19 @@ pub struct RailWagon {
 }
 
 pub fn calculate_locomotive(wagons: &Vec<RollingStockID>) -> Locomotive {
-    let info = wagons.iter()
-        .fold((720.0, 0.0, 0.0, 0.0, 0), 
+    let info = wagons.iter().fold(
+        (720.0, 0.0, 0.0, 0.0, 0),
         |(speed, acc, dec, length, mass): (f32, f32, f32, f32, u32), &id| {
             let rs = RollingStockID::prototype(id);
-            ( 
+            (
                 speed.min(rs.max_speed),
-                acc + rs.acc_force, dec + rs.dec_force,
-                length + rs.length, mass + rs.mass,
+                acc + rs.acc_force,
+                dec + rs.dec_force,
+                length + rs.length,
+                mass + rs.mass,
             )
-        });
+        },
+    );
     Locomotive {
         max_speed: info.0,
         acc_force: info.1 / info.4 as f32,
@@ -74,10 +77,11 @@ pub fn calculate_locomotive(wagons: &Vec<RollingStockID>) -> Locomotive {
     }
 }
 
-pub fn wagons_loco_dists_lengths(wagons: &Vec<RollingStockID>) -> impl DoubleEndedIterator<Item = (f32, f32)> + '_ {
+pub fn wagons_loco_dists_lengths(
+    wagons: &Vec<RollingStockID>,
+) -> impl DoubleEndedIterator<Item = (f32, f32)> + '_ {
     let mut loco_dist = 0.0;
-    wagons.iter()
-    .map(move |&id| {
+    wagons.iter().map(move |&id| {
         let length = RollingStockID::prototype(id).length;
         loco_dist += length;
         (loco_dist - length, length)
@@ -86,27 +90,31 @@ pub fn wagons_loco_dists_lengths(wagons: &Vec<RollingStockID>) -> impl DoubleEnd
 
 pub fn wagons_positions_for_render<'a>(
     wagons: &'a Vec<RollingStockID>,
-    points: &'a PolyLine3,    
+    points: &'a PolyLine3,
     dist: f32,
 ) -> impl Iterator<Item = (Vec3, Vec3, f32)> + 'a {
     wagons_loco_dists_lengths(wagons)
-    .map(|(wagon_dist, length)| (wagon_dist + length * 0.5, length))
-    .rev()
-    .filter_map(move |(wagin_dist, length)| {
-        let pos = dist - wagin_dist;
-        if pos >= 0.0 { Some((pos, length)) }
-        else { None }
-    })
-    .map(move |(d, length)|{
-        let (pos, dir) = points.point_dir_along(d);
-        (pos, dir, length)
-    })
+        .map(|(wagon_dist, length)| (wagon_dist + length * 0.5, length))
+        .rev()
+        .filter_map(move |(wagin_dist, length)| {
+            let pos = dist - wagin_dist;
+            if pos >= 0.0 {
+                Some((pos, length))
+            } else {
+                None
+            }
+        })
+        .map(move |(d, length)| {
+            let (pos, dir) = points.point_dir_along(d);
+            (pos, dir, length)
+        })
 }
 
 pub fn train_length(wagons: &Vec<RollingStockID>) -> f32 {
-    wagons.iter()
-    .map(|id| RollingStockID::prototype(*id).length)
-    .sum::<f32>()
+    wagons
+        .iter()
+        .map(|id| RollingStockID::prototype(*id).length)
+        .sum::<f32>()
 }
 
 pub fn spawn_train(
@@ -140,7 +148,7 @@ pub fn spawn_train(
         trans: Transform::new_dir(locopos, locodir),
         speed: Default::default(),
         it: Itinerary::NONE,
-        locomotive: locomotive,
+        locomotive,
         res: LocomotiveReservation {
             cur_travers_dist: dist,
             waited_for: 0.0,
@@ -161,7 +169,8 @@ pub fn spawn_train(
         .past
         .mk_followers(
             wagons_loco_dists_lengths(&wagons)
-                        .flat_map(|(dist, length)| [dist + length * 0.1, dist + length * 0.9]))
+                .flat_map(|(dist, length)| [dist + length * 0.1, dist + length * 0.9]),
+        )
         .collect();
     for (i, follower) in followers.chunks_exact_mut(2).enumerate() {
         let (pos, dir) = follower[0].update(&leader.past);
@@ -173,7 +182,9 @@ pub fn spawn_train(
                 rolling_stock: wagons[i],
                 kind: if i == 0 {
                     RailWagonKind::Locomotive
-                } else { kind },
+                } else {
+                    kind
+                },
             },
             itfollower: ItineraryFollower {
                 leader: loco,
@@ -182,7 +193,7 @@ pub fn spawn_train(
             },
         });
     }
-    
+
     log::info!("Spawned Train with {} wagons", wagons.len());
     Some(loco)
 }

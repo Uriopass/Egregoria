@@ -1,7 +1,7 @@
 use common::FastMap;
 use engine::{FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder};
 use geom::{LinearColor, Vec3, V3};
-use prototypes::{RollingStockID, RollingStockPrototype, RenderAsset};
+use prototypes::{RenderAsset, RollingStockID, RollingStockPrototype};
 use simulation::transportation::{Location, VehicleKind};
 use simulation::Simulation;
 
@@ -25,32 +25,38 @@ impl InstancedRender {
         RollingStockPrototype::iter()
             .map(|rail_wagon_proto| (&rail_wagon_proto.asset, rail_wagon_proto.id))
             .filter_map(|(asset, id)| {
-                let RenderAsset::Mesh { path } = asset else { None? };
+                let RenderAsset::Mesh { path } = asset else {
+                    None?
+                };
                 match gfx.mesh(path) {
-                    Err(e) => { log::error!("Failed to load mesh {}: {:?}", asset, e); None }
+                    Err(e) => {
+                        log::error!("Failed to load mesh {}: {:?}", asset, e);
+                        None
+                    }
                     Ok(m) => Some((id, m)),
                 }
             })
-            .for_each(|(id, mesh)|{
+            .for_each(|(id, mesh)| {
                 rolling_stock.insert(id, InstancedMeshBuilder::new_ref(&mesh));
             });
-        
 
         let car = gfx.mesh("simple_car.glb".as_ref()).unwrap();
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 &gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
-                gfx
+                gfx,
             ),
-            
+
             rolling_stock,
-            
+
             cars: InstancedMeshBuilder::new_ref(&car),
             // locomotives: InstancedMeshBuilder::new_ref(&gfx.mesh("train.glb".as_ref()).unwrap()),
             // wagons_freight: InstancedMeshBuilder::new_ref(&gfx.mesh("wagon_freight.glb".as_ref()).unwrap()),
             // wagons_passenger: InstancedMeshBuilder::new_ref(&gfx.mesh("wagon.glb".as_ref()).unwrap()),
             trucks: InstancedMeshBuilder::new_ref(&gfx.mesh("truck.glb".as_ref()).unwrap()),
-            pedestrians: InstancedMeshBuilder::new_ref(&gfx.mesh("pedestrian.glb".as_ref()).unwrap()),
+            pedestrians: InstancedMeshBuilder::new_ref(
+                &gfx.mesh("pedestrian.glb".as_ref()).unwrap(),
+            ),
         }
     }
 
@@ -74,8 +80,9 @@ impl InstancedRender {
             }
         }
 
-        self.rolling_stock.iter_mut()
-        .for_each(|(_, m)| { m.instances.clear(); });
+        self.rolling_stock.iter_mut().for_each(|(_, m)| {
+            m.instances.clear();
+        });
         for wagon in sim.world().wagons.values() {
             let trans = &wagon.trans;
             let instance = MeshInstance {
@@ -83,10 +90,8 @@ impl InstancedRender {
                 dir: trans.dir,
                 tint: LinearColor::WHITE,
             };
-            
-            if let Some(mesh) 
-                = self.rolling_stock.get_mut(&wagon.wagon.rolling_stock) 
-            {
+
+            if let Some(mesh) = self.rolling_stock.get_mut(&wagon.wagon.rolling_stock) {
                 mesh.instances.push(instance);
             }
         }
@@ -135,8 +140,7 @@ impl InstancedRender {
             fctx.objs.push(Box::new(x));
         }
 
-        self.rolling_stock.iter_mut()
-        .for_each(|(_, imb)| {
+        self.rolling_stock.iter_mut().for_each(|(_, imb)| {
             if let Some(x) = imb.build(fctx.gfx) {
                 fctx.objs.push(Box::new(x));
             }

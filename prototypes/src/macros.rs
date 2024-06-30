@@ -1,6 +1,10 @@
 #[macro_export]
 macro_rules! gen_prototypes {
-    ($($name:ident : $id:ident = $t:ty $(=> $parent_id:ident)?,)+) => {
+    ($(mod $name:ident : $id:ident = $t:ty $(=> $parent_id:ident)?,)+) => {
+        $(
+            mod $name; pub use $name::*;
+        )+
+
         $(
             $crate::prototype_id!($id => $t);
         )+
