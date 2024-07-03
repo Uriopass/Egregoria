@@ -10,15 +10,20 @@ use winit::platform::scancode::PhysicalKeyExtScancode;
 use winit::window::CursorIcon;
 
 lazy_static! {
-    static ref CURSOR_ICON: Arc<Mutex<CursorIcon>> = Arc::new(Mutex::new(CursorIcon::Default));
+    static ref CURSOR_ICON: Arc<Mutex<(CursorIcon, bool)>> =
+        Arc::new(Mutex::new((CursorIcon::Default, false)));
 }
 
 pub fn set_cursor_icon(icon: CursorIcon) {
-    *CURSOR_ICON.lock().unwrap() = icon;
+    let old = &mut *CURSOR_ICON.lock().unwrap();
+    *old = (icon, old.1 || (old.0 != icon));
 }
 
-pub fn get_cursor_icon() -> CursorIcon {
-    *CURSOR_ICON.lock().unwrap()
+pub fn get_cursor_icon() -> (CursorIcon, bool) {
+    let v = &mut *CURSOR_ICON.lock().unwrap();
+    let to_ret = *v;
+    v.1 = false;
+    to_ret
 }
 
 #[derive(Default)]

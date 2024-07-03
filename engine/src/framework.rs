@@ -137,7 +137,10 @@ async fn run<S: State>(el: EventLoop<()>, window: Arc<Window>) {
                             });
 
                         ctx.gfx.finish_frame(enc);
-                        ctx.gfx.window.set_cursor_icon(get_cursor_icon());
+                        let (icon, changed) = get_cursor_icon();
+                        if changed {
+                            ctx.gfx.window.set_cursor_icon(icon);
+                        }
                         ctx.input.end_frame();
                         ctx.times.total_cpu_time = last_update.elapsed().as_secs_f32();
 
