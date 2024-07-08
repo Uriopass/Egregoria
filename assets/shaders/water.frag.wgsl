@@ -78,9 +78,14 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     let reflected: vec3<f32> = reflect(-V, normal);
 
     let reflected_atmo = atmosphere(reflected, params.sun, 1e38);
-    let sun_contrib: f32 = clamp(dot(normal, params.sun), 0.0, 1.0);
 
-    let base_color: vec3<f32> = 0.03 * vec3<f32>(0.262, 0.396, 0.508);
+    let terrain_depth: f32 = 1.0 / textureLoad(t_depth, vec2<i32>(position.xy), 0).x;
+    let expected_depth: f32 = -dot(cam_to_wpos, params.cam_dir.xyz);
+    let water_depth = (expected_depth - terrain_depth) * params.cam_dir.z;
+    let relative_water_depth = clamp(water_depth / 32.0,0.0,1.0);
+
+    let base_factor = mix(0.03, 0.3, pow(1.0-relative_water_depth,4.0));
+    let base_color: vec3<f32> = base_factor * vec3<f32>(0.262, 0.396, 0.508);
     let sunpower: f32 = 0.1 * reflect_coeff;
 
     var final_rgb: vec3<f32> = base_color + sunpower * reflected_atmo;
