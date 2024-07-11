@@ -619,13 +619,6 @@ impl GfxContext {
             false => 1,
         };
 
-        if self.samples != samples {
-            self.samples = samples;
-            self.pipelines.write().unwrap().invalidate_all();
-            self.fbos = Self::create_textures(&self.device, &self.sc_desc, samples);
-            self.update_simplelit_bg();
-        }
-
         self.set_define_flag("FOG", settings.fog);
         self.set_define_flag("SSAO", settings.ssao);
         self.set_define_flag("TERRAIN_GRID", settings.terrain_grid);
@@ -633,6 +626,13 @@ impl GfxContext {
         self.set_define_flag("FOG_DEBUG", settings.fog_shader_debug);
         self.set_define_flag("PBR_ENABLED", settings.pbr_enabled);
         self.set_define_flag("MSAA", settings.msaa);
+
+        if self.samples != samples {
+            self.samples = samples;
+            self.pipelines.write().unwrap().invalidate_all();
+            self.fbos = Self::create_textures(&self.device, &self.sc_desc, samples);
+            self.update_simplelit_bg();
+        }
 
         self.settings = Some(settings);
     }
