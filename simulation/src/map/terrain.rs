@@ -237,8 +237,14 @@ impl Environment {
             }),
             TerraformKind::Erode => {
                 let mut rng = common::rand::gen(tick.0);
+                let n_particles_continuous = amount * DELTA * radius * radius * 0.00002;
+                let mut n_particles = n_particles_continuous as usize;
+                if n_particles_continuous.fract() > rng.next_f32() {
+                    n_particles += 1;
+                }
+
                 self.heightmap
-                    .erode(bbox, amount.clamp(0.0, 1000.0) as usize, || rng.next_f32())
+                    .erode(bbox, n_particles, || rng.next_f32())
                     .into_iter()
                     .map(|(x, y)| TerrainChunkID::new_i16(x as i16, y as i16))
                     .collect()
