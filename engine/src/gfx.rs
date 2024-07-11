@@ -263,10 +263,21 @@ impl GfxContext {
             backends = Backends::VULKAN;
         }
 
+        let mut flags = if cfg!(debug_assertions) {
+            // TODO: re enable validation when https://github.com/gfx-rs/wgpu/issues/5231 is fixed
+            wgpu::InstanceFlags::DEBUG
+        } else {
+            wgpu::InstanceFlags::empty()
+        };
+
+        if cfg!(target_os = "windows") {
+            flags = flags | wgpu::InstanceFlags::VALIDATION
+        }
+
         let instance = wgpu::Instance::new(InstanceDescriptor {
             backends,
             dx12_shader_compiler: Default::default(),
-            flags: wgpu::InstanceFlags::default() | wgpu::InstanceFlags::DEBUG,
+            flags,
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
