@@ -16,7 +16,7 @@ pub fn train_properties(uiw: &UiWorld) {
         l.item_spacing = 10.0;
         l.show(|| {
             mincolumn(0.1, || {
-                if button("remove trian").clicked {
+                if button("remove train").clicked {
                     state.wagons.clear();
                     state.set_zero();
                 }

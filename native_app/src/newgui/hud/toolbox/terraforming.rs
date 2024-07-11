@@ -23,7 +23,7 @@ pub fn terraform_properties(uiw: &UiWorld) {
             let terraform_choices = &[
                 (
                     TerraformKind::Elevation,
-                    "Elevation (up/dpwn)",
+                    "Elevation (up/down)",
                     "terraforming_raise_lower",
                 ),
                 (TerraformKind::Smooth, "Smooth", "terraforming_smooth"),
