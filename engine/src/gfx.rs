@@ -263,7 +263,7 @@ impl GfxContext {
             backends = Backends::VULKAN;
         }
 
-        let mut flags = if cfg!(debug_assertions) {
+        let flags = if cfg!(debug_assertions) {
             // TODO: re enable validation when https://github.com/gfx-rs/wgpu/issues/5231 is fixed
             wgpu::InstanceFlags::DEBUG
         } else {

@@ -10,17 +10,17 @@ use geom::{vec2, vec3, Camera, LinearColor};
 use simulation::Simulation;
 
 use crate::audio::GameAudio;
-use crate::gui::debug_window::DebugObjs;
-use crate::gui::render_oldgui;
+use crate::debug_gui::debug_window::DebugObjs;
+use crate::debug_gui::render_oldgui;
+use crate::gui;
+use crate::gui::follow::FollowEntity;
+use crate::gui::keybinds::KeybindState;
+use crate::gui::terraforming::TerraformingResource;
+use crate::gui::toolbox::building;
+use crate::gui::windows::settings::{manage_settings, Settings};
+use crate::gui::UiTextures;
+use crate::gui::{render_newgui, ExitState, GuiState, TimeAlways, Tool};
 use crate::inputmap::{Bindings, InputAction, InputMap};
-use crate::newgui;
-use crate::newgui::follow::FollowEntity;
-use crate::newgui::keybinds::KeybindState;
-use crate::newgui::terraforming::TerraformingResource;
-use crate::newgui::toolbox::building;
-use crate::newgui::windows::settings::{manage_settings, Settings};
-use crate::newgui::UiTextures;
-use crate::newgui::{render_newgui, ExitState, GuiState, TimeAlways, Tool};
 use crate::rendering::{InstancedRender, MapRenderOptions, MapRenderer, OrbitCamera};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use prototypes::GameTime;
@@ -160,7 +160,7 @@ impl engine::framework::State for State {
             !ctx.egui.last_kb_captured,
             !ctx.egui.last_mouse_captured,
         );
-        newgui::run_ui_systems(&self.sim.read().unwrap(), &self.uiw);
+        gui::run_ui_systems(&self.sim.read().unwrap(), &self.uiw);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();

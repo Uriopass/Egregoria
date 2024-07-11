@@ -1,26 +1,26 @@
+use crate::debug_gui::debug_window::{DebugObjs, DebugState, TestFieldProperties};
 use crate::game_loop::Timings;
-use crate::gui::debug_window::{DebugObjs, DebugState, TestFieldProperties};
-use crate::inputmap::{Bindings, InputMap};
-use crate::network::NetworkState;
-use crate::newgui::addtrain::TrainSpawnResource;
-use crate::newgui::bulldozer::BulldozerState;
-use crate::newgui::chat::GUIChatState;
-use crate::newgui::follow::FollowEntity;
-use crate::newgui::keybinds::KeybindState;
-use crate::newgui::lotbrush::LotBrushResource;
-use crate::newgui::roadbuild::RoadBuildResource;
-use crate::newgui::roadeditor::RoadEditorResource;
-use crate::newgui::specialbuilding::SpecialBuildingResource;
-use crate::newgui::terraforming::TerraformingResource;
-use crate::newgui::toolbox::building::BuildingIcons;
-use crate::newgui::windows::economy::EconomyState;
-use crate::newgui::windows::load::LoadState;
-use crate::newgui::windows::settings::{Settings, SettingsState};
-use crate::newgui::zoneedit::ZoneEditState;
-use crate::newgui::{
+use crate::gui::addtrain::TrainSpawnResource;
+use crate::gui::bulldozer::BulldozerState;
+use crate::gui::chat::GUIChatState;
+use crate::gui::follow::FollowEntity;
+use crate::gui::keybinds::KeybindState;
+use crate::gui::lotbrush::LotBrushResource;
+use crate::gui::roadbuild::RoadBuildResource;
+use crate::gui::roadeditor::RoadEditorResource;
+use crate::gui::specialbuilding::SpecialBuildingResource;
+use crate::gui::terraforming::TerraformingResource;
+use crate::gui::toolbox::building::BuildingIcons;
+use crate::gui::windows::economy::EconomyState;
+use crate::gui::windows::load::LoadState;
+use crate::gui::windows::settings::{Settings, SettingsState};
+use crate::gui::zoneedit::ZoneEditState;
+use crate::gui::{
     ErrorTooltip, ExitState, GuiState, InspectedBuilding, InspectedEntity, PotentialCommands,
     TimeAlways, Tool,
 };
+use crate::inputmap::{Bindings, InputMap};
+use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, SaveLoadState, UiWorld};
 use common::saveload::Encoder;
@@ -34,7 +34,7 @@ pub fn init() {
     simulation::init::init();
     register_resource::<Settings>("settings");
     #[cfg(feature = "multiplayer")]
-    register_resource::<crate::newgui::windows::network::NetworkConnectionInfo>("netinfo");
+    register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");
     register_resource::<LotBrushResource>("lot_brush");
     register_resource::<Bindings>("bindings");
 

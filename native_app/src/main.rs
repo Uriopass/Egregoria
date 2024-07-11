@@ -13,12 +13,12 @@ extern crate inline_tweak;
 mod uiworld;
 
 mod audio;
+mod debug_gui;
 mod game_loop;
 mod gui;
 mod init;
 mod inputmap;
 mod network;
-mod newgui;
 mod rendering;
 
 fn main() {

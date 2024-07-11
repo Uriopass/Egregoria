@@ -5,8 +5,8 @@ use engine::{Context, Tesselator};
 use geom::{Camera, Plane, Radians, Vec2, Vec3, AABB};
 use simulation::map::pathfinding_crate::num_traits::Pow;
 
+use crate::gui::windows::settings::Settings;
 use crate::inputmap::{InputAction, InputMap};
-use crate::newgui::windows::settings::Settings;
 
 /// CameraHandler3D is the camera handler for the 3D view
 /// It controls the camera using an orbit view

@@ -1,5 +1,5 @@
+use crate::gui::TimeAlways;
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::newgui::TimeAlways;
 use simulation::utils::resources::{RefMutSingle, RefSingle, ResourcesSingleThread};
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::{Simulation, SimulationReplayLoader};
