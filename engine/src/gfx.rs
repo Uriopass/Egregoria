@@ -270,10 +270,6 @@ impl GfxContext {
             wgpu::InstanceFlags::empty()
         };
 
-        if cfg!(target_os = "windows") {
-            flags = flags | wgpu::InstanceFlags::VALIDATION
-        }
-
         let instance = wgpu::Instance::new(InstanceDescriptor {
             backends,
             dx12_shader_compiler: Default::default(),
