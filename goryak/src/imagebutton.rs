@@ -146,6 +146,18 @@ impl Widget for ImageButtonWidget {
         resp
     }
 
+    fn layout(&self, mut ctx: LayoutContext<'_>, input: Constraints) -> Vec2 {
+        if let Some(tooltip) = ctx.dom.get_current().children.first() {
+            let size = ctx.calculate_layout(*tooltip, Constraints::none());
+            ctx.layout.set_pos(
+                *tooltip,
+                Vec2::new((self.props.size.x - size.x) / 2.0, -size.y - 10.0),
+            );
+        }
+
+        input.constrain_min(self.props.size)
+    }
+
     fn paint(&self, mut ctx: PaintContext<'_>) {
         let node = ctx.dom.get_current();
         let layout_node = ctx.layout.get(ctx.dom.current()).unwrap();
@@ -172,18 +184,6 @@ impl Widget for ImageButtonWidget {
 
     fn event_interest(&self) -> EventInterest {
         EventInterest::MOUSE_ALL
-    }
-
-    fn layout(&self, mut ctx: LayoutContext<'_>, input: Constraints) -> Vec2 {
-        if let Some(tooltip) = ctx.dom.get_current().children.first() {
-            let size = ctx.calculate_layout(*tooltip, Constraints::none());
-            ctx.layout.set_pos(
-                *tooltip,
-                Vec2::new((self.props.size.x - size.x) / 2.0, -size.y - 10.0),
-            );
-        }
-
-        input.constrain_min(self.props.size)
     }
 
     fn event(&mut self, _: EventContext<'_>, event: &WidgetEvent) -> EventResponse {

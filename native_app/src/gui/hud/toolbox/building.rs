@@ -1,17 +1,18 @@
 use common::FastMap;
 use engine::{Context, TextureBuilder};
-use yakui::widgets::List;
+use yakui::widgets::{Layer, List};
 use yakui::{
-    reflow, use_state, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, Pivot,
-    TextureId, Vec2,
+    reflow, use_state, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize,
+    Pivot, TextureId, Vec2,
 };
 
 use crate::gui::item_icon_yakui;
 use engine::wgpu::TextureFormat;
 use geom::{Camera, Degrees, Polygon, Vec3};
 use goryak::{
-    blur_bg, fixed_spacer, image_button, is_hovered, mincolumn, minrow, on_secondary_container,
-    padxy, primary, secondary_container, textc, titlec,
+    blur_bg, debug_constraints, debug_size, fixed_spacer, image_button, is_hovered, mincolumn,
+    minrow, on_secondary_container, padxy, pady, primary, secondary_container, textc, titlec,
+    HorizScroll, HorizScrollSize,
 };
 use prototypes::{
     prototypes_iter, BuildingPrototypeID, GoodsCompanyID, GoodsCompanyPrototype, Prototype,
@@ -29,150 +30,163 @@ pub fn special_building_properties(uiw: &UiWorld) {
     let mut state = uiw.write::<SpecialBuildingResource>();
     let icons = uiw.read::<BuildingIcons>();
 
-    padxy(0.0, 10.0, || {
-        let mut l = List::row();
-        l.main_axis_alignment = MainAxisAlignment::Center;
-        l.cross_axis_alignment = CrossAxisAlignment::Center;
-        l.item_spacing = 10.0;
-        l.show(|| {
-            let tooltip_active = use_state(|| Option::<(GoodsCompanyID, Instant)>::None);
-            for descr in prototypes_iter::<GoodsCompanyPrototype>() {
-                let Some(tex_id) = icons.ids.get(&descr.parent().id) else {
-                    continue;
-                };
+    HorizScrollSize::Max.show(|| {
+        padxy(50.0, 10.0, || {
+            let mut l = List::row();
+            l.main_axis_alignment = MainAxisAlignment::Center;
+            l.cross_axis_alignment = CrossAxisAlignment::Center;
+            l.main_axis_size = MainAxisSize::Min;
+            l.item_spacing = 10.0;
+            l.show(|| {
+                let tooltip_active = use_state(|| Option::<(GoodsCompanyID, Instant)>::None);
+                for descr in prototypes_iter::<GoodsCompanyPrototype>() {
+                    let Some(tex_id) = icons.ids.get(&descr.parent().id) else {
+                        continue;
+                    };
 
-                minrow(0.0, || {
-                    let default_col = Color::WHITE;
-                    let hover_col = primary();
-                    let active_col = default_col.with_alpha(0.5);
+                    minrow(0.0, || {
+                        let default_col = Color::WHITE;
+                        let hover_col = primary();
+                        let active_col = default_col.with_alpha(0.5);
 
-                    let resp = image_button(
-                        *tex_id,
-                        Vec2::splat(64.0),
-                        default_col,
-                        hover_col,
-                        active_col,
-                        "",
-                    );
-
-                    if resp.hovering {
-                        tooltip_active.set(Some((descr.id, Instant::now())));
-                    }
-
-                    if tooltip_active
-                        .borrow()
-                        .map(|(id, last)| id == descr.id && last.elapsed().as_secs_f32() < 0.2)
-                        .unwrap_or(false)
-                    {
-                        reflow(
-                            Alignment::TOP_CENTER,
-                            Pivot::BOTTOM_CENTER,
-                            Dim2::pixels(0.0, -20.0),
-                            || {
-                                let hov_resp = is_hovered(|| {
-                                    blur_bg(secondary_container().with_alpha(0.5), 10.0, || {
-                                        padxy(10.0, 10.0, || {
-                                            mincolumn(3.0, || {
-                                                titlec(on_secondary_container(), &descr.label);
-                                                textc(
-                                                    on_secondary_container(),
-                                                    format!("workers: {}", descr.n_workers),
-                                                );
-
-                                                if let Some(ref recipe) = descr.recipe {
-                                                    fixed_spacer((0.0, 10.0));
-                                                    if !recipe.consumption.is_empty() {
-                                                        textc(
-                                                            on_secondary_container(),
-                                                            "consumption:",
-                                                        );
-                                                        for item in &recipe.consumption {
-                                                            item_icon_yakui(
-                                                                uiw,
-                                                                item.id,
-                                                                item.amount,
-                                                            );
-                                                        }
-                                                        fixed_spacer((0.0, 10.0));
-                                                    }
-                                                    if !recipe.production.is_empty() {
-                                                        textc(
-                                                            on_secondary_container(),
-                                                            "production:",
-                                                        );
-                                                        for item in &recipe.production {
-                                                            item_icon_yakui(
-                                                                uiw,
-                                                                item.id,
-                                                                item.amount,
-                                                            );
-                                                        }
-                                                        fixed_spacer((0.0, 10.0));
-                                                    }
-                                                    textc(
-                                                        on_secondary_container(),
-                                                        format!("time: {}", recipe.duration),
-                                                    );
-                                                    textc(
-                                                        on_secondary_container(),
-                                                        format!(
-                                                            "storage multiplier: {}",
-                                                            recipe.storage_multiplier
-                                                        ),
-                                                    );
-                                                }
-
-                                                if let Some(p) = descr.power_consumption {
-                                                    fixed_spacer((0.0, 10.0));
-                                                    textc(
-                                                        on_secondary_container(),
-                                                        format!("Power: {}", p),
-                                                    );
-                                                }
-                                                if let Some(p) = descr.power_production {
-                                                    fixed_spacer((0.0, 10.0));
-                                                    textc(
-                                                        on_secondary_container(),
-                                                        format!("Power production: {}", p),
-                                                    );
-                                                }
-                                            });
-                                        });
-                                    });
-                                });
-                                if hov_resp.hovered {
-                                    tooltip_active.set(Some((descr.id, Instant::now())));
-                                }
-                            },
+                        let resp = image_button(
+                            *tex_id,
+                            Vec2::splat(64.0),
+                            default_col,
+                            hover_col,
+                            active_col,
+                            "",
                         );
-                    }
 
-                    if resp.clicked || state.opt.is_none() {
-                        let bkind = BuildingKind::GoodsCompany(descr.id);
-                        let bgen = descr.bgen;
-                        let has_zone = descr.zone.is_some();
-                        state.opt = Some(SpecialBuildKind {
-                            road_snap: true,
-                            make: Box::new(move |args| {
-                                vec![WorldCommand::MapBuildSpecialBuilding {
-                                    pos: args.obb,
-                                    kind: bkind,
-                                    gen: bgen,
-                                    zone: has_zone.then(|| {
-                                        Zone::new(
-                                            Polygon::from(args.obb.corners.as_slice()),
-                                            geom::Vec2::X,
-                                        )
-                                    }),
-                                    connected_road: args.connected_road,
-                                }]
-                            }),
-                            size: descr.size,
-                            asset: descr.asset.clone(),
-                        });
-                    }
-                });
-            }
+                        if resp.hovering {
+                            tooltip_active.set(Some((descr.id, Instant::now())));
+                        }
+
+                        if tooltip_active
+                            .borrow()
+                            .map(|(id, last)| id == descr.id && last.elapsed().as_secs_f32() < 0.2)
+                            .unwrap_or(false)
+                        {
+                            reflow(
+                                Alignment::TOP_CENTER,
+                                Pivot::BOTTOM_CENTER,
+                                Dim2::pixels(0.0, -20.0),
+                                || {
+                                    let hov_resp = is_hovered(|| {
+                                        blur_bg(
+                                            secondary_container().with_alpha(0.5),
+                                            10.0,
+                                            || {
+                                                padxy(10.0, 10.0, || {
+                                                    mincolumn(3.0, || {
+                                                        titlec(
+                                                            on_secondary_container(),
+                                                            &descr.label,
+                                                        );
+                                                        textc(
+                                                            on_secondary_container(),
+                                                            format!("workers: {}", descr.n_workers),
+                                                        );
+
+                                                        if let Some(ref recipe) = descr.recipe {
+                                                            fixed_spacer((0.0, 10.0));
+                                                            if !recipe.consumption.is_empty() {
+                                                                textc(
+                                                                    on_secondary_container(),
+                                                                    "consumption:",
+                                                                );
+                                                                for item in &recipe.consumption {
+                                                                    item_icon_yakui(
+                                                                        uiw,
+                                                                        item.id,
+                                                                        item.amount,
+                                                                    );
+                                                                }
+                                                                fixed_spacer((0.0, 10.0));
+                                                            }
+                                                            if !recipe.production.is_empty() {
+                                                                textc(
+                                                                    on_secondary_container(),
+                                                                    "production:",
+                                                                );
+                                                                for item in &recipe.production {
+                                                                    item_icon_yakui(
+                                                                        uiw,
+                                                                        item.id,
+                                                                        item.amount,
+                                                                    );
+                                                                }
+                                                                fixed_spacer((0.0, 10.0));
+                                                            }
+                                                            textc(
+                                                                on_secondary_container(),
+                                                                format!(
+                                                                    "time: {}",
+                                                                    recipe.duration
+                                                                ),
+                                                            );
+                                                            textc(
+                                                                on_secondary_container(),
+                                                                format!(
+                                                                    "storage multiplier: {}",
+                                                                    recipe.storage_multiplier
+                                                                ),
+                                                            );
+                                                        }
+
+                                                        if let Some(p) = descr.power_consumption {
+                                                            fixed_spacer((0.0, 10.0));
+                                                            textc(
+                                                                on_secondary_container(),
+                                                                format!("Power: {}", p),
+                                                            );
+                                                        }
+                                                        if let Some(p) = descr.power_production {
+                                                            fixed_spacer((0.0, 10.0));
+                                                            textc(
+                                                                on_secondary_container(),
+                                                                format!("Power production: {}", p),
+                                                            );
+                                                        }
+                                                    });
+                                                });
+                                            },
+                                        );
+                                    });
+                                    if hov_resp.hovered {
+                                        tooltip_active.set(Some((descr.id, Instant::now())));
+                                    }
+                                },
+                            );
+                        }
+
+                        if resp.clicked || state.opt.is_none() {
+                            let bkind = BuildingKind::GoodsCompany(descr.id);
+                            let bgen = descr.bgen;
+                            let has_zone = descr.zone.is_some();
+                            state.opt = Some(SpecialBuildKind {
+                                road_snap: true,
+                                make: Box::new(move |args| {
+                                    vec![WorldCommand::MapBuildSpecialBuilding {
+                                        pos: args.obb,
+                                        kind: bkind,
+                                        gen: bgen,
+                                        zone: has_zone.then(|| {
+                                            Zone::new(
+                                                Polygon::from(args.obb.corners.as_slice()),
+                                                geom::Vec2::X,
+                                            )
+                                        }),
+                                        connected_road: args.connected_road,
+                                    }]
+                                }),
+                                size: descr.size,
+                                asset: descr.asset.clone(),
+                            });
+                        }
+                    });
+                }
+            });
         });
     });
 
