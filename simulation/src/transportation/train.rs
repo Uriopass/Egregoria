@@ -55,7 +55,7 @@ pub struct RailWagon {
     pub rolling_stock: RollingStockID,
 }
 
-pub fn calculate_locomotive(wagons: &Vec<RollingStockID>) -> Locomotive {
+pub fn calculate_locomotive(wagons: &[RollingStockID]) -> Locomotive {
     let info = wagons.iter().fold(
         (720.0, 0.0, 0.0, 0.0, 0),
         |(speed, acc, dec, length, mass): (f32, f32, f32, f32, u32), &id| {
@@ -78,7 +78,7 @@ pub fn calculate_locomotive(wagons: &Vec<RollingStockID>) -> Locomotive {
 }
 
 pub fn wagons_loco_dists_lengths(
-    wagons: &Vec<RollingStockID>,
+    wagons: &[RollingStockID],
 ) -> impl DoubleEndedIterator<Item = (f32, f32)> + '_ {
     let mut loco_dist = 0.0;
     wagons.iter().map(move |&id| {
@@ -89,7 +89,7 @@ pub fn wagons_loco_dists_lengths(
 }
 
 pub fn wagons_positions_for_render<'a>(
-    wagons: &'a Vec<RollingStockID>,
+    wagons: &'a [RollingStockID],
     points: &'a PolyLine3,
     dist: f32,
 ) -> impl Iterator<Item = (Vec3, Vec3, f32)> + 'a {
@@ -110,7 +110,7 @@ pub fn wagons_positions_for_render<'a>(
         })
 }
 
-pub fn train_length(wagons: &Vec<RollingStockID>) -> f32 {
+pub fn train_length(wagons: &[RollingStockID]) -> f32 {
     wagons
         .iter()
         .map(|id| RollingStockID::prototype(*id).length)
@@ -119,7 +119,7 @@ pub fn train_length(wagons: &Vec<RollingStockID>) -> f32 {
 
 pub fn spawn_train(
     sim: &mut Simulation,
-    wagons: &Vec<RollingStockID>,
+    wagons: &[RollingStockID],
     kind: RailWagonKind,
     lane: LaneID,
     dist: f32,
@@ -168,7 +168,7 @@ pub fn spawn_train(
     let mut followers: Vec<_> = leader
         .past
         .mk_followers(
-            wagons_loco_dists_lengths(&wagons)
+            wagons_loco_dists_lengths(wagons)
                 .flat_map(|(dist, length)| [dist + length * 0.1, dist + length * 0.9]),
         )
         .collect();

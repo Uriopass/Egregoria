@@ -156,7 +156,7 @@ impl Intersection {
             let (r1, r2) = (&roads[r1_id], &roads[r2_id]);
             let (dir1, dir2) = (r1.dir_from(id), r2.dir_from(id));
 
-            let min_dist = if dir1.angle(dir2).abs() < 0.174532925 {
+            let min_dist = if dir1.angle(dir2).abs() < 0.17453292 {
                 self.interface_calc_numerically(r1.width, r2.width, r1, r2)
             } else {
                 Self::interface_calc_formula(r1.width, r2.width, dir1, dir2)
@@ -193,10 +193,10 @@ impl Intersection {
             .points_dirs_along((1..r2.points().length() as i32).map(|d| d as f32))
             .collect();
 
-        if !(r1.src == self.id) {
+        if r1.src != self.id {
             points1.reverse();
         }
-        if !(r2.src == self.id) {
+        if r2.src != self.id {
             points2.reverse();
         }
 
@@ -205,7 +205,7 @@ impl Intersection {
             .zip(points2)
             .map(|((p1, _), (p2, _))| (p1.xy(), p2.xy()))
             .find(|p| p.0.distance(p.1) > w)
-            .and_then(|p| Some((self.pos.xy().distance(p.0) + self.pos.xy().distance(p.0)) * 0.5))
+            .map(|p| (self.pos.xy().distance(p.0) + self.pos.xy().distance(p.0)) * 0.5)
             .unwrap_or(50.0)
     }
 

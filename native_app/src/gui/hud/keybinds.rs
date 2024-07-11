@@ -62,8 +62,8 @@ impl KeybindState {
         for key in &inp.keyboard.pressed {
             state.cur.push_unique(UnitInput::Key(key.clone()));
         }
-        for mouse in &inp.mouse.pressed {
-            state.cur.push_unique(UnitInput::Mouse(mouse.clone()));
+        for &mouse in &inp.mouse.pressed {
+            state.cur.push_unique(UnitInput::Mouse(mouse));
         }
         if inp.mouse.wheel_delta > 0.0 {
             state.cur.push_unique(UnitInput::WheelUp);
@@ -81,7 +81,7 @@ impl KeybindState {
             return;
         }
 
-        let ref mut comb = bindings.0.get_mut(&state.to_bind_to).unwrap().0;
+        let comb = &mut bindings.0.get_mut(&state.to_bind_to).unwrap().0;
 
         let mut cur = std::mem::take(&mut state.cur);
         cur.sort();

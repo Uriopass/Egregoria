@@ -1,18 +1,19 @@
-use common::FastMap;
-use engine::{Context, TextureBuilder};
-use yakui::widgets::{Layer, List};
+use std::path::PathBuf;
+use std::time::Instant;
+
+use yakui::widgets::List;
 use yakui::{
     reflow, use_state, Alignment, Color, CrossAxisAlignment, Dim2, MainAxisAlignment, MainAxisSize,
     Pivot, TextureId, Vec2,
 };
 
-use crate::gui::item_icon_yakui;
+use common::FastMap;
 use engine::wgpu::TextureFormat;
+use engine::{Context, TextureBuilder};
 use geom::{Camera, Degrees, Polygon, Vec3};
 use goryak::{
-    blur_bg, debug_constraints, debug_size, fixed_spacer, image_button, is_hovered, mincolumn,
-    minrow, on_secondary_container, padxy, pady, primary, secondary_container, textc, titlec,
-    HorizScroll, HorizScrollSize,
+    blur_bg, fixed_spacer, image_button, is_hovered, mincolumn, minrow, on_secondary_container,
+    padxy, primary, secondary_container, textc, titlec, HorizScrollSize,
 };
 use prototypes::{
     prototypes_iter, BuildingPrototypeID, GoodsCompanyID, GoodsCompanyPrototype, Prototype,
@@ -20,9 +21,8 @@ use prototypes::{
 };
 use simulation::map::{BuildingKind, Zone};
 use simulation::world_command::WorldCommand;
-use std::path::PathBuf;
-use std::time::Instant;
 
+use crate::gui::item_icon_yakui;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::uiworld::UiWorld;
 
