@@ -7,7 +7,7 @@ use simulation::map::{
 use simulation::world_command::{WorldCommand, WorldCommands};
 use simulation::Simulation;
 use BuildState::{Connection, Hover, Interpolation, Start, StartInterp};
-use ProjectKind::{Building, Ground, Inter, Road};
+use ProjectKind::{Building, Ground, Intersection, Road};
 
 use crate::gui::{PotentialCommands, Tool};
 use crate::inputmap::{InputAction, InputMap};
@@ -116,8 +116,10 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
     // If a road was placed recently (as it is async with networking) prepare the next road
     for command in uiworld.received_commands().iter() {
         if let WorldCommand::MapMakeConnection { to, .. } = command {
-            if let proj @ MapProject { kind: Inter(_), .. } =
-                map.project(to.pos, 0.0, ProjectFilter::ALL)
+            if let proj @ MapProject {
+                kind: Intersection(_),
+                ..
+            } = map.project(to.pos, 0.0, ProjectFilter::ALL)
             {
                 if matches!(tool, Tool::RoadbuildCurved) {
                     state.build_state = StartInterp(proj);
@@ -162,7 +164,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
             .is_close(cur_proj.pos, r.interface_from(r.src) + patwidth * 0.5)
         {
             cur_proj = MapProject {
-                kind: Inter(r.src),
+                kind: Intersection(r.src),
                 pos: r.points.first(),
             };
         } else if r
@@ -171,7 +173,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
             .is_close(cur_proj.pos, r.interface_from(r.dst) + patwidth * 0.5)
         {
             cur_proj = MapProject {
-                kind: Inter(r.dst),
+                kind: Intersection(r.dst),
                 pos: r.points.last(),
             };
         }
@@ -192,7 +194,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
             compatible(map, cur_proj, sel_proj)
                 && check_angle(map, sel_proj, cur_proj.pos.xy(), is_rail)
         }
-        (StartInterp(sel_proj), Inter(_) | Road(_)) => compatible(map, sel_proj, cur_proj),
+        (StartInterp(sel_proj), Intersection(_) | Road(_)) => compatible(map, sel_proj, cur_proj),
         (Start(selected_proj), _) => {
             let sp = BoldLine::new(
                 PolyLine::new(vec![selected_proj.pos.xy(), cur_proj.pos.xy()]),
@@ -328,7 +330,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
         );
 
         match (state.build_state, cur_proj.kind) {
-            (Hover, Ground | Road(_) | Inter(_)) => {
+            (Hover, Ground | Road(_) | Intersection(_)) => {
                 // Hover selection
                 if tool == Tool::RoadbuildCurved {
                     state.build_state = StartInterp(cur_proj);
@@ -340,7 +342,7 @@ pub fn roadbuild(sim: &Simulation, uiworld: &UiWorld) {
                 // Set interpolation point
                 state.build_state = Interpolation(mousepos.xy(), v);
             }
-            (StartInterp(p), Road(_) | Inter(_)) => {
+            (StartInterp(p), Road(_) | Intersection(_)) => {
                 // Set interpolation point
                 state.build_state = Connection(p, cur_proj);
             }
@@ -407,7 +409,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
     };
 
     match from.kind {
-        Inter(i) => {
+        Intersection(i) => {
             let Some(inter) = map.intersections().get(i) else {
                 return false;
             };
@@ -441,12 +443,12 @@ fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
     match (x.kind, y.kind) {
         (Ground, Ground)
         | (Ground, Road(_))
-        | (Ground, Inter(_))
+        | (Ground, Intersection(_))
         | (Road(_), Ground)
-        | (Inter(_), Ground) => true,
+        | (Intersection(_), Ground) => true,
         (Road(id), Road(id2)) => id != id2,
-        (Inter(id), Inter(id2)) => id != id2,
-        (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
+        (Intersection(id), Intersection(id2)) => id != id2,
+        (Intersection(id_inter), Road(id_road)) | (Road(id_road), Intersection(id_inter)) => {
             let r = &map.roads()[id_road];
             r.src != id_inter && r.dst != id_inter
         }
@@ -470,12 +472,12 @@ fn check_intersect(
                 if (r.points.first().z - z).abs() > 1.0 || (r.points.last().z - z).abs() > 1.0 {
                     return false;
                 }
-                if let Inter(id) = start {
+                if let Intersection(id) = start {
                     if r.src == id || r.dst == id {
                         return false;
                     }
                 }
-                if let Inter(id) = end {
+                if let Intersection(id) = end {
                     if r.src == id || r.dst == id {
                         return false;
                     }
@@ -567,7 +569,7 @@ impl RoadBuildResource {
         };
 
         match (start.kind, end.kind) {
-            (Inter(id0), Inter(id1)) => {
+            (Intersection(id0), Intersection(id1)) => {
                 let Some(inter0) = map.intersections().get(id0) else {
                     return vec![];
                 };
@@ -593,7 +595,7 @@ impl RoadBuildResource {
                     .collect()
             }
 
-            (Inter(id), Ground) | (Ground, Inter(id)) => {
+            (Intersection(id), Ground) | (Ground, Intersection(id)) => {
                 let Some(inter) = map.intersections().get(id) else {
                     return vec![];
                 };
@@ -613,7 +615,7 @@ impl RoadBuildResource {
                     .collect::<Vec<_>>()
             }
 
-            (Inter(inter_id), Road(road_id)) | (Road(road_id), Inter(inter_id))
+            (Intersection(inter_id), Road(road_id)) | (Road(road_id), Intersection(inter_id))
                 if self.pattern_builder.rail =>
             {
                 let Some(inter) = map.intersections().get(inter_id) else {

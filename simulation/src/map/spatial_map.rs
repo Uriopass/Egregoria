@@ -12,7 +12,7 @@ use std::ops::{BitOr, Neg, Sub};
 
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize, From)]
 pub enum ProjectKind {
-    Inter(IntersectionID),
+    Intersection(IntersectionID),
     Road(RoadID),
     Building(BuildingID),
     Lot(LotID),
@@ -30,7 +30,7 @@ impl ProjectKind {
 
     pub fn canonical_position(&self, map: &Map) -> Vec2 {
         match *self {
-            ProjectKind::Inter(id) => map
+            ProjectKind::Intersection(id) => map
                 .intersections
                 .get(id)
                 .map_or(Vec2::ZERO, CanonicalPosition::canonical_position),
@@ -52,7 +52,7 @@ impl ProjectKind {
 
     pub fn check_valid(&self, map: &Map) -> bool {
         match *self {
-            ProjectKind::Inter(id) => map.intersections.contains_key(id),
+            ProjectKind::Intersection(id) => map.intersections.contains_key(id),
             ProjectKind::Road(id) => map.roads.contains_key(id),
             ProjectKind::Building(id) => map.buildings.contains_key(id),
             ProjectKind::Lot(id) => map.lots.contains_key(id),
@@ -173,7 +173,7 @@ impl SpatialMap {
 
 impl SpatialMapObject for Intersection {
     fn kind(&self) -> ProjectKind {
-        ProjectKind::Inter(self.id)
+        ProjectKind::Intersection(self.id)
     }
 
     fn shape(&self) -> ShapeEnum {
@@ -226,7 +226,7 @@ impl ProjectFilter {
 
     pub fn test(self, p: &ProjectKind) -> bool {
         match p {
-            ProjectKind::Inter(_) => (self.0 & Self::INTER.0) != 0,
+            ProjectKind::Intersection(_) => (self.0 & Self::INTER.0) != 0,
             ProjectKind::Road(_) => (self.0 & Self::ROAD.0) != 0,
             ProjectKind::Building(_) => (self.0 & Self::BUILDING.0) != 0,
             ProjectKind::Lot(_) => (self.0 & Self::LOT.0) != 0,

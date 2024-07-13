@@ -57,7 +57,7 @@ impl LampsRender {
                     }
                     match proj {
                         ProjectKind::Road(rid) => chunk_roads.push(rid),
-                        ProjectKind::Inter(iid) => chunk_inter.push(iid),
+                        ProjectKind::Intersection(iid) => chunk_inter.push(iid),
                         _ => unreachable!(),
                     }
                 });

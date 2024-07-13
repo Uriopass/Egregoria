@@ -169,7 +169,7 @@ impl Map {
         let mut mk_inter = |proj: MapProject| {
             Some(match proj.kind {
                 ProjectKind::Ground => self.add_intersection(proj.pos),
-                ProjectKind::Inter(id) => id,
+                ProjectKind::Intersection(id) => id,
                 ProjectKind::Road(id) => self.split_road(id, proj.pos)?,
                 ProjectKind::Building(_) | ProjectKind::Lot(_) => unreachable!(),
             })
@@ -649,7 +649,7 @@ impl Map {
         let mut qroad = None;
         for pkind in self.spatial_map.query_around(pos.xy(), tolerance, filter) {
             match pkind {
-                ProjectKind::Inter(id) => {
+                ProjectKind::Intersection(id) => {
                     let inter = unwrap_contlog!(self.intersections.get(id),
                         "Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 

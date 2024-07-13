@@ -511,7 +511,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 2,
               "version": 1
             }
@@ -554,7 +554,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 5,
               "version": 1
             }
@@ -597,7 +597,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 6,
               "version": 1
             }
@@ -640,7 +640,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 7,
               "version": 1
             }
@@ -678,7 +678,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 8,
               "version": 1
             }
@@ -716,7 +716,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 9,
               "version": 1
             }
@@ -729,7 +729,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 3,
               "version": 1
             }
@@ -759,7 +759,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 4,
               "version": 1
             }
@@ -797,7 +797,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 10,
               "version": 1
             }
@@ -835,7 +835,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 11,
               "version": 1
             }
@@ -848,7 +848,7 @@ const START_COMMANDS: &str = r#"
             0.0
           ],
           "kind": {
-            "Inter": {
+            "Intersection": {
               "idx": 7,
               "version": 1
             }

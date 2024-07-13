@@ -619,7 +619,7 @@ impl MapBuilders {
             match obj {
                 ProjectKind::Road(road) => chunk_roads.push(road),
                 ProjectKind::Lot(lot) => chunk_lots.push(lot),
-                ProjectKind::Inter(inter) => chunk_inters.push(inter),
+                ProjectKind::Intersection(inter) => chunk_inters.push(inter),
                 _ => {}
             }
         }

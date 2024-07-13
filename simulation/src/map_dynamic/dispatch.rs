@@ -465,7 +465,7 @@ mod tests {
         let (_, r2) = map
             .make_connection(
                 MapProject {
-                    kind: ProjectKind::Inter(i),
+                    kind: ProjectKind::Intersection(i),
                     pos: Vec3::x(100.0),
                 },
                 MapProject::ground(Vec3::x(200.0)),

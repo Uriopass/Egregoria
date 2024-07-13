@@ -81,7 +81,7 @@ pub fn find_overrides(map: &mut Map, chunk: SubscriberChunkID) {
         }
 
         let bbox = match obj {
-            ProjectKind::Inter(i) => {
+            ProjectKind::Intersection(i) => {
                 let i = map.get(i).unwrap();
 
                 let mut bounds = i.bcircle();
@@ -119,7 +119,7 @@ pub fn find_overrides(map: &mut Map, chunk: SubscriberChunkID) {
             ProjectFilter::ROAD | ProjectFilter::INTER | ProjectFilter::BUILDING,
         ) {
             match obj {
-                ProjectKind::Inter(i) => {
+                ProjectKind::Intersection(i) => {
                     let i = map.get(i).unwrap();
 
                     let mut bounds = i.bcircle();

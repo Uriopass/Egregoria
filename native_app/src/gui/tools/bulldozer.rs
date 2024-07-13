@@ -32,7 +32,7 @@ pub fn bulldozer(sim: &Simulation, uiworld: &UiWorld) {
 
     let col = if matches!(
         cur_proj.kind,
-        ProjectKind::Inter(_) | ProjectKind::Road(_) | ProjectKind::Building(_)
+        ProjectKind::Intersection(_) | ProjectKind::Road(_) | ProjectKind::Building(_)
     ) {
         simulation::colors().gui_danger
     } else {
@@ -50,7 +50,7 @@ pub fn bulldozer(sim: &Simulation, uiworld: &UiWorld) {
         let mut potentially_empty = Vec::new();
         log::info!("bulldozer {:?}", cur_proj);
         match cur_proj.kind {
-            ProjectKind::Inter(id) => {
+            ProjectKind::Intersection(id) => {
                 potentially_empty.extend(map.intersections()[id].undirected_neighbors(map.roads()));
                 commands.map_remove_intersection(id)
             }

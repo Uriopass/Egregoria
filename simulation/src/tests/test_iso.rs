@@ -12,7 +12,7 @@ static REPLAY: &[u8] = include_bytes!("world_replay.json");
 
 fn check_coherent(map: &Map, proj: MapProject) {
     match proj.kind {
-        ProjectKind::Inter(i) => {
+        ProjectKind::Intersection(i) => {
             assert!(map.intersections.get(i).unwrap().pos.distance(proj.pos) < 5.0)
         }
         ProjectKind::Road(_) => {
@@ -109,7 +109,7 @@ fn quickcheck_map_ser() {
                         m.make_connection(
                             MapProject {
                                 pos: m.intersections[i].pos,
-                                kind: ProjectKind::Inter(i),
+                                kind: ProjectKind::Intersection(i),
                             },
                             MapProject {
                                 pos: vec3(x.0 * 500.0, y.0 * 500.0, 0.0),
@@ -121,7 +121,7 @@ fn quickcheck_map_ser() {
                         m2.make_connection(
                             MapProject {
                                 pos: m.intersections[i].pos,
-                                kind: ProjectKind::Inter(i),
+                                kind: ProjectKind::Intersection(i),
                             },
                             MapProject {
                                 pos: vec3(x.0 * 500.0, y.0 * 500.0, 0.0),
@@ -148,11 +148,11 @@ fn quickcheck_map_ser() {
                             m.make_connection(
                                 MapProject {
                                     pos: m.intersections[i1].pos,
-                                    kind: ProjectKind::Inter(i1),
+                                    kind: ProjectKind::Intersection(i1),
                                 },
                                 MapProject {
                                     pos: m.intersections[i2].pos,
-                                    kind: ProjectKind::Inter(i2),
+                                    kind: ProjectKind::Intersection(i2),
                                 },
                                 None,
                                 &LanePatternBuilder::new().build(),
@@ -160,11 +160,11 @@ fn quickcheck_map_ser() {
                             m2.make_connection(
                                 MapProject {
                                     pos: m2.intersections[i1].pos,
-                                    kind: ProjectKind::Inter(i1),
+                                    kind: ProjectKind::Intersection(i1),
                                 },
                                 MapProject {
                                     pos: m2.intersections[i2].pos,
-                                    kind: ProjectKind::Inter(i2),
+                                    kind: ProjectKind::Intersection(i2),
                                 },
                                 None,
                                 &LanePatternBuilder::new().build(),

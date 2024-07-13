@@ -64,7 +64,7 @@ pub fn roadeditor(sim: &Simulation, uiworld: &UiWorld) {
 
     let mut proj_col;
 
-    if let ProjectKind::Inter(id) = cur_proj.kind {
+    if let ProjectKind::Intersection(id) = cur_proj.kind {
         if Some(id) != state.inspect.as_ref().map(|x| x.id) {
             proj_pos = cur_proj.pos;
         }
@@ -74,7 +74,7 @@ pub fn roadeditor(sim: &Simulation, uiworld: &UiWorld) {
     }
 
     if inp.act.contains(&InputAction::Select) {
-        if let ProjectKind::Inter(id) = cur_proj.kind {
+        if let ProjectKind::Intersection(id) = cur_proj.kind {
             proj_col = simulation::colors().gui_success;
             proj_pos = cur_proj.pos;
             let inter = &map.intersections()[id];

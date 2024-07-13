@@ -257,10 +257,10 @@ impl WorldCommand {
                     let mut toproj = projects[*to];
 
                     if let Some(i) = inters.get(from) {
-                        fromproj.kind = ProjectKind::Inter(*i);
+                        fromproj.kind = ProjectKind::Intersection(*i);
                     }
                     if let Some(i) = inters.get(to) {
-                        toproj.kind = ProjectKind::Inter(*i);
+                        toproj.kind = ProjectKind::Intersection(*i);
                     }
 
                     if let Some((_, r)) = map.make_connection(fromproj, toproj, *interpoint, pat) {
