@@ -37,8 +37,8 @@ pub struct Road {
 
     pub segment: RoadSegmentKind,
 
-    // always from src to dst
-    // don't try to make points go away from the road as it would be impossible to split them correctly afterward
+    /// always from src to dst
+    /// don't try to make points go away from the road as it would be impossible to split them correctly afterward
     pub points: PolyLine3,
     pub interfaced_points: PolyLine3,
     pub width: f32,
@@ -601,17 +601,5 @@ impl Road {
             return Some(self.src);
         }
         None
-    }
-
-    pub fn get_straight_connection_point(&self, my_end: IntersectionID) -> Vec2 {
-        match self.segment {
-            RoadSegmentKind::Straight if self.src == my_end => self.points.last().xy(),
-            RoadSegmentKind::Straight if self.dst == my_end => self.points.first().xy(),
-
-            RoadSegmentKind::Curved((fr, _)) if self.src == my_end => self.points.first().xy() + fr,
-            RoadSegmentKind::Curved((_, to)) if self.dst == my_end => self.points.last().xy() + to,
-
-            _ => panic!("Intersection {:?} not connected to the road", my_end),
-        }
     }
 }

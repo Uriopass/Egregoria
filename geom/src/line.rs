@@ -15,6 +15,13 @@ impl Line {
         Self { src, dst }
     }
 
+    pub fn new_dir(src: Vec2, dir: Vec2) -> Self {
+        Self {
+            src,
+            dst: src + dir,
+        }
+    }
+
     pub fn intersection_point(&self, other: &Self) -> Option<Vec2> {
         // see https://stackoverflow.com/a/565282
         let r = self.vec();

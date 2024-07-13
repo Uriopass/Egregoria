@@ -28,6 +28,7 @@ slotmapd      = { version = "1.0", default-features = false }
 rayon         = "1.6"
 profiling     = { version = "1.0.8", default-features = false }
 include_dir   = "0.7.2"
+itertools     = { workspace = true }
 
 [features]
 default = []

@@ -282,6 +282,7 @@ impl PolyLine3 {
     }
 
     #[inline]
+    /// Gives the direction pointing inward the polyline at the first point
     pub fn first_dir(&self) -> Option<Vec3> {
         if self.points.len() >= 2 {
             (self[1] - self[0]).try_normalize()
@@ -291,6 +292,7 @@ impl PolyLine3 {
     }
 
     #[inline]
+    /// Gives the direction pointing outward the polyline at the last point
     pub fn last_dir(&self) -> Option<Vec3> {
         let l = self.points.len();
         if l >= 2 {

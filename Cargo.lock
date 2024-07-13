@@ -251,7 +251,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "proc-macro2",
@@ -911,7 +911,7 @@ dependencies = [
  "gltf",
  "image",
  "inline_tweak",
- "itertools",
+ "itertools 0.13.0",
  "lazy_static",
  "lewton",
  "log",
@@ -1475,6 +1475,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1851,6 +1860,7 @@ dependencies = [
  "goryak",
  "include_dir",
  "inline_tweak",
+ "itertools 0.13.0",
  "log",
  "networking",
  "oddio",
@@ -2659,7 +2669,7 @@ dependencies = [
  "flat_spatial",
  "geom",
  "inline_tweak",
- "itertools",
+ "itertools 0.13.0",
  "lazy_static",
  "log",
  "ordered-float",
