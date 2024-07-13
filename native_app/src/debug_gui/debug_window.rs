@@ -15,7 +15,7 @@ use engine::{PerfCountersStatic, Tesselator};
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use prototypes::{GameDuration, GameTime, SECONDS_PER_DAY};
 use simulation::map::{
-    IntersectionID, Map, MapSubscriber, NetworkObjectID, RoadSegmentKind, TraverseKind, UpdateType,
+    IntersectionID, Map, MapSubscriber, NetworkObjectID, TraverseKind, UpdateType,
 };
 use simulation::transportation::train::TrainReservations;
 use simulation::world_command::WorldCommand;
@@ -44,7 +44,6 @@ impl Default for DebugObjs {
             (false, "Debug electricity", debug_electricity),
             (false, "Debug spatialmap", debug_spatialmap),
             (false, "Debug transport grid", debug_transport_grid),
-            (false, "Debug splines", debug_spline),
             (false, "Debug lots", debug_lots),
             (false, "Debug road points", debug_road_points),
             (false, "Debug parking", debug_parking),
@@ -275,26 +274,6 @@ fn debug(window: egui::Window<'_>, ui: &egui::Context, uiworld: &UiWorld, sim: &
     });
 }
 
-pub fn debug_spline(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
-    for road in sim.map().roads().values() {
-        if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
-            let fr = road.points.first();
-            let to = road.points.last();
-            draw_spline(
-                tess,
-                Spline3 {
-                    from: fr,
-                    to,
-                    from_derivative: fr_dr.z0(),
-                    to_derivative: to_der.z0(),
-                },
-            );
-        }
-    }
-
-    Some(())
-}
-
 pub fn debug_lots(tess: &mut Tesselator, sim: &Simulation, _: &UiWorld) -> Option<()> {
     tess.set_color(Color::RED);
     for lot in sim.map().lots().values() {
@@ -410,6 +389,7 @@ pub fn debug_connectivity(tess: &mut Tesselator, sim: &Simulation, uiw: &UiWorld
     Some(())
 }
 
+#[allow(unused)]
 fn draw_spline(tess: &mut Tesselator, mut sp: Spline3) {
     sp.from = sp.from.up(0.3);
     sp.to = sp.to.up(0.3);

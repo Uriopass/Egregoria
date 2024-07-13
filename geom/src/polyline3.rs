@@ -376,16 +376,19 @@ impl PolyLine3 {
         }
     }
 
-    pub fn split(mut self, dst: f32) -> (Self, Self) {
-        let start = self.cut_start(dst);
-        let n = start.n_points();
-        *self.points.get_mut(n - 1).unwrap() = start.last();
-        self.points.drain(..n - 1);
-        self.l -= start.length();
-        (start, self)
+    /// Split the polyline3 into two at the given distance from the start
+    /// The polylined returned look like this
+    /// ([start ... cut], [cut ... end])
+    pub fn split(mut self, dst_from_start: f32) -> (Self, Self) {
+        let end = self.cut_start(dst_from_start);
+        self.points.truncate(self.points.len() - end.n_points() + 1);
+        self.points.push(end.first());
+        self.l -= end.length();
+        (self, end)
     }
 
-    // dst is distance from start to cut
+    /// dst is distance from start to cut
+    /// Returns the end of the points after cutting part of the start
     pub fn cut_start(&self, mut dst: f32) -> Self {
         if dst == 0.0 {
             return self.clone();

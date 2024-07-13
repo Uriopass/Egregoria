@@ -2,7 +2,7 @@
 #![allow(clippy::type_complexity)]
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::map::{BuildingKind, Map};
+use crate::map::{BuildingKind, Heightmap, Map};
 use crate::map_dynamic::{Itinerary, ItineraryLeader};
 use crate::souls::add_souls_to_empty_buildings;
 use crate::utils::resources::{Ref, RefMut, Resources};
@@ -288,6 +288,9 @@ impl Simulation {
 
     pub fn load_from_disk(save_name: &str) -> Option<Self> {
         let sim: Simulation = common::saveload::CompressedBincode::load(save_name).ok()?;
+        if sim.resources.try_read::<Map>().ok()?.environment.size().0 == 0 {
+            return None;
+        }
         Some(sim)
     }
 

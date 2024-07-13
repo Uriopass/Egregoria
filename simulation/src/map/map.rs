@@ -5,10 +5,10 @@ use crate::map::{
     Building, BuildingID, BuildingKind, Environment, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID,
     ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
-    SubscriberChunkID, TerraformKind, UpdateType, Zone,
+    SubscriberChunkID, TerraformKind, UpdateType, Zone, ROAD_Z_OFFSET,
 };
 use geom::OBB;
-use geom::{Spline3, Vec2, Vec3};
+use geom::{Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use prototypes::{BuildingGen, Tick};
 use serde::{Deserialize, Serialize};
@@ -488,48 +488,13 @@ impl Map {
             self.parking.remove_to_reuse(id);
         }
 
-        let id = self.add_intersection(pos);
+        let id = self.add_intersection(pos - Vec3::z(ROAD_Z_OFFSET));
 
-        let src_id = r.src;
+        let dist_along = r.points.length_at_proj(pos);
+        let (before, after) = r.points.split(dist_along);
 
-        let (r1, r2) = match r.segment {
-            RoadSegmentKind::Straight => (
-                self.connect(src_id, id, &pat, RoadSegmentKind::Straight)?,
-                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight)?,
-            ),
-            RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
-                let s = Spline3 {
-                    from: r.points.first(),
-                    to: r.points.last(),
-                    from_derivative: from_derivative.z0(),
-                    to_derivative: to_derivative.z0(),
-                };
-                let t_approx = s.project_t(pos, 1.0);
-
-                let (s_from, s_to) = s.split_at(t_approx);
-
-                (
-                    self.connect(
-                        src_id,
-                        id,
-                        &pat,
-                        RoadSegmentKind::Curved((
-                            s_from.from_derivative.xy(),
-                            s_from.to_derivative.xy(),
-                        )),
-                    )?,
-                    self.connect(
-                        id,
-                        r.dst,
-                        &pat,
-                        RoadSegmentKind::Curved((
-                            s_to.from_derivative.xy(),
-                            s_to.to_derivative.xy(),
-                        )),
-                    )?,
-                )
-            }
-        };
+        let r1 = self.connect(r.src, id, &pat, RoadSegmentKind::Arbitrary(before))?;
+        let r2 = self.connect(id, r.dst, &pat, RoadSegmentKind::Arbitrary(after))?;
 
         log::info!(
             "{} parking spots reused when splitting",
@@ -874,7 +839,7 @@ impl Map {
                     .first()
                     .up(-crate::map::ROAD_Z_OFFSET)
                     .is_close(src.pos, 0.001),
-                "{:?} {:?} {:?} {:?}",
+                "First road point should be close to src intersection's position {:?} {:?} {:?} {:?}",
                 road.points.first().up(-crate::map::ROAD_Z_OFFSET),
                 src.pos,
                 road.id,
@@ -885,7 +850,7 @@ impl Map {
                     .last()
                     .up(-crate::map::ROAD_Z_OFFSET)
                     .is_close(dst.pos, 0.001),
-                "{:?} {:?} {:?} {:?}",
+                "Last road point should be close to dst intersection's position {:?} {:?} {:?} {:?}",
                 road.points.last().up(-crate::map::ROAD_Z_OFFSET),
                 dst.pos,
                 road.id,

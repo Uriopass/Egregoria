@@ -14,10 +14,11 @@ new_key_type! {
     pub struct RoadID;
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum RoadSegmentKind {
     Straight,
     Curved((Vec2, Vec2)), // The two derivatives for the spline
+    Arbitrary(PolyLine3),
 }
 
 impl RoadSegmentKind {
@@ -34,8 +35,6 @@ pub struct Road {
     pub id: RoadID,
     pub src: IntersectionID,
     pub dst: IntersectionID,
-
-    pub segment: RoadSegmentKind,
 
     /// always from src to dst
     /// don't try to make points go away from the road as it would be impossible to split them correctly afterward
@@ -97,7 +96,6 @@ impl Road {
             dst: dst.id,
             src_interface: 9.0,
             dst_interface: 9.0,
-            segment,
             width,
             lanes_forward: vec![],
             lanes_backward: vec![],
@@ -477,6 +475,12 @@ impl Road {
                 from_derivative,
                 to_derivative,
             },
+            RoadSegmentKind::Arbitrary(pos) => {
+                if pos.len() < 2 {
+                    unreachable!("Arbitrary road segment with less than 2 points")
+                }
+                return (pos, None);
+            }
         };
 
         let iter = spline.smart_points(if precise { 0.1 } else { 1.0 }, 0.0, 1.0);
