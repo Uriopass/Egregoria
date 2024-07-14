@@ -766,7 +766,7 @@ impl MapBuilders {
                 LotKind::Residential => simulation::colors().lot_residential_col,
             };
             tess_lots.set_color(col);
-            tess_lots.draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
+            tess_lots.draw_filled_polygon(&lot.shape.corners, lot.height + 0.28);
         }
     }
 }

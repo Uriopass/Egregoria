@@ -4,9 +4,9 @@ use crate::utils::scheduler::SeqSchedule;
 use crate::World;
 use crate::{Replay, Simulation};
 use common::logger::MyLog;
-use common::saveload::{Bincode, Encoder};
+use common::saveload::{Bincode, Encoder, JSONPretty};
 use geom::vec3;
-use quickcheck::{Arbitrary, Gen};
+use quickcheck::{Arbitrary, Gen, TestResult};
 
 static REPLAY: &[u8] = include_bytes!("world_replay.json");
 
@@ -65,9 +65,9 @@ impl Arbitrary for MapAction {
 
 #[test]
 fn quickcheck_map_ser() {
-    let mut q = quickcheck::QuickCheck::new();
+    let mut q = quickcheck::QuickCheck::new().tests(100);
     q.quickcheck(
-        (|vals: Vec<(MapAction, u32, F3201, F3201)>| -> bool {
+        (|vals: Vec<(MapAction, u32, F3201, F3201)>| -> TestResult {
             let mut m = Map::empty();
             let mut m2 = Map::empty();
 
@@ -120,7 +120,7 @@ fn quickcheck_map_ser() {
                         );
                         m2.make_connection(
                             MapProject {
-                                pos: m.intersections[i].pos,
+                                pos: m2.intersections[i].pos,
                                 kind: ProjectKind::Intersection(i),
                             },
                             MapProject {
@@ -216,8 +216,26 @@ fn quickcheck_map_ser() {
                 }
             }
 
-            Bincode::encode(&m).unwrap() == Bincode::encode(&m2).unwrap()
-        }) as fn(_) -> bool,
+            let v = Bincode::encode(&m).unwrap() == Bincode::encode(&m2).unwrap();
+            if !v {
+                let m_enc = unsafe { String::from_utf8_unchecked(JSONPretty::encode(&m).unwrap()) };
+                let m2_enc =
+                    unsafe { String::from_utf8_unchecked(JSONPretty::encode(&m2).unwrap()) };
+                let diff = diff::lines(&m_enc, &m2_enc);
+                let mut diff_str = String::new();
+                for line in diff {
+                    match line {
+                        diff::Result::Left(l) => diff_str.push_str(&format!("- {}\n", l)),
+                        diff::Result::Both(l, _) => diff_str.push_str(&format!("  {}\n", l)),
+                        diff::Result::Right(r) => diff_str.push_str(&format!("+ {}\n", r)),
+                    }
+                }
+
+                TestResult::error(diff_str)
+            } else {
+                TestResult::passed()
+            }
+        }) as fn(_) -> TestResult,
     );
 }
 

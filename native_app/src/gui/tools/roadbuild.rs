@@ -368,9 +368,9 @@ pub struct RoadBuildResource {
 
 #[derive(Default, Clone, Copy)]
 pub enum Snapping {
-    #[default]
     None,
     SnapToGrid,
+    #[default]
     SnapToAngle,
 }
 
@@ -387,7 +387,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
     let max_turn_angle = if is_rail {
         0.0
     } else {
-        30.0 * std::f32::consts::PI / 180.0
+        25.0 * std::f32::consts::PI / 180.0
     };
 
     match from.kind {
@@ -401,7 +401,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
                 .roads
                 .iter()
                 .map(|road_id| map.roads()[*road_id].dir_from(i))
-                .any(|v| v.angle(dir).abs() >= max_turn_angle)
+                .all(|v| v.angle(dir).abs() >= max_turn_angle)
         }
         Road(r) => {
             let Some(r) = map.roads().get(r) else {
@@ -536,9 +536,18 @@ impl RoadBuildResource {
                 .color(col);
         }
 
-        immdraw.circle(p.first(), patwidth * 0.5).color(col);
-        immdraw.circle(p.last(), patwidth * 0.5).color(col);
-        immdraw.polyline(p.into_vec(), patwidth, false).color(col);
+        immdraw.circle(p.first().up(0.1), patwidth * 0.5).color(col);
+        immdraw.circle(p.last().up(0.1), patwidth * 0.5).color(col);
+        immdraw
+            .polyline(
+                p.into_vec()
+                    .into_iter()
+                    .map(|v| v.up(0.1))
+                    .collect::<Vec<_>>(),
+                patwidth,
+                false,
+            )
+            .color(col);
     }
 
     pub fn possible_interpolations(&self, map: &Map, mousepos: Vec3) -> Option<Vec<Vec3>> {

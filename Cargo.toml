@@ -33,6 +33,7 @@ yakui-core    = { git = "https://github.com/Uriopass/yakui", branch = "dev" }
 yakui-widgets = { git = "https://github.com/Uriopass/yakui", branch = "dev" }
 itertools     = { version = "0.13.0", default-features = false }
 mlua          = { version = "0.9.4", features = ["luau"] }
+# rerun         = { version = "0.17.0", default-features = false, features = ["sdk"] }
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]

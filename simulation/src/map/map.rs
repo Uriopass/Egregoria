@@ -12,13 +12,13 @@ use geom::{Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use prototypes::{BuildingGen, Tick};
 use serde::{Deserialize, Serialize};
-use slotmapd::HopSlotMap;
+use slotmapd::SlotMap;
 
-pub type Roads = HopSlotMap<RoadID, Road>;
-pub type Lanes = HopSlotMap<LaneID, Lane>;
-pub type Intersections = HopSlotMap<IntersectionID, Intersection>;
-pub type Buildings = HopSlotMap<BuildingID, Building>;
-pub type Lots = HopSlotMap<LotID, Lot>;
+pub type Roads = SlotMap<RoadID, Road>;
+pub type Lanes = SlotMap<LaneID, Lane>;
+pub type Intersections = SlotMap<IntersectionID, Intersection>;
+pub type Buildings = SlotMap<BuildingID, Building>;
+pub type Lots = SlotMap<LotID, Lot>;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct MapProject {
@@ -160,6 +160,7 @@ impl Map {
         {
             return None;
         }
+        info!("make_connection {:?} {:?} {:?}", from, to, interpoint);
 
         let connection_segment = match interpoint {
             Some(x) => RoadSegmentKind::from_elbow(from.pos.xy(), to.pos.xy(), x),
@@ -189,10 +190,24 @@ impl Map {
             return None;
         };
 
-        info!(
-            "connect {:?}({:?}) {:?}({:?}) {:?} {:?}: {:?}",
-            from, from_id, to, to_id, pattern, &interpoint, r
-        );
+        self.invalidate(from_id);
+        self.invalidate(to_id);
+
+        let mut maybe_merge = |inter_id| {
+            let inter = &self.intersections[inter_id];
+            if let [r1_id, r2_id] = *inter.roads {
+                let r1 = &self.roads[r1_id];
+                let r2 = &self.roads[r2_id];
+                // only merge if angle is shallow
+                if r1.dir_from(inter_id).dot(r2.dir_from(inter_id)) < -0.9 {
+                    self.merge_road(r1_id, r2_id);
+                }
+            }
+        };
+        maybe_merge(from_id);
+        maybe_merge(to_id);
+
+        info!("connected {:?} {:?}: {:?}", from_id, to_id, r);
 
         self.check_invariants();
 
@@ -476,12 +491,13 @@ impl Map {
     ) -> Option<IntersectionID> {
         info!("split_road {:?} {:?}", split_road_id, pos);
 
-        let pat = self.roads.get(split_road_id)?.pattern(&self.lanes);
-
-        let r = unwrap_or!(self.remove_raw_road(split_road_id), {
-            log::error!("Trying to split unexisting road");
+        if !self.roads.contains_key(split_road_id) {
+            log::error!("splitting non-existing road {:?}", split_road_id);
             return None;
-        });
+        }
+
+        let pat = self.roads.get(split_road_id)?.pattern(&self.lanes);
+        let r = self.remove_raw_road(split_road_id)?;
         self.subscribers.dispatch(UpdateType::Road, &r);
 
         for (id, _) in r.lanes_iter() {
@@ -495,6 +511,10 @@ impl Map {
 
         let r1 = self.connect(r.src, id, &pat, RoadSegmentKind::Arbitrary(before))?;
         let r2 = self.connect(id, r.dst, &pat, RoadSegmentKind::Arbitrary(after))?;
+
+        self.invalidate(r.src);
+        self.invalidate(r.dst);
+        self.invalidate(id);
 
         log::info!(
             "{} parking spots reused when splitting",
@@ -556,6 +576,109 @@ impl Map {
         Some(id)
     }
 
+    pub(crate) fn merge_road(&mut self, road1: RoadID, road2: RoadID) -> Option<RoadID> {
+        info!("merge_road {:?} {:?}", road1, road2);
+
+        let r1 = self.roads.get(road1)?;
+        let r2 = self.roads.get(road2)?;
+
+        let same_inter = if r1.src == r2.src || r1.src == r2.dst {
+            r1.src
+        } else if r1.dst == r2.src || r1.dst == r2.dst {
+            r1.dst
+        } else {
+            warn!("trying to merge roads that are not connected to each other");
+            return None;
+        };
+
+        let mut pat1 = r1.pattern(&self.lanes);
+        let mut pat2 = r2.pattern(&self.lanes);
+
+        if r1.src == same_inter {
+            std::mem::swap(&mut pat1.lanes_backward, &mut pat1.lanes_forward);
+        }
+
+        if r2.src != same_inter {
+            std::mem::swap(&mut pat2.lanes_backward, &mut pat2.lanes_forward);
+        }
+
+        if pat1 != pat2 {
+            log::info!("merge refused because patterns don't match");
+            return None;
+        }
+
+        let r1_extremity = if r1.src == same_inter { r1.dst } else { r1.src };
+        let r2_extremity = if r2.src == same_inter { r2.dst } else { r2.src };
+
+        if r1_extremity == r2_extremity {
+            log::info!("merge refused because connecting to itself");
+            return None;
+        }
+
+        let r1 = self.remove_raw_road(road1)?;
+        let r2 = self.remove_raw_road(road2)?;
+
+        self.remove_intersection_inner(same_inter);
+
+        self.subscribers.dispatch(UpdateType::Road, &r1);
+        self.subscribers.dispatch(UpdateType::Road, &r2);
+
+        for (id, _) in r2.lanes_iter().chain(r1.lanes_iter()) {
+            self.parking.remove_to_reuse(id);
+        }
+
+        let mut new_polyline = r1.points;
+        if r1.src == same_inter {
+            new_polyline.reverse();
+        }
+
+        if r2.src == same_inter {
+            new_polyline.extend(r2.points.iter().skip(1))
+        } else {
+            new_polyline.extend(r2.points.iter().rev().skip(1))
+        }
+
+        let new_r = self.connect(
+            r1_extremity,
+            r2_extremity,
+            &pat1,
+            RoadSegmentKind::Arbitrary(new_polyline),
+        )?;
+
+        let new_r = &mut self.roads[new_r];
+        log::info!("merge_road new road is {:?}", new_r.id);
+
+        log::info!(
+            "{} parking spots reused when merging",
+            self.parking.clean_reuse()
+        );
+
+        for b in r1
+            .connected_buildings
+            .iter()
+            .chain(r2.connected_buildings.iter())
+        {
+            let b = self.buildings.get_mut(*b)?;
+            b.connected_road = Some(new_r.id);
+            new_r.connected_buildings.push(b.id);
+
+            self.electricity.add_edge(b.id, new_r.id);
+        }
+
+        for lot in &mut self.lots.values_mut() {
+            if lot.parent == road1 || lot.parent == road2 {
+                lot.parent = new_r.id;
+            }
+        }
+
+        let new_id = new_r.id;
+
+        self.invalidate(r1_extremity);
+        self.invalidate(r2_extremity);
+
+        Some(new_id)
+    }
+
     /// Returns None if one of the intersections don't exist
     pub(crate) fn connect(
         &mut self,
@@ -566,6 +689,8 @@ impl Map {
     ) -> Option<RoadID> {
         let src = self.intersections.get(src_id)?;
         let dst = self.intersections.get(dst_id)?;
+
+        let gen_lots = !matches!(segment, RoadSegmentKind::Arbitrary(_));
 
         let rid = Road::make(
             src,
@@ -589,11 +714,10 @@ impl Map {
         self.intersections.get_mut(src_id)?.add_road(&self.roads, r);
         self.intersections.get_mut(dst_id)?.add_road(&self.roads, r);
 
-        self.invalidate(src_id);
-        self.invalidate(dst_id);
-
         Lot::remove_intersecting_lots(self, rid);
-        Lot::generate_along_road(self, rid);
+        if gen_lots {
+            Lot::generate_along_road(self, rid);
+        }
 
         #[allow(clippy::indexing_slicing)]
         let r = &self.roads[rid];
@@ -787,9 +911,9 @@ impl Map {
                 assert_eq!(turn.id.parent, inter.id);
                 assert!(
                     self.lanes.contains_key(turn.id.src),
-                    "{:?} {:?}",
+                    "Turn src doesn't exist for inter:{:?} src:{:?}",
                     inter.id,
-                    turn.id.src
+                    turn.id.src,
                 );
                 assert!(
                     self.lanes.contains_key(turn.id.dst),
@@ -911,7 +1035,11 @@ impl Map {
         for lot in self.lots.values() {
             log::debug!("{:?}", lot.id);
             assert!(lot.shape.axis().iter().all(|x| x.mag() > 0.0));
-            assert!(self.roads.contains_key(lot.parent), "{:?}", lot.parent);
+            assert!(
+                self.roads.contains_key(lot.parent),
+                "Lot parent {:?} doesn't exist",
+                lot.parent
+            );
             assert!(self.spatial_map.contains(lot.id));
         }
 

@@ -221,7 +221,7 @@ impl TurnPolicy {
                     ));
                 }
 
-                if self.crosswalks && n_roads >= 2 {
+                if self.crosswalks && n_roads > 2 {
                     if let (Some(incoming), Some(outgoing_in)) = (a.incoming, a.outgoing) {
                         turns.push((
                             TurnID::new(inter.id, incoming, outgoing_in, true),

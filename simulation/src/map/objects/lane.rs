@@ -79,7 +79,7 @@ pub struct Lane {
     pub dist_from_bottom: f32,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct LanePattern {
     pub lanes_forward: Vec<(LaneKind, f32)>,
     pub lanes_backward: Vec<(LaneKind, f32)>,

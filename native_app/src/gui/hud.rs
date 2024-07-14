@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use goryak::{image_button, minrow, on_secondary_container, textc};
 use ordered_float::OrderedFloat;
@@ -47,7 +47,7 @@ pub fn render_newgui(uiworld: &UiWorld, sim: &Simulation) {
 }
 
 fn auto_save(uiworld: &UiWorld) {
-    let every = uiworld.read::<Settings>().auto_save_every.into();
+    let every: Option<Duration> = uiworld.read::<Settings>().auto_save_every.into();
     let mut gui = uiworld.write::<GuiState>();
     if let Some(every) = every {
         if gui.last_save.elapsed() > every {

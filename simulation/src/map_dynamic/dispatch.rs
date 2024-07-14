@@ -468,7 +468,7 @@ mod tests {
                     kind: ProjectKind::Intersection(i),
                     pos: Vec3::x(100.0),
                 },
-                MapProject::ground(Vec3::x(200.0)),
+                MapProject::ground(Vec3::new(200.0, 50.0, 0.0)),
                 None,
                 &LanePatternBuilder::new().one_way(true).rail(true).build(),
             )

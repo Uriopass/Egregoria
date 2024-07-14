@@ -2,7 +2,7 @@
 #![allow(clippy::type_complexity)]
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::map::{BuildingKind, Heightmap, Map};
+use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryLeader};
 use crate::souls::add_souls_to_empty_buildings;
 use crate::utils::resources::{Ref, RefMut, Resources};
@@ -42,6 +42,7 @@ pub mod init;
 pub mod map;
 pub mod map_dynamic;
 pub mod multiplayer;
+mod rerun;
 pub mod souls;
 #[cfg(test)]
 mod tests;

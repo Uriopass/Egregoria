@@ -28,6 +28,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 pub fn init() {
+    //crate::rerun::init_rerun();
+
     // # Safety
     // This function is called only once, before any other function in this crate.
     unsafe {
