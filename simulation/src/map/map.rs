@@ -12,13 +12,13 @@ use geom::{Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use prototypes::{BuildingGen, Tick};
 use serde::{Deserialize, Serialize};
-use slotmapd::SlotMap;
+use slotmapd::HopSlotMap;
 
-pub type Roads = SlotMap<RoadID, Road>;
-pub type Lanes = SlotMap<LaneID, Lane>;
-pub type Intersections = SlotMap<IntersectionID, Intersection>;
-pub type Buildings = SlotMap<BuildingID, Building>;
-pub type Lots = SlotMap<LotID, Lot>;
+pub type Roads = HopSlotMap<RoadID, Road>;
+pub type Lanes = HopSlotMap<LaneID, Lane>;
+pub type Intersections = HopSlotMap<IntersectionID, Intersection>;
+pub type Buildings = HopSlotMap<BuildingID, Building>;
+pub type Lots = HopSlotMap<LotID, Lot>;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct MapProject {

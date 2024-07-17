@@ -2716,9 +2716,9 @@ dependencies = [
 
 [[package]]
 name = "slotmapd"
-version = "1.0.10"
+version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d611bbd0d7874a11cb68767a1989a9a7d2d2b6d016f7b622353c45f9ba2dd4f"
+checksum = "8c3399e8c0ec646fd6ef272affc2097065fe1ded1143ceae304c0e2055736707"
 dependencies = [
  "serde",
 ]
