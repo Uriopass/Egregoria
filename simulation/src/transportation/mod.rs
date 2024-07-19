@@ -101,5 +101,5 @@ pub fn transport_grid_synchronize(world: &mut World, resources: &mut Resources) 
         },
     );
 
-    transport_grid.maintain();
+    transport_grid.maintain_deterministic();
 }

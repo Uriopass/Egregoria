@@ -1,3 +1,5 @@
+#![warn(clippy::iter_over_hash_type)]
+
 use common::TransparentMap;
 use geom::Vec2;
 use mlua::{FromLua, Table};

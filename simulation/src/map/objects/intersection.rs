@@ -110,53 +110,56 @@ impl Intersection {
     }
 
     const MIN_INTERFACE: f32 = 9.0;
-    // allow slicing since we remove all roads not in self.roads
-    #[allow(clippy::indexing_slicing)]
     pub fn update_interface_radius(&mut self, roads: &mut Roads) {
         let id = self.id;
 
-        if let [] = *self.roads {
-            return;
-        }
-
-        if let [r1_id] = *self.roads {
-            let r = &mut roads[r1_id];
-            r.set_interface(id, Self::empty_interface(r.width));
-            return;
-        }
-
-        if let [r1_id, r2_id] = *self.roads {
-            let (r1, r2) = (&roads[r1_id], &roads[r2_id]);
-            let (dir1, dir2) = (r1.dir_from(id), r2.dir_from(id));
-            let (r1w, r2w) = (r1.width, r2.width);
-            let elbow = (dir1 + dir2) * 0.5;
-
-            if elbow.mag() < 0.001 {
-                roads[r1_id].set_interface(id, 1.0);
-                roads[r2_id].set_interface(id, 1.0);
+        match *self.roads {
+            [] => return,
+            [r1_id] => {
+                let r = &mut roads[r1_id];
+                r.set_interface(id, Self::empty_interface(r.width));
                 return;
             }
+            [r1_id, r2_id] => {
+                let (r1, r2) = (&roads[r1_id], &roads[r2_id]);
+                let (dir1, dir2) = (r1.dir_from(id), r2.dir_from(id));
+                let (r1w, r2w) = (r1.width, r2.width);
+                let elbow = (dir1 + dir2) * 0.5;
 
-            let ray1 = Ray::new(
-                self.pos.xy()
-                    + dir1.perpendicular() * dir1.perpendicular().dot(elbow).signum() * r1w * 0.5,
-                dir1,
-            );
-            let ray2 = Ray::new(
-                self.pos.xy()
-                    + dir2.perpendicular() * dir2.perpendicular().dot(elbow).signum() * r2w * 0.5,
-                dir2,
-            );
+                if elbow.mag() < 0.001 {
+                    roads[r1_id].set_interface(id, 1.0);
+                    roads[r2_id].set_interface(id, 1.0);
+                    return;
+                }
 
-            let Some((dist_a, dist_b)) = ray1.both_dist_to_inter(&ray2) else {
-                roads[r1_id].set_interface(id, Self::empty_interface(r1w));
-                roads[r2_id].set_interface(id, Self::empty_interface(r2w));
+                let ray1 = Ray::new(
+                    self.pos.xy()
+                        + dir1.perpendicular()
+                            * dir1.perpendicular().dot(elbow).signum()
+                            * r1w
+                            * 0.5,
+                    dir1,
+                );
+                let ray2 = Ray::new(
+                    self.pos.xy()
+                        + dir2.perpendicular()
+                            * dir2.perpendicular().dot(elbow).signum()
+                            * r2w
+                            * 0.5,
+                    dir2,
+                );
+
+                let Some((dist_a, dist_b)) = ray1.both_dist_to_inter(&ray2) else {
+                    roads[r1_id].set_interface(id, Self::empty_interface(r1w));
+                    roads[r2_id].set_interface(id, Self::empty_interface(r2w));
+                    return;
+                };
+
+                roads[r1_id].set_interface(id, dist_a);
+                roads[r2_id].set_interface(id, dist_b);
                 return;
-            };
-
-            roads[r1_id].set_interface(id, dist_a);
-            roads[r2_id].set_interface(id, dist_b);
-            return;
+            }
+            _ => {}
         }
 
         for &r in &self.roads {

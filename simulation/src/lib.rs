@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
+#![warn(clippy::iter_over_hash_type)]
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::map::{BuildingKind, Map};

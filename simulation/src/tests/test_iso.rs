@@ -3,7 +3,6 @@ use crate::map::{LanePatternBuilder, Map, MapProject, ProjectKind};
 use crate::utils::scheduler::SeqSchedule;
 use crate::World;
 use crate::{Replay, Simulation};
-use common::logger::MyLog;
 use common::saveload::{Bincode, Encoder, JSONPretty};
 use geom::vec3;
 use quickcheck::{Arbitrary, Gen, TestResult};
@@ -239,73 +238,69 @@ fn quickcheck_map_ser() {
     );
 }
 
-//#[test]
+#[test]
 fn test_world_survives_serde() {
     init();
-    MyLog::init();
+    //common::logger::MyLog::init();
 
-    let replay: Replay = common::saveload::JSONPretty::decode(REPLAY).unwrap();
-    let (mut sim, mut loader) = Simulation::from_replay(replay.clone());
-    let (mut sim2, mut loader2) = Simulation::from_replay(replay);
+    let replay: Replay = JSONPretty::decode(REPLAY).unwrap();
     let mut s = SeqSchedule::default();
 
-    //let mut idx = 0;
-    while !loader.advance_tick(&mut sim, &mut s) {
-        loader2.advance_tick(&mut sim2, &mut s);
+    let mut check_size = 1024;
+    let mut check_start = 3;
 
-        /*
-        let next_idx = idx
-            + loader.replay.commands[idx..]
-                .iter()
-                .enumerate()
-                .find_map(|(i, (t, _))| if *t > loader.pastt { Some(i) } else { None })
-                .unwrap_or(idx);
-        for (tick, command) in &loader.replay.commands[idx..next_idx] {
-            match command {
-                WorldCommand::MapMakeConnection { from, to, .. } => {
-                    println!("{:?} {:?}", tick, command);
-                    let map = sim.map();
+    'main: loop {
+        if check_size == 0 {
+            break;
+        }
+        let (mut sim, mut loader) = Simulation::from_replay(replay.clone());
+        let (mut sim2, mut loader2) = Simulation::from_replay(replay.clone());
 
-                    check_coherent(&*map, *from);
-                    println!("ho");
-                    check_coherent(&*map, *to);
-                }
-                _ => {}
+        while !loader.advance_tick(&mut sim, &mut s) {
+            loader2.advance_tick(&mut sim2, &mut s);
+
+            let tick = sim.get_tick();
+            if tick < check_start || tick % check_size != 0 {
+                continue;
             }
+            println!(
+                "--- tick {} ({}/{})",
+                sim.get_tick(),
+                loader.pastt.0,
+                loader.replay.last_tick_recorded.0
+            );
+
+            let ser = common::saveload::Bincode::encode(&sim).unwrap();
+            let mut deser: Simulation = common::saveload::Bincode::decode(&ser).unwrap();
+
+            if !sim.is_equal(&sim2) {
+                println!("not equal sim+sim2");
+                sim.save_to_disk("world");
+                sim2.save_to_disk("world2");
+                check_start = tick - check_size;
+                check_size = check_size / 2;
+                continue 'main;
+            }
+            if !deser.is_equal(&sim) {
+                println!("not equal sim");
+                deser.save_to_disk("world");
+                sim.save_to_disk("world2");
+                check_start = tick - check_size;
+                check_size = check_size / 2;
+                continue 'main;
+            }
+            if !deser.is_equal(&sim2) {
+                println!("not equal sim2");
+                deser.save_to_disk("world");
+                sim2.save_to_disk("world2");
+                check_start = tick - check_size;
+                check_size = check_size / 2;
+                continue 'main;
+            }
+
+            std::mem::swap(&mut deser, &mut sim2);
         }
 
-        idx = next_idx;*/
-
-        let tick = sim.get_tick();
-        if tick % 1000 != 0 || (tick < 7840) {
-            continue;
-        }
-
-        println!(
-            "--- tick {} ({}/{})",
-            sim.get_tick(),
-            loader.pastt.0,
-            loader.replay.last_tick_recorded.0
-        );
-
-        let ser = common::saveload::Bincode::encode(&sim).unwrap();
-        let mut deser: Simulation = common::saveload::Bincode::decode(&ser).unwrap();
-
-        if !deser.is_equal(&sim) {
-            println!("not equal");
-            deser.save_to_disk("world");
-            sim.save_to_disk("world2");
-            panic!("not equal");
-        }
-        if !deser.is_equal(&sim2) {
-            println!("not equal");
-            deser.save_to_disk("world");
-            sim2.save_to_disk("world2");
-            panic!("not equal");
-        }
-
-        std::mem::swap(&mut deser, &mut sim2);
+        break;
     }
-
-    sim.save_to_disk("world2");
 }

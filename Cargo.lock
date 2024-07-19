@@ -1032,9 +1032,9 @@ dependencies = [
 
 [[package]]
 name = "flat_spatial"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb8465ccd100d75c6c92484e7c58be67ce18d4e88c84820c1033cce07e1fc6d9"
+checksum = "ae8a048b3b326f7152c3fbcb191c1cc47e5b90f81f8ad2b9dd0f5ec795f1019b"
 dependencies = [
  "fnv",
  "serde",

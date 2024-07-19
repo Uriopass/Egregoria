@@ -1,3 +1,10 @@
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
+#[allow(unused_imports)]
+use common::saveload::{Bincode, Encoder, JSONPretty, JSON};
+use prototypes::{GameTime, Tick};
+
 use crate::economy::{market_update, EcoStats, Government, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
@@ -22,10 +29,6 @@ use crate::{
     add_souls_to_empty_buildings, utils, ParCommandBuffer, RandProvider, Replay, RunnableSystem,
     Simulation, SimulationOptions, RNG_SEED,
 };
-use common::saveload::{Bincode, Encoder, JSON};
-use prototypes::{GameTime, Tick};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 
 pub fn init() {
     //crate::rerun::init_rerun();

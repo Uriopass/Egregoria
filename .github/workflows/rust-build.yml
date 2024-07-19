@@ -31,4 +31,4 @@ jobs:
       - name: Check
         run: cargo check --verbose --workspace --tests --examples --features multiplayer
       - name: Run tests
-        run: cargo test --verbose --workspace --features multiplayer
+        run: cargo test --verbose --workspace --features multiplayer --test-threads=1

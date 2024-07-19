@@ -104,7 +104,11 @@ pub fn load_parismap(map: &mut Map) {
         v.1 |= mi == dst || (n_lanes != 1);
     }
 
-    for ((src, dst), (fw, bw)) in edges {
+    let mut edges_keys: Vec<_> = edges.keys().copied().collect();
+    edges_keys.sort_unstable();
+
+    for (src, dst) in edges_keys {
+        let (fw, bw) = edges[&(src, dst)];
         if !fw && !bw {
             continue;
         }

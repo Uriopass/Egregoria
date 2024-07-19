@@ -383,6 +383,8 @@ fn calculate_prices(price_multiplier: f32) -> BTreeMap<ItemID, Money> {
                 * company.n_workers as f64
                 * WORKER_CONSUMPTION_PER_MINUTE;
 
+            dbg!(price_consumption, price_workers, qty);
+
             let newprice = (price_consumption
                 + Money::new_inner((price_workers.inner() as f32 * price_multiplier) as i64))
                 / qty;

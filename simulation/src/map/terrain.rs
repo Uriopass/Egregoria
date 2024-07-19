@@ -1,12 +1,17 @@
-use crate::map::procgen::heightmap;
-use crate::map::procgen::heightmap::tree_density;
+use std::ops::Mul;
+
+use flat_spatial::storage::CellIdx;
 use flat_spatial::Grid;
-use geom::{lerp, pack_height, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
-use prototypes::{Tick, DELTA};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::ops::Mul;
+
+use common::FastSet;
+use egui_inspect::egui::ahash::HashSetExt;
+use geom::{lerp, pack_height, vec2, Intersect, Radians, Ray3, Vec2, Vec3, AABB};
+use prototypes::{Tick, DELTA};
+
+use crate::map::procgen::heightmap;
+use crate::map::procgen::heightmap::tree_density;
 
 pub type TerrainChunkID = common::ChunkID_512;
 
@@ -97,9 +102,9 @@ impl Environment {
             }
         });
 
-        let mut seen = HashSet::new();
+        let mut seen = FastSet::new();
         for h in to_remove {
-            let Some(tree) = self.trees.remove(h) else {
+            let Some(tree) = self.trees.remove_maintain(h) else {
                 continue;
             };
             let id = TerrainChunkID::new(tree.pos);
@@ -107,7 +112,6 @@ impl Environment {
                 f(id);
             }
         }
-        self.trees.maintain();
     }
 
     pub fn get_chunk(&self, id: TerrainChunkID) -> Option<&Chunk> {
@@ -279,6 +283,8 @@ impl Environment {
 
         let mut trees = Vec::with_capacity(128);
 
+        let tree_storage = self.trees.storage();
+
         for offx in 0..RES_TREES {
             for offy in 0..RES_TREES {
                 let cellpos = vec2(offx as f32, offy as f32) * TCELLW;
@@ -293,7 +299,11 @@ impl Environment {
                 let tdens = tree_density(pchunk + sample);
 
                 if dens_test < tdens && chunk.height_unchecked(sample) >= 0.0 {
-                    trees.push(Tree::new(pchunk + sample));
+                    let pos = pchunk + sample;
+                    // normalize pos
+                    let cell = tree_storage.cell_id(pos);
+                    let pos = decode_pos(encode_pos(pos, cell), cell);
+                    trees.push(Tree::new(pos));
                 }
             }
         }
@@ -323,15 +333,15 @@ impl Tree {
 
 type SmolTree = u16;
 
-pub fn new_smoltree(pos: Vec2, chunk: (u32, u32)) -> SmolTree {
-    let diffx = pos.x - (chunk.0 * TREE_GRID_SIZE as u32) as f32;
-    let diffy = pos.y - (chunk.1 * TREE_GRID_SIZE as u32) as f32;
+pub fn encode_pos(pos: Vec2, chunk: CellIdx) -> SmolTree {
+    let diffx = pos.x - (chunk.0 * TREE_GRID_SIZE as i32) as f32;
+    let diffy = pos.y - (chunk.1 * TREE_GRID_SIZE as i32) as f32;
 
     ((((diffx / TREE_GRID_SIZE as f32) * 256.0) as u8 as u16) << 8)
         + ((diffy / TREE_GRID_SIZE as f32) * 256.0) as u8 as u16
 }
 
-pub fn to_pos(encoded: SmolTree, chunk: (u32, u32)) -> Vec2 {
+pub fn decode_pos(encoded: SmolTree, chunk: CellIdx) -> Vec2 {
     let diffx = (encoded >> 8) as u8;
     let diffy = (encoded & 0xFF) as u8;
     Vec2 {
@@ -343,7 +353,7 @@ pub fn to_pos(encoded: SmolTree, chunk: (u32, u32)) -> Vec2 {
 #[derive(Serialize, Deserialize)]
 struct SerializedEnvironment {
     h: Heightmap,
-    trees: Vec<((u32, u32), Vec<SmolTree>)>,
+    trees: Vec<(CellIdx, Vec<SmolTree>)>,
 }
 
 impl From<SerializedEnvironment> for Environment {
@@ -355,7 +365,7 @@ impl From<SerializedEnvironment> for Environment {
 
         for (chunk_id, trees) in ser.trees {
             for tree in trees {
-                let tree = Tree::new(to_pos(tree, chunk_id));
+                let tree = Tree::new(decode_pos(tree, chunk_id));
                 terrain.trees.insert(tree.pos, tree);
             }
         }
@@ -370,11 +380,16 @@ impl From<&Environment> for SerializedEnvironment {
             trees: Vec::new(),
         };
 
-        for (cell_id, chunk) in ter.trees.storage().cells.iter() {
-            let cell_id = (cell_id.0 as u32, cell_id.1 as u32);
+        let tree_cells = &ter.trees.storage().cells;
+
+        let mut keys = tree_cells.keys().copied().collect::<Vec<_>>();
+        keys.sort_unstable();
+
+        for cell_id in keys {
+            let chunk = &tree_cells[&cell_id];
             let mut smoltrees = Vec::with_capacity(chunk.objs.len());
             for (_, tree_pos) in chunk.objs.iter() {
-                let smol = new_smoltree(*tree_pos, cell_id);
+                let smol = encode_pos(*tree_pos, cell_id);
                 smoltrees.push(smol);
             }
             t.trees.push((cell_id, smoltrees));

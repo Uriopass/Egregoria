@@ -1,3 +1,5 @@
+#![allow(clippy::iter_over_hash_type)]
+
 use thiserror::Error;
 
 use common::error::MultiError;
