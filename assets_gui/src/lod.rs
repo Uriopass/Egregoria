@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use meshopt2::{optimize_vertex_fetch, SimplifyOptions, Vertex, VertexDataAdapter};
+use meshopt::{optimize_vertex_fetch, SimplifyOptions, Vertex, VertexDataAdapter};
 
 use common::unwrap_cont;
 use engine::gltf::json::validation::{Checked, USize64};
@@ -69,7 +69,7 @@ pub fn lod_generate(m: &mut CPUMesh, params: LodGenerateParams) -> Result<(), Lo
 
                 let position_offset = 0;
                 let vertex_stride = std::mem::size_of::<Vertex>();
-                let vertex_data = meshopt2::typed_to_bytes(&vertices);
+                let vertex_data = meshopt::typed_to_bytes(&vertices);
 
                 let adapter = VertexDataAdapter::new(vertex_data, vertex_stride, position_offset)
                     .expect("failed to create vertex data reader");
@@ -78,9 +78,9 @@ pub fn lod_generate(m: &mut CPUMesh, params: LodGenerateParams) -> Result<(), Lo
                 let target_error = (0.1 + i as f32 * 0.1) * (1.0 - params.quality);
 
                 let mut optimized_indices = if params.sloppy {
-                    meshopt2::simplify_sloppy(&indices, &adapter, target_count, target_error, None)
+                    meshopt::simplify_sloppy(&indices, &adapter, target_count, target_error, None)
                 } else {
-                    meshopt2::simplify(
+                    meshopt::simplify(
                         &indices,
                         &adapter,
                         target_count,
